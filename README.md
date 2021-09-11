@@ -2,6 +2,8 @@
 
 ## What is CACAO
 
+Sistema para Consulta y Almacenamiento de dados Contables y Apoyo Organizativo
+
 ___
 
 ## How to BUILD
