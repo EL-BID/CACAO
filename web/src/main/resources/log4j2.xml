@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<Configuration status="WARN">
+
+    <Properties>
+    	<Property name="DEFAULT_LOG_DIR">
+    		${sys:user.home}${sys:file.separator}cacao_log
+    	</Property>
+    	<Property name="LOG_FILE">
+    		${sys:LOG_DIR:-${DEFAULT_LOG_DIR}}${sys:file.separator}web_app
+    	</Property>
+        <Property name="LOG_PATTERN">
+            %d{dd-MMM-yyyy HH:mm:ss.SSS} %5p --- [%15.15t] %-40.40c{1.} : %m%n%ex
+        </Property>
+    </Properties>
+    
+    <Appenders>
+    
+    	<!--  Console Appender -->
+    
+        <Console name="ConsoleAppender" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+        
+        <!--  Rolling File Appender -->
+        <RollingFile name="FileAppender" filePattern="${LOG_FILE}-%d{yyyy-MM-dd}-%i.log" immediateFlush="true">
+             
+		    <PatternLayout>
+		        <Pattern>${LOG_PATTERN}</Pattern>
+		    </PatternLayout>
+		    
+		    <Policies>
+		    	<TimeBasedTriggeringPolicy interval="1"/>
+		        <SizeBasedTriggeringPolicy size="100MB" />
+		        <OnStartupTriggeringPolicy/>
+		    </Policies>
+		    
+		    <DirectWriteRolloverStrategy maxFiles="30"/>
+		    
+		</RollingFile>
+		
+		<!--  Null (no-op) Appender -->
+		<Null name="NullAppender" />
+
+    </Appenders>
+    
+    <Loggers>
+    	<Logger name="org.apache.pdfbox" level="off" additivity="false">
+    		<AppenderRef ref="NullAppender" />
+    	</Logger>
+    	<Logger name="org.apache.fontbox" level="off" additivity="false">
+    		<AppenderRef ref="NullAppender" />
+    	</Logger>
+    	<Logger name="org.springframework.data.convert.CustomConversions" level="error" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
+    	<Logger name="org.idb.cacao" level="info" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
+        <Root level="warn">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+        </Root>
+    </Loggers>
+    
+</Configuration>

@@ -1,0 +1,8 @@
+.git/
+target/
+bin/
+.settings/
+.classpath
+.project
+.env
+app_config
