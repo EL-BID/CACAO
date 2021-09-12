@@ -24,6 +24,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.*;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
+import javax.persistence.Column;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -101,6 +102,12 @@ public class User implements Serializable, Cloneable, Comparable<User> {
     private String password;
 	
 	/**
+	 * API TOKEN (for user operations with external system through REST API)
+	 */
+	@Column(length=1024)
+	private String apiToken;
+	
+	/**
 	 * {@link #id}
 	 */
 	public String getId() {
@@ -168,6 +175,20 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 */
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	/**
+	 * {@link #apiToken}
+	 */
+	public String getApiToken() {
+		return apiToken;
+	}
+
+	/**
+	 * {@link #apiToken}
+	 */
+	public void setApiToken(String apiToken) {
+		this.apiToken = apiToken;
 	}
 
 	public User clone() {

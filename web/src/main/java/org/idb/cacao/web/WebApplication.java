@@ -21,6 +21,9 @@ package org.idb.cacao.web;
 
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+
+import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -43,6 +46,9 @@ public class WebApplication {
 	
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private KeyStoreService keyStoreService;
 
 	/**
 	 * This is the entrypoint for the entire web application
@@ -50,13 +56,24 @@ public class WebApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(WebApplication.class, args);
 	}
+	
+	/**
+	 * Initialization code for the web application during SpringBoot initialization
+	 */
+	@PostConstruct
+	public void doSomethingBeforeStartup() {
+		
+		keyStoreService.assertKeyStoreForSSL();
+
+	}
 
 	/**
-	 * Initialization code for the web application
+	 * Initialization code for the web application after SpringBoot initialization
 	 */
 	@EventListener(ApplicationReadyEvent.class)
 	public void doSomethingAfterStartup() {
 		
+
 	    new Thread("StartupThread") {
 	    	{	setDaemon(true); }
 	    	public void run() {

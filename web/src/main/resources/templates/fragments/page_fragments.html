@@ -1,0 +1,432 @@
+<!DOCTYPE HTML>
+<!--/*
+   Fragment 'header' ------------------------
+   HTML contents to be included in head section of every page
+   
+   The fragment 'header' may be used with the following parameters:
+   
+		more_links: Optionally informs additional CSS links
+		more_scripts: Optionally informs additional JS files
+
+   Fragment 'publicSidebarMenu' ------------------------
+   HTML contents to be included as sidebar menu of every page inside PUBLIC AREA (not LOGGED)
+   
+   Fragment 'loggedSidebarMenu' ------------------------
+   HTML contents to be included as sidebar menu of every page inside LOGGED AREA
+   
+   Fragment 'loggedMenu' ------------------------
+   HTML contents to be included as upper menu of every page
+    
+   Fragment 'footer' ------------------------
+   HTML contents to be included in ending section of every page
+   
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:fragment="header">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title th:text="#{app.name}">Application Title</title>
+<link rel="stylesheet" type="text/css" class="ui" href="/css/semantic.min.css">
+<link rel="stylesheet" type="text/css" class="ui" href="/css/jquery-ui.min.css">
+<link rel="icon" type="image/ico" href="/images/favicon.ico">
+<th:block th:if="${more_links}">
+	<th:block th:replace="${more_links}" />
+</th:block>
+<script src="/js/jquery.min.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+<script src="/js/semantic.min.js"></script>
+<th:block th:if="${more_scripts}">
+	<th:block th:replace="${more_scripts}" />
+</th:block>
+<script th:nonce="${cspNonce}">
+ 		$(document).ready(function() {
+      	// fix menu when passed Inserted
+    	
+      	$('.masthead').visibility({
+            once: false,
+            onBottomPassed: function() {
+            	document.getElementById('my_menu').classList.remove('inverted');
+            },
+            onBottomPassedReverse: function() {
+            	document.getElementById('my_menu').classList.add('inverted');
+            }
+          });
+      	    	
+      	
+      // create sidebar and attach to menu open
+      	$('.ui.sidebar').sidebar('attach events', '.toc.item');
+      	});
+  	</script>
+<style>
+.grid.container {
+	margin-top: 1em;
+}
+
+.inputfile, .inputsample {
+	width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
+}
+
+.hidden.menu {
+	display: none;
+}
+
+.pushable>.pusher.dimmed:after {
+	opacity: 0 !important;
+}
+
+.masthead.segment {
+	min-height: 500px;
+	padding: 1em 0em;
+}
+
+.ui.vertical.masthead.center.aligned.segment {
+	background: linear-gradient(-45deg, #ffa500, #fcd20f, #964b00);
+	background-size: 100% 100%;
+}
+
+.masthead .logo.item img {
+	margin-right: 1em;
+}
+
+.masthead .ui.menu .ui.button {
+	margin-left: 0.5em;
+}
+
+.masthead h1.ui.header {
+	margin-top: 2em;
+	margin-bottom: 0em;
+	font-size: 4em;
+	font-weight: normal;
+	text-shadow: 3px 3px 2px rgba(0, 0, 0, 1);
+}
+
+.masthead h2 {
+	font-size: 1.7em;
+	font-weight: normal;
+}
+
+.ui.vertical.stripe {
+	padding: 8em 0em;
+}
+
+.ui.vertical.stripe h3 {
+	font-size: 2em;
+}
+
+.ui.vertical.stripe .button+h3, .ui.vertical.stripe p+h3 {
+	margin-top: 3em;
+}
+
+.ui.vertical.stripe .floated.image {
+	clear: both;
+}
+
+.ui.vertical.stripe p {
+	font-size: 1.33em;
+}
+
+.ui.vertical.stripe .horizontal.divider {
+	margin: 3em 0em;
+}
+
+.quote.stripe.segment {
+	padding: 0em;
+}
+
+.quote.stripe.segment .grid .column {
+	padding-top: 5em;
+	padding-bottom: 5em;
+}
+
+.footer.segment {
+	padding: 5em 0em;
+}
+
+.secondary.pointing.menu .toc.item {
+	display: none;
+}
+
+.column {
+	max-width: 450px;
+}
+
+.pagination {
+	display: inline-block;
+}
+
+.pagination a {
+	color: black;
+	float: left;
+	padding: 5px 5px;
+	text-decoration: none;
+}
+
+.pagination a.active {
+	background-color: gray;
+	color: white;
+	border-radius: 2px;
+}
+
+.inputfile {
+	margin-top: 5em;
+	width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
+}
+
+@media only screen and (max-width: 700px) {
+	.hideable {
+		display: none !important;
+	}
+	.masthead.segment {
+		min-height: 350px;
+	}
+	.masthead h1.ui.header {
+		font-size: 2em;
+		margin-top: 1.5em;
+	}
+	.masthead h2 {
+		margin-top: 0.5em;
+		font-size: 1.5em;
+	}
+}
+
+.ui.card {
+	max-width: 100%;
+	width: 100%;
+	min-height: 200px;
+}
+
+.ui.card:last-child {
+	margin-bottom: 1em;
+}
+
+.print-only {
+   display : none;
+}
+
+.vcentered {
+    height: 100%;
+}
+
+.vcentered:before {
+    content: '\200B';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+}
+
+.scissors {
+    height: 43px; /* image height */
+    width: 90%;
+    margin: auto auto;
+    background-image: url('/images/scissors.png');
+    background-repeat: no-repeat;
+    background-position: right;
+    position: relative;
+    overflow: hidden;
+}
+.scissors:after {
+    content: "";
+    position: relative;
+    top: 50%;
+    display: block;
+    border-top: 3px dashed black;
+    margin-top: -3px;
+}
+
+@media print {
+	.payslips {
+		background-color: white;
+		height: 100%;
+		width: 100%;
+		position: fixed;
+		top: 0;
+		left: 0;
+		margin: 0;
+		padding: 15px;
+		font-size: 14px;
+		line-height: 18px;
+	}
+	.button, .dontprint {
+		display: none !important;
+	}
+    .page-break  { 
+    	display:block; 
+    	page-break-before:always; 
+    }
+    .print-only {
+       display : block;
+    }
+    footer {
+    	page-break-after: always;
+    }
+}
+
+img {
+	width: 80px;
+}
+
+tr.assigned {
+	background-color: cyan;
+}
+
+.warn_no_token {
+	display: none
+}
+
+.password-verdict {
+	color: #000;
+}
+
+#matchPassword:disabled {
+	background-color: gray
+}
+
+select[readonly] {
+	pointer-events: none;
+	touch-action: none;
+}
+</style>
+</head>
+<body>
+	<!-- Public Sidebar Menu -->
+	<div class="ui vertical inverted sidebar menu dontprint" th:fragment="publicSidebarMenu">
+		<a class="item" th:text="#{menu.homepage}" th:href="@{/}">homepage</a>
+		<a class="item" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
+		<a class="item startbtn" th:text="#{app.start}">Start</a>
+	</div>
+	<!-- Public Menu -->
+	<div class="ui container dontprint" th:fragment="publicMenu">
+		<div class="ui fixed inverted menu" id="my_menu">
+			<a class="toc item">
+				<i class="sidebar icon"></i>
+			</a>
+			<a class="item hideable" th:text="#{menu.homepage}" th:href="@{/}">homepage</a>
+			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
+			<div class="right item">
+				<a class="ui item startbtn hideable" th:text="#{app.start}">start</a>
+				<div class="ui dropdown item chooselang">
+					<input type="hidden" name="country">
+					<i class="globe icon"></i>
+					<div class="default text">Language</div>
+					<div class="menu">
+						<div class="item" data-value="en">
+							<i class="us flag"></i>
+							EN
+						</div>
+						<div class="item" data-value="es">
+							<i class="es flag"></i>
+							ES
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Logged Sidebar Menu -->
+	<div class="ui vertical inverted sidebar menu dontprint" th:fragment="loggedSidebarMenu">
+		<th:block th:each="menu_item : ${menu}">
+			<a class="item" th:if="${menu_item.link}!=null" th:href="${menu_item.link}" href="#" th:text="${menu_item.name}" th:target="${target_frame}" target="">Menu Item</a>
+			<th:block th:if="${menu_item.children!=null and !menu_item.children.empty}">
+				<div th:replace=" :: submenu(menu_interno=${menu_item})"></div>
+			</th:block>
+		</th:block>
+		<a class="item" th:text="#{menu.logout}" th:href="@{/logout}">Logout</a>
+	</div>
+	<!-- Logged Submenu -->
+	<div class="ui accordion inverted item" th:fragment="submenu">
+		<a class="title" th:text="${menu_interno.name + '&MediumSpace;&MediumSpace;' + '&xdtri;'}">Menu</a>
+		<div class="content">
+			<th:block th:each="menu_item : ${menu_interno.children}">
+				<a class="item" th:if="${menu_item.link}!=null" th:href="${menu_item.link}" href="#" th:text="${menu_item.name}" th:target="${target_frame}" target="">Menu Item</a>
+				<th:block th:if="${menu_item.children!=null and !menu_item.children.empty}">
+					<div class="menu" th:replace=" :: submenu(menu_interno=${menu_item})"></div>
+				</th:block>
+			</th:block>
+		</div>
+	</div>
+	<!-- Logged Menu -->
+	<div class="ui container" th:fragment="loggedMenu">
+		<div class="ui fixed inverted menu" id="my_menu">
+			<a class="toc item">
+				<i class="sidebar icon"></i>
+			</a>
+			<a class="ui simple item" th:href="@{/bulletin_board}" th:target="${target_frame}" target="">
+				<img class="logo" src="images/logo.png">
+				<span th:text="#{app.name}">Application Title</span>
+			</a>
+			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}" th:target="${target_frame}" target="">institutional</a>
+			<div class="ui right simple dropdown item hideable">
+				<div sec:authentication="name"></div>
+				<i class="dropdown icon"></i>
+				<div class="menu">
+					<a class="item" th:text="#{menu.logout}" th:href="@{/logout}">Logout</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Footer -->
+	<div class="ui inverted vertical footer segment dontprint" th:fragment="footer">
+		<div class="ui container">
+			<div class="ui stackable inverted divided equal height stackable grid">
+				<div class="four wide column">
+					<h4 class="ui inverted header" th:text="#{ta.short.name}">Tax Administration</h4>
+					<p th:text="#{ta.full.name}">Tax Administration Full Name</p>
+					<h4 class="ui inverted header" th:text="#{ministry.short.name}">MF</h4>
+					<p th:text="#{ministry.full.name}">Ministry of Finance</p>
+				</div>
+				<div class="three wide column">
+					<h4 class="ui inverted header" th:text="#{menu.address}">Address</h4>
+					<p th:text="#{ta.full.address}">Full Address</p>
+					<p th:text="#{ta.full.country}">Country Name</p>
+				</div>
+				<div class="three wide column">
+					<a class="ui inverted header tiny" th:href="@{/terms}">
+						<p th:text="#{legal.terms}">Terms of use</p>
+					</a>
+					<br>
+					<a class="ui inverted header tiny" th:href="@{/privacy}">
+						<p th:text="#{legal.policy}">Privacy policy</p>
+					</a>
+					<br>
+					<a class="ui inverted header tiny" th:href="@{/license}">
+						<p>License</p>
+					</a>
+				</div>
+				<!--/*-->
+				<div class="five wide column">
+					<div class="ui inverted segment">
+						<img src="/images/IMF.png" class="ui left floated image">
+						<p th:text="#{footer.developed_by}">developed_by</p>
+					</div>
+				</div>
+				<!--*/-->
+			</div>
+		</div>
+	</div>
+	<!-- Logged Footer -->
+	<div class="ui vertical segment" style="background: linear-gradient(-45deg, #ffa500, #fcd20f, #964b00);" th:fragment="loggedFooter">
+		<h5 style="text-align: center;" th:text="#{ta.full.name}">Tax Administration</h5>
+	</div>
+	<!-- Language Javascript -->
+	<script th:nonce="${cspNonce}" th:inline="javascript" th:with="lang=${#locale.language}" th:fragment="languageJavascript">
+	$('.ui.dropdown.chooselang').dropdown();
+	$('.ui.dropdown.chooselang').dropdown('set selected', [[${lang}]])
+	$('.ui.dropdown.chooselang').change(function(e){window.location='/?lang='+$('.ui.dropdown.chooselang').dropdown('get value')})
+	$('.ui.dropdown.choose_simplepay').dropdown({
+		action: 'hide'	
+	});
+	$(".startbtn").click(function(){window.location="/home"});
+	</script>
+</body>
+</html>

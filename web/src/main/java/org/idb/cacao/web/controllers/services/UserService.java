@@ -27,6 +27,8 @@ import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,4 +86,59 @@ public class UserService {
 	public String encodePassword(String password) {
 		return new BCryptPasswordEncoder(11).encode(password);
 	}
+	
+	/**
+	 * Creates a new user with DECLARANT profile given an OIDC token
+	 */
+	@Transactional
+	public User createUser(String email, String full_name, OidcUserRequest userRequest) {
+		log.log(Level.INFO,"Creating new user '"+email+"' with name '"+full_name+"' based on OIDC Provider with access token "
+				+userRequest.getAccessToken());
+		User user = new User();
+		user.setLogin(email);
+		user.setName(full_name);
+		try {
+			userRepository.save(user);
+		}
+		catch (Throwable ex) {
+			// In case of any error, check if the user has already been created
+			try {
+				user = userRepository.findByLoginIgnoreCase(email);
+			}
+			catch (Throwable ex2) { 
+				user = null;
+			}
+			if (user==null)
+				throw ex;
+		}
+		return user;
+	}
+
+	/**
+	 * Creates a new user with DECLARANT profile given an OAUTH2 token
+	 */
+	@Transactional
+	public User createUser(String email, String full_name, OAuth2UserRequest userRequest) {
+		log.log(Level.INFO,"Creating new user '"+email+"' with name '"+full_name+"' based on OAUTH2 Provider with access token "
+				+userRequest.getAccessToken());
+		User user = new User();
+		user.setLogin(email);
+		user.setName(full_name);
+		try {
+			userRepository.save(user);
+		}
+		catch (Throwable ex) {
+			// In case of any error, check if the user has already been created
+			try {
+				user = userRepository.findByLoginIgnoreCase(email);
+			}
+			catch (Throwable ex2) { 
+				user = null;
+			}
+			if (user==null)
+				throw ex;
+		}
+		return user;
+	}
+	
 }

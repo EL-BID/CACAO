@@ -1,0 +1,56 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+
+<head th:replace="fragments/page_fragments :: header">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+
+<body>
+
+	<!-- Sidebar Menu -->
+	<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+
+	<div class="pusher">
+
+		<div class="ui vertical masthead center aligned segment">
+
+			<!-- Public Menu -->
+			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+
+			<div class="ui text white container">
+				<h1 class="ui inverted header">
+					<img src="/images/logo.png" class="image"> <span th:text="#{app.name}">Application Name</span>
+				</h1>
+				<h2 th:text="#{app.full.name}">Application Full Name</h2>
+				<div class="ui huge primary button startbtn" th:text="#{app.start}" id="startbtn">Start</div>
+			</div>
+
+		</div>
+
+		<div class="ui vertical stripe segment">
+			<div class="ui middle aligned stackable grid container">
+				<div class="row">
+					<div class="eight wide column">
+						<h3 class="ui header" th:text="#{app.name}">Application Name</h3>
+						<p th:text="#{app.description}">Application Description</p>
+					</div>
+					<div class="six wide right floated column">
+						<img src="/images/logo.png" class="ui large rounded image">
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Footer -->
+		<div th:replace="fragments/page_fragments :: footer"></div>
+
+	</div>
+
+	<!-- Language Javascript -->
+	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+
+</body>
+
+</html>
