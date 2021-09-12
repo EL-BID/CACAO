@@ -160,3 +160,6 @@ da classe da entidade à qual se refere o repositório):
 		entity.setTimestamp(LocalDateTime.now().atOffset(ZoneOffset.UTC));
 		return save(entity);
 	}
+
+29 - Todos os índices gerados no ElasticSearch destinados a armazenar entidades do projeto
+deve começar com 'cacao_' (ex: 'cacao_user').
