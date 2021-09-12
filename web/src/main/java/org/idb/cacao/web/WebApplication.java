@@ -21,6 +21,8 @@ package org.idb.cacao.web;
 
 import java.util.logging.Logger;
 
+import org.idb.cacao.web.controllers.services.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -38,6 +40,9 @@ import org.springframework.context.event.EventListener;
 public class WebApplication {
 
 	static final Logger log = Logger.getLogger(WebApplication.class.getName());
+	
+	@Autowired
+	private UserService userService;
 
 	/**
 	 * This is the entrypoint for the entire web application
@@ -64,5 +69,8 @@ public class WebApplication {
 	 * Do some initialization here
 	 */
 	public void startupCode() {
+		
+		userService.assertInitialSetup();
+		
 	}
 }

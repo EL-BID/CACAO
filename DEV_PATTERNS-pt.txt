@@ -1,0 +1,162 @@
+﻿Convenções para o trabalho de desenvolvimento
+=========================================================================================================
+
+1 - Toda classe e todo método, público ou privado, deve conter documentação no padrão
+JavaDocs, em inglês. O charset deve ser UTF-8 em toda parte (codigo Java, HTML, CSS, etc.)
+
+2 - Toda classe e todo método que expõe alguma funcionalidade REST para ser utilizada por
+um público externo deve adotar as anotações do SWAGGER (ex: '@Api', '@ApiOperation', etc.)
+
+3 - Todo nome utilizado para classe ou método ou campo deve seguir o padrão CamelCase (método
+começando com letra minúscula, classe com letra maiúscula), utilizando palavras do idioma
+inglês, de preferência nomes curtos. Deve evitar o uso do 'underline' (ex: preferir algo
+como 'fieldType' no lugar de 'field_type'). Exceção: caso tenha que fazer integração
+com outra API que force o uso do underline ou de outra convenção (ex: se estiver utilizando
+código gerado pelo JAXB).
+
+4 - Toda mensagem de texto exibida ao usuário não pode estar 'hardcoded'. Deve estar inserida
+em arquivo de 'message.properties'. Teremos tradução de todas essas mensagens para diferentes
+idiomas (espanhol e inglês). OBS: provavelmente não teremos necessidade da lingua portuguesa.
+O mesmo se aplica a textos em conteúdo HTML. Sempre que houver necessidade de escrever algum texto
+em arquivos HTML, deve-se fazer referência a um registro do arquivo de 'message.properties' e
+para facilitar leitura do código HTML deve-se inserir uma mensagem correspondente em inglês.
+Ex:
+	<div class="content" th:text="#{access_history}">Access History</div>
+No exemplo acima, o texto apresentado ao usuário será obtido do arquivo de 'message.properties'
+utilizando a chave 'access_history'. O texto literal 'Access History apenas consta no HTML para
+quem estiver lendo diretamente o arquivo HTML (não chega a ser mostrado ao usuário em tempo de execução).
+
+5 - Adotar o padrão de diretórios do MAVEN (ex: /src/main/java, /src/main/resources, /src/test/java, 
+etc.)
+
+6 - Deve haver organização dos pacotes respeitando o propósito de cada classe:
+a) Todas entidades devem ser definidas no pacote 'entities'
+b) Todos repositórios devem ser definidos no pacote 'repositories'
+c) Todas exceções de erros devem ser definidas no pacote 'errors'
+d) Todas classes utilitárias devem ser definidas no pacote 'utils'
+e) Todos controllers com exposição ao usuário devem ser definidos no pacote 'controllers/ui'
+f) Todos controllers com exposição exclusivamente REST devem ser definidos no pacote 'controllers/rest'
+g) Todos os services devem ser definidos no pacote 'services'
+h) Todos objetos de transferência do controller para a view devem ser definidos no pacote 'controllers/dto'
+i) Todas classes utilizadas exclusivamente para o propósito de 'configurar' aspectos da aplicação (geralmente classes
+que possuem anotações diversas com configurações hardcoded) devem estar definidas no pacote 'config'
+j) Pacotes adicionais podem ser criados para propósitos específicos (ex: pacote '/sec' para algo relacionado a segurança)
+k) Todo código HTML utilizado como 'template' para construção de páginas dinâmicas deve estar no diretório
+	src/main/resources/templates
+l) Todo fragmento de conteúdo HTML que é returilizado em diferentes páginas HTML deve estar no diretório
+	src/main/resources/templates/fragments
+m) Todo conteúdo estático JS, CSS, HTML, entre outros, deve estar em subdiretórios do diretório
+	src/main/webapp
+	Exemplo:
+	src/main/webapp/js
+	src/main/webapp/css
+	src/main/webapp/images
+	etc.
+
+7 - Todas as dependências (JAR de terceiros) devem ser inseridas no arquivo POM. Não teremos
+arquivos JAR armazenados junto com código fonte. De preferência deve ser utilizada a última
+versão disponível no MAVEN REPOSITORY para cada dependência externa, exceto quando isso entrar
+em conflito com as bibliotecas já inseridas no projeto.
+
+8 - Deve haver caso de teste no padrão JUnit para toda funcionalidade implementada.
+
+9 - Parâmetros que alteram o comportamento da aplicação, mas que não devem ser alterados
+frequentemente, devem ficar em arquivo 'application.properties' e ser referenciado pelo código
+através do bean correspondente ('Environment').
+ATENÇÃO: se o parâmetro for algo que possa ser alterado com uma certa frequencia, NÃO deve
+ser definido de forma estática em arquivos, mas sim por meio de objetos de configuração acessíveis
+ao usuário (isto é, deve ser persistido no banco de dados e deve haver janelas para visualizar/editar).
+
+10 - Todo 'singleton' deve ser implementado na forma de um 'Bean' do padrão SPRING
+
+11 - Toda dependência a um serviço ou a um controller ou a um componente ou a um bean definido
+em qualquer outra parte da aplicação deve ser realizada por meio do uso do '@AutoWired' do SPRING
+
+12 - Todo registro de LOG deve utilizar o padrão do 'java.logging'. É importante definir níveis
+apropriados de LOG (ex: 'FINEST' se for alguma mensagem que apenas será apresentada em situação de extrema
+necessidade). Não fazer uso do 'System.out.print' e nem do 'System.err.print' e nem do 'Exception.printStackTrace'.
+
+13 - Se houver conteúdo sendo repetido em muitas páginas HTML, elas devem ser refatoradas de modo a migrar
+o conteúdo que se repete para um 'template', e fazer inclusão deste conteúdo em tempo de execução.
+
+14 - Conteúdo estático (JS, CSS, etc.) de framework público (ex: JQuery, Tabulator, etc.) deve ser
+incorporado ao projeto, e não referenciado diretamente dos repositórios públicos.
+Sempre que houver a opção de utilizar a versão minimalista (com supressão de nova linha, etc.), deve
+ser utilizada.
+
+15 - Todo <script> presente em páginas HTML deve fazer uso do parâmetro 'cspNonce', conforme exemplo:
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+16 - Não misturar <script> com apresentação HTML. Se houver necessidade de inserir <script> no mesmo
+arquivo HTML, ele deve estar concentrado no final do arquivo, e não espalhado em várias partes do arquivo.
+	
+17 - Adotar as convenções do desenvolvimento com SPRING (ex: anotar com '@Transactional' os métodos 
+que realizam alguma transação em banco de dados, incluir 'readOnly=true' caso não faça alteração).	
+Utilizar a anotação '@Secured' em todo método de controller (UI ou REST) que necessite de segurança 
+(possivelmente todos eles).
+
+18 - Nunca, jamais, em hipótese alguma, deve-se concatenar parâmetros de entrada com conteúdo SQL. Toda
+operação envolvendo banco de dados deve fazer uso de parametrização, evitando ataque do tipo SQL Injection.
+
+19 - Deve-se fazer o tratamento de todo parâmetro de entrada do tipo texto que possa ser fornecido pelo usuário, 
+antes de armazenar em banco de dados, objetivando:
+a) Truncar se for muito grande (ex: seria razoável ter um campo texto com mais de mil caracteres?)
+b) Remover espaços em branco antes e no final (exceto se isso for realmente desejável)
+c) Fazer algum tratamento preliminar para substituir possível tag HTML misturada ao conteúdo.
+Ex: utilizando StringEscapeUtils.escapeHtml4
+d) Fazer algum tratamento preliminar para remover caracteres que não são 'visualizáveis' no padrão UTF8
+Ex: utilizando replaceAll("[^\\x20-\\x7e\r\n]", ".")
+e) Remover todas as quebras de linha
+Ex: utilizando replaceAll("[\r\n]", "")
+OBS: de preferência utilizar um método utilitário que faça todas essas transformações e seja chamado
+de diferentes partes do código.
+
+20 - Toda interface de usuário deve ser bem apresentável tanto em monitor de computador como em celular.
+
+21 - Os nomes dos arquivos templates HTML devem seguir o seguinte padrão:
+a) Se estiver relacionado à criação/inclusão, começar com 'create_' e indicar logo depois o que está
+sendo criado (ex: 'create_user.html')
+b) Se estiver relacionado à edição, começar com 'update_' e indicar logo depois o que está sendo
+editado (ex: 'update_user.html')
+c) Se estiver relacionado à visualização de detalhes de uma entidade, começar com 'view_' e indicar logo
+depois o que está sendo visualizado (ex: 'view_user.html')
+d) Se estiver relacionado à listagem em forma de tabela de vários registros do mesmo tipo, começar com 'list_'
+e indicar logo depois o nome do objeto da listagem (ex: 'list_user.html')
+
+
+22 - Todas as páginas de tabelas, com filtros e paginação, devem adotar um mesmo padrão que deve ser
+definido no início do projeto.
+
+23 - Todas as páginas envolvidas em CRUD devem adotar um mesmo padrão que deve ser definido no início
+do projeto.
+
+24 - Todos os modais devem ser componentes reutilizaveis e padronizados em toda aplicação:
+- Confirmação
+- Alerta
+- Configuração de filtros
+
+25 - Datas, datas/horas, meses, calendários, números, decimais, valores, devem ser localizados com a
+preferência do usuário
+
+26 - O código fonte em Java não deve possuir alertas (ex: alertas de variáveis não utilizadas) e
+o código javascript executado no navegador não deve produzir erros no console.
+
+27 - Toda entidade deve incluir um campo chamado 'timestamp' destinado a indicar a data/hora
+da criação ou da última alteração. Isso é importante para possibilitar a implementação de uma
+estratégia de replicação de bases incremental.
+Seguir este padrão se estiver escrevendo uma entidade armazenada no ElasticSearch:
+
+	@Field(type=Date, store = true, format = DateFormat.date_time)
+    private OffsetDateTime timestamp;
+
+
+28 - Todo repositório de entidades deve incluir um método 'saveWithTimestamp' e todo lugar no
+código que precisar criar ou alterar qualquer campo de qualquer entidade deve fazer uso
+deste método (isto é, não chamar diretamente o método 'save' que é produzido pelo Spring).
+De forma geral, cada repositório deve implementar o método desta forma (trocar XXXX pelo nome
+da classe da entidade à qual se refere o repositório):
+
+	default public <S extends XXXX> S saveWithTimestamp(S entity) {
+		entity.setTimestamp(LocalDateTime.now().atOffset(ZoneOffset.UTC));
+		return save(entity);
+	}
