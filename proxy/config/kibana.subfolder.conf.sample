@@ -1,0 +1,10 @@
+# Sample file for configuring a proxy location redirection for use of an external Kibana service
+# e.g. Amazon Elasticsearch Service
+
+location /_plugin/kibana {
+         proxy_pass https://${KIBANA_HOST}/_plugin/kibana/;
+         proxy_redirect off;
+         proxy_buffering off;
+         proxy_set_header Connection "Keep-Alive";
+         proxy_set_header Proxy-Connection "Keep-Alive";
+}

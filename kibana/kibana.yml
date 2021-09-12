@@ -1,0 +1,22 @@
+# Kibana default port number is 5601, but will use environment variable instead
+server.port: ${PORT}
+
+# Kibana will be accessible from outside
+server.host: 0.0.0.0
+
+# Specifies locale to be used for all localizable strings, dates and number formats.
+# Supported languages are the following: English - en , by default , Chinese - zh-CN .
+i18n.locale: "en"
+
+server.name: "my-kibana"
+server.ssl.enabled: false
+
+# The URLs of the Elasticsearch instances to use for all your queries.
+elasticsearch.hosts: ["http://es01:${ESPORT}"]
+
+# LOG file output (default is stdout)
+logging.dest: /usr/share/kibana/logs/kibana.log
+
+# Make Kibana accessible through reverse proxy with 'kibana' path in URL
+server.basePath: /kibana
+server.rewriteBasePath: true
