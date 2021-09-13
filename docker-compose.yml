@@ -1,0 +1,177 @@
+version: "3.8"
+services:
+  web:
+    container_name: web
+    build:
+      context: ./web
+    environment:
+      - PORT=8080
+      - "WEB_JVM_OPTS=-Xms4g -Xmx4g"
+#    ports:
+#      - "8080:8080"
+    depends_on:
+      - es01
+      - es02
+      - es03
+      - kibana
+    volumes:
+      - logdir_web:/var/log
+      - ./app_config_web:/app_config.properties:ro
+    configs:
+      - app_config_web
+    restart: always
+  validator:
+    container_name: validator
+    build:
+      context: ./validator
+    environment:
+      - PORT=8081
+      - "WEB_JVM_OPTS=-Xms2g -Xmx2g"
+#    ports:
+#      - "8081:8081"
+    depends_on:
+      - es01
+      - es02
+      - es03
+    volumes:
+      - logdir_validator:/var/log
+      - ./app_config_validator:/app_config.properties:ro
+    configs:
+      - app_config_validator
+    restart: always
+  etl:
+    container_name: etl
+    build:
+      context: ./etl
+    environment:
+      - PORT=8082
+      - "WEB_JVM_OPTS=-Xms2g -Xmx2g"
+#    ports:
+#      - "8082:8082"
+    depends_on:
+      - es01
+      - es02
+      - es03
+    volumes:
+      - logdir_etl:/var/log
+      - ./app_config_etl:/app_config.properties:ro
+    configs:
+      - app_config_etl
+    restart: always
+  es01:
+    container_name: es01
+    hostname: 'es01'
+    build:
+      context: ./es
+    environment:
+      - PORT=9200
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    ports:
+#      - "9200:9200"
+#      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    restart: always
+  es02:
+    container_name: es02
+    hostname: 'es02'
+    build:
+      context: ./es
+    environment:
+      - PORT=9200
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    ports:
+#      - "9201:9200"
+#      - "9301:9300"
+    volumes:
+      - es-data2:/usr/share/elasticsearch/data
+    restart: always
+  es03:
+    container_name: es03
+    hostname: 'es03'
+    build:
+      context: ./es
+    environment:
+      - PORT=9200
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    ports:
+#      - "9202:9200"
+#      - "9302:9300"
+    volumes:
+      - es-data3:/usr/share/elasticsearch/data
+    restart: always
+  kibana:
+    container_name: kibana
+    build:
+      context: ./kibana
+    environment:
+      - PORT=5601
+      - ESPORT=9200
+      - "NODE_OPTIONS=--max-old-space-size=4096"
+#    ports:
+#      - "5601:5601"
+    depends_on:
+      - es01
+      - es02
+      - es03
+    restart: always
+  proxy:
+    container_name: proxy
+    build:
+      context: ./proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - URL=${URL}
+      - SUBDOMAINS=
+#      - VALIDATION=http
+      - VALIDATION=duckdns
+      - DUCKDNSTOKEN=${DUCKDNSTOKEN}
+    cap_add:
+        - NET_ADMIN
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+volumes:
+  es-data:
+    driver: local
+  es-data2:
+    driver: local
+  es-data3:
+    driver: local
+  logdir_web:
+    driver: local
+  logdir_validator:
+    driver: local
+  logdir_etl:
+    driver: local
+    

@@ -39,3 +39,44 @@ ___
 ___
 
 ## Additional information
+
+### Setup EC2 instance at AWS (Amazon)
+
+1. Hardware requirements
+
+CPU: 4		Memory: 16 GB		Arch: x86_64	SO: Amazon Linux 2	Disk: 60 GB
+
+Suggested instance type: m4.xlarge + EBS volume
+
+2. Install GIT
+
+sudo yum update -y
+
+sudo yum install git
+
+3. Install docker
+
+sudo yum update -y
+
+sudo yum install docker -y
+
+sudo service docker start
+
+sudo usermod -a -G docker ec2-user
+
+sudo systemctl enable docker
+
+<logout and and login again>
+
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+sudo chmod +x /usr/local/bin/docker-compose
+
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+4. Clone GIT Repository
+
+git clone https://github.com/gustavohbf/cacao.git
+
+cd cacao
+
