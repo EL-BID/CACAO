@@ -33,9 +33,6 @@ RUN chmod +x $HOME/setup.sh
 # deploy web application
 COPY --from=MAVEN_TOOL_CHAIN /home/usr/app/target/cacao_web.jar $HOME/cacao_web.jar
 
-# copy remaining webapp static files
-COPY src/main/webapp $HOME/src/main/webapp
-
 ENV CATALINA_HOME=$HOME
 
 ENV ES_HOST=es01
