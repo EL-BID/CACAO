@@ -80,3 +80,6 @@ git clone https://github.com/gustavohbf/cacao.git
 
 cd cacao
 
+5. BUILD with Docker Compose
+
+docker-compose build
