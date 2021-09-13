@@ -74,6 +74,8 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
+sudo sysctl -w vm.max_map_count=262144
+
 4. Clone GIT Repository
 
 git clone https://github.com/gustavohbf/cacao.git
@@ -83,3 +85,7 @@ cd cacao
 5. BUILD with Docker Compose
 
 docker-compose build
+
+6. RUN with Docker Compose
+
+docker-compose up -d

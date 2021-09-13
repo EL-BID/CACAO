@@ -1,2 +1,2 @@
 #!/bin/bash
-/bin/tini -- /usr/local/bin/docker-entrypoint.sh eswrapper
+/bin/tini -s -- /usr/local/bin/docker-entrypoint.sh eswrapper
