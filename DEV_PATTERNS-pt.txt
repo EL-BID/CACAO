@@ -43,7 +43,7 @@ que possuem anotações diversas com configurações hardcoded) devem estar defi
 j) Pacotes adicionais podem ser criados para propósitos específicos (ex: pacote '/sec' para algo relacionado a segurança)
 k) Todo código HTML utilizado como 'template' para construção de páginas dinâmicas deve estar no diretório
 	src/main/resources/templates
-l) Todo fragmento de conteúdo HTML que é returilizado em diferentes páginas HTML deve estar no diretório
+l) Todo fragmento de conteúdo HTML que é reutilizado em diferentes páginas HTML deve estar no diretório
 	src/main/resources/templates/fragments
 m) Todo conteúdo estático JS, CSS, HTML, entre outros, deve estar em subdiretórios do diretório
 	src/main/webapp
