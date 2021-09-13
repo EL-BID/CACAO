@@ -11,8 +11,7 @@ RUN mvn --no-transfer-progress -B -f $HOME/pom.xml -s /usr/share/maven/ref/setti
 COPY src $HOME/src/
 
 # duplicate language properties bundle
-RUN cp $HOME/src/main/resources/messages.properties $HOME/src/main/resources/messages_pt.properties
-RUN cp $HOME/src/main/resources/messages.properties $HOME/src/main/resources/messages_br.properties
+RUN cp $HOME/src/main/resources/messages.properties $HOME/src/main/resources/messages_en.properties
 
 # compile and package web application
 RUN mvn --no-transfer-progress -B -f $HOME/pom.xml -s /usr/share/maven/ref/settings-docker.xml package -DskipTests
