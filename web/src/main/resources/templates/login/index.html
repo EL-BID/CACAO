@@ -19,10 +19,17 @@
 			<!-- Public Menu -->
 			<div th:replace="fragments/page_fragments :: publicMenu"></div>
 
-			<div class="ui text white container">
+			<div class="ui text white center container">
+				<!-- 
 				<h1 class="ui inverted header">
-					<img src="/images/logo.png" class="image"> <span th:text="#{app.name}">Application Name</span>
+					 <img src="/images/Cacao-logo.png" class="image"> <span th:text="#{app.name}">Application Name</span>  
 				</h1>
+				-->
+				<br> <!-- To avoid overlap from the menu. -->
+				<br>
+				<br> 
+
+				<img src="/images/Cacao-logo.png" class="ui large middle aligned image">
 				<h2 th:text="#{app.full.name}">Application Full Name</h2>
 				<div class="ui huge primary button startbtn" th:text="#{app.start}" id="startbtn">Start</div>
 			</div>
@@ -37,7 +44,7 @@
 						<p th:text="#{app.description}">Application Description</p>
 					</div>
 					<div class="six wide right floated column">
-						<img src="/images/logo.png" class="ui large rounded image">
+						<img src="/images/Cacao-logo.png" class="ui medium rounded image">
 					</div>
 				</div>
 			</div>
