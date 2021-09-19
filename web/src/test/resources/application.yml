@@ -1,0 +1,9 @@
+spring:
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      group-id: cacao
+    producer:
+      group-id: cacao
+test:
+  topic: cacao-test-topic
