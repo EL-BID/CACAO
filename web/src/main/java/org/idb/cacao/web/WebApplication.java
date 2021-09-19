@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
+import org.idb.cacao.web.controllers.services.FileProducerService;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,9 @@ public class WebApplication {
 	
 	@Autowired
 	private KeyStoreService keyStoreService;
+	
+	@Autowired
+	private FileProducerService fileProducerService;
 
 	/**
 	 * This is the entrypoint for the entire web application
@@ -64,6 +68,7 @@ public class WebApplication {
 	public void doSomethingBeforeStartup() {
 		
 		keyStoreService.assertKeyStoreForSSL();
+		//fileProducerService.sendBookkeepingFile();
 
 	}
 
