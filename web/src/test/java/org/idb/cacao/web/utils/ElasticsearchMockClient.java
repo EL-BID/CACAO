@@ -35,6 +35,7 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.LogManager;
 
 /**
@@ -131,7 +132,14 @@ public class ElasticsearchMockClient {
         )
         .respond(createIndex());
 		
-        
+        // Add document to index
+        this.mockServer.when(
+                HttpRequest.request()
+                	.withPath(".*/_doc")
+                	.withMethod("POST")
+        )
+        .respond(postDocument());
+
         // Check if index exists
         this.mockServer.when(
                 HttpRequest.request().withMethod("HEAD")
@@ -161,6 +169,30 @@ public class ElasticsearchMockClient {
 				return toHttpResponse(new JSONObject(map("acknowledged", true, "shards_acknowledged", true, "index", index_name)));
 			}    		
     	};
+    }
+    
+    private ExpectationResponseCallback postDocument() {
+       	return new ExpectationResponseCallback() {
+    			@Override
+    			public HttpResponse handle(HttpRequest request) throws Exception {
+    				String index_name = request.getPath().toString().split("/")[1];
+    				//MockedIndex mocked_index = map_indices.get(index_name);
+    				JSONObject response = new JSONObject(
+    				map("_shards", map("total", 1, 
+            				"successful", 1, 
+            				"skipped", 0, 
+            				"failed", 0),
+    					"_index", index_name,
+    					"_type", "_doc",
+    					"_id", UUID.randomUUID().toString(),
+    					"_version", 1,
+    					"_seq_no", 0,
+    					"_primary_term", 1,
+    					"result", "created")
+    				);
+    				return toHttpResponse(response);
+    			}    		
+        	};    	
     }
 	
     private ExpectationResponseCallback checkIndexExists() {
