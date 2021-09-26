@@ -5,5 +5,6 @@ spring:
       group-id: cacao
     producer:
       group-id: cacao
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 test:
   topic: cacao-test-topic

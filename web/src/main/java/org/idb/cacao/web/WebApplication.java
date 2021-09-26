@@ -28,6 +28,7 @@ import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.ServletComponentScan;
@@ -44,13 +45,13 @@ import org.springframework.context.event.EventListener;
 public class WebApplication {
 
 	static final Logger log = Logger.getLogger(WebApplication.class.getName());
-	
+
 	@Autowired
 	private UserService userService;
-	
+
 	@Autowired
 	private KeyStoreService keyStoreService;
-	
+
 	@Autowired
 	private FileProducerService fileProducerService;
 
@@ -60,15 +61,15 @@ public class WebApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(WebApplication.class, args);
 	}
-	
+
 	/**
 	 * Initialization code for the web application during SpringBoot initialization
 	 */
 	@PostConstruct
 	public void doSomethingBeforeStartup() {
-		
+
 		keyStoreService.assertKeyStoreForSSL();
-		//fileProducerService.sendBookkeepingFile();
+		// fileProducerService.sendBookkeepingFile();
 
 	}
 
@@ -77,22 +78,24 @@ public class WebApplication {
 	 */
 	@EventListener(ApplicationReadyEvent.class)
 	public void doSomethingAfterStartup() {
-		
 
-	    new Thread("StartupThread") {
-	    	{	setDaemon(true); }
-	    	public void run() {
-    			startupCode();
-	    	}
-	    }.start();
+		new Thread("StartupThread") {
+			{
+				setDaemon(true);
+			}
+
+			public void run() {
+				startupCode();
+			}
+		}.start();
 	}
 
 	/**
 	 * Do some initialization here
 	 */
 	public void startupCode() {
-		
+
 		userService.assertInitialSetup();
-		
+
 	}
 }
