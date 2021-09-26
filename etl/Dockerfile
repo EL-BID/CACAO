@@ -2,6 +2,7 @@ FROM maven:3.8.2-openjdk-11 AS MAVEN_TOOL_CHAIN
 ENV HOME=/home/usr/app
 RUN mkdir -p $HOME
 WORKDIR $HOME
+COPY settings-docker.xml /usr/share/maven/ref/settings-docker.xml
 COPY pom.xml $HOME
 
 # download all dependencies from MAVEN repository

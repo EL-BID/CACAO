@@ -4,6 +4,7 @@ services:
     container_name: web
     build:
       context: ./web
+      network: host      
     environment:
       - PORT=8080
       - "WEB_JVM_OPTS=-Xms4g -Xmx4g"
@@ -24,6 +25,7 @@ services:
     container_name: validator
     build:
       context: ./validator
+      network: host      
     environment:
       - PORT=8081
       - "WEB_JVM_OPTS=-Xms2g -Xmx2g"
@@ -43,6 +45,7 @@ services:
     container_name: etl
     build:
       context: ./etl
+      network: host      
     environment:
       - PORT=8082
       - "WEB_JVM_OPTS=-Xms2g -Xmx2g"

@@ -14,14 +14,6 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
-  
-  <repositories>
-    <repository>
-      <id>maven-group</id>
-      <url>http://my-nexus:8081/repository/maven-central/</url>
-    </repository>
-  </repositories>
-  
   <modules>
   	<module>proxy</module>
 	<module>web</module>
