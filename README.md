@@ -76,6 +76,8 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
+echo 'vm.max_map_count=262144' >> /etc/sysctl.conf
+
 sudo sysctl -w vm.max_map_count=262144
 
 4. Clone GIT Repository
