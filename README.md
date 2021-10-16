@@ -92,6 +92,28 @@ When prompted, confirm the option for 'anonymous access' to the repository (othe
   
 ___
 
+## How to Setup Google Authentication (Login with Google)
+
+- Create a Google account and create a Project (see https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+- Create OAuth2 credentials in Credentials Page
+  - Go to this link and create a new OAuth2 token: https://console.developers.google.com/apis/credentials
+  - Set a redirect UI following this pattern (change only domain name if necessary, keep the rest of this URI): https://cacaoidb.duckdns.org/login/oauth2/code/google
+  - If also using for development environment, also include the following URL for authorized redirections: https://127.0.0.1:8888
+- Fill forms and require an API TOKEN for using Google Authentication (see https://developers.google.com/identity/protocols/oauth2/openid-connect and https://console.developers.google.com/apis/credentials). In order to accomplish this, you will need:
+  - Logo of the application
+  - Registered public domain name
+  - Link for 'terms of use' of the application
+  - Link for 'privacy policy' of the application
+  - Several other information
+- Take note of these information and keep secret (do not publish anywhere):
+  - Application ID (client)
+  - Secret
+- You must inform these information in the configuration file 'app_config', at the deployment environment, accessible only by root user
+  - spring.security.oauth2.client.registration.google.client-id=<copy here you application ID from Google>
+  - spring.security.oauth2.client.registration.google.client-secret=<copy here your secret from Google>
+  
+___
+
 ## How to DEPLOY
 
 ___
