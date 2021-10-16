@@ -40,3 +40,4 @@ build/
 /temp
 /target
 app_config
+.env

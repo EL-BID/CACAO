@@ -1,4 +1,4 @@
-package org.idb.cacao.web;
+package org.idb.cacao.validator;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
