@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Sidebar Menu -->
+	<th:block th:unless="${logged_area}">
+		<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+	</th:block>
+	<div class="pusher">
+		<!-- Public Menu -->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+			<!-- Fix to avoid overlap from the Menu -->
+			<div>
+				<br>
+				<br>
+				<br>
+			</div>
+		</th:block>
+		<br>
+<div class="ui text white container">
+	<div class="ui tab active" data-tab="individual">
+	<h1>License</h1>
+	<p>This software is licensed accordingly to the MIT license.</p>
+	<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+	<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+	<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+	<p></p>
+	<h1>Third-party Licenses</h1>
+	<p>This software uses third-party components, distributed accordingly to their own licenses, as follows:</p>
+	<p></p>
+	<p>The MIT License (MIT) </p>
+	<p><a href="https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a></p>
+	<p></p>
+	<p>Apache License, Version 2.0</p>
+	<p><a href="https://www.apache.org/licenses/LICENSE-2.0.html">https://www.apache.org/licenses/LICENSE-2.0.html</a></p>
+	<p></p>
+	<p>BSD 3-clause License </p>
+	<p><a href="https://opensource.org/licenses/BSD-3-Clause">https://opensource.org/licenses/BSD-3-Clause</a></p>
+	<p></p>
+	<p>Mozilla Public Licence (MPL) 2.0 </p>
+	<p><a href="https://www.mozilla.org/en-US/MPL/2.0/">https://www.mozilla.org/en-US/MPL/2.0/</a></p>
+	<p></p>
+	<p>Common Development and Distribution License (CDDL) 1.1</p>
+	<p><a href="https://spdx.org/licenses/CDDL-1.1">https://spdx.org/licenses/CDDL-1.1</a></p>
+	<p></p>
+	<p>GNU General Public License (GPL) v.2  with Classpath Exception</p>
+	<p><a href="https://openjdk.java.net/legal/gplv2+ce.html">https://openjdk.java.net/legal/gplv2+ce.html</a></p>
+	<p></p>
+	<p>Eclipse Distribution License - v 1.0</p>
+	<p><a href="https://www.eclipse.org/org/documents/edl-v10.php">https://www.eclipse.org/org/documents/edl-v10.php</a></p>
+	<p></p>
+	<p>Eclipse Public License 1.0 and 2.0</p>
+	<p><a href="https://www.eclipse.org/legal/epl-2.0/">https://www.eclipse.org/legal/epl-2.0/</a></p>
+	<p></p>
+	<p>Bouncy Castle Licence</p>
+	<p><a href="https://www.bouncycastle.org/licence.html">https://www.bouncycastle.org/licence.html</a></p>
+	<p></p>
+	<p>The JSON License</p>
+	<p><a href="http://www.json.org/license.html">http://www.json.org/license.html</a></p>
+	<p></p>
+	<p>Creative Commons Zero (CC0)</p>
+	<p><a href="https://creativecommons.org/publicdomain/zero/1.0/legalcode">https://creativecommons.org/publicdomain/zero/1.0/legalcode</a></p>
+	
+	</div>
+</div>		
+		<!-- Footer -->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: footer"></div>
+		</th:block>
+	<!-- Language Javascript -->
+	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+</body>
+</html>

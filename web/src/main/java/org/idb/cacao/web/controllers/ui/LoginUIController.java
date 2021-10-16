@@ -66,28 +66,10 @@ public class LoginUIController {
 		return "login/forgetPassword";
 	}
 
-	@GetMapping("/privacy")
-	public String showPrivacy(Model model) {
-
-		return "legal/privacy";
-	}
-
-	@GetMapping("/license")
-	public String showLicense(Model model) {
-
-		return "legal/license";
-	}
-
 	@GetMapping("/institutional")
 	public String showInstitutional(Model model) {
 
 		return "legal/institutional";
-	}
-
-	@GetMapping("/terms")
-	public String showTerms(Model model) {
-
-		return "legal/terms";
 	}
 
 	@GetMapping("/home")

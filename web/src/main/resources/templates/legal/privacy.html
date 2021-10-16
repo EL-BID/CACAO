@@ -1,0 +1,128 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+
+<!-- Sidebar Menu -->
+	<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+
+<div class="pusher">
+
+<!-- Public Menu -->
+			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+
+	<!-- Fix to avoid overlap from the menu -->
+    <div class="ui large aligned">
+      <div class="row">
+      	<br><br><br><br><br>
+      </div>
+    </div>
+
+<div class="ui text white container">
+	<div class="ui tab active" data-tab="individual" th:switch="${#locale.language}">
+	
+	
+	<!-- Case language is set to English -->	
+	<div th:case="en">
+	
+	<h1>Privacy Policy</h1>
+	<p>Your privacy is important to us. It is CACAO's policy to respect your privacy in relation to any information you may provide on the CACAO website.</p>
+	<p>We only ask for personal information when we really need you to provide. We do so by fair and legal means, with your knowledge. We also let you know why we are collecting and how it is going to be used.</p>
+	<p>We only retain the information collected for as long as necessary to provide the requested service. When we store data, we protect within commercially acceptable means to prevent loss and theft, as well as unauthorized access, disclosure, copying, use or modification.</p>
+	<p>We do not share personally identifiable information publicly or with third parties, except under the law.</p>
+	<p>Our site may have links to external websites that are not operated by us. Please note that we have no control over the content and practices of these sites and cannot take responsibility for their privacy policies.</p>
+	<p>If you have any questions about how we handle user data and personal information, please contact us.</p>
+	
+	<h3 class="ui header">CACAO Cookies Policy</h3>
+	<p>What are cookies?</p>
+	<p>As is common practice on almost all professional websites, this site uses cookies, which are small files downloaded to your computer, to improve your experience. This page describes the information we collect and how we use it.</p>
+	<p>How do we use cookies?</p>
+	<p>We use cookies to access user CACAO's session and access your account information. These cookies will be deleted when you leave the system, that is, they will not be stored.</p>
+	
+	<h3 class="ui header">User Commitment</h3>
+	<p>The user undertakes to make proper use of the content and information that CACAO offers on the website and with an enunciative character, but not limited:</p>
+	<p>A) Do not engage in illegal activities or contrary to good faith to public order;</p>
+	<p>B) Do not disclose content or propaganda of a racist, xenophobic nature, online gambling, illegal pornography, apology to terrorism or against human rights;</p>
+	<p>C) Do not cause damage to CACAO's physical systems (hardware) and software, its suppliers or third parties, to introduce or disclose computer viruses or any other hardware or software systems that are capable of causing the above mentioned damage.</p>
+	<p>This policy is in force from September 2021.</p>
+	<p />
+	
+	</div>
+	
+	<!-- Case language is set to French -->	
+	<div th:case="fr">
+	<h1>Politique de confidentialité</h1>
+	<p>Votre vie privée est importante pour nous. La politique de CACAO est de respecter votre vie privée en ce qui concerne toute information que vous pourriez fournir sur le site web de CACAO.
+	<p>Nous ne demandons des informations personnelles que lorsque nous avons vraiment besoin que vous les fournissiez. Nous le faisons par des moyens équitables et légaux, à votre connaissance. Nous vous informons également de la raison pour laquelle nous collectons des informations et de l'usage qui en sera fait.</p>
+	<p>Nous ne conservons les informations collectées que pendant la durée nécessaire à la fourniture du service demandé. Lorsque nous stockons des données, nous les protégeons par des moyens commercialement acceptables afin d'éviter la perte et le vol, ainsi que l'accès, la divulgation, la copie, l'utilisation ou la modification non autorisés.</p>
+	<p>Nous ne partageons pas d'informations personnelles identifiables publiquement ou avec des tiers, sauf en vertu de la loi.</p>
+	<p>Notre site peut avoir des liens vers des sites web externes qui ne sont pas gérés par nous. Veuillez noter que nous n'avons aucun contrôle sur le contenu et les pratiques de ces sites et que nous ne pouvons pas assumer la responsabilité de leurs politiques de confidentialité.</p>
+	<p>Si vous avez des questions sur la manière dont nous traitons les données des utilisateurs et les informations personnelles, veuillez nous contacter.</p>
+           	
+	<h3 class="ui header">Politique de CACAO en matière de cookies</h3>
+	<p>Qu'est-ce que les cookies ?
+	<p>Comme c'est la pratique courante sur presque tous les sites web professionnels, ce site utilise des cookies, qui sont de petits fichiers téléchargés sur votre ordinateur, pour améliorer votre expérience. Cette page décrit les informations que nous recueillons et la façon dont nous les utilisons.
+	<p>Comment utilisons-nous les cookies ?
+	<p>Nous utilisons des cookies pour accéder à la session de l'utilisateur CACAO et aux informations de votre compte. Ces cookies seront effacés lorsque vous quitterez le système, c'est-à-dire qu'ils ne seront pas stockés.</p>
+
+	<h3 class="ui header">Engagement de l'utilisateur</h3>
+	<p>L'utilisateur s'engage à faire un usage approprié du contenu et des informations que CACAO propose sur le site web et qui ont un caractère énonciatif, mais sans s'y limiter:</p>
+	<p>A) Ne pas se livrer à des activités illégales ou contraires à la bonne foi et à l'ordre public;</p>
+	<p>B) Ne divulguez pas de contenu ou de propagande de nature raciste, xénophobe, de jeux d'argent en ligne, de pornographie illégale, d'apologie du terrorisme ou contre les droits de l'homme;</p>
+	<p>C) Ne pas causer de dommages aux systèmes physiques (matériel) et logiciels de CACAO, de ses fournisseurs ou de tiers, pour introduire ou divulguer des virus informatiques ou tout autre système matériel ou logiciel capable de causer les dommages susmentionnés.</p>
+	<p>Cette politique est en vigueur à partir de septembre 2021.</p>
+
+	<p />
+	
+	</div>
+	
+	<!-- Case language is set to Portuguese -->	
+	<div th:case="pt">
+	<h1>Política de Privacidade</h1>
+	<p>A sua privacidade é importante para nós. É política do site CACAO respeitar a sua privacidade em relação a qualquer informação que possa recolher no site CACAO.</p>
+	<p>Só pedimos informações pessoais quando realmente precisamos que lhe forneça um serviço. Fazemo-lo por meios justos e legais, com o seu conhecimento. Também lhe deixamos saber porque estamos a recolher e como será usado.</p>                                       
+	<p>Apenas conservamos a informação recolhida durante o tempo necessário para prestar o serviço solicitado. Quando armazenamos dados, protegemos dentro de meios comercialmente aceitáveis para prevenir perdas e roubos, bem como acesso não autorizado, divulgação, cópia, uso ou modificação.</p>                    
+	<p>Não partilhamos informações pessoalmente identificáveis publicamente ou com terceiros, exceto nos termos da lei.                    </p>
+	<p>O nosso site pode ter links para sites externos que não são operados por nós. Tenha em atenção que não temos qualquer controle sobre o conteúdo e práticas destes sites e não pode assumir a responsabilidade pelas respetivas políticas de privacidade.</p>                                        
+	<p>Se tiver alguma dúvida sobre como lidamos com os dados dos utilizadores e informações pessoais, contacte-nos.</p>                    
+	
+	<h3 class="ui header">Política de Cookies CACAO</h3>
+	<p>O que são cookies?</p>
+	<p>Como é prática comum em quase todos os sites profissionais, este site utiliza cookies, que são pequenos arquivos descarregados para o seu computador, para melhorar a sua experiência. Esta página descreve a informação que recolhem e como  a utilizamos.</p>                    
+	<p>Como usamos cookies?                   </p>
+	<p>Utilizamos cookies para acesso à sessão do usuário CACAO e acesso à informação da sua conta.   Estes cookies serão eliminados quando sair do sistema, ou seja, não serão armazenados.</p>                    
+	
+	<h3 class="ui header">Compromisso do Usuário</h3>
+	<p>O usuário compromete-se a fazer o uso adequado dos conteúdos e informações que o site CACAO oferece no website e com um carácter enunciativo, mas não limitado:</p>                                                                
+	<p>A) Não praticar atividades ilegais ou contrárias à boa fé à ordem pública;</p>
+	<p>B) Não divulgar conteúdo ou propaganda de natureza racista, xenófoba, jogo online, pornografia ilegal, pedido de desculpas ao terrorismo ou contra os direitos humanos;</p>                        
+	<p>C) Não cause danos nos sistemas físicos (hardware) e software (software) do site CACAO, seus fornecedores ou terceiros, para introduzir ou divulgar vírus informáticos ou quaisquer outros sistemas de hardware ou software que sejam capazes de causar danos acima mencionados.</p>                                                           
+	<p>Esta política está em vigor a partir de setembro/2021.</p>
+	<p />
+	
+	</div>
+	
+	
+	<!-- Case language is set to Spanish -->	
+	<div th:case="sp">
+	<p>TODO:</p>	
+	</div>
+	
+	</div>
+</div>
+
+<!-- Footer -->
+	<div th:replace="fragments/page_fragments :: footer"></div>
+
+	</div>
+
+
+<!-- Language Javascript -->
+<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+
+</body>
+</html>

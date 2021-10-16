@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Sidebar Menu -->
+	<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+	<div class="pusher">
+		<!-- Public Menu -->
+		<div th:replace="fragments/page_fragments :: publicMenu"></div>
+		<!-- Fix to avoid overlap from the menu -->
+		<div class="ui large aligned">
+			<div class="row">
+				<br>
+				<br>
+				<br>
+				<br>
+				<br>
+			</div>
+		</div>
+		<div class="ui text white container">
+			<div class="ui tab active" data-tab="individual" th:switch="${#locale.language}">
+				<!-- Case language is set to English -->
+				<div th:case="en">
+					<h1>Terms of Use</h1>
+					<div class="ui ordered list">
+						<div class="item">
+							<h3 class="ui header">Terms</h3>
+							<p>By accessing the CACAO website, you agree to abide by these terms of service, all applicable laws and regulations and agree that you are responsible for compliance
+								with all applicable local laws. If you do not agree to any of these terms, you are prohibited from using or accessing this site. The materials contained on this site are
+								protected by applicable copyright and trademark laws.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">License Use</h3>
+							<p>Permission is granted to temporarily download a copy of the materials (information or software) on the CACAO website, for personal and non-commercial transient
+								viewing only. This is the granting of a license, not a security transfer, and under this license you may not:</p>
+							<ul>
+								<li class="item">modify or copy the materials;</li>
+								<li class="item">use the materials for any commercial purpose or for public display (commercial or non-commercial);</li>
+								<li class="item">attempt to decompile or reverse engineer any software contained on the CACAO website;</li>
+								<li class="item">remove any copyright or other notations owned by the materials; Or</li>
+								<li class="item">transfer the materials to another person or 'mirrorair'the materials on any other server.</li>
+							</ul>
+							<p>This license will be automatically terminated if you violate any of these restrictions and may be terminated by CACAO at any time. When you close the viewing of
+								these materials or after the termination of this license, you must delete all downloaded materials in your possession, whether in electronic or printed form.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Limitations</h3>
+							<p>In no event shall CACAO or its suppliers be liable for any damages (including, without limitation, damage for loss of data or profit or due to business
+								interruption) arising from the use or inability to use the materials in CACAO. Because some jurisdictions do not allow limitations on implied warranties, or limitations
+								of liability for consequential or incidental damages, these limitations may not apply to you.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Precision of materials</h3>
+							Materials displayed on the CACAO website may include technical, typographical or photographic errors. CACAO may make changes to the materials contained on its website
+							at any time without notice.
+						</div>
+						<div class="item">
+							<h3 class="ui header">Links</h3>
+							<p>CACAO has not reviewed all sites linked to your site and is not responsible for the content of any linked sites. The inclusion of any link does not imply
+								endorsement by CACAO of the site. The use of any linked site is at the user's own risk.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Modifications</h3>
+							<p>CACAO may revise these site terms of service at any time without notice. By using this site, you agree to be bound by the current version of these terms of
+								service.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Applicable law</h3>
+							<p>These terms and conditions are governed by and construed in accordance with the laws of CACAO and you irrevocably submit to the exclusive jurisdiction of the
+								courts in that state or locality.</p>
+							<p />
+						</div>
+					</div>
+				</div>
+				<!-- Case language is set to French -->
+				<div th:case="fr">
+					<h1>Conditions d'utilisation</h1>
+					<div class="ui ordered list">
+						<div class="item">
+							<h3 class="ui header">Termes</h3>
+							<p>En accédant au site web de CACAO, vous acceptez de respecter les présentes conditions de service, toutes les lois et règlements applicables et acceptez que vous
+								soyez responsable du respect toutes les lois locales applicables. Si vous n'acceptez pas l'une de ces conditions, il vous est interdit d'utiliser ou d'accéder à ce site.
+								Les documents contenus sur ce site sont protégés par les lois applicables en matière de droits d'auteur et de marques commerciales.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Licence Use</h3>
+							<p>L'autorisation est accordée de télécharger temporairement une copie des documents (informations ou logiciel) sur le site web de CACAO, pour un visionnage personnel
+								et non commercial transitoire seulement. Il s'agit de l'octroi d'une licence, et non d'un transfert de garantie, et dans le cadre de cette licence vous ne pouvez pas:</p>
+							<ul>
+								<li class="item">modifier ou copier les documents;</li>
+								<li class="item">utiliser les matériaux à des fins commerciales ou pour une présentation publique (commercial ou non commercial);</li>
+								<li class="item">tentative de décompilation ou d'ingénierie inverse de tout logiciel contenu dans le Site web de CACAO;</li>
+								<li class="item">supprimer tout droit d'auteur ou toute autre mention concernant les documents ; ou</li>
+								<li class="item">transférer le matériel à une autre personne ou "mirrorair" le matériel sur tout autre serveur.</li>
+							</ul>
+							<p>Cette licence sera automatiquement résiliée si vous enfreignez l'une de ces restrictions et peut être résilié par CACAO à tout moment. Lorsque vous fermez le
+								visionnage de ces ou après l'expiration de cette licence, vous devez supprimer tous les les documents en votre possession, sous forme électronique ou imprimée.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Limitations</h3>
+							<p>En aucun cas, CACAO ou ses fournisseurs ne pourront être tenus pour responsables de dommages (y compris, sans limitation, dommages pour perte de données ou de
+								bénéfices ou en raison d'une interruption d'activité) survenant de l'utilisation ou de l'impossibilité d'utiliser les matériaux à CACAO. Parce que certaines juridictions
+								ne permettent pas de limiter les garanties implicites, ni les limitations de responsabilité pour dommages indirects ou accessoires, ces limitations peuvent ne pas
+								s'appliquer à vous.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Précision des matériaux</h3>
+							Les documents affichés sur le site web de CACAO peuvent être de nature technique, typographique ou des erreurs photographiques. CACAO peut apporter des modifications
+							aux documents contenus sur son site web à l'adresse à tout moment et sans préavis.
+						</div>
+						<div class="item">
+							<h3 class="ui header">Liens</h3>
+							<p>CACAO n'a pas examiné tous les sites liés à votre site et n'est pas responsable de la le contenu de tout site lié. L'inclusion d'un lien n'implique pas
+								l'approbation par CACAO du site. L'utilisation de tout site lié est aux risques et périls de l'utilisateur.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Modifications</h3>
+							<p>CACAO peut réviser ces conditions de service du site à tout moment sans préavis. En utilisant ce vous acceptez d'être lié par la version actuelle des présentes
+								conditions d'utilisation.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Loi applicable</h3>
+							<p>Ces conditions sont régies et interprétées conformément aux lois de CACAO et vous vous soumettez irrévocablement à la compétence exclusive des tribunaux en ce qui
+								concerne état ou localité.</p>
+							<p />
+						</div>
+					</div>
+				</div>
+				<!-- Case language is set to Portuguese -->
+				<div th:case="pt">
+					<h1>Termos de Utilização</h1>
+					<div class="ui ordered list">
+						<div class="item">
+							<h3 class="ui header">Termos</h3>
+							<p>Ao acessar o website CACAO, concorda em respeitar estes termos de serviço, todas as leis e regulamentos aplicáveis e concorda que é responsável pelo cumprimento
+								de todas as leis locais aplicáveis. Se não concordar com nenhum destes termos, está proibido de usar ou acessar este site. Os materiais contidos neste site estão
+								protegidos pelas leis aplicáveis em matéria de direitos de autor e de marca.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Utilização de Licenças</h3>
+							<p>É concedida autorização para descarregar temporariamente uma cópia dos materiais (informações ou software) no website CACAO, apenas para visualização
+								transitória pessoal e não comercial. Esta é a concessão de uma licença, não de uma transferência de segurança, e sob esta licença não pode:</p>
+							<ul>
+								<li class="item">Modificar ou copiar os materiais;</li>
+								<li class="item">utilizar os materiais para qualquer finalidade comercial ou para exibição pública (comercial ou não comercial);</li>
+								<li class="item">tentar descompilar ou reverter qualquer software contido no website CACAO;</li>
+								<li class="item">remover quaisquer direitos de autor ou outras notações pertencentes aos materiais; ou</li>
+								<li class="item">transferir os materiais para outra pessoa ou 'espelhar' os materiais em qualquer outro servidor.</li>
+							</ul>
+							<p>Esta licença será automaticamente terminada se violar alguma destas restrições e pode ser terminada por CACAO a qualquer momento. Ao fechar a visualização destes
+								materiais ou após o fim desta licença, deve apagar todos os materiais descarregados na sua posse, seja em formato eletrónico ou impresso.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Limitações</h3>
+							<p>Em caso algum CACAO ou os seus fornecedores serão responsáveis por quaisquer danos (incluindo, sem limitação, danos por perda de dados ou lucros ou devido a
+								interrupção de negócios) decorrentes da utilização ou incapacidade de utilização dos materiais em CACAO. Uma vez que algumas jurisdições não permitem limitações em
+								garantias implícitas, ou limitações de responsabilidade por danos consequenciais ou incidentais, estas limitações podem não se aplicar a si.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Precisão de materiais</h3>
+							<p>Os materiais apresentados no site CACAO podem incluir erros técnicos, tipográficos ou fotográficos. CACAO pode fazer alterações aos materiais contidos no
+								seu website a qualquer momento sem aviso prévio.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Ligações</h3>
+							<p>CACAO não reviu todos os sites ligados ao seu site e não é responsável pelo conteúdo de quaisquer sites ligados. A inclusão de qualquer ligação não implica o
+								endosso por CACAO do site. A utilização de qualquer site ligado é por conta própria do utilizador.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Modificações</h3>
+							<p>CACAO pode rever estes termos de serviço do site a qualquer momento sem aviso prévio. Ao utilizar este site, concorda em ficar vinculado à versão atual destes
+								termos de serviço.</p>
+						</div>
+						<div class="item">
+							<h3 class="ui header">Lei aplicável</h3>
+							<p>Estes termos e condições são regidos e interpretados de acordo com as leis de CACAO e submete-se irrevogavelmente à jurisdição exclusiva dos tribunais desse estado
+								ou localidade.</p>
+							<p />
+						</div>
+					</div>
+				</div>
+				<!-- Case language is set to Spanish -->
+				<div th:case="sp">
+					<p>TODO:</p>	
+				</div>
+			</div>
+		</div>
+		<!-- Footer -->
+		<div th:replace="fragments/page_fragments :: footer"></div>
+	</div>
+	<!-- Language Javascript -->
+	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+</body>
+</html>
