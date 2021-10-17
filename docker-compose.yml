@@ -15,7 +15,7 @@ services:
       - es02
       - es03
       - kibana
-      - kafka
+#      - kafka
     volumes:
       - logdir_web:/var/log
       - ./app_config_web:/app_config.properties:ro
