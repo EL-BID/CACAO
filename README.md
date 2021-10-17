@@ -12,19 +12,17 @@ For running the web component locally at a development desktop with minimal setu
 
 1. Install, configure and start a node of ElasticSearch (version 7.14.1) locally. At least one node should be enough.
 
-2. Install, configure and start a kafka server locally. Download the docker-compose.yml from https://raw.githubusercontent.com/confluentinc/cp-all-in-one/6.2.0-post/cp-all-in-one/docker-compose.yml and run docker-compose up -d
+2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 
-3. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
-
-4. Run the application using developer application properties, referring to the property file using command line arguments. You may use the internal file 'dev.properties' like this:
+3. Run the application using developer application properties, referring to the property file using command line arguments. You may use the internal file 'dev.properties' like this:
 
 > --spring.config.additional-location=classpath:dev.properties
 
-5. Access the front page using your browser. Confirm/bypass the security warning related to the unsafe self-signed certificate being used with the developer configuration.
+4. Access the front page using your browser. Confirm/bypass the security warning related to the unsafe self-signed certificate being used with the developer configuration.
 
 > https://127.0.0.1:8888/
 
-6. For a initial empty database, use the following login credentials:
+5. For a initial empty database, use the following login credentials:
 
 > Login: admin@admin
 >
