@@ -164,7 +164,7 @@ public class SystemUIController {
 		}
 		
 		ComponentSystemInformation info = responseEntity.getBody();
-		collectInfoForComponent(info, "sysinfo.etl.app", collect);
+		collectInfoForComponent(info, "sysinfo.validator.app", collect);
 		
 	}
 
