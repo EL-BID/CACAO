@@ -42,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -61,6 +62,9 @@ import static org.idb.cacao.web.utils.StringUtils.*;
 public class SystemUIController {
 
 	static final Logger log = Logger.getLogger(SystemUIController.class.getName());
+
+	@Autowired
+	private Environment env;
 
     @Autowired
     private MessageSource messages;
@@ -121,7 +125,10 @@ public class SystemUIController {
 	 */
 	public void collectInfoForETLComponent(MenuItem collect) {
 		
-		String url = "http://etl:8080/api/sys_info";
+		String url = String.format("http://%s:%s/api/sys_info", 
+				env.getProperty("etl.host"), 
+				env.getProperty("etl.port"));
+
 		ResponseEntity<ComponentSystemInformation> responseEntity;
 		try {
 			responseEntity = restTemplate.getForEntity(new URI(url), ComponentSystemInformation.class);
@@ -142,7 +149,10 @@ public class SystemUIController {
 	 */
 	public void collectInfoForValidatorComponent(MenuItem collect) {
 		
-		String url = "http://validator:8080/api/sys_info";
+		String url = String.format("http://%s:%s/api/sys_info", 
+				env.getProperty("validator.host"), 
+				env.getProperty("validator.port"));
+		
 		ResponseEntity<ComponentSystemInformation> responseEntity;
 		try {
 			responseEntity = restTemplate.getForEntity(new URI(url), ComponentSystemInformation.class);
