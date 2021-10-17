@@ -3,6 +3,8 @@ services:
   web:
     container_name: web
     build:
+      args:
+        - USE_PROXY
       context: ./web
       network: host      
     environment:
@@ -25,6 +27,8 @@ services:
   validator:
     container_name: validator
     build:
+      args:
+        - USE_PROXY
       context: ./validator
       network: host      
     environment:
@@ -45,6 +49,8 @@ services:
   etl:
     container_name: etl
     build:
+      args:
+        - USE_PROXY
       context: ./etl
       network: host      
     environment:

@@ -23,12 +23,10 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
-import org.idb.cacao.web.controllers.services.FileProducerService;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.ServletComponentScan;
@@ -51,9 +49,6 @@ public class WebApplication {
 
 	@Autowired
 	private KeyStoreService keyStoreService;
-
-	@Autowired
-	private FileProducerService fileProducerService;
 
 	/**
 	 * This is the entrypoint for the entire web application
