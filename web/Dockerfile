@@ -6,7 +6,8 @@ COPY settings-docker.xml /usr/share/maven/ref/settings-docker.xml
 COPY pom.xml $HOME
 
 # download all dependencies from MAVEN repository
-RUN mvn --no-transfer-progress -B -f $HOME/pom.xml -s /usr/share/maven/ref/settings-docker.xml dependency:go-offline
+ARG MVN_ARGS=${USE_PROXY:+'-s /usr/share/maven/ref/settings-docker.xml'}
+RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} dependency:go-offline
 
 # copy web application source code
 COPY src $HOME/src/
@@ -15,7 +16,7 @@ COPY src $HOME/src/
 RUN cp $HOME/src/main/resources/messages.properties $HOME/src/main/resources/messages_en.properties
 
 # compile and package web application
-RUN mvn --no-transfer-progress -B -f $HOME/pom.xml -s /usr/share/maven/ref/settings-docker.xml package -DskipTests
+RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} package -DskipTests
 
 FROM openjdk:11
 

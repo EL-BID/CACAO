@@ -1,4 +1,4 @@
-package org.idb.cacao.web;
+package org.idb.cacao.etl;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -6,9 +6,8 @@ import static org.hamcrest.MatcherAssert.*;
 
 import java.util.concurrent.TimeUnit;
 
-import org.idb.cacao.web.utils.ElasticsearchMockClient;
-import org.idb.cacao.web.utils.KafkaMockConsumer;
-import org.idb.cacao.web.utils.KafkaMockProducer;
+import org.idb.cacao.etl.utils.KafkaMockConsumer;
+import org.idb.cacao.etl.utils.KafkaMockProducer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,8 +22,6 @@ import org.springframework.test.annotation.DirtiesContext;
 @EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 class EmbeddedKafkaIntegrationTest {
 
-	private static ElasticsearchMockClient mockElastic;
-
 	@Autowired
 	private KafkaMockConsumer consumer;
 
@@ -37,16 +34,10 @@ class EmbeddedKafkaIntegrationTest {
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
-
-		int port = ElasticsearchMockClient.findRandomPort();
-		mockElastic = new ElasticsearchMockClient(port);
-		System.setProperty("es.port", String.valueOf(port));
 	}
 
 	@AfterAll
 	public static void afterClass() {
-		if (mockElastic != null)
-			mockElastic.stop();
 	}
 
 	@Test
