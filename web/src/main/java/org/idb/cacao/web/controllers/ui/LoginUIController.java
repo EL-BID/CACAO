@@ -20,6 +20,7 @@
 package org.idb.cacao.web.controllers.ui;
 
 import java.util.Collections;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -39,6 +40,8 @@ import org.springframework.web.bind.annotation.GetMapping;
  */
 @Controller
 public class LoginUIController {
+
+	static final Logger log = Logger.getLogger(LoginUIController.class.getName());
 
 	@Autowired
 	private Environment env;
@@ -78,7 +81,9 @@ public class LoginUIController {
 		// TODO: should return a hierarchy of menu items
 		model.addAttribute("menu", Collections.emptyList());
 		
-		String first_page_child_frame = "/bulletin_board";
+		// TODO: should present the first page for taxpayers and tax administrators
+		//String first_page_child_frame = "/bulletin_board";
+		String first_page_child_frame = "/sys_info";
 
 		model.addAttribute("first_page_child_frame", first_page_child_frame);
 

@@ -19,11 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.web;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
 import org.idb.cacao.web.controllers.services.KeyStoreService;
+import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -31,6 +33,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 
 /**
  * SpringBoot WebApplication entry point.
@@ -49,6 +52,12 @@ public class WebApplication {
 
 	@Autowired
 	private KeyStoreService keyStoreService;
+
+	@Autowired
+	private ResourceMonitorService resourceMonitorService;
+
+	@Autowired
+	private Environment env;
 
 	/**
 	 * This is the entrypoint for the entire web application
@@ -91,6 +100,15 @@ public class WebApplication {
 	public void startupCode() {
 
 		userService.assertInitialSetup();
+
+		try {
+			if ("true".equalsIgnoreCase(env.getProperty("resource.monitor"))) {
+				resourceMonitorService.start();
+			}
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
 
 	}
 }

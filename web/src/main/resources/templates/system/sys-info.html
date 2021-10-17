@@ -1,0 +1,33 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<div class="ui middle aligned center container">
+			<div th:if="${message!=null}" class="ui warning message" th:text="${message}">Warning</div>
+			<h2 class="ui header">
+				<i class="cogs icon"></i>
+				<div class="content" th:text="#{sysinfo}">System Information</div>
+			</h2>
+			<div class="ui orange segment">
+				<div class="ui styled fluid accordion">
+					<section th:include="@{fragments/tree} :: menu" th:with="menuItemsList=${info}"></section>
+				</div>
+			</div>
+		</div>
+	</div>
+<script th:nonce="${cspNonce}">
+$('.ui.accordion')
+.accordion();
+;
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+    <section th:fragment="menu">
+		<section th:each="menuItem : ${menuItemsList}">
+		<div th:class="${menuItem.active} ? 'active title' : 'title'" class="title" th:if="${menuItem.children!=null and !menuItem.children.empty}">
+			<i class="dropdown icon"></i>
+			<span th:text="${menuItem.name}"></span>
+		</div>
+		<div th:class="${menuItem.active} ? 'active content' : 'content'" class="content">
+		<div th:if="${(menuItem.children==null or menuItem.children.empty) and menuItem.markdown}" th:text="${menuItem.name}" class="markdown"></div>
+		<span th:if="${(menuItem.children==null or menuItem.children.empty) and !menuItem.markdown and !menuItem.html}" th:text="${menuItem.name}"></span>
+		<span th:if="${(menuItem.children==null or menuItem.children.empty) and !menuItem.markdown and menuItem.html}" th:utext="${menuItem.name}"></span>
+        <section th:include=" :: menu" th:with="menuItemsList=${menuItem.children}"></section>
+        </div>
+		</section>
+    </section>
+</html>

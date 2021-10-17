@@ -17,50 +17,23 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.ui;
+package org.idb.cacao.web.repositories;
 
-import java.util.logging.Logger;
-
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.idb.cacao.web.entities.SystemMetrics;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
 
 /**
- * Controller class for all endpoints related to UI regarding legal terms.
+ * DAO for SystemMetrics objects
  * 
  * @author Gustavo Figueiredo
  *
  */
-@Controller
-public class LegalUIController {
+@Repository
+public interface SystemMetricsRepository extends ElasticsearchRepository<SystemMetrics, String> {
 
-	static final Logger log = Logger.getLogger(LegalUIController.class.getName());
-
-	/**
-	 * Show HTML contents with Terms of Use
-	 */
-	@GetMapping("/terms")
-	public String showTerms(Model model) {
-
-		return "legal/terms";
-	}
-
-	/**
-	 * Show HTML contents with Privacy Policy
-	 */
-	@GetMapping("/privacy")
-	public String showPrivacy(Model model) {
-
-		return "legal/privacy";
-	}
-
-	/**
-	 * Show HTML contents with Software Licenses
-	 */
-	@GetMapping("/license")
-	public String showLicense(Model model) {
-
-		return "legal/license";
-	}
+	Page<SystemMetrics> findByHost(String host, Pageable pageable);
 
 }
