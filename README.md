@@ -95,22 +95,67 @@ ___
 ## How to Setup Google Authentication (Login with Google)
 
 - Create a Google account and create a Project (see https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-- Create OAuth2 credentials in Credentials Page
+- Configure a 'Consent Screen' (https://console.cloud.google.com/apis/credentials/consent)
+  - When prompted to choose between 'Internal' or 'Public' application, choose 'Public' in order to allow users outside your organization to access the website
+  - Inform the product name (e.g. CACAO) and e-mail
+  - Upload the application logo (image file with size lesser than 1 MB)
+  - For start page, inform the URI within the domain name (e.g.: https://cacaoidb.duckdns.org/)
+  - For Privacy Policy page, inform the following URI (change only domain name if necessary, keep the rest of this URI): https://cacaoidb.duckdns.org/privacy
+  - For Terms of Use page, inform the following URI (change only domain name if necessary, keep the rest of this URI): https://cacaoidb.duckdns.org/terms
+  - For Authorized Domain Names, inform the domain name (e.g. cacaoidb.duckdns.org)
+  - For developer contact, inform your e-mail
+  - Click 'Add Scope'
+  - Choose the following scopes from the list of scopes:
+    - .../auth/userinfo.email		(See your primary Google Account email address)
+    - .../auth/userinfo.profile		(See your personal info, including any personal info you've made publicly available)
+    - 	openid						(Associate you with your personal info on Google)
+  - Add some initial 'test users' for testing purposes
+- Create OAuth2 credentials in Credentials Page (for more information, see https://developers.google.com/identity/protocols/oauth2/openid-connect and https://console.developers.google.com/apis/credentials)
   - Go to this link and create a new OAuth2 token: https://console.developers.google.com/apis/credentials
+  - Choose a name for this OAuth token (e.g. CACAO)
+  - For Javascript Authorized Sources, informs the following URI (change only domain name if necessary, keep the rest of this URI): https://cacaoidb.duckdns.org
+  - If also using for development environment, also include the following URL for authorized JavaScript source: https://127.0.0.1:8888
   - Set a redirect UI following this pattern (change only domain name if necessary, keep the rest of this URI): https://cacaoidb.duckdns.org/login/oauth2/code/google
-  - If also using for development environment, also include the following URL for authorized redirections: https://127.0.0.1:8888
-- Fill forms and require an API TOKEN for using Google Authentication (see https://developers.google.com/identity/protocols/oauth2/openid-connect and https://console.developers.google.com/apis/credentials). In order to accomplish this, you will need:
-  - Logo of the application
-  - Registered public domain name
-  - Link for 'terms of use' of the application
-  - Link for 'privacy policy' of the application
-  - Several other information
+  - If also using for development environment, also include the following URL for authorized redirections: https://127.0.0.1:8888/login/oauth2/code/google
+  - Take note of these information and keep secret (do not publish anywhere):
+    - Application ID (client)
+    - Secret
+  - You must inform these information in the configuration file 'app_config', at the deployment environment, accessible only by root user
+    - spring.security.oauth2.client.registration.google.client-id=<copy here you application ID from Google>
+    - spring.security.oauth2.client.registration.google.client-secret=<copy here your secret from Google>
+- Publish the application (from 'Testing' to 'Production')
+  - Access the 'Consent Screen' configuration page (https://console.cloud.google.com/apis/credentials/consent)
+  - Press the 'Publish Application' button
+  
+___
+  
+## How to Setup Microsoft Azure Authentication
+
+- Create an account at Microsoft Azure and create a Tenant (see https://docs.microsoft.com/pt-br/azure/active-directory/fundamentals/active-directory-access-create-new-tenant)
+  - The page for tenant creation is here: https://portal.azure.com/#create/hub (at this page, search for 'Azure Active Directory')
+  - You will provide an 'organization name', an initial 'domain name' (the application website) and your country
+- Create OAuth2 credentials registering new app (see https://docs.microsoft.com/pt-br/azure/active-directory/develop/quickstart-register-app)
+  - The page for application creation is here: https://go.microsoft.com/fwlink/?linkid=2083908
+  - For 'type of account', choose 'Accounts in any tenant (multitenant) including personal accounts (e.g. Skype, Xbox, etc.)
+  - Go to this link and provide additional information. When asked, inform the following endpoint (change only domain name if necessary, keep the rest of this URI): https://cacaoidb.duckdns.org/login/oauth2/code/azure
+  - You may need to include additional callback endpoint if using for development environment: https://127.0.0.1:8888/login/oauth2/code/azure
 - Take note of these information and keep secret (do not publish anywhere):
   - Application ID (client)
-  - Secret
+  - Active Directory ID (tenant)
+  - Object ID
+  - Secret (valid for one year or two year)
+- Consent permission to application 
+  - Go to panel 'Permissions of API'
+  - Click que button/check mark 'Consent'
+- Include OpenId claims (email, family_name and given_name) at Token Configuration   
 - You must inform these information in the configuration file 'app_config', at the deployment environment, accessible only by root user
-  - spring.security.oauth2.client.registration.google.client-id=<copy here you application ID from Google>
-  - spring.security.oauth2.client.registration.google.client-secret=<copy here your secret from Google>
+  - azure.activedirectory.tenant-id=<copy here you tenant ID from Microsoft>
+  - spring.security.oauth2.client.registration.azure.client-id=<copy here your client ID from Microsoft>
+  - spring.security.oauth2.client.registration.azure.client-secret=<copy here you secret from Microsoft>
+  - azure.activedirectory.user-group.allowed-groups=Users
+  - spring.cloud.azure.telemetry.enable=false
+  - azure.mediaservices.allow-telemetry=false
+  - azure.activedirectory.allow-telemetry=false
   
 ___
 
