@@ -3,12 +3,9 @@ services:
   web:
     container_name: web
     build:
-      args:
-        - USE_PROXY
       context: ./web
       network: host      
     environment:
-      - MVN_ARGS=${MVN_ARGS}
       - PORT=8080
       - "WEB_JVM_OPTS=-Xms4g -Xmx4g"
 #    ports:
@@ -28,8 +25,6 @@ services:
   validator:
     container_name: validator
     build:
-      args:
-        - USE_PROXY
       context: ./validator
       network: host      
     environment:
@@ -50,12 +45,9 @@ services:
   etl:
     container_name: etl
     build:
-      args:
-        - USE_PROXY
       context: ./etl
       network: host      
     environment:
-      - MVN_ARGS=${MVN_ARGS}
       - PORT=8082
       - "WEB_JVM_OPTS=-Xms2g -Xmx2g"
 #    ports:
@@ -64,7 +56,6 @@ services:
       - es01
       - es02
       - es03
-      - kafka
     volumes:
       - logdir_etl:/var/log
       - ./app_config_etl:/app_config.properties:ro
@@ -174,32 +165,6 @@ services:
       - "80:80"
       - "443:443"
     restart: always
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    networks: 
-      - broker-kafka
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    networks: 
-      - broker-kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - 9092:9092
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-networks: 
-  broker-kafka:
-    driver: bridge
 volumes:
   es-data:
     driver: local
