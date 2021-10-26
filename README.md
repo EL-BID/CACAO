@@ -10,7 +10,7 @@ ___
 
 For running the web component locally at a development desktop with minimal setup, you should follow these steps:
 
-1. Install, configure and start a node of ElasticSearch (version 7.14.1) locally. At least one node should be enough.
+1. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up -d".
 
 2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 

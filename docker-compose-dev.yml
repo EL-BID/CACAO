@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  es01:
+    container_name: es01
+    hostname: 'es01'
+    build:
+      context: ./es
+    environment:
+      - PORT=9200
+      - node.name=es01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data-sn
+    restart: always
+volumes:
+  es-data:
+    driver: local
