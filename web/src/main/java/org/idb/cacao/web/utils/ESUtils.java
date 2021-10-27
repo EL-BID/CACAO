@@ -29,10 +29,14 @@ import java.util.List;
 
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.unit.TimeValue;
 
 /**
@@ -85,6 +89,50 @@ public class ESUtils {
 		}
 		return summary;
 	}
+
+	/**
+	 * Returns current mappings for a given index
+	 */
+	public static MappingMetadata getMapping(RestHighLevelClient client, String indexName) throws IOException {
+		GetMappingsRequest request = new GetMappingsRequest(); 
+		request.indices(indexName);
+		return client.indices().getMapping(request, RequestOptions.DEFAULT).mappings().get(indexName);
+	}
+	
+	/**
+	 * Returns TRUE if there are any mappings for the index
+	 */
+	public static boolean hasMappings(RestHighLevelClient client, String indexName) throws IOException {
+		MappingMetadata mappings = getMapping(client, indexName);
+		return !mappings.sourceAsMap().isEmpty();
+	}
+	
+	/**
+	 * Do a search in ElasticSearch but avoid propagating errors related to lack of indexed objects
+	 * @return Returns the response of the search, or returns NULL if encountered an error due to lack of mapping or index.
+	 */
+	public static SearchResponse searchIgnoringNoMapError(final RestHighLevelClient elasticsearchClient, final SearchRequest searchRequest, final String indexName) throws IOException {
+    	SearchResponse sresp = null;
+    	try {
+    		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+    	}
+    	catch (Throwable ex) {
+    		if (ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
+    			if (!ESUtils.hasMappings(elasticsearchClient, indexName))
+    				return null;
+    			else
+    				throw ex;
+    		}
+    		else if (ErrorUtils.isErrorNoIndexFound(ex)) {
+    			return null;
+    		}
+    		else {
+    			throw ex;
+    		}
+    	}
+    	return sresp;
+	}
+
 	
 	public static class IndexSummary {
 		private String health;
