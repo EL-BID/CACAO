@@ -341,6 +341,7 @@ select[readonly] {
 				<div th:replace=" :: submenu(menu_interno=${menu_item})"></div>
 			</th:block>
 		</th:block>
+		<a class="item" th:text="#{docs_main_upload}" th:href="@{/docs}">Upload Documents</a>
 		<a class="item" th:text="#{menu.logout}" th:href="@{/logout}">Logout</a>
 	</div>
 	<!-- Logged Submenu -->

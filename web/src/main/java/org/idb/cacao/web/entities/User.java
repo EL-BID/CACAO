@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 import javax.persistence.Column;
+import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -37,6 +38,8 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Persistent entity defining a 'user' of this application
@@ -106,6 +109,16 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 */
 	@Column(length=1024)
 	private String apiToken;
+	
+	@Column
+	private String taxpayerId;
+	
+	/**
+	 * Page size of last UI request from logged user (not persistent)
+	 */
+	@Transient
+	@JsonIgnore
+	private Integer pageSize;
 	
 	/**
 	 * {@link #id}
@@ -191,6 +204,29 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 		this.apiToken = apiToken;
 	}
 
+	public String getTaxpayerId() {
+		return taxpayerId;
+	}
+
+	public void setTaxpayerId(String taxpayerId) {
+		this.taxpayerId = taxpayerId;
+	}
+	
+	/**
+	 * Page size of last UI request from logged user (not persistent)
+	 */
+	public Integer getPageSize() {
+		return pageSize;
+	}
+
+	/**
+	 * Page size of last UI request from logged user (not persistent)
+	 */
+	public void setPageSize(Integer pageSize) {
+		this.pageSize = pageSize;
+	}
+
+	
 	public User clone() {
 		try {
 			return (User)super.clone();
