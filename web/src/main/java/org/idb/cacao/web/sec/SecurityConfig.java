@@ -245,7 +245,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     	return new ApiKeyAuthenticationFilter();
     }
 
-	@Bean
+	@Bean("CustomUserDetailsService")
 	@Override
 	public UserDetailsService userDetailsService() {
 		return userDetailsService;

@@ -21,30 +21,24 @@ package org.idb.cacao.web.controllers.services;
 
 import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
-import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.InterpersonalRepository;
 import org.idb.cacao.web.repositories.UserRepository;
-import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.RelationshipType;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.MissingParameter;
-import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -83,6 +77,8 @@ public class UserService {
 	
 	@Autowired
 	private Environment env;
+	
+	private final AtomicBoolean initialSetup = new AtomicBoolean();
     
     @Autowired
     MessageSource messages;
@@ -99,7 +95,10 @@ public class UserService {
 	 * a new user in order to allow all of the system configurations.
 	 */
 	@Transactional
-	public void assertInitialSetup() {
+	public synchronized void assertInitialSetup() {
+		
+		if (!initialSetup.compareAndSet(false, true))
+			return;
 		
 		try {
 			// Populate with first master-user if there is none
@@ -194,6 +193,11 @@ public class UserService {
 	public User getUser(Authentication auth) {
 		// First get the User object associated to the authentication object
 		User user = UserUtils.getUser(auth);
+		if (user==null 
+				&& (auth.getPrincipal() instanceof org.springframework.security.core.userdetails.User)) {
+			String username = ((org.springframework.security.core.userdetails.User)auth.getPrincipal()).getUsername();
+			user = userRepository.findByLogin(username);
+		}
 		if (user==null)
 			return null;
 		// Next, get the most updated information about this same user

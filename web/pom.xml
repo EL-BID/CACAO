@@ -161,6 +161,14 @@
     		<scope>test</scope>
 		</dependency>
 		
+		<!-- https://mvnrepository.com/artifact/org.junit.platform/junit-platform-runner -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-runner</artifactId>
+            <version>1.7.2</version>
+            <scope>test</scope>
+        </dependency>
+        		
 		<dependency>
 	    	<groupId>io.springfox</groupId>
 	    	<artifactId>springfox-boot-starter</artifactId>

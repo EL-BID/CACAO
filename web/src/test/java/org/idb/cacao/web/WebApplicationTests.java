@@ -23,9 +23,12 @@ import org.idb.cacao.web.utils.ElasticsearchMockClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
+@RunWith(JUnitPlatform.class)
 @SpringBootTest
 @DirtiesContext
 class WebApplicationTests {

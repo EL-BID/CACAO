@@ -22,6 +22,7 @@ package org.idb.cacao.web.sec;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +45,15 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private UserService userService;
 
 	@Override
 	public UserDetails loadUserByUsername(String name) throws UsernameNotFoundException {
+		
+		userService.assertInitialSetup();
+		
 		User user = userRepository.findByLoginIgnoreCase(name);
         if (user == null || user.getLogin()==null) {
             throw new UsernameNotFoundException("No user found with username: " + name);
