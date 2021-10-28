@@ -17,6 +17,7 @@
 	</properties>
 	<modules>
 		<module>proxy</module>
+		<module>api</module>
 		<module>web</module>
 		<module>validator</module>
 		<module>etl</module>

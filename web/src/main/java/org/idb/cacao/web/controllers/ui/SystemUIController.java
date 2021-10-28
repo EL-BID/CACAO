@@ -32,8 +32,8 @@ import java.util.logging.Logger;
 
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.idb.cacao.api.ComponentSystemInformation;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
-import org.idb.cacao.web.dto.ComponentSystemInformation;
 import org.idb.cacao.web.dto.MenuItem;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.HttpUtils;

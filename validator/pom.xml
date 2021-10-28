@@ -72,6 +72,14 @@
 	    <artifactId>spring-boot-starter-log4j2</artifactId>
 	</dependency>
 		
+		<dependency>
+			<groupId>org.idb.cacao.api</groupId>
+			<artifactId>CACAO_API</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>provided</scope>
+		</dependency>
+		
 	</dependencies>
 
 	<build>

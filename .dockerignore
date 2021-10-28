@@ -6,3 +6,6 @@ bin/
 .project
 .env
 app_config
+es/
+kibana/
+proxy/

@@ -5,7 +5,8 @@ services:
     build:
       args:
         - USE_PROXY
-      context: ./web
+      context: ./
+      dockerfile: ./web/Dockerfile
       network: host      
     environment:
       - PORT=8080
@@ -29,7 +30,8 @@ services:
     build:
       args:
         - USE_PROXY
-      context: ./validator
+      context: ./
+      dockerfile: ./validator/Dockerfile
       network: host      
     environment:
       - PORT=8081
@@ -51,7 +53,8 @@ services:
     build:
       args:
         - USE_PROXY
-      context: ./etl
+      context: ./
+      dockerfile: ./etl/Dockerfile
       network: host      
     environment:
       - PORT=8082

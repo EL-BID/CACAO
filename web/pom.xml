@@ -81,6 +81,14 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.idb.cacao.api</groupId>
+			<artifactId>CACAO_API</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>provided</scope>
+		</dependency>
+
 <!--  		
 		<dependency>
 		    <groupId>org.springframework.cloud</groupId>

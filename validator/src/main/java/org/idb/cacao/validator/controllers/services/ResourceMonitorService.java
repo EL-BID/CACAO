@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.idb.cacao.validator.dto.ComponentSystemInformation;
+import org.idb.cacao.api.ComponentSystemInformation;
 import org.idb.cacao.validator.entities.SystemMetrics;
 import org.idb.cacao.validator.repositories.SystemMetricsRepository;
 import org.springframework.beans.factory.annotation.Autowired;

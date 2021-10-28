@@ -67,7 +67,7 @@
 		</dependency>
 		
 		
-				<dependency>
+		<dependency>
 		    <groupId>org.springframework.cloud</groupId>
 		    <artifactId>spring-cloud-stream</artifactId>
 		    <version>3.1.3</version>
@@ -102,6 +102,14 @@
 		    <artifactId>kafka</artifactId>
 		    <version>1.16.0</version>
 		    <scope>test</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.idb.cacao.api</groupId>
+			<artifactId>CACAO_API</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>provided</scope>
 		</dependency>
 		
 	<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-log4j2 -->

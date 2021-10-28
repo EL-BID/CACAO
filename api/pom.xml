@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.idb.cacao.api</groupId>
+	<artifactId>CACAO_API</artifactId>
+	<version>1.0</version>
+	<name>CACAO API</name>
+	<description>MVP for an accounting data system</description>
+	<properties>
+    	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    	<java.version>1.8</java.version>        
+    	<jaxb.api.version>2.3.0</jaxb.api.version>
+    	<maven.compiler.source>1.8</maven.compiler.source>
+    	<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+	<packaging>jar</packaging>
+ 	<build>
+	   <finalName>cacao_api-${project.version}</finalName>
+ 	</build>
+ 
+	<dependencies>
+	
+		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
+		<dependency>
+		    <groupId>com.fasterxml.jackson.core</groupId>
+		    <artifactId>jackson-annotations</artifactId>
+		    <version>2.12.4</version>
+		</dependency>
+
+		
+	</dependencies>
+
+</project>

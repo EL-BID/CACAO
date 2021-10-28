@@ -2,8 +2,8 @@ package org.idb.cacao.web.controllers.rest;
 
 import java.util.logging.Logger;
 
+import org.idb.cacao.api.ComponentSystemInformation;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
-import org.idb.cacao.web.dto.ComponentSystemInformation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
