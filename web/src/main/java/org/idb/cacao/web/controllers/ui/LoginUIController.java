@@ -19,14 +19,24 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.idb.cacao.web.dto.MenuItem;
 import org.idb.cacao.web.utils.LoginUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +52,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class LoginUIController {
 
 	static final Logger log = Logger.getLogger(LoginUIController.class.getName());
+
+	@Autowired
+	private MessageSource messages;
 
 	@Autowired
 	private Environment env;
@@ -78,8 +91,7 @@ public class LoginUIController {
 	@GetMapping("/home")
 	public String showHome(Model model, HttpServletRequest request) {
 		
-		// TODO: should return a hierarchy of menu items
-		model.addAttribute("menu", Collections.emptyList());
+		model.addAttribute("menu", getHomeMenuItens());
 		
 		// TODO: should present the first page for taxpayers and tax administrators
 		//String first_page_child_frame = "/bulletin_board";
@@ -97,4 +109,27 @@ public class LoginUIController {
 		
 		return "comm/bulletin_board";
 	}	
+	
+	public List<MenuItem> getHomeMenuItens() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null)
+			return Collections.emptyList();
+		if (auth instanceof AnonymousAuthenticationToken)
+			return Collections.emptyList();
+		Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
+		return getHomeMenuItens(roles);
+	}
+
+	public List<MenuItem> getHomeMenuItens(Collection<? extends GrantedAuthority> roles) {
+		// FIXME:
+		//if (roles == null || roles.isEmpty())
+		//	return Collections.emptyList();
+
+		List<MenuItem> menu = new LinkedList<>();
+
+		menu.add(new MenuItem(messages.getMessage("docs_main_upload", null, LocaleContextHolder.getLocale()),
+				"/docs"));
+
+		return menu;
+	}
 }
