@@ -17,37 +17,49 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.web.entities;
 
-import java.util.List;
+import java.util.Arrays;
 
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentTemplate;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.annotations.Query;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
-	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+/**
+ * Enumeration of different periodic schemes for SYNC
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
+public enum SyncPeriodicity {
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
+	NONE("sync.periodicity.none"),
+	HOURLY("sync.periodicity.hourly"),
+	DAILY("sync.periodicity.daily"),
+	WEEKLY("sync.periodicity.weekly");
+
+	private final String display;
 	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
+	SyncPeriodicity(String display) {
+		this.display = display;
+	}
+
+	@Override
+	public String toString() {
+		return display;
+	}
 	
-	public List<DocumentTemplate> findByAllowSimplePay(Boolean allowSimplePay);
-	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
+	public static SyncPeriodicity parse(String s) {
+		if (s==null || s.trim().length()==0)
+			return null;
+		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny().orElse(null);
+	}
+
+	public static SyncPeriodicity parse(String s, MessageSource messageSource) {
+		if (s==null || s.trim().length()==0)
+			return null;
+		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny()
+				.orElse(Arrays.stream(values()).filter(t->messageSource.getMessage(t.toString(),null,LocaleContextHolder.getLocale()).equalsIgnoreCase(s)).findAny()
+						.orElse(null));
 	}
 
 }

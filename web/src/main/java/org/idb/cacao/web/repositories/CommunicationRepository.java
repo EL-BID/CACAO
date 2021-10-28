@@ -19,10 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
-import java.util.List;
-
 import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentTemplate;
+import org.idb.cacao.web.entities.Communication;
 import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,22 +28,24 @@ import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * DAO for Communication objects
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
 @Repository
 @Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
-	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+public interface CommunicationRepository extends ElasticsearchRepository<Communication, String> {
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
-	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
-	
-	public List<DocumentTemplate> findByAllowSimplePay(Boolean allowSimplePay);
-	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
+	Page<Communication> findByType(String type, Pageable pageable);
+
+	@Query("{\"bool\":{\"must_not\":{\"exists\":{\"field\":\"endViewTimestamp\"}}}}")
+	Page<Communication> findByEndViewTimestampIsNull(Pageable pageable);
+
+	Page<Communication> findByAudience(String audience, Pageable pageable);
+
+	default public <S extends Communication> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}

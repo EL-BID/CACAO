@@ -61,7 +61,7 @@ public enum ValueTreatment implements Function<Double,Double> {
 			return v;
 		switch (this) {
 		case ROUND:
-			return new Double(Math.round(((Number)v).doubleValue()));
+			return Double.valueOf(Math.round(((Number)v).doubleValue()));
 		case TRUNCATE:
 			return Math.floor(((Number)v).doubleValue());
 		default: // NONE
@@ -81,7 +81,7 @@ public enum ValueTreatment implements Function<Double,Double> {
 			return null;
 		switch (this) {
 		case ROUND:
-			return numbersFormat.formatInteger(new Double(Math.round(((Number)v).doubleValue())), /*minIntegerDigits*/1, /*thousandsPointType*/"DEFAULT");
+			return numbersFormat.formatInteger(Double.valueOf(Math.round(((Number)v).doubleValue())), /*minIntegerDigits*/1, /*thousandsPointType*/"DEFAULT");
 		case TRUNCATE:
 			return numbersFormat.formatInteger(Math.floor(((Number)v).doubleValue()), /*minIntegerDigits*/1, /*thousandsPointType*/"DEFAULT");
 		default: // NONE

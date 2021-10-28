@@ -19,8 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +181,7 @@ public class DocumentTemplateService {
 	public Map<String, Periodicity> getSimplePayTemplatesPeriodicityMap() {
 		
 		Map<String, Periodicity> templates_periodicity = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Map<String, Date> templates_timestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		Map<String, OffsetDateTime> templates_timestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		Iterable<DocumentTemplate> templates = templateRepository.findByAllowSimplePay(Boolean.TRUE);
 		for (DocumentTemplate template:templates) {
 			if (null==template.getName())
@@ -189,7 +189,7 @@ public class DocumentTemplateService {
 			if (template.getName().trim().length()==0)
 				continue;
 			String name = template.getName();
-			Date timestamp = template.getTemplateCreateTime();
+			OffsetDateTime timestamp = template.getTemplateCreateTime();
 			Periodicity periodicity = template.getPeriodicity();
 			Periodicity last_known_periodicity = templates_periodicity.get(name);
 			if (last_known_periodicity==null || Periodicity.UNKNOWN.equals(last_known_periodicity)) {
@@ -199,8 +199,8 @@ public class DocumentTemplateService {
 			else if (!Periodicity.UNKNOWN.equals(periodicity)
 					&& !last_known_periodicity.equals(periodicity)) {
 				// If we got different periodicities for the same template name, keeps the last one
-				Date last_known_timestamp = templates_timestamps.get(name);
-				if (last_known_timestamp!=null && timestamp!=null && last_known_timestamp.before(timestamp)) {
+				OffsetDateTime last_known_timestamp = templates_timestamps.get(name);
+				if (last_known_timestamp!=null && timestamp!=null && last_known_timestamp.isBefore(timestamp)) {
 					templates_periodicity.put(name, periodicity);
 					templates_timestamps.put(name, timestamp);					
 				}
@@ -216,7 +216,7 @@ public class DocumentTemplateService {
 	public Map<String, Periodicity> getTemplatesWithFilesPeriodicityMap() {
 		
 		Map<String, Periodicity> templates_periodicity = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Map<String, Date> templates_timestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		Map<String, OffsetDateTime> templates_timestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		List<DocumentTemplate> templates = getTemplatesWithFiles();
 		for (DocumentTemplate template:templates) {
 			if (null==template.getName())
@@ -224,7 +224,7 @@ public class DocumentTemplateService {
 			if (template.getName().trim().length()==0)
 				continue;
 			String name = template.getName();
-			Date timestamp = template.getTemplateCreateTime();
+			OffsetDateTime timestamp = template.getTemplateCreateTime();
 			Periodicity periodicity = template.getPeriodicity();
 			Periodicity last_known_periodicity = templates_periodicity.get(name);
 			if (last_known_periodicity==null || Periodicity.UNKNOWN.equals(last_known_periodicity)) {
@@ -234,8 +234,8 @@ public class DocumentTemplateService {
 			else if (!Periodicity.UNKNOWN.equals(periodicity)
 					&& !last_known_periodicity.equals(periodicity)) {
 				// If we got different periodicities for the same template name, keeps the last one
-				Date last_known_timestamp = templates_timestamps.get(name);
-				if (last_known_timestamp!=null && timestamp!=null && last_known_timestamp.before(timestamp)) {
+				OffsetDateTime last_known_timestamp = templates_timestamps.get(name);
+				if (last_known_timestamp!=null && timestamp!=null && last_known_timestamp.isBefore(timestamp)) {
 					templates_periodicity.put(name, periodicity);
 					templates_timestamps.put(name, timestamp);					
 				}

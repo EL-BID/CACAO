@@ -19,11 +19,14 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.util.Optional;
 
+import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.entities.UserProfile;
+import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
@@ -35,7 +38,13 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
+@Synchronizable(timestamp="changedTime",id="id")
 public interface UserRepository extends ElasticsearchRepository<User, String> {
+	
+	/**
+	 * Find a user given the user id. There should be only one.
+	 */
+	public Optional<User> findById(String id);
 
 	/**
 	 * Find all user records given the name, allowing pagination over the results
@@ -62,8 +71,14 @@ public interface UserRepository extends ElasticsearchRepository<User, String> {
 	 * to track changes. 
 	 */
 	default public <S extends User> S saveWithTimestamp(S entity) {
-		entity.setTimestamp(LocalDateTime.now().atOffset(ZoneOffset.UTC));
+		entity.setTimestamp(DateTimeUtils.now());
 		return save(entity);
 	}
+
+	//TODO Check the method use
+	public Page<User> findByProfile(UserProfile profileName, PageRequest of);
+
+	//TODO Check the method use
+	public Page<User> findByTaxpayerId(String taxpayerId, PageRequest of);
 
 }

@@ -24,12 +24,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.Normalizer;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -46,7 +48,6 @@ import java.util.zip.ZipInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -57,24 +58,22 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.web.IncomingFileStorage;
+import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.controllers.services.UserService;
+import org.idb.cacao.web.controllers.services.storage.StorageService;
 import org.idb.cacao.web.entities.DocumentTemplate;
 import org.idb.cacao.web.entities.DocumentUploaded;
 import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.DocumentNotFoundException;
 import org.idb.cacao.web.errors.GeneralException;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
-import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
-import org.idb.cacao.web.entities.UserProfile;
-import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.utils.ErrorUtils;
-import org.idb.cacao.web.IncomingFileStorage;
-import org.idb.cacao.web.controllers.services.UserService;
-import org.idb.cacao.web.controllers.services.storage.StorageService;
 import org.idb.cacao.web.utils.ParserUtils;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
@@ -379,7 +378,7 @@ public class DocumentStoreAPIController {
 			String fileId = UUID.randomUUID().toString();
 			reg_upload.setFileId(fileId);
 			reg_upload.setFilename(originalFilename);
-			reg_upload.setTimestamp(new Date(timestamp));
+			reg_upload.setTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()));
 			reg_upload.setIpAddress(remoteIpAddr);
 	    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 	    	if (auth!=null) {
@@ -456,7 +455,7 @@ public class DocumentStoreAPIController {
     		throw new FileNotFoundException("");
     	}
     	
-    	Date timestamp = ref_doc.get().getTimestamp();
+    	OffsetDateTime timestamp = ref_doc.get().getTimestamp();
 
 		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
 		File file = file_storage.getOriginalFile(filename, timestamp);

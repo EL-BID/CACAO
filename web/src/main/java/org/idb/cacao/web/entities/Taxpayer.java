@@ -19,10 +19,12 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
-import static org.springframework.data.elasticsearch.annotations.FieldType.*;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -30,7 +32,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
@@ -42,7 +43,7 @@ import org.springframework.data.elasticsearch.annotations.MultiField;
  * @author Gustavo Figueiredo
  *
  */
-@Document(indexName="taxpayers")
+@Document(indexName="cacao_taxpayers")
 public class Taxpayer implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 1L;
@@ -54,8 +55,8 @@ public class Taxpayer implements Serializable, Cloneable {
 	@Id   
 	private String id;
 
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-    private Date timestamp;
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+    private OffsetDateTime timestamp;
 
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
@@ -87,8 +88,8 @@ public class Taxpayer implements Serializable, Cloneable {
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-	private Date changedTime;
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	private OffsetDateTime changedTime;
 
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
@@ -138,11 +139,11 @@ public class Taxpayer implements Serializable, Cloneable {
 		this.id = id;
 	}
 
-	public Date getTimestamp() {
+	public OffsetDateTime getTimestamp() {
 		return timestamp;
 	}
 
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(OffsetDateTime timestamp) {
 		this.timestamp = timestamp;
 	}
 
@@ -178,11 +179,11 @@ public class Taxpayer implements Serializable, Cloneable {
 		this.zipCode = zipCode;
 	}
 	
-	public Date getChangedTime() {
+	public OffsetDateTime getChangedTime() {
 		return changedTime;
 	}
 
-	public void setChangedTime(Date changedTime) {
+	public void setChangedTime(OffsetDateTime changedTime) {
 		this.changedTime = changedTime;
 	}
 

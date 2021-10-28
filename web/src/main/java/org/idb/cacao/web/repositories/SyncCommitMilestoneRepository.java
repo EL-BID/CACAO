@@ -19,35 +19,23 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
-import java.util.List;
+import java.util.Optional;
 
 import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentTemplate;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.annotations.Query;
+import org.idb.cacao.web.entities.SyncCommitMilestone;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * DAO for SyncCommitMilestone objects (one for each milestone)
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
 @Repository
 @Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
-	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+public interface SyncCommitMilestoneRepository extends ElasticsearchRepository<SyncCommitMilestone, Long> {
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
-	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
-	
-	public List<DocumentTemplate> findByAllowSimplePay(Boolean allowSimplePay);
-	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
-	}
+	public Optional<SyncCommitMilestone> findByEndPoint(String endPoint);
 
 }

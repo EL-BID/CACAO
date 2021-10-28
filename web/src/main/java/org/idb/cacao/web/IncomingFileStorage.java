@@ -32,8 +32,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.OffsetDateTime;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -171,15 +171,13 @@ public class IncomingFileStorage {
 		return output_file;
 	}
 
-	public File getOriginalFile(String filename, Date timestamp) throws IOException {
+	public File getOriginalFile(String filename, OffsetDateTime timestamp) throws IOException {
 		
 		// Target directory for storing original files, partitioned by year/month/day
 		File output_dir = getIncomingDirOriginalFiles();
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(timestamp);
-		File year_dir = new File(output_dir, String.format("%04d",cal.get(Calendar.YEAR)));
-		File month_dir = new File(year_dir, String.format("%02d",cal.get(Calendar.MONTH)+1));
-		File day_dir = new File(month_dir, String.format("%02d",cal.get(Calendar.DAY_OF_MONTH)));
+		File year_dir = new File(output_dir, String.format("%04d",timestamp.getYear()));
+		File month_dir = new File(year_dir, String.format("%02d",timestamp.getMonthValue()));
+		File day_dir = new File(month_dir, String.format("%02d",timestamp.getDayOfMonth()));
 		if (!day_dir.exists())
 			return null;
 		
@@ -588,6 +586,65 @@ public class IncomingFileStorage {
 		
 		return zip_file;
 	}
+	
+	/**
+	 * Lists all Generic files created or updated in a time range
+	 * @param startingTimestamp Starting date/time (in unix epoch)
+	 * @param endingTimestamp Ending date/time (in unix epoch)
+	 * @param interrupt If different than NULL, the provided function may return TRUE if it should interrupt
+	 * @param consumer Callback for each file
+	 */
+	public void listGenericFiles(
+			final long startingTimestamp, 
+			final long endingTimestamp, 
+			final BooleanSupplier interrupt,
+			final Consumer<File> consumer) throws IOException {
+		File output_dir = getGenericFileDir();
+		if (!output_dir.exists())
+			return;
+		
+		final AtomicBoolean inside_dir = new AtomicBoolean(false);
+		Files.walkFileTree(output_dir.toPath(), new FileVisitor<Path>() {
+			// Called after a directory visit is complete.
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                    throws IOException {
+            	inside_dir.set(false);
+            	return FileVisitResult.CONTINUE;
+            }
+            // called before a directory visit.
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir,
+                    BasicFileAttributes attrs) throws IOException {
+            	if (interrupt!=null && interrupt.getAsBoolean())
+            		return FileVisitResult.TERMINATE;
+            	if (inside_dir.get())
+            		return FileVisitResult.SKIP_SUBTREE; // ignore all subdirs in Generics dir
+            	// enter in Generic dir
+            	inside_dir.set(true);
+            	return FileVisitResult.CONTINUE;
+            }
+            // This method is called for each file visited. The basic attributes of the files are also available.
+            @Override
+            public FileVisitResult visitFile(Path file,
+                    BasicFileAttributes attrs) throws IOException {
+            	if (interrupt!=null && interrupt.getAsBoolean())
+            		return FileVisitResult.TERMINATE;
+            	File f = file.toFile();
+            	long file_timestamp = f.lastModified();
+            	if (file_timestamp>=startingTimestamp && file_timestamp<endingTimestamp) {
+            		consumer.accept(f);
+            	}
+            	return FileVisitResult.CONTINUE;
+            }
+            // if the file visit fails for any reason, the visitFileFailed method is called.
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc)
+                    throws IOException {
+            	return FileVisitResult.CONTINUE;
+            }
+		});
+	}	
 	
 	public IncomingFileStorage forTesting() {
 		

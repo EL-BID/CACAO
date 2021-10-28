@@ -19,12 +19,16 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
-import static org.springframework.data.elasticsearch.annotations.FieldType.*;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Nested;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,7 +41,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
@@ -47,7 +50,7 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-@Document(indexName="templates")
+@Document(indexName="cacao_templates")
 public class DocumentTemplate implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 1L;
@@ -121,16 +124,16 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	/**
 	 * Date/time the template was created
 	 */
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@DateTimeFormat(iso = ISO.DATE_TIME)
-    private Date templateCreateTime;
+    private OffsetDateTime templateCreateTime;
 
 	/**
 	 * Date/time of template upload
 	 */
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@DateTimeFormat(iso = ISO.DATE_TIME)
-    private Date timestampTemplate;
+    private OffsetDateTime timestampTemplate;
 	
 	/**
 	 * Local filename (not including directory) for template file contents
@@ -141,15 +144,15 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	/**
 	 * Date/time of sample upload
 	 */
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@DateTimeFormat(iso = ISO.DATE_TIME)
-    private Date timestampSample;
+    private OffsetDateTime timestampSample;
 	
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-	private Date changedTime;
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	private OffsetDateTime changedTime;
 	
 	/**
 	 * Local filename (not including directory) for sample file contents
@@ -265,30 +268,30 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	/**
 	 * Date/time the template was created
 	 */
-	public Date getTemplateCreateTime() {
+	public OffsetDateTime getTemplateCreateTime() {
 		return templateCreateTime;
 	}
 
 	/**
 	 * Date/time the template was created
 	 */
-	public void setTemplateCreateTime(Date templateCreateTime) {
+	public void setTemplateCreateTime(OffsetDateTime templateCreateTime) {
 		this.templateCreateTime = templateCreateTime;
 	}
 
-	public Date getTimestampTemplate() {
+	public OffsetDateTime getTimestampTemplate() {
 		return timestampTemplate;
 	}
 
-	public void setTimestampTemplate(Date timestampTemplate) {
+	public void setTimestampTemplate(OffsetDateTime timestampTemplate) {
 		this.timestampTemplate = timestampTemplate;
 	}
 
-	public Date getTimestampSample() {
+	public OffsetDateTime getTimestampSample() {
 		return timestampSample;
 	}
 
-	public void setTimestampSample(Date timestampSample) {
+	public void setTimestampSample(OffsetDateTime timestampSample) {
 		this.timestampSample = timestampSample;
 	}
 
@@ -323,14 +326,14 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
-	public Date getChangedTime() {
+	public OffsetDateTime getChangedTime() {
 		return changedTime;
 	}
 
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
-	public void setChangedTime(Date changedTime) {
+	public void setChangedTime(OffsetDateTime changedTime) {
 		this.changedTime = changedTime;
 	}
 
@@ -506,8 +509,8 @@ public class DocumentTemplate implements Serializable, Cloneable {
 
 		@Override
 		public int compare(DocumentTemplate o1, DocumentTemplate o2) {
-			Date d1 = o1.getTemplateCreateTime();
-			Date d2 = o2.getTemplateCreateTime();
+			OffsetDateTime d1 = o1.getTemplateCreateTime();
+			OffsetDateTime d2 = o2.getTemplateCreateTime();
 			if (d1!=d2) {
 				if (d1==null)
 					return 1;

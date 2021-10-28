@@ -17,37 +17,18 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.web.controllers.services;
 
-import java.util.List;
+import org.idb.cacao.web.entities.ConfigSync;
 
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentTemplate;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.annotations.Query;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+public interface IConfigSyncService {
 
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
+	public ConfigSync getActiveConfig();
 	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+	public void setActiveConfig(ConfigSync config);
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
+	public String decryptToken(String token);
 	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
-	
-	public List<DocumentTemplate> findByAllowSimplePay(Boolean allowSimplePay);
-	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
-	}
+	public String encryptToken(String token);
 
 }

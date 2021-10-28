@@ -19,12 +19,15 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
-import static org.springframework.data.elasticsearch.annotations.FieldType.*;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-import javax.persistence.Column;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -96,6 +99,11 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@NotEmpty
 	@Size(min=4, max=120)
 	private String name;
+	
+	@Enumerated(EnumType.STRING)
+	@Field(type=Keyword)
+	@NotNull
+	private UserProfile profile;	
 
 	/**
 	 * HASH of user password (it's NULL for OAUTH2 login account)
@@ -107,10 +115,10 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	/**
 	 * API TOKEN (for user operations with external system through REST API)
 	 */
-	@Column(length=1024)
+	@Field(type=Keyword)
 	private String apiToken;
 	
-	@Column
+	@Field(type=Keyword)
 	private String taxpayerId;
 	
 	/**
@@ -188,6 +196,14 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 */
 	public void setName(String name) {
 		this.name = name;
+	}
+	
+	public UserProfile getProfile() {
+		return profile;
+	}
+
+	public void setProfile(UserProfile profile) {
+		this.profile = profile;
 	}
 
 	/**

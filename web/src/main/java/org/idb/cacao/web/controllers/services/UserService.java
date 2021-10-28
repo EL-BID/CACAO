@@ -21,6 +21,7 @@ package org.idb.cacao.web.controllers.services;
 
 import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,12 +34,17 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.repositories.InterpersonalRepository;
 import org.idb.cacao.web.repositories.UserRepository;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.RelationshipType;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -82,15 +88,14 @@ public class UserService {
     
     @Autowired
     MessageSource messages;
-	
     
     @Autowired
     InterpersonalRepository interpersonalRepository;
-/*    
-    @PersistenceContext
-    EntityManager entityManager;
-*/
-	/**
+    
+	@Autowired
+	private RestHighLevelClient elasticsearchClient;    
+
+    /**
 	 * Check if the system has a minimum of one user. If the database is fully empty, creates
 	 * a new user in order to allow all of the system configurations.
 	 */
@@ -208,18 +213,18 @@ public class UserService {
     /**
      * Search user objects using AdvancedSearch filters
      */
-/**	@Transactional(readOnly=true)
+	@Transactional(readOnly=true)
 	public Page<User> searchUsers(Optional<AdvancedSearch> filters,
 			Optional<Integer> page, 
 			Optional<Integer> size) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messages), User.class, entityManager, true, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
+			return SearchUtils.doSearch(filters.get().wiredTo(messages), User.class, elasticsearchClient, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 		
 	}
-**/	
+	
 	/**
 	 * Check if user is authorized to send documents for subject ID
 	 * @param user User object
@@ -346,5 +351,45 @@ public class UserService {
 		}
 		return taxpayersIds;
 	}
+	
+	/**
+	 * Check if the user may have a private space at Kibana for his dashboards
+	 */
+	public boolean mayHaveSpaceForPrivateDashboards(User user) {
+		
+		String es_username = env.getProperty("es.user");
+		String es_password = env.getProperty("es.password");
+		String kibanaSuperUser = env.getProperty("kibana.superuser");
 
+		boolean is_kibana_super_user = (es_username!=null && es_username.trim().length()>0 
+				&& es_password!=null && es_password.trim().length()>0
+				&& kibanaSuperUser!=null && kibanaSuperUser.equalsIgnoreCase(user.getLogin()));
+		
+		// the super-user does not have a private space for himself
+		if (is_kibana_super_user)
+			return false; 
+		
+		// a user without write permission does not have a private space for himself
+		if (!hasDashboardWriteAccess(user))
+			return false;
+		
+		// a user without tax payer ID does not have a private space for himself
+		if (user.getTaxpayerId()==null || user.getTaxpayerId().trim().length()==0)
+			return false;
+		
+		String txid = user.getTaxpayerId().replaceAll("\\D", ""); // removes all non-numeric digits
+		if (txid.length()==0)
+			return false;
+
+		// Any other user does have the possibility to have a private space for himself
+		return true;
+	}
+
+	/**
+	 * Returns indication that the user has Kibana Access with 'write' privilege to Dashboards
+	 */
+	public boolean hasDashboardWriteAccess(User user) {
+		Set<ESStandardRoles> standard_roles = ESStandardRoles.getStandardRoles(user.getProfile());
+		return standard_roles!=null && !standard_roles.isEmpty() && standard_roles.contains(ESStandardRoles.DASHBOARDS_WRITE);
+	}
 }

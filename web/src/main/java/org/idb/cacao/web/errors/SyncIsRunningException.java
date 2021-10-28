@@ -17,37 +17,25 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.web.errors;
 
-import java.util.List;
+public class SyncIsRunningException extends RuntimeException {
 
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentTemplate;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.annotations.Query;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+	private static final long serialVersionUID = 2281742686149680297L;
 
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
-	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+	public SyncIsRunningException() {
+        super();
+    }
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
-	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
-	
-	public List<DocumentTemplate> findByAllowSimplePay(Boolean allowSimplePay);
-	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
-	}
+    public SyncIsRunningException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 
+    public SyncIsRunningException(final String message) {
+        super(message);
+    }
+
+    public SyncIsRunningException(final Throwable cause) {
+        super(cause);
+    }
 }

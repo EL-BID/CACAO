@@ -19,13 +19,15 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
-import static org.springframework.data.elasticsearch.annotations.FieldType.*;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Long;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 
@@ -33,12 +35,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Metrics collected from the running system by ResourceMonitorService
+ * Keep history of all SYNC requests made from this application
  * @author Gustavo Figueiredo
  *
  */
-@Document(indexName="cacao_webmetrics")
-public class SystemMetrics implements Serializable {
+@Document(indexName="cacao_sync_history")
+public class SyncCommitHistory implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -48,33 +50,27 @@ public class SystemMetrics implements Serializable {
 	 */
 	@Id   
 	private String id;
-	
-	@Field(type=Date, store = true, format = DateFormat.date_time)
-    private OffsetDateTime timestamp;
-	
-	@Field(type=Boolean)
-	private Boolean restarted;
 
 	@Field(type=Keyword)
-	private String host;
+	private String master;
 
-	@Field(type=Long)
-	private Long heapUsedBytes;
-	
-	@Field(type=Long)
-	private Long heapFreeBytes;
-	
-	@Field(type=Long)
-	private Long memoryUsedBytes;
-	
-	@Field(type=Long)
-	private Long memoryFreeBytes;
+	@Field(type=Keyword)
+	private String endPoint;
 
-	@Field(type=Long)
-	private Long diskTemporaryFilesUsedBytes;
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+    private OffsetDateTime timeRun;
+
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+    private OffsetDateTime timeStart;
+
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+    private OffsetDateTime timeEnd;
 	
 	@Field(type=Long)
-	private Long diskTemporaryFilesFreeBytes;
+	private Long countObjects;
+	
+	@Field(type=Boolean)
+	private Boolean successful;
 
 	public String getId() {
 		return id;
@@ -84,76 +80,60 @@ public class SystemMetrics implements Serializable {
 		this.id = id;
 	}
 
-	public Boolean getRestarted() {
-		return restarted;
+	public String getMaster() {
+		return master;
 	}
 
-	public void setRestarted(Boolean restarted) {
-		this.restarted = restarted;
+	public void setMaster(String master) {
+		this.master = master;
 	}
 
-	public String getHost() {
-		return host;
+	public String getEndPoint() {
+		return endPoint;
 	}
 
-	public OffsetDateTime getTimestamp() {
-		return timestamp;
+	public void setEndPoint(String endPoint) {
+		this.endPoint = endPoint;
 	}
 
-	public void setTimestamp(OffsetDateTime timestamp) {
-		this.timestamp = timestamp;
+	public OffsetDateTime getTimeRun() {
+		return timeRun;
 	}
 
-	public void setHost(String host) {
-		this.host = host;
+	public void setTimeRun(OffsetDateTime timeRun) {
+		this.timeRun = timeRun;
 	}
 
-	public Long getHeapUsedBytes() {
-		return heapUsedBytes;
+	public OffsetDateTime getTimeStart() {
+		return timeStart;
 	}
 
-	public void setHeapUsedBytes(Long heapUsedBytes) {
-		this.heapUsedBytes = heapUsedBytes;
+	public void setTimeStart(OffsetDateTime timeStart) {
+		this.timeStart = timeStart;
 	}
 
-	public Long getHeapFreeBytes() {
-		return heapFreeBytes;
+	public OffsetDateTime getTimeEnd() {
+		return timeEnd;
 	}
 
-	public void setHeapFreeBytes(Long heapFreeBytes) {
-		this.heapFreeBytes = heapFreeBytes;
+	public void setTimeEnd(OffsetDateTime timeEnd) {
+		this.timeEnd = timeEnd;
 	}
 
-	public Long getMemoryUsedBytes() {
-		return memoryUsedBytes;
+	public Long getCountObjects() {
+		return countObjects;
 	}
 
-	public void setMemoryUsedBytes(Long memoryUsedBytes) {
-		this.memoryUsedBytes = memoryUsedBytes;
+	public void setCountObjects(Long countObjects) {
+		this.countObjects = countObjects;
 	}
 
-	public Long getMemoryFreeBytes() {
-		return memoryFreeBytes;
+	public Boolean getSuccessful() {
+		return successful;
 	}
 
-	public void setMemoryFreeBytes(Long memoryFreeBytes) {
-		this.memoryFreeBytes = memoryFreeBytes;
-	}
-	
-	public Long getDiskTemporaryFilesUsedBytes() {
-		return diskTemporaryFilesUsedBytes;
-	}
-
-	public void setDiskTemporaryFilesUsedBytes(Long diskTemporaryFilesUsedBytes) {
-		this.diskTemporaryFilesUsedBytes = diskTemporaryFilesUsedBytes;
-	}
-
-	public Long getDiskTemporaryFilesFreeBytes() {
-		return diskTemporaryFilesFreeBytes;
-	}
-
-	public void setDiskTemporaryFilesFreeBytes(Long diskTemporaryFilesFreeBytes) {
-		this.diskTemporaryFilesFreeBytes = diskTemporaryFilesFreeBytes;
+	public void setSuccessful(Boolean successful) {
+		this.successful = successful;
 	}
 
 	public String toString() {

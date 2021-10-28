@@ -19,13 +19,16 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
-import static org.springframework.data.elasticsearch.annotations.FieldType.*;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Integer;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.OffsetDateTime;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
@@ -33,7 +36,7 @@ import org.springframework.data.elasticsearch.annotations.MultiField;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-@Document(indexName="docs_uploaded")
+@Document(indexName="cacao_docs_uploaded")
 public class DocumentUploaded implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 1L;
@@ -45,8 +48,8 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	@Id   
 	private String id;
 
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-    private Date timestamp;
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+    private OffsetDateTime timestamp;
 	
 	@MultiField(
 			mainField = @Field(type=Text, fielddata=true),
@@ -119,8 +122,8 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
-	@Field(type=Date, store = true, format = DateFormat.custom, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-	private Date changedTime;
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	private OffsetDateTime changedTime;
 
 	public String getId() {
 		return id;
@@ -130,11 +133,11 @@ public class DocumentUploaded implements Serializable, Cloneable {
 		this.id = id;
 	}
 
-	public Date getTimestamp() {
+	public OffsetDateTime getTimestamp() {
 		return timestamp;
 	}
 
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(OffsetDateTime timestamp) {
 		this.timestamp = timestamp;
 	}
 
@@ -265,11 +268,11 @@ public class DocumentUploaded implements Serializable, Cloneable {
 		this.rectified = rectified;
 	}
 
-	public Date getChangedTime() {
+	public OffsetDateTime getChangedTime() {
 		return changedTime;
 	}
 
-	public void setChangedTime(Date changedTime) {
+	public void setChangedTime(OffsetDateTime changedTime) {
 		this.changedTime = changedTime;
 	}
 

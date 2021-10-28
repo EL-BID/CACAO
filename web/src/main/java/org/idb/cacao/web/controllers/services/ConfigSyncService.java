@@ -17,37 +17,61 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.web.controllers.services;
 
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentUploaded;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+import java.util.Optional;
+
+import org.idb.cacao.web.entities.ConfigEMail;
+import org.idb.cacao.web.entities.ConfigSync;
+import org.idb.cacao.web.repositories.ConfigSyncRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * DAO for DocumentUploaded objects (history of all uploads from each user)
+ * Service class for functionality related to 'ConfigSync' object
  * 
  * @author Gustavo Figueiredo
  *
  */
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentUploadedRepository extends ElasticsearchRepository<DocumentUploaded, String> {
-	
-	Page<DocumentUploaded> findByTemplateName(String templateName, Pageable pageable);
-	
-	Page<DocumentUploaded> findByUser(String user, Pageable pageable);
+@Service
+@Transactional
+public class ConfigSyncService implements IConfigSyncService {
 
-	Page<DocumentUploaded> findByUserOrderByTimestampDesc(String user, Pageable pageable);
-
-	Page<DocumentUploaded> findByFileId(String fileId, Pageable pageable);
+	@Autowired
+	ConfigSyncRepository configSyncRepository;
 	
-	default public <S extends DocumentUploaded> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
+	@Autowired
+	Environment env;
+
+	@Autowired
+	KeyStoreService keystoreService;
+
+	@Override
+	public ConfigSync getActiveConfig() {
+		Optional<ConfigSync> config = configSyncRepository.findById(ConfigSync.ID_ACTIVE_CONFIG);
+		return config.orElse(null);
+	}
+	
+	@Override
+	public void setActiveConfig(ConfigSync config) {
+		config.setId(ConfigEMail.ID_ACTIVE_CONFIG);
+		configSyncRepository.save(config);
+	}
+
+	@Override
+	public String decryptToken(String token) {
+		if (token==null || token.length()==0)
+			return token;
+		return keystoreService.decrypt(token);
+	}
+	
+	@Override
+	public String encryptToken(String token) {
+		if (token==null || token.length()==0)
+			return token;
+		return keystoreService.encrypt(token);
 	}
 
 }

@@ -17,37 +17,60 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.web.controllers.services;
 
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentUploaded;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+import java.util.Optional;
+
+import org.idb.cacao.web.entities.ConfigEMail;
+import org.idb.cacao.web.repositories.ConfigEMailRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * DAO for DocumentUploaded objects (history of all uploads from each user)
+ * Service class for functionality related to 'ConfigEMail' object
  * 
  * @author Gustavo Figueiredo
  *
  */
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentUploadedRepository extends ElasticsearchRepository<DocumentUploaded, String> {
+@Service
+@Transactional
+public class ConfigEMailService implements IConfigEMailService {
 	
-	Page<DocumentUploaded> findByTemplateName(String templateName, Pageable pageable);
+	@Autowired
+	ConfigEMailRepository configEmailRepository;
 	
-	Page<DocumentUploaded> findByUser(String user, Pageable pageable);
+	@Autowired
+	Environment env;
 
-	Page<DocumentUploaded> findByUserOrderByTimestampDesc(String user, Pageable pageable);
+	@Autowired
+	KeyStoreService keystoreService;
 
-	Page<DocumentUploaded> findByFileId(String fileId, Pageable pageable);
+	@Override
+	public ConfigEMail getActiveConfig() {
+		Optional<ConfigEMail> config = configEmailRepository.findById(ConfigEMail.ID_ACTIVE_CONFIG);
+		return config.orElse(null);
+	}
 	
-	default public <S extends DocumentUploaded> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
+	@Override
+	public void setActiveConfig(ConfigEMail config) {
+		config.setId(ConfigEMail.ID_ACTIVE_CONFIG);
+		configEmailRepository.save(config);
 	}
 
+	@Override
+	public String decryptPassword(String password) {
+		if (password==null || password.length()==0)
+			return password;
+		return keystoreService.decrypt(password);
+	}
+	
+	@Override
+	public String encryptPassword(String password) {
+		if (password==null || password.length()==0)
+			return password;
+		return keystoreService.encrypt(password);
+	}
+	
 }

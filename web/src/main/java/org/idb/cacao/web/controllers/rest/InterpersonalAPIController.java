@@ -19,7 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
-import java.util.Date;
+import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,14 +30,13 @@ import java.util.logging.Logger;
 
 import javax.validation.Valid;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
 import org.idb.cacao.web.GenericCounts;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.InterpersonalRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
+import org.idb.cacao.web.utils.DateTimeUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -112,7 +112,7 @@ public class InterpersonalAPIController {
         log.log(Level.INFO, "Creating new interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
 
         interpersonal.setId(null);
-        interpersonal.setTimestamp(new Date());
+        interpersonal.setTimestamp(DateTimeUtils.now());
         interpersonal.setUser(user.getLogin());
 
         try {
@@ -185,7 +185,7 @@ public class InterpersonalAPIController {
 	            	log.log(Level.INFO, "Creating new interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
 	
 	                interpersonal.setId(null);
-	                interpersonal.setTimestamp(new Date());
+	                interpersonal.setTimestamp(DateTimeUtils.now());
 	                interpersonal.setUser(user.getLogin());
 
 	                try {
@@ -223,7 +223,7 @@ public class InterpersonalAPIController {
         log.log(Level.INFO, "Deleting interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
 
         interpersonal.setRemoved(true);
-        interpersonal.setRemovedTimestamp(new Date());
+        interpersonal.setRemovedTimestamp(DateTimeUtils.now());
         interpersonalRepository.saveWithTimestamp(interpersonal);
         
         return ResponseEntity.ok().body(interpersonal);

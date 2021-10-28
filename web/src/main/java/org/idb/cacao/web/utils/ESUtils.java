@@ -29,14 +29,20 @@ import java.util.List;
 
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CloseIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 
 /**
@@ -46,6 +52,57 @@ import org.elasticsearch.common.unit.TimeValue;
  *
  */
 public class ESUtils {
+	
+	/**
+	 * The ignore_malformed parameter, if set to true, allows the exception to be ignored. The malformed field is not indexed, but other fields in the document are processed normally.
+	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/current/ignore-malformed.html
+	 */
+	public static final String SETTING_IGNORE_MALFORMED = "index.mapping.ignore_malformed";
+	
+	/**
+	 * Change index-scoped boolean setting
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name
+	 * @param setting_name Name of the setting to change
+	 * @param setting_value Boolean value of the setting
+	 * @param closeAndReopenIndex Tells if the index should be closed before changing settings and reopened afterwards
+	 */
+	public static void changeBooleanIndexSetting(RestHighLevelClient elasticsearchClient, String index_name, String setting_name, boolean setting_value, boolean closeAndReopenIndex) throws IOException {
+		changeIndexSettings(elasticsearchClient,
+				index_name,
+				Settings.builder()
+					.put(setting_name, setting_value)
+					.build(),
+				closeAndReopenIndex);
+	}	
+	
+	/**
+	 * Change index-scoped settings
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name
+	 * @param settings Settings to provide
+	 * @param closeAndReopenIndex Tells if the index should be closed before changing settings and reopened afterwards
+	 */
+	public static void changeIndexSettings(RestHighLevelClient elasticsearchClient, String index_name, Settings settings, boolean closeAndReopenIndex) throws IOException {
+		UpdateSettingsRequest request = new UpdateSettingsRequest(index_name);
+		request.settings(settings);
+		
+		if (closeAndReopenIndex)
+			elasticsearchClient.indices().close(new CloseIndexRequest(index_name), RequestOptions.DEFAULT);
+		
+		try {
+			
+			elasticsearchClient.indices().putSettings(request, RequestOptions.DEFAULT);
+			
+		}
+		finally {
+			
+			if (closeAndReopenIndex)
+				elasticsearchClient.indices().open(new OpenIndexRequest(index_name), RequestOptions.DEFAULT);
+			
+		}
+
+	}	
 
 	/**
 	 * Get ElasticSearch cluster health information
@@ -133,6 +190,51 @@ public class ESUtils {
     	return sresp;
 	}
 
+	/**
+	 * Invoke a index request. In case of an error relative to type mismatch, try to fix it by changing an index parameter (index.mapping.ignore_malformed).<BR>
+	 * Warning: this configuration needs to be done with the index closed. So it's possible that this operation disables the index temporarily. 
+	 */
+	public static void indexWithRetry(RestHighLevelClient client, IndexRequest indexRequest) throws IOException {
+		try {
+			client.index(indexRequest, RequestOptions.DEFAULT);
+		}
+		catch (Throwable ex) {
+			if (null!=ErrorUtils.getIllegalArgumentTypeMismatch(ex)
+					|| null!=ErrorUtils.getIllegalArgumentInputString(ex)) {
+				// In case of an error relative to type mismatch, lets try again after chaging some of the index parameters
+				changeBooleanIndexSetting(client, indexRequest.index(), SETTING_IGNORE_MALFORMED, true, /*closeAndReopenIndex*/true);
+				client.index(indexRequest, RequestOptions.DEFAULT);
+			}
+			else {
+				throw ex;
+			}
+		}
+	}	
+	
+	/**
+	 * Creates a new index
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name
+	 * @param settings Settings for the new index
+	 */
+	public static void createIndex(RestHighLevelClient elasticsearchClient, String index_name, Settings settings) throws IOException {
+		CreateIndexRequest request = new CreateIndexRequest(index_name);
+		request.settings(settings);
+		elasticsearchClient.indices().create(request, RequestOptions.DEFAULT);
+	}
+
+	/**
+	 * Creates a new index initialized with some settings
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name
+	 * @param ignore_malformed If set to true, allows the 'malformed' exception to be ignored.
+	 */
+	public static void createIndex(RestHighLevelClient elasticsearchClient, String index_name, boolean ignore_malformed) throws IOException {
+		Settings settings = Settings.builder()
+			.put(SETTING_IGNORE_MALFORMED, ignore_malformed)
+			.build();
+		createIndex(elasticsearchClient, index_name, settings);
+	}
 	
 	public static class IndexSummary {
 		private String health;

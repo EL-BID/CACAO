@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
+import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.SystemMetrics;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
+@Synchronizable(timestamp="changedTime",id="id")
 public interface SystemMetricsRepository extends ElasticsearchRepository<SystemMetrics, String> {
 
 	Page<SystemMetrics> findByHost(String host, Pageable pageable);

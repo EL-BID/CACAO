@@ -235,22 +235,22 @@ public class StringUtils {
 
 			int dia, ano;
 			if (found) {
-				dia = new Integer(m.group(1)).intValue();
-				ano = new Integer(m.group(3)).intValue();
+				dia = Integer.valueOf(m.group(1)).intValue();
+				ano = Integer.valueOf(m.group(3)).intValue();
 				if (ano < 1000)
 					ano += 2000;
 			} else {
 				m = flexible_date6.get().matcher(date);
 				found = m.find();
 				if (found) {
-					dia = new Integer(m.group(3)).intValue();
-					ano = new Integer(m.group(1)).intValue();
+					dia = Integer.valueOf(m.group(3)).intValue();
+					ano = Integer.valueOf(m.group(1)).intValue();
 				} else {
 					m = flexible_date7.get().matcher(date);
 					found = m.find();
 					if (found) {
-						dia = new Integer(m.group(3)).intValue();
-						ano = new Integer(m.group(1)).intValue();
+						dia = Integer.valueOf(m.group(3)).intValue();
+						ano = Integer.valueOf(m.group(1)).intValue();
 					} else {
 						dia = 0;
 						ano = 0;
@@ -310,11 +310,11 @@ public class StringUtils {
 		boolean sep2 = m.end(2) < m.start(3);
 		if (sep1 != sep2)
 			return null;
-		int dia = new Integer(m.group(1)).intValue();
-		int mes = new Integer(m.group(2)).intValue();
+		int dia = Integer.valueOf(m.group(1)).intValue();
+		int mes = Integer.valueOf(m.group(2)).intValue();
 		if (mes == 0)
 			return null; 
-		int ano = new Integer(m.group(3)).intValue();
+		int ano = Integer.valueOf(m.group(3)).intValue();
 		if (ano < 1000)
 			ano += 2000;
 		return toDate(dia, mes, ano);

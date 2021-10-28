@@ -19,12 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Set;
 
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.Taxpayer;
+import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
@@ -57,12 +58,12 @@ public interface TaxpayerRepository extends ElasticsearchRepository<Taxpayer, St
 	Page<Taxpayer> findByTaxPayerIdIn(Set<String> taxPayerId, Pageable pageable);
 		
 	default public <S extends Taxpayer> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(new Date());
+		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
 	
 	default public <S extends Taxpayer> Iterable<S> saveAllWithTimestamp(Iterable<S> entities) {
-		Date now = new Date();
+		OffsetDateTime now = DateTimeUtils.now();
 		entities.forEach(e->e.setChangedTime(now));
 		return saveAll(entities);
 	}

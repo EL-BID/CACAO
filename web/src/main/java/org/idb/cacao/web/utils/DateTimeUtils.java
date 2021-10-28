@@ -19,6 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.utils;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -185,5 +187,13 @@ public class DateTimeUtils {
 		cal_local.set(Calendar.SECOND, cal_gmt.get(Calendar.SECOND));
 		cal_local.set(Calendar.MILLISECOND, cal_gmt.get(Calendar.MILLISECOND));
 		return new Date(cal_local.getTimeInMillis());
+	}
+	
+	/**
+	 * 
+	 * @return	An {@link OffsetDateTime} in UTC time.
+	 */
+	public static final OffsetDateTime now() {
+		return OffsetDateTime.now(ZoneOffset.UTC);		
 	}
 }

@@ -20,10 +20,10 @@
 package org.idb.cacao.web.repositories;
 
 import java.util.Collection;
-import java.util.Date;
 
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.Interpersonal;
+import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.annotations.Query;
@@ -62,7 +62,7 @@ public interface InterpersonalRepository extends ElasticsearchRepository<Interpe
 	Page<Interpersonal> findByPersonId1AndRelationshipTypeAndPersonId2(String personId1, String relationshipType, String personId2, Pageable pageable);
 	
 	default public <S extends Interpersonal> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(new Date());
+		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
 
