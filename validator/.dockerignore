@@ -1,5 +1,7 @@
 .git/
 **/.git/
+.github/
+**/.github/
 target/
 **/target/
 bin/
@@ -10,3 +12,5 @@ bin/
 **/.classpath/
 .project
 **/.project/
+data/
+**/data/
