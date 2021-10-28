@@ -10,21 +10,21 @@ RUN mkdir -p $HOME_API
 COPY api/pom.xml $HOME_API
 COPY api/src $HOME_API/src
 
+# compile, package and install common API
+RUN mvn --no-transfer-progress -B -f $HOME_API/pom.xml ${MVN_ARGS} install -DskipTests
+
 # copy application specific configuration files
 COPY web/pom.xml $HOME
 
 # download all dependencies from MAVEN repository
 ARG MVN_ARGS=${USE_PROXY:+'-s /usr/share/maven/ref/settings-docker.xml'}
-RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} dependency:go-offline -DexcludeArtifactIds=CACAO_API
+RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} dependency:go-offline
 
 # copy web application source code
 COPY web/src $HOME/src/
 
 # duplicate language properties bundle
 RUN cp $HOME/src/main/resources/messages.properties $HOME/src/main/resources/messages_en.properties
-
-# compile, package and install common API
-RUN mvn --no-transfer-progress -B -f $HOME_API/pom.xml ${MVN_ARGS} install -DskipTests
 
 # compile and package web application
 RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} package -DskipTests
