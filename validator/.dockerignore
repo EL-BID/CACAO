@@ -1,16 +1,6 @@
 .git/
-**/.git/
-.github/
-**/.github/
 target/
-**/target/
 bin/
-**/bin/
 .settings/
-**/.settings/
 .classpath
-**/.classpath/
 .project
-**/.project/
-data/
-**/data/
