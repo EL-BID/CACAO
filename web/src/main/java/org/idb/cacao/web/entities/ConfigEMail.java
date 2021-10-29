@@ -29,6 +29,7 @@ import javax.persistence.Id;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 
+import org.idb.cacao.web.utils.AFieldDescriptor;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 
@@ -49,38 +50,47 @@ public class ConfigEMail implements Serializable, Cloneable {
 	
 	@Email
 	@Field(type=Text)
-	@NotNull	
+	@NotNull
+	@AFieldDescriptor(externalName = "email.support")
 	private String supportEmail;
 	
 	@Field(type=Text)
 	@NotNull
+	@AFieldDescriptor(externalName = "email.smtp.host")
 	private String host;
 	
 	@Field(type=Text)
 	@NotNull
+	@AFieldDescriptor(externalName = "email.smtp.host")
 	private int port;
 	
 	@Enumerated(EnumType.STRING)
 	@NotNull
-	@Field(type=Text)		
+	@Field(type=Text)
+	@AFieldDescriptor(externalName = "email.smtp.protocol")
 	private EmailProtocol protocol;
 	
 	@Field(type=Text)
+	@AFieldDescriptor(externalName = "email.smtp.user.name")
 	private String username;
 	
 	@Field(type=Text)
+	@AFieldDescriptor(externalName = "email.smtp.user.password")
 	private String password;
 	
 	@Field(type=Text)
 	@NotNull
+	@AFieldDescriptor(externalName = "email.smtp.auth")
 	private boolean auth;
 	
 	@Field(type=Text)
 	@NotNull
+	@AFieldDescriptor(externalName = "email.smtp.tls")
 	private boolean tls;
 	
 	@Field(type=Text)
 	@NotNull
+	@AFieldDescriptor(externalName = "email.smtp.timeout")
 	private int timeout;
 	
 	public ConfigEMail() {
