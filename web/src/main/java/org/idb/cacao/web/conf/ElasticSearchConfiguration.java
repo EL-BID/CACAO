@@ -19,6 +19,15 @@
  *******************************************************************************/
 package org.idb.cacao.web.conf;
 
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.net.ssl.SSLContext;
+
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.ssl.SSLContexts;
+import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -29,6 +38,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.RestClients;
+import org.springframework.data.elasticsearch.client.ClientConfiguration.MaybeSecureClientConfigurationBuilder;
+import org.springframework.data.elasticsearch.client.ClientConfiguration.TerminalClientConfigurationBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
@@ -53,16 +64,39 @@ public class ElasticSearchConfiguration {
     @Bean
     public RestHighLevelClient client() {
     	
-    	// Set ElasticSearch hostname and port number accordingly to application properties configuration (may be overriden
-    	// by command line options as well, check 'setup.sh' if running under Docker image)
 		String esUrl = String.format("%s:%s", 
 				env.getProperty("es.host"), 
 				env.getProperty("es.port"));
 
-		ClientConfiguration clientConfiguration =
-				(isSSL()) ? ClientConfiguration.builder().connectedTo(esUrl).usingSsl().build()
-						:	ClientConfiguration.builder().connectedTo(esUrl).build();
+		TerminalClientConfigurationBuilder clientConfigurationBuilder;
+				
+		if (isSSL()) {
+			MaybeSecureClientConfigurationBuilder builder = ClientConfiguration.builder().connectedTo(esUrl);
+			if (isSSLVerifyHost()) {
+				clientConfigurationBuilder = builder.usingSsl();
+			}
+			else {
+				try {
+					TrustStrategy acceptingTrustStrategy = (cert, authType) -> true;
+				    SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(null, acceptingTrustStrategy).build();
+					clientConfigurationBuilder = builder.usingSsl(sslContext, NoopHostnameVerifier.INSTANCE);
+				} catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		else {
+			clientConfigurationBuilder = ClientConfiguration.builder().connectedTo(esUrl);
+		}
+				
+		String username = env.getProperty("es.user");
+		String password = env.getProperty("es.password");
+		if (username!=null && username.trim().length()>0) {
+			clientConfigurationBuilder.withBasicAuth(username, password);
+		}
 
+		ClientConfiguration clientConfiguration = clientConfigurationBuilder.build();
+		
         return RestClients.create(clientConfiguration)
             .rest();
     }
@@ -72,13 +106,15 @@ public class ElasticSearchConfiguration {
         return new ElasticsearchRestTemplate(client());
     }
 
-    /**
-     * Indicates if ElasticSearch requires SSL according to the application properties configuration (may be overriden
-     * by command line options as well, check 'setup.sh' if running under Docker image)
-     */
     public boolean isSSL() {
+    	if ("true".equalsIgnoreCase(env.getProperty("es.ssl")))
+    		return true;
     	String es_port = env.getProperty("es.port");
     	return "443".equals(es_port);
+    }
+    
+    public boolean isSSLVerifyHost() {
+    	return !"false".equalsIgnoreCase(env.getProperty("es.ssl.verifyhost"));
     }
 	
 }

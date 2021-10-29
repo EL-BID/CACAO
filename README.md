@@ -214,3 +214,85 @@ docker-compose build
 6. RUN with Docker Compose
 
 docker-compose up -d
+
+
+___
+
+## Configure Role Based User Authentication (RBAC) for ElasticSearch and Kibana
+
+### Create self signed certificates for every component in the stack
+
+    docker cp conf/instance.yml es01:/usr/share/elasticsearch/config/instance.yml
+    docker exec -it es01 /usr/share/elasticsearch/bin/elasticsearch-certutil cert --keep-ca-key --pem --in /usr/share/elasticsearch/config/instance.yml --out /usr/share/elasticsearch/CERT/certs.zip
+
+Confirm with 'Y' if prompted to create 'CERT' directory.
+
+### Copy certificate files to local
+
+    docker cp es01:/usr/share/elasticsearch/CERT/certs.zip conf/certs.zip
+    unzip conf/certs.zip -d conf
+    
+If 'unzip' is not recognized as a valid command, install it first (e.g.: yum install unzip)
+
+### Copy certificate files to each node of ElasticSearch and Kibana
+
+    chmod u+x conf/copy_certs.sh
+    conf/copy_certs.sh
+
+### Stop running components
+    docker-compose stop web kibana es01 es02 es03
+
+### Copy 'docker-compose.override.ssl.yml' to 'docker-compose.override.yml'
+    cp docker-compose.override.ssl.yml docker-compose.override.yml 
+
+WARNING
+
+If you are using a different version of 'docker-compose.yml', you may need to check the
+contents of 'docker-compose.override.ssl.yml' and see if they match you current
+configuration (e.g. check the services names and the number of them)
+
+### Start Elastic nodes
+    docker-compose up -d es01 es02 es03
+
+### Access shell inside ElasticSearch container
+    docker exec -it es01 /bin/bash
+
+### Generates random passwords for ElasticSearch components
+    /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -u "https://es01:9200"
+    
+When prompted, confirm with 'y' and ENTER
+
+VERY IMPORTANT!!! The previous command will print all the passwords at the console. COPY AND PASTE these random passwords to a safe notebook to continue with the configuration. After all the configurations are done, you SHOULD delete these annotations.
+    
+Take note of login and passwords for all user accounts that were generated (most important ones: 'elastic' and 'kibana')
+
+### Exit shell from es01
+
+### Add to .env file at the host the password that was generated for 'kibana' user. Change the {password} below with the actual password that has been generated
+    echo KIBANA_PASSWORD={password} >> .env
+ 
+ ### Start Kibana
+    docker-compose up -d kibana
+ 
+### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
+    docker exec -it kibana tail -f /usr/share/kibana/logs/kibana.log
+    
+### Include all permissions to the Application (replace {elastic password here} with the password generated in previous step for user account 'elastic')
+    echo 'es.user=elastic' >> app_config
+    
+    echo 'es.password={elastic password here}' >> app_config
+    
+    echo 'es.ssl=true' >> app_config
+
+    echo 'es.ssl.verifyhost=false' >> app_config
+    
+### Start Application node
+    docker-compose up -d web
+    
+### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
+    docker logs --follow web
+
+### Start Proxy node
+    docker-compose up -d proxy
+    
+### Test access to Kontaktu using your browser
