@@ -240,7 +240,7 @@ If 'unzip' is not recognized as a valid command, install it first (e.g.: yum ins
     conf/copy_certs.sh
 
 ### Stop running components
-    docker-compose stop web kibana es01 es02 es03
+    docker-compose stop web etl validator kibana es01 es02 es03
 
 ### Copy 'docker-compose.override.ssl.yml' to 'docker-compose.override.yml'
     cp docker-compose.override.ssl.yml docker-compose.override.yml 
