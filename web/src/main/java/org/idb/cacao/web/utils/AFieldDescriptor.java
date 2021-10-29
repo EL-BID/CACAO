@@ -24,7 +24,7 @@ import java.lang.reflect.Field;
 public @interface AFieldDescriptor {
 
 	/**
-	 * External name (GUI) when the {@link Field} is displayed in HTML form or other way.
+	 * External name to be displayed when the {@link Field} is displayed in HTML form or table.
 	 */
 	String externalName();
 

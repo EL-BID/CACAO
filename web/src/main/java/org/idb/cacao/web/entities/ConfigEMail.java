@@ -51,46 +51,46 @@ public class ConfigEMail implements Serializable, Cloneable {
 	@Email
 	@Field(type=Text)
 	@NotNull
-	@AFieldDescriptor(externalName = "email.support")
+	@AFieldDescriptor(externalName = "email.support", width = 200)
 	private String supportEmail;
 	
 	@Field(type=Text)
 	@NotNull
-	@AFieldDescriptor(externalName = "email.smtp.host")
+	@AFieldDescriptor(externalName = "email.smtp.host", width = 150)
 	private String host;
 	
 	@Field(type=Text)
 	@NotNull
-	@AFieldDescriptor(externalName = "email.smtp.host")
+	@AFieldDescriptor(externalName = "email.smtp.port", width = 80)
 	private int port;
 	
 	@Enumerated(EnumType.STRING)
 	@NotNull
 	@Field(type=Text)
-	@AFieldDescriptor(externalName = "email.smtp.protocol")
+	@AFieldDescriptor(externalName = "email.smtp.protocol", width = 80)
 	private EmailProtocol protocol;
 	
 	@Field(type=Text)
-	@AFieldDescriptor(externalName = "email.smtp.user.name")
+	@AFieldDescriptor(externalName = "email.smtp.user.name", width = 150)
 	private String username;
 	
 	@Field(type=Text)
-	@AFieldDescriptor(externalName = "email.smtp.user.password")
+	@AFieldDescriptor(externalName = "email.smtp.user.password", width = 150)
 	private String password;
 	
 	@Field(type=Text)
 	@NotNull
-	@AFieldDescriptor(externalName = "email.smtp.auth")
+	@AFieldDescriptor(externalName = "email.smtp.auth", width = 50)
 	private boolean auth;
 	
 	@Field(type=Text)
 	@NotNull
-	@AFieldDescriptor(externalName = "email.smtp.tls")
+	@AFieldDescriptor(externalName = "email.smtp.tls", width = 50)
 	private boolean tls;
 	
 	@Field(type=Text)
 	@NotNull
-	@AFieldDescriptor(externalName = "email.smtp.timeout")
+	@AFieldDescriptor(externalName = "email.smtp.timeout", width = 150)
 	private int timeout;
 	
 	public ConfigEMail() {
