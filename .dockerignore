@@ -19,3 +19,4 @@ app_config
 es/
 kibana/
 proxy/
+conf/
