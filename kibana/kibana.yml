@@ -8,11 +8,20 @@ server.host: 0.0.0.0
 # Supported languages are the following: English - en , by default , Chinese - zh-CN .
 i18n.locale: "en"
 
-server.name: "my-kibana"
-server.ssl.enabled: false
+server.name: ${SERVER_NAME}
 
 # The URLs of the Elasticsearch instances to use for all your queries.
-elasticsearch.hosts: ["http://es01:${ESPORT}"]
+elasticsearch.hosts: ${ES_HOSTS}
+
+server.ssl.enabled: ${SSL_ENABLED}
+server.ssl.certificate: /usr/share/kibana/config/certs/kibana.crt
+server.ssl.key: /usr/share/kibana/config/certs/kibana.key
+
+server.publicBaseUrl: https://${URL}/kibana
+
+elasticsearch.username: ${KIBANA_USERNAME}
+elasticsearch.password: ${KIBANA_PASSWORD}
+elasticsearch.ssl.certificateAuthorities: [ "/usr/share/kibana/config/certs/ca.crt" ]
 
 # LOG file output (default is stdout)
 logging.dest: /usr/share/kibana/logs/kibana.log
