@@ -17,35 +17,40 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.web.conf;
 
-import java.util.List;
+import org.idb.cacao.web.controllers.services.IConfigEMailService;
+import org.idb.cacao.web.controllers.ui.ConfigEMailUIController;
+import org.idb.cacao.web.entities.ConfigEMail;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.DocumentTemplate;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.annotations.Query;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+/**
+ * Configuration related to use of SMTP service for sending e-mails
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
+@Configuration
+public class MailSenderConfiguration {
 
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
-	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+    @Autowired
+    private IConfigEMailService configEmailService;
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
-	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
-	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
+	@Bean
+	public JavaMailSender getJavaMailSender() {
+		
+	    JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+	    ConfigEMail config = configEmailService.getActiveConfig();
+	    if (config!=null) {
+	    	ConfigEMailUIController.configureMailSender(mailSender, configEmailService, config);
+	    }
+	    //props.put("mail.debug", "true");
+	    
+	    return mailSender;
 	}
 
 }

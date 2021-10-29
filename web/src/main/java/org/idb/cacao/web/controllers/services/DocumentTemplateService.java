@@ -158,59 +158,6 @@ public class DocumentTemplateService {
 	}
 
 	/**
-	 * Returns the templates names that allows simple pay (returns only their names, not their versions)
-	 */
-	public Set<String> getSimplePayTemplates() {
-		
-		Set<String> templates_names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> templates = templateRepository.findByAllowSimplePay(Boolean.TRUE);
-		for (DocumentTemplate template:templates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
-				continue;
-			templates_names.add(template.getName());
-		}
-
-		return templates_names;		
-	}
-	
-	/**
-	 * Returns the templates names that allows simple pay and their corresponding periodicities
-	 */
-	public Map<String, Periodicity> getSimplePayTemplatesPeriodicityMap() {
-		
-		Map<String, Periodicity> templates_periodicity = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Map<String, OffsetDateTime> templates_timestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> templates = templateRepository.findByAllowSimplePay(Boolean.TRUE);
-		for (DocumentTemplate template:templates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
-				continue;
-			String name = template.getName();
-			OffsetDateTime timestamp = template.getTemplateCreateTime();
-			Periodicity periodicity = template.getPeriodicity();
-			Periodicity last_known_periodicity = templates_periodicity.get(name);
-			if (last_known_periodicity==null || Periodicity.UNKNOWN.equals(last_known_periodicity)) {
-				templates_periodicity.put(name, periodicity);
-				templates_timestamps.put(name, timestamp);
-			}
-			else if (!Periodicity.UNKNOWN.equals(periodicity)
-					&& !last_known_periodicity.equals(periodicity)) {
-				// If we got different periodicities for the same template name, keeps the last one
-				OffsetDateTime last_known_timestamp = templates_timestamps.get(name);
-				if (last_known_timestamp!=null && timestamp!=null && last_known_timestamp.isBefore(timestamp)) {
-					templates_periodicity.put(name, periodicity);
-					templates_timestamps.put(name, timestamp);					
-				}
-			}
-		}
-
-		return templates_periodicity;		
-	}
-	
-	/**
 	 * Returns the templates names that requires declaration and their corresponding periodicities
 	 */
 	public Map<String, Periodicity> getTemplatesWithFilesPeriodicityMap() {

@@ -53,9 +53,6 @@ import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -145,9 +142,6 @@ public class SyncAPIService {
 	@Autowired
 	private Collection<Repository<?, ?>> all_repositories;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-    
     private RestTemplate restTemplate;
     
     /**

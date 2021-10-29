@@ -82,12 +82,6 @@ public class LoginUIController {
 		return "login/forgetPassword";
 	}
 
-	@GetMapping("/institutional")
-	public String showInstitutional(Model model) {
-
-		return "legal/institutional";
-	}
-
 	@GetMapping("/home")
 	public String showHome(Model model, HttpServletRequest request) {
 		
@@ -101,14 +95,6 @@ public class LoginUIController {
 
 		return "login/home";
 	}
-	
-	@GetMapping("/bulletin_board")
-	public String getBulletinBoard(Model model) {
-		
-		// TODO: collect tax administration messages targetted to the logged user
-		
-		return "comm/bulletin_board";
-	}	
 	
 	public List<MenuItem> getHomeMenuItens() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();

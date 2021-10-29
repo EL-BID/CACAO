@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,7 +39,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.CommunicationService;
-import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.FieldsConventionsService;
 import org.idb.cacao.web.controllers.services.PrivilegeService;
 import org.idb.cacao.web.controllers.services.UserService;
@@ -97,9 +95,6 @@ public class CommunicationUIController {
 	private FieldsConventionsService fieldsConventionsService;
 	
 	@Autowired
-	private DocumentTemplateService templateService;
-	
-	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 
     @Autowired
@@ -151,12 +146,6 @@ public class CommunicationUIController {
 	
 		model.addAttribute("legislations", allMenuItens);
 		
-    	try {
-	    	Set<String> templates = templateService.getSimplePayTemplates();
-	        model.addAttribute("has_simplepay_templates", templates!=null && !templates.isEmpty());
-    	}
-    	catch (Throwable ex) { }
-
     	ControllerUtils.tagLoggedArea(model);
 
 		return "legislation";
@@ -188,12 +177,6 @@ public class CommunicationUIController {
 	
 		model.addAttribute("instructions", filtered_communications);
 		
-    	try {
-	    	Set<String> templates = templateService.getSimplePayTemplates();
-	        model.addAttribute("has_simplepay_templates", templates!=null && !templates.isEmpty());
-    	}
-    	catch (Throwable ex) { }
-
     	ControllerUtils.tagLoggedArea(model);
 
 		return "instructions";
@@ -270,7 +253,7 @@ public class CommunicationUIController {
 		
 		model.addAttribute("communications", filtered_communications);
 
-		return "bulletin_board";
+		return "comm/bulletin_board";
 	}
 
 	@Secured({"ROLE_COMMUNICATION_READ"})

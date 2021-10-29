@@ -99,12 +99,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	private String taxCode;
 	
 	/**
-	 * Indicates that this tax/declaration admits simplified payment (i.e. the taxpayer can generate a payment slip directly without submitting a document)
-	 */
-	@Field(type=Boolean)
-	private Boolean allowSimplePay;
-
-	/**
 	 * Indicates that this tax/declaration admits rectifying any past periods.
 	 * Configuration for rejecting or accepting incoming file that rectifies another previous uploaded file when there
 	 * are other files related to later periods. E.g.: Suppose taxpayer has already uploaded files for jan/2020 and feb/2020,
@@ -293,20 +287,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 
 	public void setTimestampSample(OffsetDateTime timestampSample) {
 		this.timestampSample = timestampSample;
-	}
-
-	/**
-	 * Indicates that this tax/declaration admits simplified payment (i.e. the taxpayer can generate a payment slip directly without submitting a document)
-	 */
-	public Boolean getAllowSimplePay() {
-		return allowSimplePay;
-	}
-
-	/**
-	 * Indicates that this tax/declaration admits simplified payment (i.e. the taxpayer can generate a payment slip directly without submitting a document)
-	 */
-	public void setAllowSimplePay(Boolean allowSimplePay) {
-		this.allowSimplePay = allowSimplePay;
 	}
 
 	/**

@@ -52,13 +52,6 @@ import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -77,7 +70,6 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.hibernate.jpa.QueryHints;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.controllers.dto.SyncDto;
@@ -179,9 +171,6 @@ public class SyncAPIController {
 	@Autowired
 	private Collection<Repository<?, ?>> all_repositories;
 	
-    @PersistenceContext
-    private EntityManager entityManager;
-
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 
@@ -861,10 +850,7 @@ public class SyncAPIController {
 		
 		Stream<?> query_results;
 		
-		if (isJPAEntity(entity)) {
-			query_results = queryJPAEntity(entity, timestamp_field, start, end);
-		}
-		else if (isESDocument(entity)) {
+		if (isESDocument(entity)) {
 			query_results = queryESEntity(entity, timestamp_field, start, end);
 		}
 		else {
@@ -892,12 +878,7 @@ public class SyncAPIController {
 		if (start==0L) {
 			Stream<?> query_more_results = null;
 			try {
-				if (isJPAEntity(entity)) {
-					query_more_results = queryJPAEntityWithNullTimestamp(entity, timestamp_field);
-				}
-				else {
-					query_more_results = queryESEntityWithNullTimestamp(entity, timestamp_field);
-				}
+				query_more_results = queryESEntityWithNullTimestamp(entity, timestamp_field);
 
 				sync_data.iterateResults(query_more_results, /*checkLimit*/false);
 				
@@ -1055,61 +1036,12 @@ public class SyncAPIController {
 	}
 	
 	/**
-	 * Returns indication that a given class corresponds to a JPA annotated entity
-	 */
-	public static boolean isJPAEntity(Class<?> entity) {
-		return entity.getAnnotation(Entity.class)!=null;
-	}
-
-	/**
 	 * Returns indication that a given class corresponds to an ElasticSearch annotated entity
 	 */
 	public static boolean isESDocument(Class<?> entity) {
 		return entity.getAnnotation(Document.class)!=null;
 	}
 	
-	/**
-	 * Queries for JPA entities with timestamp informed in a given interval
-	 */
-	public Stream<?> queryJPAEntity(Class<?> entity, String timestamp_field, long start, long end) {
-		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-		CriteriaQuery<?> criteriaQuery = criteriaBuilder.createQuery(entity);
-		Root<?> entityRoot = criteriaQuery.from(entity);
-		
-		criteriaQuery.where(
-			criteriaBuilder.and(
-				criteriaBuilder.greaterThanOrEqualTo(entityRoot.get(timestamp_field), new Date(start)),
-				criteriaBuilder.lessThan(entityRoot.get(timestamp_field), new Date(end)))
-			);
-		criteriaQuery.orderBy(criteriaBuilder.asc(entityRoot.get(timestamp_field)));
-
-    	Query query = entityManager.createQuery(criteriaQuery);
-    	query.setHint(QueryHints.HINT_READONLY, true);
-    	query.setMaxResults(MAX_RESULTS_PER_REQUEST);
-
-    	if (isFullDebugEnabled()) {
-    		log.log(Level.INFO, "SYNC entity: "+entity.getSimpleName()+", timestamp_field:"+timestamp_field+", start:"+start+", end:"+end+", JPA query: "+query.toString());
-    	}
-
-    	return query.getResultStream();
-	}
-
-	/**
-	 * Queries for JPA entities with no timestamp information (NULL values)
-	 */
-	public Stream<?> queryJPAEntityWithNullTimestamp(Class<?> entity, String timestamp_field) {
-		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-		CriteriaQuery<?> criteriaQuery = criteriaBuilder.createQuery(entity);
-		Root<?> entityRoot = criteriaQuery.from(entity);
-		
-		criteriaBuilder.isNull(entityRoot.get(timestamp_field));
-
-    	Query query = entityManager.createQuery(criteriaQuery);
-    	query.setHint(QueryHints.HINT_READONLY, true);
-    	
-    	return query.getResultStream();
-	}
-
 	/**
 	 * Queries for ElasticSearch entities with timestamp informed in a given interval
 	 */
@@ -1707,10 +1639,7 @@ public class SyncAPIController {
 			
 			Stream<?> query_results;
 			
-			if (SyncAPIController.isJPAEntity(entity)) {
-				query_results = queryJPAEntityWithNullTimestamp(entity, timestamp_field);
-			}
-			else if (SyncAPIController.isESDocument(entity)) {
+			if (SyncAPIController.isESDocument(entity)) {
 				query_results = queryESEntityWithNullTimestamp(entity, timestamp_field);
 			}
 			else {
