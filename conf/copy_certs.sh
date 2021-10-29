@@ -1,4 +1,5 @@
 #!/bin/bash
+docker exec -it es01 mkdir -p /usr/share/elasticsearch/config/certs
 docker cp conf/ca/ca.crt es01:/usr/share/elasticsearch/config/certs/ca.crt
 docker cp conf/ca/ca.key es01:/usr/share/elasticsearch/config/certs/ca.key
 docker cp conf/es01/es01.crt es01:/usr/share/elasticsearch/config/certs/es01.crt
