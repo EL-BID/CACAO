@@ -3,14 +3,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.5.4</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>org.idb.cacao</groupId>
+		<artifactId>CACAO</artifactId>
+		<version>1.0</version>
 	</parent>
-	<groupId>org.idb.cacao.etl</groupId>
 	<artifactId>CACAO_ETL</artifactId>
-	<version>1.0</version>
 	<name>CACAO ETL</name>
 	<description>MVP for an accounting data system</description>
 	<properties>
@@ -22,51 +19,7 @@
 	</properties>
 	
 	<dependencies>
-	
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		
-		<dependency>
-	    	<groupId>org.springframework.boot</groupId>
-	    	<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-	    	<exclusions>
-      			<exclusion> 
-		        	<groupId>org.springframework.boot</groupId>
-        			<artifactId>spring-boot-starter-logging</artifactId>
-      			</exclusion>
-    		</exclusions> 
-		</dependency>
-		
-		<dependency>
-			<groupId>org.thymeleaf.extras</groupId>
-			<artifactId>thymeleaf-extras-springsecurity5</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		
-		
+					
 		<dependency>
 		    <groupId>org.springframework.cloud</groupId>
 		    <artifactId>spring-cloud-stream</artifactId>
@@ -111,13 +64,7 @@
 			<type>jar</type>
 			<scope>provided</scope>
 		</dependency>
-		
-	<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-log4j2 -->
-	<dependency>
-	    <groupId>org.springframework.boot</groupId>
-	    <artifactId>spring-boot-starter-log4j2</artifactId>
-	</dependency>
-		
+				
 	</dependencies>
 
 	<build>

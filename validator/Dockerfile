@@ -4,6 +4,9 @@ RUN mkdir -p $HOME
 WORKDIR $HOME
 COPY validator/settings-docker.xml /usr/share/maven/ref/settings-docker.xml
 
+# copy parent POM
+COPY pom.xml /home/usr
+
 # copy common API source code
 ENV HOME_API=/home/usr/api
 RUN mkdir -p $HOME_API
