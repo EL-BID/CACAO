@@ -22,6 +22,7 @@ package org.idb.cacao.web.sec;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.idb.cacao.web.controllers.services.PrivilegeService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
@@ -49,6 +50,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private PrivilegeService privilegeService;
+
 	@Override
 	public UserDetails loadUserByUsername(String name) throws UsernameNotFoundException {
 		
@@ -71,9 +75,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         return builder.build();
 	}
 
-	public static Collection<GrantedAuthority> getAuthorities(User user) {
-		// TODO:
-		// Should return a list of 'SimpleGrantedAuthority' objects
-		return Collections.emptyList();
+	public Collection<GrantedAuthority> getAuthorities(User user) {
+		if (user==null || user.getProfile()==null)
+			return Collections.emptyList();
+		return privilegeService.getGrantedAuthorities(user.getProfile());
 	}
 }

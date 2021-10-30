@@ -28,6 +28,7 @@ import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.annotations.CountQuery;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
@@ -65,6 +66,12 @@ public interface UserRepository extends ElasticsearchRepository<User, String> {
 	 * Find all users, allowing pagination over the results
 	 */
 	public Page<User> findAll(Pageable pageable);
+	
+	/**
+	 * Count the number of User records that has some UserProfile defined
+	 */
+	@CountQuery("{ \"exists\": { \"field\": \"profile\" } }")
+	public long countByProfileIsNotNull();
 	
 	/**
 	 * Save the record in database, updating the internal 'timestamp' field in order

@@ -33,6 +33,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
+import org.idb.cacao.web.controllers.services.PrivilegeService;
+import org.idb.cacao.web.entities.SystemPrivilege;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +59,9 @@ public class ApiKeyAuthenticationFilter implements Filter {
 	@Autowired
 	private KeyStoreService ksRepository;
 
+    @Autowired
+    private PrivilegeService privilegeService;
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException
@@ -66,8 +71,16 @@ public class ApiKeyAuthenticationFilter implements Filter {
             if(apiKey != null) {
             	Optional<User> matching_user = getUserGivenTokenAPI(apiKey);
                 if(matching_user.isPresent()) {
-                    ApiKeyAuthenticationToken apiToken = new ApiKeyAuthenticationToken(matching_user.get(), CustomUserDetailsService.getAuthorities(matching_user.get()));
-                    SecurityContextHolder.getContext().setAuthentication(apiToken);
+                	if (!privilegeService.hasPrivilege(matching_user.get().getProfile(), SystemPrivilege.CONFIG_API_TOKEN)) {
+                        HttpServletResponse httpResponse = (HttpServletResponse) response;
+                        httpResponse.setStatus(HttpStatus.SC_UNAUTHORIZED); // 401
+                        httpResponse.getWriter().write("Use of API Token is prohibited for your user profile");                    
+                        return;                		
+                	}
+                	else {
+	                    ApiKeyAuthenticationToken apiToken = new ApiKeyAuthenticationToken(matching_user.get(), privilegeService.getGrantedAuthorities(matching_user.get().getProfile()));
+	                    SecurityContextHolder.getContext().setAuthentication(apiToken);
+                	}
                 } else {
                     HttpServletResponse httpResponse = (HttpServletResponse) response;
                     httpResponse.setStatus(HttpStatus.SC_UNAUTHORIZED); // 401

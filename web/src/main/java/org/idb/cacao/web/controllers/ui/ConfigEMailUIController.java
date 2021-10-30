@@ -52,10 +52,10 @@ public class ConfigEMailUIController {
 	private static final String UNCHANGED_PASSWORD = "$$$$UNCHANGED_PASSWORD$$$$$";
 
 	@Autowired
-	ConfigEMailService configEMailService;
+	private ConfigEMailService configEMailService;
 	
 	@Autowired
-	JavaMailSender mailSender;
+	private JavaMailSender mailSender;
 
 	@Secured("ROLE_CONFIG_SYSTEM_MAIL")
 	@GetMapping("/config_email")
@@ -66,7 +66,7 @@ public class ConfigEMailUIController {
 		if (config.getPassword()!=null && config.getPassword().trim().length()>0)
 			config.setPassword(UNCHANGED_PASSWORD);	// never reveal password (not even the encrypted one)
 		model.addAttribute("config", config);
-		return "config_email";
+		return "config/smtp/config_email";
 	}
 
 	@Secured("ROLE_CONFIG_SYSTEM_MAIL")

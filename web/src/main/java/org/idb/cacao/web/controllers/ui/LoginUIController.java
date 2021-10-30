@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 
 import org.idb.cacao.web.dto.MenuItem;
+import org.idb.cacao.web.entities.SystemPrivilege;
 import org.idb.cacao.web.utils.LoginUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -113,9 +114,26 @@ public class LoginUIController {
 
 		List<MenuItem> menu = new LinkedList<>();
 
-		menu.add(new MenuItem(messages.getMessage("docs_main_upload", null, LocaleContextHolder.getLocale()),
+		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_WRITE)) {
+			menu.add(new MenuItem(messages.getMessage("docs_main_upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
+		}
+
+		MenuItem submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
+		menu.add(submenu);
+		if (hasPrivilege(roles, SystemPrivilege.CONFIG_SYSTEM_MAIL)) {
+			submenu.withChild(new MenuItem(messages.getMessage("config.email", null, LocaleContextHolder.getLocale()),
+					"/config_email"));
+		}
 
 		return menu;
+	}
+
+	/**
+	 * Given a collection of user roles, check if any of these roles is mapped to the given privilege
+	 */
+	public static boolean hasPrivilege(Collection<? extends GrantedAuthority> roles, SystemPrivilege privilege) {
+		return roles.stream()
+				.anyMatch(a -> privilege.getRole().equalsIgnoreCase(a.getAuthority()));
 	}
 }

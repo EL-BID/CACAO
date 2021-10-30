@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.idb.cacao.web.controllers.services.PrivilegeService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
@@ -66,6 +67,9 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 	@Autowired
 	private Environment env;
 
+    @Autowired
+    private PrivilegeService privilegeService;
+
 	@Override
 	public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 		// Delegate to the default implementation for loading a user
@@ -102,13 +106,13 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
         return new CustomOAuth2User(user, oauthUser);
 	}
 
-	public static Collection<GrantedAuthority> getUserAuthorities(User user) {
-		// TODO:
-		// Should return a list of 'SimpleGrantedAuthority' objects
-		return Collections.emptyList();
+	public Collection<GrantedAuthority> getUserAuthorities(User user) {
+		if (user==null || user.getProfile()==null)
+			return Collections.emptyList();
+		return privilegeService.getGrantedAuthorities(user.getProfile());
 	}
 
-	public static class CustomOAuth2User extends DefaultOAuth2User {
+	public class CustomOAuth2User extends DefaultOAuth2User {
 		private static final long serialVersionUID = 1L;
 		private final User user;
 		public CustomOAuth2User(User user, OAuth2User oauthUser) {

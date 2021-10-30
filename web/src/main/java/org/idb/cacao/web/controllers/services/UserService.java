@@ -87,10 +87,10 @@ public class UserService {
 	private final AtomicBoolean initialSetup = new AtomicBoolean();
     
     @Autowired
-    MessageSource messages;
+    private MessageSource messages;
     
     @Autowired
-    InterpersonalRepository interpersonalRepository;
+    private InterpersonalRepository interpersonalRepository;
     
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;    
@@ -106,6 +106,7 @@ public class UserService {
 			return;
 		
 		try {
+			
 			// Populate with first master-user if there is none
 			if (userRepository.count()==0) {
 				String login = env.getProperty("first.master.user.login");
@@ -119,9 +120,30 @@ public class UserService {
 					user.setLogin(login);
 					user.setPassword(encodePassword(password));
 					user.setName(name);
+					user.setProfile(UserProfile.SYSADMIN);
 					userRepository.saveWithTimestamp(user);
 				}
 			}
+			
+			// If no user has any profile, configure the built-in first user as SYSADMIN
+			else if (userRepository.countByProfileIsNotNull()==0) {
+
+				String login = env.getProperty("first.master.user.login");
+				if (login!=null && login.trim().length()>0) {
+
+					User first_sysadmin_user = userRepository.findByLogin(login);
+					if (first_sysadmin_user!=null) {
+
+						log.log(Level.WARNING, "Configuring SYSADMIN profile for user: "+login);
+						first_sysadmin_user.setProfile(UserProfile.SYSADMIN);
+						userRepository.saveWithTimestamp(first_sysadmin_user);
+
+					}
+					
+				}
+				
+			}
+			
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.idb.cacao.web.controllers.services.PrivilegeService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
@@ -62,6 +63,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
     
 	@Autowired
 	private Environment env;
+
+    @Autowired
+    private PrivilegeService privilegeService;
 
     private final OidcUserService delegate;
     
@@ -106,13 +110,13 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
          return new CustomOidcUser(user, oidcUser);
 	}
 
-	public static Collection<GrantedAuthority> getUserAuthorities(User user) {
-		// TODO:
-		// Should return a list of 'SimpleGrantedAuthority' objects
-		return Collections.emptyList();
+	public Collection<GrantedAuthority> getUserAuthorities(User user) {
+		if (user==null || user.getProfile()==null)
+			return Collections.emptyList();
+		return privilegeService.getGrantedAuthorities(user.getProfile());
 	}
 
-	public static class CustomOidcUser extends DefaultOidcUser {
+	public class CustomOidcUser extends DefaultOidcUser {
 		private static final long serialVersionUID = 1L;
 		private final User user;
 		public CustomOidcUser(User user, OidcUser oidcUser) {

@@ -21,7 +21,7 @@ package org.idb.cacao.web.entities;
 
 /**
  * Enumeration of simple user profiles.
- * In this application we are allowing only one privilege to each user.
+ * In this application we are allowing only one profile to each user.
  * 
  * @author Gustavo Figueiredo
  */

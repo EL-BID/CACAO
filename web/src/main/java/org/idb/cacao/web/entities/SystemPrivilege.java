@@ -66,11 +66,6 @@ public enum SystemPrivilege {
 	CONFIG_SYSTEM_MAIL,
 	
 	/**
-	 * Privilege for changing configuration of Telegram message delivery
-	 */
-	CONFIG_SYSTEM_TELEGRAM,
-
-	/**
 	 * Privilege for reading or listing interpersonal configurations for all taxpayers
 	 */
 	INTERPERSONAL_READ_ALL,
@@ -81,87 +76,10 @@ public enum SystemPrivilege {
 	INTERPERSONAL_WRITE,
 	
 	/**
-	 * Privilege for reading or listing payee configurations
-	 */
-	PAYEE_READ,
-	
-	/**
-	 * Privilege for changing payee configurations
-	 */
-	PAYEE_WRITE,
-	
-	/**
-	 * Privilege for reading or listing configuration about legal payment additions
-	 */
-	PAYMENT_ADDITION_READ,
-
-	/**
-	 * Privilege for changing configuration about legal payment additions
-	 */
-	PAYMENT_ADDITION_WRITE,
-
-	/**
-	 * Privilege for confirming payment
-	 */
-	PAYMENT_CONFIRM,
-
-	/**
-	 * Privilege for confirming payment by SIGEF system
-	 */
-	PAYMENT_CONFIRM_SIGEF,
-
-	/**
-	 * Privilege for reading or listing payment slips
-	 */
-	PAYMENT_SLIP_READ,
-	
-	/**
-	 * Privilege for reading or listing payment slips of any taxpayer
-	 */
-	PAYMENT_SLIP_READ_ALL,
-
-	/**
-	 * Privilege for confirming proof of payment
-	 */
-	PROOF_PAYMENT_CONFIRM,
-
-	/**
-	 * Privilege for uploading proof of payment
-	 */
-	PROOF_PAYMENT_WRITE,
-	
-	PROOF_PAYMENT_CHANGE,
-	
-	/**
-	 * Privilege for reading reports for missing tax declarations
-	 */
-	REPORT_MISSING_DECLARATIONS_READ,
-	
-	/**
-	 * Privilege for reading reports for missing tax payments
-	 */
-	REPORT_MISSING_PAYMENTS_READ,
-	
-	/**
-	 * Privilege for reading reports for all tax payments
-	 */
-	REPORT_ALL_PAYMENTS_READ,
-	
-	/**
 	 * Privilege for running SYNC (synchronization of databases) operations
 	 */
 	SYNC_OPS,
 
-	/**
-	 * Privilege for reading or listing tax credits 
-	 */
-	TAX_CREDITS_READ,
-
-	/**
-	 * Privilege for changing tax credits 
-	 */
-	TAX_CREDITS_WRITE,
-	
 	/**
 	 * Privilege for reading or listing tax declarations
 	 */
