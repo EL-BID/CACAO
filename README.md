@@ -278,16 +278,16 @@ Take note of login and passwords for all user accounts that were generated (most
     docker exec -it kibana tail -f /usr/share/kibana/logs/kibana.log
     
 ### Include all permissions to the Application (replace {elastic password here} with the password generated in previous step for user account 'elastic')
-    echo 'es.user=elastic' >> app_config
+    echo 'es.user=elastic' | tee -a app_config_web app_config_etl app_config_validator
     
-    echo 'es.password={elastic password here}' >> app_config
+    echo 'es.password={elastic password here}' | tee -a app_config_web app_config_etl app_config_validator
     
-    echo 'es.ssl=true' >> app_config
+    echo 'es.ssl=true' | tee -a app_config_web app_config_etl app_config_validator
 
-    echo 'es.ssl.verifyhost=false' >> app_config
+    echo 'es.ssl.verifyhost=false' | tee -a app_config_web app_config_etl app_config_validator
     
-### Start Application node
-    docker-compose up -d web
+### Start Application nodes
+    docker-compose up -d web etl validator
     
 ### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
     docker logs --follow web
