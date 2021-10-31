@@ -230,7 +230,10 @@ public class ElasticsearchMockClient {
        	return new ExpectationResponseCallback() {
     			@Override
     			public HttpResponse handle(HttpRequest request) throws Exception {
-    				String[] uri_parts = request.getPath().toString().split("/");
+    				String uri = request.getPath().toString();
+    				if (uri.startsWith("/"))
+    					uri = uri.substring(1);
+    				String[] uri_parts = uri.split("/");
     				String index_name = uri_parts[0];
     				String id = uri_parts[2];
     				MockedIndex mocked_index = map_indices.get(index_name);
