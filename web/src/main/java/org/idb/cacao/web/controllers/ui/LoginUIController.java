@@ -126,6 +126,11 @@ public class LoginUIController {
 					"/config_email"));
 		}
 
+		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
+			submenu.withChild(new MenuItem(messages.getMessage("sysinfo", null, LocaleContextHolder.getLocale()),
+					"/sys_info"));
+		}
+		
 		return menu;
 	}
 
