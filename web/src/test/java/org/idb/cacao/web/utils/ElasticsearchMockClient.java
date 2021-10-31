@@ -146,6 +146,14 @@ public class ElasticsearchMockClient {
         )
         .respond(getDocument());
 
+        // Delete document from index
+        this.mockServer.when(
+                HttpRequest.request()
+                	.withPath(".*/_doc/.+")
+                	.withMethod("DELETE")
+        )
+        .respond(deleteDocument());
+        
         // Check if index exists
         this.mockServer.when(
                 HttpRequest.request().withMethod("HEAD")
@@ -163,7 +171,7 @@ public class ElasticsearchMockClient {
 	/**
 	 * Wrap the JSON response into a HTTP response
 	 */
-    private HttpResponse toHttpResponse(final JSONObject data) {
+    private HttpResponse toHttpResponse(final JSONObject data) {    	
         return HttpResponse.response(data.toString()).withHeader("Content-Type", "application/json");
     }
 
@@ -257,6 +265,39 @@ public class ElasticsearchMockClient {
        	};
     }
     
+    /**
+     * Mocked response related to the API call for 'delete from the index an existent document given its ID'
+     */
+    private ExpectationResponseCallback deleteDocument() {
+       	return new ExpectationResponseCallback() {
+    			@Override
+    			public HttpResponse handle(HttpRequest request) throws Exception {
+    				String uri = request.getPath().toString();
+    				if (uri.startsWith("/"))
+    					uri = uri.substring(1);
+    				String[] uri_parts = uri.split("/");
+    				String index_name = uri_parts[0];
+    				String id = uri_parts[2];
+    				MockedIndex mocked_index = map_indices.get(index_name);
+    				if (mocked_index!=null) {
+    					Map<?,?> doc = mocked_index.getMapDocuments().remove(id);
+    					if (doc!=null) {
+    	    				return toHttpResponse(
+	    						new JSONObject(
+	    							map("_index", index_name,
+	    								"_type", "_doc",
+	    								"_id", id,
+	    		    					"_version", 1,
+	    		    					"_seq_no", 0,
+	    								"result", "deleted",
+	    								"_shards", map("total", 1, "successful", 1, "failed", 0))));    				    						
+    					}
+    				}
+    				return HttpResponse.notFoundResponse();    				
+    			}    			
+       	};
+    }
+
     /**
      * Mocked response related to the API call for 'search the index with a query expression'<BR>
      * WARNING: just implemented a small part of the query syntax!<BR>
