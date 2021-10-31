@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Sidebar Menu -->
+	<th:block th:unless="${logged_area}">
+		<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+	</th:block>
+	<div class="pusher">
+		<!-- Public Menu -->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+			<!-- Fix to avoid overlap from the menu -->
+			<div class="ui large aligned">
+				<div class="row">
+					<br>
+					<br>
+					<br>
+				</div>
+			</div>
+		</th:block>
+		<br>
+		<div class="ui container">
+			<div th:switch="${#locale.language}">
+				<!-- Case language is set to English -->
+				<div th:case="en">
+					<div class="ui middle aligned center container">
+						<h2 class="ui header">
+							<i class="university icon"></i>
+							<div class="content">Institutional</div>
+						</h2>
+						<div class="ui orange segment">
+							<div class="ui ordered list">
+								<div class="item">
+									<h3 class="ui header">Objectives</h3>
+									<p>Here the objectives of the Tax Administration should be described.</p>
+								</div>
+								<br>
+								<div class="item">
+									<h3 class="ui header">Activities</h3>
+									<p>Here the services and activities under the management of the Tax Administration should be presented.</p>
+								</div>
+								<br>
+								<div class="item">
+									<h3 class="ui header">Additional Content</h3>
+									<p>The importance of this page is to present information about the Tax Administration itself, and all the information that the management of the entity wishes can be inserted. </p>
+								</div>
+								<br>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Case language is set to Spanish -->
+				<div th:case="es">
+					<div class="ui middle aligned center container">
+						<h2 class="ui header">
+							<i class="university icon"></i>
+							<div class="content">Institucional</div>
+						</h2>
+						<div class="ui orange segment">
+							<div class="ui ordered list">
+								<div class="item">
+									<h3 class="ui header">Objetivos</h3>
+									<p>Aquí deben describirse los objetivos de la Administración Tributaria.</p>
+								</div>
+								<br>
+								<div class="item">
+									<h3 class="ui header">Actividades</h3>
+									<p>Aquí se deben presentar los servicios y actividades bajo la gestión de la Administración Tributaria.</p>
+								</div>
+								<br>
+								<div class="item">
+									<h3 class="ui header">Contenido adicional</h3>
+									<p>La importancia de esta página es presentar información sobre la propia Administración Tributaria, y toda la información que la dirección de la entidad desee que se inserte. </p>
+								</div>
+								<br>
+							</div>
+						</div>
+					</div>
+				</div>
+				<br>
+			</div>
+		</div>
+		<!-- Footer -->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: footer"></div>
+		</th:block>
+	</div>
+	<!-- Language Javascript -->
+	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+</body>
+</html>
