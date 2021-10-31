@@ -28,6 +28,8 @@ import java.util.regex.Pattern;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
+import org.idb.cacao.api.templates.FieldMapping;
+import org.idb.cacao.api.templates.IDocumentField;
 import org.springframework.data.elasticsearch.annotations.Field;
 
 /**
@@ -37,7 +39,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
  * @author Gustavo Figueiredo
  *
  */
-public class DocumentField implements Serializable, Cloneable, Comparable<DocumentField> {
+public class DocumentField implements IDocumentField, Serializable, Cloneable, Comparable<DocumentField> {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -56,9 +58,6 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	@Field(type=Text)
 	private String fieldName;
 
-	@Field(type=Text)
-	private String sampleValue;
-	
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
 	private FieldMapping fieldType;
@@ -67,11 +66,6 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 
 	public DocumentField(String fieldName) {
 		this.fieldName = fieldName;
-	}
-
-	public DocumentField(String fieldName, String sampleValue) {
-		this.fieldName = fieldName;
-		this.sampleValue = sampleValue;
 	}
 
 	public DocumentField(String fieldName, FieldMapping fieldType) {
@@ -137,32 +131,6 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		return this;
 	}
 	
-	public String getGroup() {
-		if (fieldName==null || fieldName.trim().length()==0)
-			return null;
-		int sep = fieldName.lastIndexOf('|');
-		if (sep<0)
-			return null;
-		return fieldName.substring(0, sep);
-	}
-	
-	public String getSimpleFieldName() {
-		if (fieldName==null || fieldName.trim().length()==0)
-			return fieldName;
-		int sep = fieldName.lastIndexOf('|');
-		if (sep<0)
-			return fieldName;
-		return fieldName.substring(sep+1);		
-	}
-
-	public String getSampleValue() {
-		return sampleValue;
-	}
-
-	public void setSampleValue(String sampleValue) {
-		this.sampleValue = sampleValue;
-	}
-
 	public FieldMapping getFieldType() {
 		if (fieldType==null)
 			return FieldMapping.ANY;

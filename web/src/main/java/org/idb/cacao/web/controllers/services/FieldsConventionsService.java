@@ -32,13 +32,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.idb.cacao.web.controllers.rest.DocumentStoreAPIController;
 import org.idb.cacao.web.dto.MenuItem;
@@ -508,10 +504,7 @@ public class FieldsConventionsService {
 						convertDocumentFields(inner_struct,fieldNameIdx,output);
 					}
 					else if (value!=null) {
-						String field_value = formatValue(value);
-						if (field_value!=null && field_value.length()>MAX_SAMPLE_FIELD_LENGTH)
-							field_value = field_value.substring(0, MAX_SAMPLE_FIELD_LENGTH-3)+"...";						
-						output.addField(fieldNameIdx, field_value);
+						output.addField(fieldNameIdx);
 					}
 					i++;
 				}
@@ -530,75 +523,14 @@ public class FieldsConventionsService {
 						convertDocumentFields(inner_struct,fieldNameIdx,output);
 					}
 					else if (value!=null) {
-						String field_value = formatValue(value);
-						if (field_value!=null && field_value.length()>MAX_SAMPLE_FIELD_LENGTH)
-							field_value = field_value.substring(0, MAX_SAMPLE_FIELD_LENGTH-3)+"...";						
-						output.addField(fieldNameIdx, field_value);
+						output.addField(fieldNameIdx);
 					}
 				}
 			}
 			else if (entry.getValue()!=null) {
-				String value = formatValue(entry.getValue());
-				if (value!=null && value.length()>MAX_SAMPLE_FIELD_LENGTH)
-					value = value.substring(0, MAX_SAMPLE_FIELD_LENGTH-3)+"...";
-				
-				output.addField(fieldName, value);
+				output.addField(fieldName);
 			}
 		}
-	}
-
-	/**
-	 * Given a document with fields and values and given a collection of desired fields, extract those fields.
-	 */
-	public static List<String> getFieldsValues(DocumentTemplate taxpayer_declaration, List<DocumentField> fields, boolean distinct) {
-		if (fields==null || fields.isEmpty())
-			return Collections.emptyList();
-		Set<String> fields_names =
-			fields.stream().map(DocumentField::getFieldNameIgnoringArrayIndex)
-			.distinct()
-			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
-		Stream<String> stream = fields_names.stream()
-			.flatMap(field_name->taxpayer_declaration.getFieldIgnoringArrayIndex(field_name).stream())
-			.filter(field->field!=null && field.getSampleValue()!=null && field.getSampleValue().trim().length()>0)
-			.map(field->field.getSampleValue());
-		if (distinct)
-			stream = stream.distinct();
-		List<String> values = stream.collect(Collectors.toList());
-		if (values.size()>1) {
-			// If we have multiple values, remove the additional 'zeroes' and 'empties', if there are any
-			// They may appear in some cases (e.g. when we have 'merged' cells in XLS)
-			values.remove("");
-			values.remove("0");
-			values.remove("0.0");
-			values.remove("0,0");
-			values.remove("0.00");
-			values.remove("0,00");
-		}
-		return values;
-	}
-
-	/**
-	 * Given a document with fields and values and given a collection of desired fields, extract those fields, keeping the order
-	 * according to the field names. In case of multiple occurrences, read them all.
-	 */
-	public static List<String> getOrderedFieldsValues(DocumentTemplate taxpayer_declaration, List<DocumentField> fields) {
-		if (fields==null || fields.isEmpty())
-			return Collections.emptyList();
-		Set<String> fields_names =
-			fields.stream().map(DocumentField::getFieldNameIgnoringArrayIndex)
-			.distinct()
-			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
-		Stream<String> stream = fields_names.stream()
-			.flatMap(field_name->{
-				List<DocumentField> docs = taxpayer_declaration.getFieldIgnoringArrayIndex(field_name);
-				if (docs.isEmpty())
-					return Collections.<DocumentField>singleton(null).stream();	// backpropagates one-element null-value for reporting the absence of this field
-				else
-					return docs.stream();
-			})
-			.map(field->(field!=null && field.getSampleValue()!=null && field.getSampleValue().trim().length()>0) ? field.getSampleValue() : "");
-		List<String> values = stream.collect(Collectors.toList());
-		return values;
 	}
 
 	public FieldsConventionsService forTesting() {

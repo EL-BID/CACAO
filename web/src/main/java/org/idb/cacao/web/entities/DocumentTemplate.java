@@ -39,6 +39,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.idb.cacao.api.templates.FieldMapping;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -233,16 +234,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	}
 	
 	/**
-	 * Returns all the 'assigned' fields in this template that are also 'required'
-	 */
-	@JsonIgnore
-	public List<DocumentField> getAssignedRequiredFields() {
-		if (fields==null)
-			return Collections.emptyList();
-		return fields.stream().filter(DocumentField::isAssigned).filter(f->f.getFieldType().isRequired()).collect(Collectors.toList());
-	}
-
-	/**
 	 * Returns all the 'assigned' fields in this template of a given type
 	 */
 	@JsonIgnore
@@ -268,8 +259,8 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		field.setId(getNextUnassignedFieldId());
 	}
 	
-	public void addField(String name, String sampleValue) {
-		addField(new DocumentField(name, sampleValue));
+	public void addField(String name) {
+		addField(new DocumentField(name));
 	}
 	
 	public void removeField(DocumentField field) {

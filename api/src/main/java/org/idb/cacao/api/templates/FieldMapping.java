@@ -17,14 +17,13 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.entities;
+package org.idb.cacao.api.templates;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
 /**
  * Enumeration of field mappings that have special meaning for some CACAO functionalities.<BR>
- * All built-in generic field mapping options applicable to any context in tax administration
  * 
  * @author Gustavo Figueiredo
  *
@@ -32,36 +31,29 @@ import java.util.Comparator;
 public enum FieldMapping implements Comparable<FieldMapping> {
 
 	ANY("field.type.any"),
-	TAXPAYER_ID("field.type.tpid", /*required*/true), 	
-	TAX_YEAR("field.type.tyear", /*required*/true),		
-	TAX_SEMESTER("field.type.tsemester", /*required*/true),	
-	TAX_MONTH("field.type.tmonth", /*required*/true),	
-	TAX_DAY("field.type.tday", /*required*/true),		
+	
+	// All built-in generic field mapping options applicable to any context in tax administration
+	TAXPAYER_ID("field.type.tpid"), 	
+	TAX_YEAR("field.type.tyear"),		
+	TAX_SEMESTER("field.type.tsemester"),	
+	TAX_MONTH("field.type.tmonth"),	
+	TAX_DAY("field.type.tday"),		
 	TAX_VALUE("field.type.tvalue"),						  
-	TAX_CODE("field.type.tcode", /*required*/true),		
-	TAX_TYPE("field.type.tax", /*required*/true);		
+	TAX_CODE("field.type.tcode"),		
+	TAX_TYPE("field.type.tax"),
+	
+	// All built-in field mapping options applicable to ACCOUNTING
+	ACCOUNT_CODE("field.type.account.code"),
+	ACCOUNT_NAME("field.type.account.name"),
+	ACCOUNT_DC("field.type.account.dc"),
+	ACCOUNT_VALUE("field.type.account.value");
 
 	private final String display;
 	
-	/**
-	 * 'required' is some field that, when present on template, must also be present and not zero
-	 * on uploaded file
-	 */
-	private final boolean required;
-
-	FieldMapping(String display, boolean required) {
+	FieldMapping(String display) {
 		this.display = display;
-		this.required = required;
 	}
 	
-	FieldMapping(String display) {
-		this(display, /*required*/false);
-	}
-
-	public boolean isRequired() {
-		return required;
-	}
-
 	@Override
 	public String toString() {
 		return display;
