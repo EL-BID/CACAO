@@ -240,7 +240,7 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	public List<DocumentField> getFieldsOfType(FieldMapping type) {
 		if (fields==null)
 			return Collections.emptyList();
-		return fields.stream().filter(f->type.equals(f.getFieldType())).collect(Collectors.toList());		
+		return fields.stream().filter(f->type.equals(f.getFieldMapping())).collect(Collectors.toList());		
 	}
 
 	public void setFields(List<DocumentField> fields) {
