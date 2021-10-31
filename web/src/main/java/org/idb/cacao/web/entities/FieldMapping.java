@@ -23,24 +23,23 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /**
- * Enumeration of field types
+ * Enumeration of field mappings that have special meaning for some CACAO functionalities.<BR>
+ * All built-in generic field mapping options applicable to any context in tax administration
  * 
  * @author Gustavo Figueiredo
  *
  */
-public enum FieldType implements Comparable<FieldType> {
+public enum FieldMapping implements Comparable<FieldMapping> {
 
-	ANY("field_type.any"),
-	TAXPAYER_ID("field_type.tpid", /*required*/true), 	// every document should identify the taxpayer
-	TAX_YEAR("field_type.tyear", /*required*/true),		// every document should identify the tax year
-	TAX_SEMESTER("field_type.tsemester", /*required*/true),	// if template defines a 'tax semester', every document should have it
-	TAX_MONTH("field_type.tmonth", /*required*/true),	// if template defines a 'tax month', every document should have it
-	TAX_DAY("field_type.tday", /*required*/true),		// if template defines a 'tax day', every document should have it
-	TAX_VALUE("field_type.tvalue"),						// the tax value may be zero if there is a tax credit  
-	TAX_CODE("field_type.tcode", /*required*/true),		// if template defines a 'tax code', every document should have it
-	TAX_TYPE("field_type.tax", /*required*/true),		// if template defines a 'tax name', every document should have it
-	TAXPAYER_ID_OTHERS("field_type.tpid_others"),		// the 'other taxpayers' ids are optional and may vary in earch document
-	RECTIFIER("field_type.rectifier");					// if template defines a 'rectifier' boolean field, it should be marked as TRUE for rectifier document
+	ANY("field.type.any"),
+	TAXPAYER_ID("field.type.tpid", /*required*/true), 	
+	TAX_YEAR("field.type.tyear", /*required*/true),		
+	TAX_SEMESTER("field.type.tsemester", /*required*/true),	
+	TAX_MONTH("field.type.tmonth", /*required*/true),	
+	TAX_DAY("field.type.tday", /*required*/true),		
+	TAX_VALUE("field.type.tvalue"),						  
+	TAX_CODE("field.type.tcode", /*required*/true),		
+	TAX_TYPE("field.type.tax", /*required*/true);		
 
 	private final String display;
 	
@@ -50,12 +49,12 @@ public enum FieldType implements Comparable<FieldType> {
 	 */
 	private final boolean required;
 
-	FieldType(String display, boolean required) {
+	FieldMapping(String display, boolean required) {
 		this.display = display;
 		this.required = required;
 	}
 	
-	FieldType(String display) {
+	FieldMapping(String display) {
 		this(display, /*required*/false);
 	}
 
@@ -68,13 +67,13 @@ public enum FieldType implements Comparable<FieldType> {
 		return display;
 	}
 	
-	public static FieldType parse(String s) {
+	public static FieldMapping parse(String s) {
 		if (s==null || s.trim().length()==0)
 			return null;
 		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny().orElse(null);
 	}
 	
-	public static FieldType[] ordered() {
-		return Arrays.stream(values()).sorted(Comparator.comparing(FieldType::name)).toArray(FieldType[]::new);
+	public static FieldMapping[] ordered() {
+		return Arrays.stream(values()).sorted(Comparator.comparing(FieldMapping::name)).toArray(FieldMapping[]::new);
 	}
 }

@@ -298,6 +298,7 @@ public class SyncAPIService {
 			}
 		}
 				
+		/* FIXME:
 		// SYNC documents for all templates (except for those that are not related to files)
 		Set<String> templateNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		try {
@@ -319,6 +320,7 @@ public class SyncAPIService {
 				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+templateName, ex);
 			}
 		}
+		*/
 		
 		try {
 			// SYNC Kibana assets

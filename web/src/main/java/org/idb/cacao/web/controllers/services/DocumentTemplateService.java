@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.idb.cacao.web.entities.DocumentTemplate;
 import org.idb.cacao.web.entities.Periodicity;
@@ -83,10 +82,6 @@ public class DocumentTemplateService {
 				matching_templates.add(t);
 				continue;				
 			}
-			if (t.getTax()!=null && pTemplate.matcher(t.getTax()).find()) {
-				matching_templates.add(t);
-				continue;								
-			}
 		}
 		
 		return matching_templates;
@@ -112,51 +107,6 @@ public class DocumentTemplateService {
 		return templates_names;
 	}
 	
-	/**
-	 * Returns a map where the key is the template name and the value is the corresponding tax name
-	 * associated to the template (ignores templates with no tax name informed)
-	 */
-	public Map<String, String> getMapTemplatesNamesToTaxes() {
-
-		Map<String, String> templates_names_and_taxes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = templateRepository.findAll();
-		for (DocumentTemplate template:all_templates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
-				continue;
-			if (null==template.getTax())
-				continue;
-			if (template.getTax().trim().length()==0)
-				continue;
-			templates_names_and_taxes.put(template.getName(), template.getTax());
-		}
-
-		return templates_names_and_taxes;
-	}
-
-	/**
-	 * Returns a map where the key is the tax name associated to a template and the value is the corresponding template name
-	 */
-	public Map<String, String> getMapTaxesToTemplatesNames() {
-
-		Map<String, String> templates_taxes_and_names = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = templateRepository.findAll();
-		for (DocumentTemplate template:all_templates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
-				continue;
-			if (null==template.getTax())
-				continue;
-			if (template.getTax().trim().length()==0)
-				continue;
-			templates_taxes_and_names.put(template.getTax(), template.getName());
-		}
-
-		return templates_taxes_and_names;
-	}
-
 	/**
 	 * Returns the templates names that requires declaration and their corresponding periodicities
 	 */
@@ -193,33 +143,12 @@ public class DocumentTemplateService {
 	}
 
 	/**
-	 * Returns all taxes names according to the templates configurations
-	 */
-	public Set<String> getAllTaxesTypes() {
-		
-		Set<String> taxes_names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = templateRepository.findAll();
-		for (DocumentTemplate template:all_templates) {
-			if (null==template.getTax())
-				continue;
-			if (template.getTax().trim().length()==0)
-				continue;
-			taxes_names.add(template.getTax());
-		}
-
-		return taxes_names;
-	}
-	
-	/**
-	 * Returns all templates that have some 'file' configured (i.e. they are 'downloadable' and 'uploadable'). Returns the objects themselves.
+	 * Returns all templates defined in repository. Returns the objects themselves.
 	 */
 	public List<DocumentTemplate> getTemplatesWithFiles() {
 		try {
 			Page<DocumentTemplate> all_templates = templateRepository.findAll(PageRequest.of(0, 10_000, Sort.by("name.keyword","version.keyword").ascending()));
-			// Filter out those templates that have no file to download
-			List<DocumentTemplate> downloadable_templates = all_templates.stream().filter(t->t.getFilename()!=null && t.getFilename().trim().length()>0)
-					.collect(Collectors.toList());
-			return downloadable_templates;
+			return all_templates.getContent();
 		}
 		catch (Throwable ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex))

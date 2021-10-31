@@ -31,7 +31,8 @@ import javax.persistence.Enumerated;
 import org.springframework.data.elasticsearch.annotations.Field;
 
 /**
- * Recognized fields for a document template
+ * Recognized fields for a document template. This is related to a 'DocumentTemplate'
+ * (one DocumentTemplate refers to multiple DocumentField's).<BR>
  * 
  * @author Gustavo Figueiredo
  *
@@ -60,7 +61,7 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
-	private FieldType fieldType;
+	private FieldMapping fieldType;
 	
 	public DocumentField() { }
 
@@ -73,7 +74,7 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		this.sampleValue = sampleValue;
 	}
 
-	public DocumentField(String fieldName, FieldType fieldType) {
+	public DocumentField(String fieldName, FieldMapping fieldType) {
 		this.fieldName = fieldName;
 		this.fieldType = fieldType;
 	}
@@ -162,18 +163,18 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		this.sampleValue = sampleValue;
 	}
 
-	public FieldType getFieldType() {
+	public FieldMapping getFieldType() {
 		if (fieldType==null)
-			return FieldType.ANY;
+			return FieldMapping.ANY;
 		return fieldType;
 	}
 
-	public void setFieldType(FieldType fieldType) {
+	public void setFieldType(FieldMapping fieldType) {
 		this.fieldType = fieldType;
 	}
 	
 	public boolean isAssigned() {
-		return fieldType!=null && !FieldType.ANY.equals(fieldType);
+		return fieldType!=null && !FieldMapping.ANY.equals(fieldType);
 	}
 
 	@Override

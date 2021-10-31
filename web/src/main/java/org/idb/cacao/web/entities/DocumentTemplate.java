@@ -19,7 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
-import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Nested;
@@ -41,15 +40,22 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * This entity represents any generic structure modeled inside CACAO by the tax administration.<BR>
+ * <BR>
+ * It is a template with fields definitions (i.e.: contains fields types and fields names).<BR>
+ * <BR>
+ * @author Gustavo Figueiredo
+ *
+ */
 @Document(indexName="cacao_templates")
 public class DocumentTemplate implements Serializable, Cloneable {
 
@@ -86,96 +92,32 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	@Size(min=1, max=20)
 	private String version;
 	
-	/**
-	 * Tax description (only for the case where this declaration derives just one kind of tax)
-	 */
-	@Field(type=Keyword)
-	private String tax;
-
-	/**
-	 * Tax code (only for the case where this declaration derives just one kind of tax)
-	 */
-	@Field(type=Keyword)
-	private String taxCode;
-	
-	/**
-	 * Indicates that this tax/declaration admits rectifying any past periods.
-	 * Configuration for rejecting or accepting incoming file that rectifies another previous uploaded file when there
-	 * are other files related to later periods. E.g.: Suppose taxpayer has already uploaded files for jan/2020 and feb/2020,
-	 * and now he wants to rectify the file related to jan/2020. This flag will tell whether it's acceptable or not. 
-	 */
-	@Field(type=Boolean)
-	private Boolean allowRectifierAnyPeriod;
-
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
 	private DocumentFormat format;
 
-	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
-	private DueDateCalcType dueDateCalc;
-
 	/**
 	 * Date/time the template was created
 	 */
-	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-	@DateTimeFormat(iso = ISO.DATE_TIME)
+	@Field(type=Date, store = true, format = DateFormat.date_time)
     private OffsetDateTime templateCreateTime;
 
 	/**
 	 * Date/time of template upload
 	 */
-	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-	@DateTimeFormat(iso = ISO.DATE_TIME)
+	@Field(type=Date, store = true, format = DateFormat.date_time)
     private OffsetDateTime timestampTemplate;
-	
-	/**
-	 * Local filename (not including directory) for template file contents
-	 */
-	@Field(type=Text)
-	private String filename;
-
-	/**
-	 * Date/time of sample upload
-	 */
-	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
-	@DateTimeFormat(iso = ISO.DATE_TIME)
-    private OffsetDateTime timestampSample;
 	
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
-	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@Field(type=Date, store = true, format = DateFormat.date_time)
 	private OffsetDateTime changedTime;
 	
-	/**
-	 * Local filename (not including directory) for sample file contents
-	 */
-	@Field(type=Text)
-	private String sample;
-	
-	/**
-	 * Maximum tax period (usually in the format of MONTH/YEAR) for considering this version. For other periods the taxpayer
-	 * must upload a different version of the same template.
-	 */
-	@Field(type=Keyword)
-	private String taxPeriodMax;
-
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
 	private Periodicity periodicity;
 	
-	@Field(type=Keyword)
-	private String payeeId;
-	
-	@MultiField(
-		mainField = @Field(type=Text, fielddata=true),
-		otherFields = {
-			@InnerField(suffix = "keyword", type=Keyword)
-		}
-	)
-	private String payeeName;
-
 	@Field(type=Nested)
 	private List<DocumentField> fields;
 	
@@ -203,36 +145,12 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		this.version = version;
 	}
 
-	public String getTax() {
-		return tax;
-	}
-
-	public void setTax(String tax) {
-		this.tax = tax;
-	}
-
-	public String getTaxCode() {
-		return taxCode;
-	}
-
-	public void setTaxCode(String taxCode) {
-		this.taxCode = taxCode;
-	}
-
 	public DocumentFormat getFormat() {
 		return format;
 	}
 
 	public void setFormat(DocumentFormat format) {
 		this.format = format;
-	}
-
-	public DueDateCalcType getDueDateCalc() {
-		return dueDateCalc;
-	}
-
-	public void setDueDateCalc(DueDateCalcType dueDateCalc) {
-		this.dueDateCalc = dueDateCalc;
 	}
 
 	public Periodicity getPeriodicity() {
@@ -243,20 +161,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 
 	public void setPeriodicity(Periodicity periodicity) {
 		this.periodicity = periodicity;
-	}
-
-	/**
-	 * Local filename (not including directory) for template file contents
-	 */
-	public String getFilename() {
-		return filename;
-	}
-
-	/**
-	 * Local filename (not including directory) for template file contents
-	 */
-	public void setFilename(String filename) {
-		this.filename = filename;
 	}
 
 	/**
@@ -281,28 +185,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		this.timestampTemplate = timestampTemplate;
 	}
 
-	public OffsetDateTime getTimestampSample() {
-		return timestampSample;
-	}
-
-	public void setTimestampSample(OffsetDateTime timestampSample) {
-		this.timestampSample = timestampSample;
-	}
-
-	/**
-	 * Indicates that this tax/declaration admits rectifying any past periods.
-	 */
-	public Boolean getAllowRectifierAnyPeriod() {
-		return allowRectifierAnyPeriod;
-	}
-
-	/**
-	 * Indicates that this tax/declaration admits rectifying any past periods.
-	 */
-	public void setAllowRectifierAnyPeriod(Boolean allowRectifierAnyPeriod) {
-		this.allowRectifierAnyPeriod = allowRectifierAnyPeriod;
-	}
-
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
@@ -315,34 +197,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	 */
 	public void setChangedTime(OffsetDateTime changedTime) {
 		this.changedTime = changedTime;
-	}
-
-	public String getSample() {
-		return sample;
-	}
-
-	public void setSample(String sample) {
-		this.sample = sample;
-	}
-	
-	/**
-	 * Maximum tax period (usually in the format of MONTH/YEAR) for considering this version. For other periods the taxpayer
-	 * must upload a different version of the same template.
-	 */
-	public String getTaxPeriodMax() {
-		return taxPeriodMax;
-	}
-	
-	public boolean hasTaxPeriodMax() {
-		return taxPeriodMax!=null && taxPeriodMax.trim().length()>0;
-	}
-
-	/**
-	 * Maximum tax period (usually in the format of MONTH/YEAR) for considering this version. For other periods the taxpayer
-	 * must upload a different version of the same template.
-	 */
-	public void setTaxPeriodMax(String taxPeriodMax) {
-		this.taxPeriodMax = taxPeriodMax;
 	}
 
 	public List<DocumentField> getFields() {
@@ -392,7 +246,7 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	 * Returns all the 'assigned' fields in this template of a given type
 	 */
 	@JsonIgnore
-	public List<DocumentField> getFieldsOfType(FieldType type) {
+	public List<DocumentField> getFieldsOfType(FieldMapping type) {
 		if (fields==null)
 			return Collections.emptyList();
 		return fields.stream().filter(f->type.equals(f.getFieldType())).collect(Collectors.toList());		
@@ -451,22 +305,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		if (fields==null || fields.isEmpty())
 			return 1;
 		return 1 + fields.stream().mapToInt(DocumentField::getId).max().orElse(0);
-	}
-
-	public String getPayeeId() {
-		return payeeId;
-	}
-
-	public void setPayeeId(String payeeId) {
-		this.payeeId = payeeId;
-	}
-
-	public String getPayeeName() {
-		return payeeName;
-	}
-
-	public void setPayeeName(String payeeName) {
-		this.payeeName = payeeName;
 	}
 
 	public DocumentTemplate clone() {

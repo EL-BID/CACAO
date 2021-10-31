@@ -345,6 +345,7 @@ public class IncomingFileStorage {
 		return output_file;
 	}
 	
+	/* FIXME:
 	public File getTemplateFile(DocumentTemplate template) throws IOException {
 		
 		// Target directory for storing template files
@@ -360,6 +361,7 @@ public class IncomingFileStorage {
 
 		return null;
 	}
+	*/
 
 	/**
 	 * Lists all template files created or updated in a time range
@@ -453,6 +455,7 @@ public class IncomingFileStorage {
 		return output_file;
 	}
 
+	/* FIXME:
 	public File getSampleFile(DocumentTemplate template) throws IOException {
 		
 		// Target directory for storing sample files
@@ -468,6 +471,7 @@ public class IncomingFileStorage {
 
 		return null;
 	}
+	*/
 
 	/**
 	 * Lists all sample files created or updated in a time range
