@@ -1,6 +1,10 @@
 package org.idb.cacao.web.rest.services;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.nio.file.Path;
 
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.services.storage.StorageService;
@@ -16,14 +20,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.nio.file.Path;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 @RunWith(JUnitPlatform.class)
 @AutoConfigureMockMvc

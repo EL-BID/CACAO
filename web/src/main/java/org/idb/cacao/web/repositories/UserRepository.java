@@ -83,9 +83,13 @@ public interface UserRepository extends ElasticsearchRepository<User, String> {
 	}
 
 	//TODO Check the method use
-	public Page<User> findByProfile(UserProfile profileName, PageRequest of);
+	default public Page<User> findByProfile(UserProfile profileName, PageRequest of) {
+		return null;
+	}
 
 	//TODO Check the method use
-	public Page<User> findByTaxpayerId(String taxpayerId, PageRequest of);
+	default public Page<User> findByTaxpayerId(String taxpayerId, PageRequest of) {
+		return null;
+	}
 
 }

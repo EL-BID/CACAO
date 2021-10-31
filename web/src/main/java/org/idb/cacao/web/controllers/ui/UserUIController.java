@@ -117,10 +117,10 @@ public class UserUIController {
 		model.addAttribute("applied_filters", filters
 				.map(f -> f.withDisplayNames((AdvancedSearch) model.getAttribute("filter_options")).wiredTo(messages)));
 
-		return "users";
+		return "/user/users";
 	}
 
-	@Secured({ "ROLE_USER_WRITE" })
+	//@Secured({ "ROLE_USER_WRITE" })
 	@GetMapping("/adduser")
 	public String showAddUser(User user, Model model) {
 		ConfigEMail config_email = configEmailService.getActiveConfig();
@@ -128,7 +128,7 @@ public class UserUIController {
 				&& config_email.getSupportEmail().trim().length() > 0) {
 			model.addAttribute("omit_password", true);
 		}
-		return "add-user";
+		return "/user/add-user";
 	}
 
 	@Secured({ "ROLE_USER_WRITE" })
@@ -137,7 +137,7 @@ public class UserUIController {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
 		model.addAttribute("user", user);
-		return "update-user";
+		return "/user/update-user";
 	}
 
 }

@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<!--/*-->
+   The fragment 'functions' is used for keeping in internal variables the current 'visual state', including these information:
+   The current 'page' number (in case we are seeing a pageable table contents)
+   The current 'page size'  (in case we are seeing a pageable table contents)
+   The 'query parameters' applied (in case there are any advanced query parameters)
+   Any extra parameters specific to page logic may be included in 'window.view_state.params' as key/value pairs.
+   
+   If the page also includes a 'pagination fragment', the corresponding URL anchors will pass along the query parameters, is present.
+   
+   If the page also includes 'Edit' buttons (anchors with class style 'ui button edit_obj'), they
+   will also pass along the full view state (paging information and query parameters).
+   
+   You should use 'go_to_location_keeping_state' function when you want to make a local redirection that is capable of keeping the current view state.
+<!--*/-->
+
+    <script th:nonce="${cspNonce}" th:fragment="functions" th:inline="javascript">
+   		window.view_state = {
+   			"page": [[${param.page}]],
+   			"size": [[${param.size}]],
+   			"q": [[${param.q}]],
+   			"params": {}
+   		};
+   		$(document).ready(function() {
+    		$('div.ui.pagination.menu > a.item').click(function(e){
+    			if (view_state.q) {
+    				e.preventDefault();
+    				window.location.replace($(this).attr('href')+'&q='+encodeURIComponent(view_state.q))
+    			}
+    		})
+    		$('a.ui.button.edit_obj').click(function(e){
+    			if (view_state.q || view_state.page || view_state.size) {
+    				e.preventDefault();
+    				go_to_location_keeping_state($(this).attr('href'))
+    			}
+    		})
+   		});
+   		function go_to_location_keeping_state(url) {
+   			if (view_state.page) {
+   				url = add_query_param(url,'page',view_state.page);
+   			}
+   			if (view_state.size) {
+   				url = add_query_param(url,'size',view_state.size);
+   			}
+   			if (view_state.q) {
+   				url = add_query_param(url,'q',view_state.q);
+   			}
+   			if (view_state.params && Object.keys(view_state.params).length>0) {
+   				Object.keys(view_state.params).forEach(function(key){
+   					url = add_query_param(url,key,view_state.params[key]);
+   				});
+   			}
+   			window.location.replace(url);
+   		}
+   		function add_query_param(url,name,value) {
+   			var i = url.indexOf('?');
+   			if (i<0)
+   				return url + '?'+encodeURIComponent(name)+"="+encodeURIComponent(value);
+   			else
+   				return url + '&'+encodeURIComponent(name)+"="+encodeURIComponent(value);
+   		}
+   	</script>
+</html>
