@@ -319,7 +319,7 @@ public class ElasticsearchMockClient {
     				ObjectMapper mapper = new ObjectMapper();
     				Map<?,?> request_body = mapper.readValue(request.getBodyAsJsonOrXmlString(), Map.class);
     				Map<?,?> query = (Map<?,?>)request_body.get("query");
-    				
+
     				if (query.containsKey("match_all")) {
     					return toHttpResponse(new JSONObject(map(
         		        		"took", 10,
@@ -329,11 +329,12 @@ public class ElasticsearchMockClient {
         		        				"skipped", 0, 
         		        				"failed", 0),
         		        		"hits" , map(
-        		        				"total", map("value", 0, "relation", "eq"),
-        		        				"hits", new JSONArray()
+        		        				"total", map("value", index.getMapDocuments().size(), "relation", "eq"),
+        		        				"hits", index.getMapDocuments().values()
         		        				)
         		        		)));
     				}
+    				
     				
     				Predicate<Map<?,?>> compiledQuery = parseQuery(query);
     				List<Map<?, ?>> hits = new LinkedList<>();
@@ -351,7 +352,7 @@ public class ElasticsearchMockClient {
     		        				"skipped", 0, 
     		        				"failed", 0),
     		        		"hits" , map(
-    		        				"total", map("value", 0, "relation", "eq"),
+    		        				"total", map("value", hits.size(), "relation", "eq"),
     		        				"hits", hits
     		        				)
     		        		)));
