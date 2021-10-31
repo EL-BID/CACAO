@@ -69,6 +69,9 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	@Id   
 	private String id;
 
+	/**
+	 * Name of this template
+	 */
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
 		otherFields = {
@@ -81,6 +84,22 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	@Size(min=2, max=120)
 	private String name;
 
+	/**
+	 * Optional group of this template. All templates belonging to the same group are considered
+	 * together for validation and ETL purpose.
+	 */
+	@MultiField(
+		mainField = @Field(type=Text, fielddata=true),
+		otherFields = {
+			@InnerField(suffix = "keyword", type=Keyword)
+		}
+	)
+	private String group;
+
+	/**
+	 * Version of this template (in case it's necessary to keep a history of
+	 * different versions of the same template over time)
+	 */
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
 		otherFields = {
@@ -93,22 +112,12 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	@Size(min=1, max=20)
 	private String version;
 	
-	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
-	private DocumentFormat format;
-
 	/**
 	 * Date/time the template was created
 	 */
 	@Field(type=Date, store = true, format = DateFormat.date_time)
     private OffsetDateTime templateCreateTime;
 
-	/**
-	 * Date/time of template upload
-	 */
-	@Field(type=Date, store = true, format = DateFormat.date_time)
-    private OffsetDateTime timestampTemplate;
-	
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
@@ -122,36 +131,67 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	@Field(type=Nested)
 	private List<DocumentField> fields;
 	
+	@Field(type=Nested)
+	private List<DocumentInput> inputs;
+	
+	/**
+	 * Unique identifier of this template (20 character long, URL-safe, base 64 encoded GUID)
+	 */
 	public String getId() {
 		return id;
 	}
 
+	/**
+	 * Unique identifier of this template (20 character long, URL-safe, base 64 encoded GUID)
+	 */
 	public void setId(String id) {
 		this.id = id;
 	}
 
+	/**
+	 * Name of this template
+	 */
 	public String getName() {
 		return name;
 	}
 
+	/**
+	 * Name of this template
+	 */
 	public void setName(String name) {
 		this.name = name;
 	}
 
+	/**
+	 * Optional group of this template. All templates belonging to the same group are considered
+	 * together for validation and ETL purpose.
+	 */
+	public String getGroup() {
+		return group;
+	}
+
+	/**
+	 * Optional group of this template. All templates belonging to the same group are considered
+	 * together for validation and ETL purpose.
+	 */
+	public void setGroup(String group) {
+		this.group = group;
+	}
+
+	/**
+	 * Version of this template (in case it's necessary to keep a history of
+	 * different versions of the same template over time)
+	 */
 	public String getVersion() {
 		return version;
 	}
 
+	/**
+	 * Version of this template (in case it's necessary to keep a history of
+	 * different versions of the same template over time)
+	 */
 	public void setVersion(String version) {
 		this.version = version;
-	}
-
-	public DocumentFormat getFormat() {
-		return format;
-	}
-
-	public void setFormat(DocumentFormat format) {
-		this.format = format;
 	}
 
 	public Periodicity getPeriodicity() {
@@ -176,14 +216,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	 */
 	public void setTemplateCreateTime(OffsetDateTime templateCreateTime) {
 		this.templateCreateTime = templateCreateTime;
-	}
-
-	public OffsetDateTime getTimestampTemplate() {
-		return timestampTemplate;
-	}
-
-	public void setTimestampTemplate(OffsetDateTime timestampTemplate) {
-		this.timestampTemplate = timestampTemplate;
 	}
 
 	/**
@@ -298,6 +330,77 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		return 1 + fields.stream().mapToInt(DocumentField::getId).max().orElse(0);
 	}
 
+	public List<DocumentInput> getInputs() {
+		return inputs;
+	}
+	
+	/**
+	 * Find a DocumentInput with the given name
+	 */
+	public DocumentInput getInput(String name) {
+		if (inputs==null)
+			return null;
+		return inputs.stream().filter(f->name.equalsIgnoreCase(f.getInputName())).findAny().orElse(null);
+	}
+	
+	/**
+	 * Returns all DocumentInput options associated to this template with a given DocumentFormat
+	 */
+	@JsonIgnore
+	public List<DocumentInput> getInputsOfFormat(DocumentFormat format) {
+		if (inputs==null)
+			return Collections.emptyList();
+		return inputs.stream().filter(f->format.equals(f.getFormat())).collect(Collectors.toList());		
+	}
+
+	public void setInputs(List<DocumentInput> inputs) {
+		this.inputs = inputs;
+	}
+	
+	public void clearInputs() {
+		if (inputs!=null)
+			inputs.clear();
+	}
+	
+	public void addInput(DocumentInput input) {
+		if (inputs==null)
+			inputs = new LinkedList<>();
+		inputs.add(input);
+		input.setId(getNextUnassignedInputId());
+	}
+	
+	public void addInput(String name) {
+		addInput(new DocumentInput(name));
+	}
+	
+	public void removeInput(DocumentInput input) {
+		if (inputs==null)
+			return;
+		inputs.remove(input);
+		input.setId(0);
+	}
+	
+	public void sortInputs() {
+		if (inputs==null || inputs.size()<2)
+			return;
+		Collections.sort(inputs);
+	}
+	
+	@JsonIgnore
+	public int getNumTotalInputs() {
+		if (inputs==null)
+			return 0;
+		else
+			return inputs.size();
+	}
+	
+	@JsonIgnore
+	public int getNextUnassignedInputId() {
+		if (inputs==null || inputs.isEmpty())
+			return 1;
+		return 1 + inputs.stream().mapToInt(DocumentInput::getId).max().orElse(0);
+	}
+
 	public DocumentTemplate clone() {
 		try {
 			return (DocumentTemplate)super.clone();
@@ -320,17 +423,6 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		public int compare(DocumentTemplate o1, DocumentTemplate o2) {
 			OffsetDateTime d1 = o1.getTemplateCreateTime();
 			OffsetDateTime d2 = o2.getTemplateCreateTime();
-			if (d1!=d2) {
-				if (d1==null)
-					return 1;
-				if (d2==null)
-					return -1;
-				int comp = d1.compareTo(d2);
-				if (comp!=0)
-					return - comp;
-			}
-			d1 = o1.getTimestampTemplate();
-			d2 = o2.getTimestampTemplate();
 			if (d1!=d2) {
 				if (d1==null)
 					return 1;

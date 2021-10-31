@@ -45,6 +45,9 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	
 	public static final Pattern PATTERN_ARRAY_INDEX = Pattern.compile("\\[(\\d+)\\]$");
 	
+	/**
+	 * Sequence number of this field inside a particular DocumentTemplate
+	 */
 	@Field(type=Integer)
 	private int id;
 
@@ -56,13 +59,37 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	@Field(type=Text)
 	private String fieldName;
 
+	/**
+	 * Field mapping in case this field has a special meaning for specific CACAO features
+	 */
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
 	private FieldMapping fieldMapping;
 	
+	/**
+	 * Field type (for validating incoming files accordingly)
+	 */
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
 	private FieldType fieldType;
+	
+	/**
+	 * Maximum field length (only applies to Text fields)
+	 */
+	@Field(type=Integer)
+	private Integer maxLength;
+	
+	/**
+	 * Optional description of this field for documentation purpose
+	 */
+	@Field(type=Text)
+	private String description;
+	
+	/**
+	 * Indicates this field corresponds to 'personal data' (according to the Information privacy legislation)
+	 */
+	@Field(type=Boolean)
+	private Boolean personalData;
 	
 	public DocumentField() { }
 
@@ -80,10 +107,16 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		this.fieldType = fieldType;
 	}
 
+	/**
+	 * Sequence number of this field inside a particular DocumentTemplate
+	 */
 	public int getId() {
 		return id;
 	}
 
+	/**
+	 * Sequence number of this field inside a particular DocumentTemplate
+	 */
 	public void setId(int id) {
 		this.id = id;
 	}
@@ -138,22 +171,76 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		return this;
 	}
 
+	/**
+	 * Field mapping in case this field has a special meaning for specific CACAO features
+	 */
 	public FieldMapping getFieldMapping() {
 		if (fieldMapping==null)
 			return FieldMapping.ANY;
 		return fieldMapping;
 	}
 
+	/**
+	 * Field mapping in case this field has a special meaning for specific CACAO features
+	 */
 	public void setFieldMapping(FieldMapping fieldMapping) {
 		this.fieldMapping = fieldMapping;
 	}
 	
+	/**
+	 * Field type (for validating incoming files accordingly)
+	 */
 	public FieldType getFieldType() {
 		return fieldType;
 	}
 
+	/**
+	 * Field type (for validating incoming files accordingly)
+	 */
 	public void setFieldType(FieldType fieldType) {
 		this.fieldType = fieldType;
+	}
+
+	/**
+	 * Maximum field length (only applies to Text fields)
+	 */
+	public Integer getMaxLength() {
+		return maxLength;
+	}
+
+	/**
+	 * Maximum field length (only applies to Text fields)
+	 */
+	public void setMaxLength(Integer maxLength) {
+		this.maxLength = maxLength;
+	}
+
+	/**
+	 * Optional description of this field for documentation purpose
+	 */
+	public String getDescription() {
+		return description;
+	}
+
+	/**
+	 * Optional description of this field for documentation purpose
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	/**
+	 * Indicates this field corresponds to 'personal data' (according to the Information privacy legislation)
+	 */
+	public Boolean getPersonalData() {
+		return personalData;
+	}
+
+	/**
+	 * Indicates this field corresponds to 'personal data' (according to the Information privacy legislation)
+	 */
+	public void setPersonalData(Boolean personalData) {
+		this.personalData = personalData;
 	}
 
 	public boolean isAssigned() {
