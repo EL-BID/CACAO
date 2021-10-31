@@ -17,31 +17,49 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.api.templates;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.Comparator;
 
-import org.idb.cacao.api.templates.DocumentTemplate;
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.elasticsearch.annotations.Query;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+/**
+ * Enumeration of field types for validation of incoming files.<BR>
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
+public enum FieldType implements Comparable<FieldType> {
 
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
+	GENERIC("field.type.generic"), // generic means anything (no validation at all)
+	CHARACTER("field.type.char"),	
+	INTEGER("field.type.int"), 	// any type of integer (tiny, short, integer or long)
+	DECIMAL("field.type.decimal"),	// any type of decimal (float, double, decimal)	
+	BOOLEAN("field.type.bool"),	
+	TIMESTAMP("field.type.timestamp"),		
+	DATE("field.type.date"),						  
+	MONTH("field.type.month"),		
+	DOMAIN("field.type.domain"),
+	NESTED("field.type.nested");
 	
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DocumentTemplate> findByName(String name);
+	private final String display;
 	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DocumentTemplate> findByNameAndVersion(String name, String version);
+	FieldType(String display) {
+		this.display = display;
+	}
 	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
+	@Override
+	public String toString() {
+		return display;
+	}
+	
+	public static FieldType parse(String s) {
+		if (s==null || s.trim().length()==0)
+			return null;
+		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny().orElse(null);
+	}
+	
+	public static FieldType[] ordered() {
+		return Arrays.stream(values()).sorted(Comparator.comparing(FieldType::name)).toArray(FieldType[]::new);
 	}
 
 }

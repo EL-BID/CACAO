@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.entities;
+package org.idb.cacao.api.templates;
 
 import static org.springframework.data.elasticsearch.annotations.FieldType.*;
 
@@ -28,8 +28,6 @@ import java.util.regex.Pattern;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
-import org.idb.cacao.api.templates.FieldMapping;
-import org.idb.cacao.api.templates.IDocumentField;
 import org.springframework.data.elasticsearch.annotations.Field;
 
 /**
@@ -39,7 +37,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
  * @author Gustavo Figueiredo
  *
  */
-public class DocumentField implements IDocumentField, Serializable, Cloneable, Comparable<DocumentField> {
+public class DocumentField implements Serializable, Cloneable, Comparable<DocumentField> {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -60,7 +58,11 @@ public class DocumentField implements IDocumentField, Serializable, Cloneable, C
 
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
-	private FieldMapping fieldType;
+	private FieldMapping fieldMapping;
+	
+	@Enumerated(EnumType.STRING)
+	@Field(type=Text)
+	private FieldType fieldType;
 	
 	public DocumentField() { }
 
@@ -68,7 +70,12 @@ public class DocumentField implements IDocumentField, Serializable, Cloneable, C
 		this.fieldName = fieldName;
 	}
 
-	public DocumentField(String fieldName, FieldMapping fieldType) {
+	public DocumentField(String fieldName, FieldMapping fieldMapping) {
+		this.fieldName = fieldName;
+		this.fieldMapping = fieldMapping;
+	}
+
+	public DocumentField(String fieldName, FieldType fieldType) {
 		this.fieldName = fieldName;
 		this.fieldType = fieldType;
 	}
@@ -130,19 +137,27 @@ public class DocumentField implements IDocumentField, Serializable, Cloneable, C
 		setFieldName(fieldName);
 		return this;
 	}
-	
-	public FieldMapping getFieldType() {
-		if (fieldType==null)
+
+	public FieldMapping getFieldMapping() {
+		if (fieldMapping==null)
 			return FieldMapping.ANY;
+		return fieldMapping;
+	}
+
+	public void setFieldMapping(FieldMapping fieldMapping) {
+		this.fieldMapping = fieldMapping;
+	}
+	
+	public FieldType getFieldType() {
 		return fieldType;
 	}
 
-	public void setFieldType(FieldMapping fieldType) {
+	public void setFieldType(FieldType fieldType) {
 		this.fieldType = fieldType;
 	}
-	
+
 	public boolean isAssigned() {
-		return fieldType!=null && !FieldMapping.ANY.equals(fieldType);
+		return fieldMapping!=null && !FieldMapping.ANY.equals(fieldMapping);
 	}
 
 	@Override

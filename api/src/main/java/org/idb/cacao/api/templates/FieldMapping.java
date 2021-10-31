@@ -30,23 +30,23 @@ import java.util.Comparator;
  */
 public enum FieldMapping implements Comparable<FieldMapping> {
 
-	ANY("field.type.any"),
+	ANY("field.map.any"),
 	
 	// All built-in generic field mapping options applicable to any context in tax administration
-	TAXPAYER_ID("field.type.tpid"), 	
-	TAX_YEAR("field.type.tyear"),		
-	TAX_SEMESTER("field.type.tsemester"),	
-	TAX_MONTH("field.type.tmonth"),	
-	TAX_DAY("field.type.tday"),		
-	TAX_VALUE("field.type.tvalue"),						  
-	TAX_CODE("field.type.tcode"),		
-	TAX_TYPE("field.type.tax"),
+	TAXPAYER_ID("field.map.tpid"), 	
+	TAX_YEAR("field.map.tyear"),		
+	TAX_SEMESTER("field.map.tsemester"),	
+	TAX_MONTH("field.map.tmonth"),	
+	TAX_DAY("field.map.tday"),		
+	TAX_VALUE("field.map.tvalue"),						  
+	TAX_CODE("field.map.tcode"),		
+	TAX_TYPE("field.map.tax"),
 	
 	// All built-in field mapping options applicable to ACCOUNTING
-	ACCOUNT_CODE("field.type.account.code"),
-	ACCOUNT_NAME("field.type.account.name"),
-	ACCOUNT_DC("field.type.account.dc"),
-	ACCOUNT_VALUE("field.type.account.value");
+	ACCOUNT_CODE("field.map.account.code"),
+	ACCOUNT_NAME("field.map.account.name"),
+	ACCOUNT_DC("field.map.account.dc"),
+	ACCOUNT_VALUE("field.map.account.value");
 
 	private final String display;
 	

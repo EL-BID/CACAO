@@ -29,8 +29,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import org.idb.cacao.web.entities.DocumentTemplate;
-import org.idb.cacao.web.entities.Periodicity;
+import org.idb.cacao.api.Periodicity;
+import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;

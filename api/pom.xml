@@ -28,6 +28,26 @@
 		    <version>2.12.4</version>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-elasticsearch -->
+		<dependency>
+		    <groupId>org.springframework.data</groupId>
+	    	<artifactId>spring-data-elasticsearch</artifactId>
+	    	<version>4.2.4</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/jakarta.persistence/jakarta.persistence-api -->
+		<dependency>
+		    <groupId>jakarta.persistence</groupId>
+		    <artifactId>jakarta.persistence-api</artifactId>
+		    <version>2.2.3</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api -->
+		<dependency>
+    		<groupId>jakarta.validation</groupId>
+    		<artifactId>jakarta.validation-api</artifactId>
+    		<version>2.0.2</version>
+		</dependency>
 		
 	</dependencies>
 

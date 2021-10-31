@@ -28,6 +28,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
+import org.idb.cacao.api.Periodicity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;

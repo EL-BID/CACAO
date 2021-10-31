@@ -30,7 +30,7 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.idb.cacao.web.entities.Periodicity;
+import org.idb.cacao.api.Periodicity;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
