@@ -34,7 +34,7 @@ import org.springframework.stereotype.Repository;
 @Synchronizable(timestamp="changedTime",id="id")
 public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
 	
-	Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
+	//Page<DocumentTemplate> findByPayeeId(String payeeId, Pageable pageable);
 
 	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
 	public List<DocumentTemplate> findByName(String name);
