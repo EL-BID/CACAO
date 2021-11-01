@@ -7,10 +7,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.hamcrest.Matchers;
+import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.idb.cacao.web.controllers.ui.ItemUIController;
 import org.idb.cacao.web.entities.Item;
 import org.idb.cacao.web.repositories.ItemRepository;
-import org.idb.cacao.web.utils.ElasticsearchMockClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

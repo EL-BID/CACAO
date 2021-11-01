@@ -6,9 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.nio.file.Path;
 
+import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.services.storage.StorageService;
-import org.idb.cacao.web.utils.ElasticsearchMockClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

@@ -44,6 +44,14 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.idb.cacao</groupId>
+			<artifactId>CACAO_MOCK_ES</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
@@ -92,14 +100,6 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.11.0</version>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.mock-server/mockserver-netty -->
-		<dependency>
-			<groupId>org.mock-server</groupId>
-			<artifactId>mockserver-netty</artifactId>
-			<version>5.11.2</version>
-			<scope>test</scope>
 		</dependency>
 
 		<dependency>

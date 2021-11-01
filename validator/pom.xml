@@ -28,6 +28,14 @@
 			<scope>provided</scope>
 		</dependency>
 		
+		<dependency>
+			<groupId>org.idb.cacao</groupId>
+			<artifactId>CACAO_MOCK_ES</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+		
 	</dependencies>
 
 	<build>

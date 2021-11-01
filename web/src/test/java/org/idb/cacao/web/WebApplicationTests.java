@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web;
 
-import org.idb.cacao.web.utils.ElasticsearchMockClient;
+import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
