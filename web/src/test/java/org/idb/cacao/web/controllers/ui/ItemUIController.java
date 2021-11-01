@@ -1,4 +1,4 @@
-package org.idb.cacao.web.controllers;
+package org.idb.cacao.web.controllers.ui;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class ItemController {
+public class ItemUIController {
 	
     @Autowired
     ItemRepository itemRepo;
@@ -39,6 +39,8 @@ public class ItemController {
             throw new ItemNotFoundException("Invalid ItemId");
         }
         Item item = itemRepo.findById(itemId).orElse(null);
+        if ( item == null ) //NOT FOUND
+        	return new ResponseEntity<Item>(HttpStatus.NOT_FOUND);
         return new ResponseEntity<Item>(item, HttpStatus.OK);
     }
 
@@ -52,11 +54,16 @@ public class ItemController {
         return new ResponseEntity<Item>(item, HttpStatus.CREATED);
     }
 
-    @PutMapping("/updateItem")
+    @PutMapping(value = "/updateItem",consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Item> updateItem(@RequestBody Item item){
         if(item != null){
-            itemRepo.save(item);
+            try {
+				Item saved = itemRepo.save(item);
+				saved.toString();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
         }
         return new ResponseEntity<Item>(item, HttpStatus.OK);
     }

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.hamcrest.Matchers;
+import org.idb.cacao.web.controllers.ui.ItemUIController;
 import org.idb.cacao.web.entities.Item;
 import org.idb.cacao.web.repositories.ItemRepository;
 import org.idb.cacao.web.utils.ElasticsearchMockClient;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -37,12 +37,20 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, properties = {
 		"storage.incoming.files.original.dir=${java.io.tmpdir}/cacao/storage" })
-class ItemControllerTests {
+/**
+ * A group of tests over a test entity using UI controller 
+ * 
+ * @author Rivelino Patrício
+ * 
+ * @since 31/10/2021
+ *
+ */
+public class ItemUIControllerTests {
 
 	private static ElasticsearchMockClient mockElastic;
 
 	@InjectMocks
-	ItemController itemController;
+	ItemUIController itemController;
 
 	@Autowired
 	ItemRepository itemRepository;
@@ -71,14 +79,14 @@ class ItemControllerTests {
 	void setUp() throws Exception {
 	}
 
-//	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
-//	@Test
-//	public void getAllItems() throws Exception {
-//		List<Item> itens = Arrays.asList(new Item("iPhoneX", "Mobiles"));
-//		itemRepository.save(itens.get(0));
-//        //Mockito.when(itemRepository.findAll()).thenReturn(itens);	
-//		mockMvc.perform(MockMvcRequestBuilders.get("/getAllItems")).andExpect(MockMvcResultMatchers.status().isOk());
-//	}
+	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
+	@Test
+	public void getAllItems() throws Exception {
+		List<Item> itens = Arrays.asList(new Item("iPhoneX", "Mobiles"));
+		itemRepository.save(itens.get(0));
+        //Mockito.when(itemRepository.findAll()).thenReturn(itens);	
+		mockMvc.perform(MockMvcRequestBuilders.get("/getAllItems")).andExpect(MockMvcResultMatchers.status().isOk());
+	}
 
 	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
 	@Test
@@ -90,57 +98,57 @@ class ItemControllerTests {
 				.andExpect(MockMvcResultMatchers.status().isOk())
 				.andExpect(MockMvcResultMatchers.jsonPath("$.name", Matchers.is("iPhoneX")))
 				.andExpect(MockMvcResultMatchers.jsonPath("$.category", Matchers.is("Mobiles")));
-		Mockito.verify(itemRepository).findById(saved.getId()).get();
+		//Mockito.verify(itemRepository).findById(saved.getId()).get();
 	}
 
-//	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
-//	@Test
-//	public void addItem() throws Exception {
-//		Item item = new Item("iPhoneX", "Mobiles");
-//		MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.post("/addItem").accept(MediaType.APPLICATION_JSON).contentType(MediaType.APPLICATION_JSON)
-//				.content(json.write(item).getJson())).andReturn().getResponse();
-//		
-//		assertEquals(HttpStatus.CREATED.value(),response.getStatus());
-//		
-//		String responseType = response.getContentType();
-//		
-//		List<Item> itens = itemRepository.findAll();
-//		
-//		assertNotNull(itens);
-//		assertEquals(1,itens.size());
-//		
-//		item = itens.get(0);
-//
-//        assertNotNull(item.getId());
-//        assertEquals(item.getName(),"iPhoneX");
-//        assertEquals(item.getCategory(),"Mobiles");		
-//
-//	}
+	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
+	@Test
+	public void addItem() throws Exception {
+		Item item = new Item("iPhoneX", "Mobiles");
+		MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.post("/addItem").accept(MediaType.APPLICATION_JSON).contentType(MediaType.APPLICATION_JSON)
+				.content(json.write(item).getJson())).andReturn().getResponse();
+		
+		assertEquals(HttpStatus.CREATED.value(),response.getStatus());
+		
+		List<Item> itens = itemRepository.findAll();
+		
+		assertNotNull(itens);
+		assertEquals(1,itens.size());
+		
+		item = itens.get(0);
 
-//    @Test
-//    @Ignore
-//    public void updateItem() throws Exception {
-//        String jsonString = "{\n" +
-//                "\"id\":1,\n" +
-//                "\"name\":\"iPhoneX\",\n" +
-//                "\"category\":\"Mobiles\"\n" +
-//                "}";
-//        //Item item = new Item("1","iPhoneX","Mobiles");
-//        mockMvc.perform(MockMvcRequestBuilders.put("/updateItem")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .content(jsonString))
-//                .andExpect(MockMvcResultMatchers.status().isOk())
-//                .andExpect(MockMvcResultMatchers.jsonPath("$.id", Matchers.is(1)))
-//                .andExpect(MockMvcResultMatchers.jsonPath("$.name",Matchers.is("iPhoneX")))
-//                .andExpect(MockMvcResultMatchers.jsonPath("$.category",Matchers.is("Mobiles")));
-//    }
-//
-//    @Test
-//    @Ignore
-//    public void deleteItem() throws Exception{
-//        mockMvc.perform(MockMvcRequestBuilders.delete("/delete/1")
-//                .accept(MediaType.APPLICATION_JSON))
-//                .andExpect(MockMvcResultMatchers.status().isAccepted());
-//    }
+        assertNotNull(item.getId());
+        assertEquals(item.getName(),"iPhoneX");
+        assertEquals(item.getCategory(),"Mobiles");		
+
+	}
+
+	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
+    @Test    
+    public void updateItem() throws Exception {
+		Item item = new Item("iPhoneX", "Mobiles");
+		Item saved = itemRepository.save(item);
+		
+		saved.setName("Mi Band 3");
+		saved.setCategory("Watch");
+		
+        mockMvc.perform(MockMvcRequestBuilders.put("/updateItem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.write(saved).getJson()))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id", Matchers.is(saved.getId())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name",Matchers.is("Mi Band 3")))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.category",Matchers.is("Watch")));
+    }
+
+	@WithUserDetails(value = "admin@admin", userDetailsServiceBeanName = "CustomUserDetailsService")
+    @Test
+    public void deleteItem() throws Exception{
+		Item item = new Item("iPhoneX", "Mobiles");
+		Item saved = itemRepository.save(item);
+        mockMvc.perform(MockMvcRequestBuilders.delete("/delete/" + saved.getId())
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isAccepted());
+    }
 	
 }
