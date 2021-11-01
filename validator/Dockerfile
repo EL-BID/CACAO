@@ -9,6 +9,9 @@ ARG MVN_ARGS=${USE_PROXY:+'-s /usr/share/maven/ref/settings-docker.xml'}
 # copy parent POM
 COPY pom.xml /home/usr
 
+# install parent POM
+RUN mvn --non-recursive -f /home/usr/pom.xml ${MVN_ARGS} install
+
 # copy common API source code
 ENV HOME_API=/home/usr/api
 RUN mkdir -p $HOME_API
