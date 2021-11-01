@@ -4,6 +4,8 @@ RUN mkdir -p $HOME
 WORKDIR $HOME
 COPY web/settings-docker.xml /usr/share/maven/ref/settings-docker.xml
 
+ARG MVN_ARGS=${USE_PROXY:+'-s /usr/share/maven/ref/settings-docker.xml'}
+
 # copy parent POM
 COPY pom.xml /home/usr
 
@@ -29,7 +31,6 @@ RUN mvn --no-transfer-progress -B -f $HOME_MOCK_ES/pom.xml ${MVN_ARGS} install -
 COPY web/pom.xml $HOME
 
 # download all dependencies from MAVEN repository
-ARG MVN_ARGS=${USE_PROXY:+'-s /usr/share/maven/ref/settings-docker.xml'}
 RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} dependency:go-offline
 
 # copy web application source code
