@@ -21,10 +21,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.web.servlet.MockMvc;
 
 @RunWith(JUnitPlatform.class)
 @AutoConfigureMockMvc
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 @SpringBootTest( webEnvironment = WebEnvironment.RANDOM_PORT,
 		properties = {
 		"storage.incoming.files.original.dir=${java.io.tmpdir}/cacao/storage"
