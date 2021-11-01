@@ -70,6 +70,9 @@ ENV KIBANA_HOST=kibana
 ENV KIBANA_PORT=5601
 ENV KIBANA_ENDPOINT=/kibana
 
+# List of KAFKA Brokers (host:port)
+ENV KAFKA_BROKERS=kafka:9092
+
 ENV WEB_JVM_OPTS="-Xms512m -Xmx512m"
 
 # additional configuration and start application
