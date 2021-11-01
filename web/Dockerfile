@@ -16,6 +16,15 @@ COPY api/src $HOME_API/src
 # compile, package and install common API
 RUN mvn --no-transfer-progress -B -f $HOME_API/pom.xml ${MVN_ARGS} install -DskipTests
 
+# copy source code for shared TEST ARTIFACTS
+ENV HOME_MOCK_ES=/home/usr/mock_es
+RUN mkdir -p $HOME_MOCK_ES
+COPY mock_es/pom.xml $HOME_MOCK_ES
+COPY mock_es/src $HOME_MOCK_ES/src
+
+# compile, package and install shared TEST ARTIFACTS
+RUN mvn --no-transfer-progress -B -f $HOME_MOCK_ES/pom.xml ${MVN_ARGS} install -DskipTests
+
 # copy application specific configuration files
 COPY web/pom.xml $HOME
 
