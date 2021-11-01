@@ -90,6 +90,12 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 */
 	@Field(type=Boolean)
 	private Boolean personalData;
+
+	/**
+	 * Indicates this field is required and its value should not be empty or null.
+	 */
+	@Field(type=Boolean)
+	private Boolean required;
 	
 	public DocumentField() { }
 
@@ -241,6 +247,20 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 */
 	public void setPersonalData(Boolean personalData) {
 		this.personalData = personalData;
+	}
+
+	/**
+	 * Indicates this field is required and its value should not be empty or null.
+	 */
+	public Boolean getRequired() {
+		return required;
+	}
+
+	/**
+	 * Indicates this field is required and its value should not be empty or null.
+	 */
+	public void setRequired(Boolean required) {
+		this.required = required;
 	}
 
 	public boolean isAssigned() {

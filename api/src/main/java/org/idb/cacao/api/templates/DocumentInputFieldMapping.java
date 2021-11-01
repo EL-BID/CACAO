@@ -20,6 +20,7 @@
 package org.idb.cacao.api.templates;
 
 import static org.springframework.data.elasticsearch.annotations.FieldType.Integer;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 
 import java.io.Serializable;
 
@@ -51,6 +52,9 @@ import org.springframework.data.elasticsearch.annotations.Field;
  * DocumentInputFieldMapping[3] take "Value" from worksheet 'Ledger', column 'C'<BR>
  * DocumentInputFieldMapping[4] take "D/C" from worksheet 'Ledger', column 'D'<BR>
  * DocumentInputFieldMapping[5] take "History" from worksheet 'Ledger', column 'E'<BR>
+ * <BR>
+ * Not all of the field members of this object are mappable to every file format. See the javadocs for
+ * more information about each one.
  *  
  * 
  * @author Gustavo Figueiredo
@@ -68,11 +72,72 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 
 	/**
 	 * The column (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular column in a specific order or if a columnNameExpression has been provided<BR>
 	 * Applies to these file formats:<BR>
-	 * TODO:
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
 	 */
 	@Field(type=Integer)
-	private Integer columnOrder;
+	private Integer columnIndex;
+
+	/**
+	 * The column name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular column or if a columnIndex has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	@Field(type=Keyword)
+	private String columnNameExpression;
+
+	/**
+	 * The row (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular row in a specific order<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	@Field(type=Integer)
+	private Integer rowIndex;
+
+	/**
+	 * The sheet (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular sheet or if a sheetNameExpression has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	@Field(type=Keyword)
+	private Integer sheetIndex;
+
+	/**
+	 * The sheet name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular sheet or if a sheetIndex has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	@Field(type=Keyword)
+	private String sheetNameExpression;
+
+	/**
+	 * The XPATH expression of this information in the input file.<BR>
+	 * Applies to these file formats:<BR>
+	 * JSON<BR>
+	 * XML<BR>
+	 */
+	@Field(type=Keyword)
+	private String pathExpression;
+
+	/**
+	 * The form field name of this information in the input file.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX (named cells)<BR>
+	 * PDF (FORMS)<BR>
+	 */
+	@Field(type=Keyword)
+	private String fieldName;
 
 	/**
 	 * The ID of the DocumentField this mapping refers to.
@@ -88,12 +153,156 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 		this.fieldId = fieldId;
 	}
 
-	public Integer getColumnOrder() {
-		return columnOrder;
+	/**
+	 * The column (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular column in a specific order or if a columnNameExpression has been provided<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	public Integer getColumnIndex() {
+		return columnIndex;
 	}
 
-	public void setColumnOrder(Integer columnOrder) {
-		this.columnOrder = columnOrder;
+	/**
+	 * The column (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular column in a specific order or if a columnNameExpression has been provided<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	public void setColumnIndex(Integer columnIndex) {
+		this.columnIndex = columnIndex;
+	}
+
+	/**
+	 * The column name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular column or if a columnIndex has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	public String getColumnNameExpression() {
+		return columnNameExpression;
+	}
+
+	/**
+	 * The column name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular column or if a columnIndex has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	public void setColumnNameExpression(String columnNameExpression) {
+		this.columnNameExpression = columnNameExpression;
+	}
+
+	/**
+	 * The row (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular row in a specific order<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	public Integer getRowIndex() {
+		return rowIndex;
+	}
+
+	/**
+	 * The row (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular row in a specific order<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 * TXT/CSV<BR>
+	 * DOC/DOCX (for tables inside)<BR>
+	 */
+	public void setRowIndex(Integer rowIndex) {
+		this.rowIndex = rowIndex;
+	}
+
+	/**
+	 * The sheet (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular sheet or if a sheetNameExpression has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	public Integer getSheetIndex() {
+		return sheetIndex;
+	}
+
+	/**
+	 * The sheet (0-based) position of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular sheet or if a sheetNameExpression has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	public void setSheetIndex(Integer sheetIndex) {
+		this.sheetIndex = sheetIndex;
+	}
+
+	/**
+	 * The sheet name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular sheet or if a sheetIndex has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	public String getSheetNameExpression() {
+		return sheetNameExpression;
+	}
+
+	/**
+	 * The sheet name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular sheet or if a sheetIndex has been provided.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	public void setSheetNameExpression(String sheetNameExpression) {
+		this.sheetNameExpression = sheetNameExpression;
+	}
+
+	/**
+	 * The XPATH expression of this information in the input file.<BR>
+	 * Applies to these file formats:<BR>
+	 * JSON<BR>
+	 * XML<BR>
+	 */
+	public String getPathExpression() {
+		return pathExpression;
+	}
+
+	/**
+	 * The XPATH expression of this information in the input file.<BR>
+	 * Applies to these file formats:<BR>
+	 * JSON<BR>
+	 * XML<BR>
+	 */
+	public void setPathExpression(String pathExpression) {
+		this.pathExpression = pathExpression;
+	}
+
+	/**
+	 * The form field name of this information in the input file.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX (named cells)<BR>
+	 * PDF (FORMS)<BR>
+	 */
+	public String getFieldName() {
+		return fieldName;
+	}
+
+	/**
+	 * The form field name of this information in the input file.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX (named cells)<BR>
+	 * PDF (FORMS)<BR>
+	 */
+	public void setFieldName(String fieldName) {
+		this.fieldName = fieldName;
 	}
 
 	@Override

@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.api.templates;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Nested;
@@ -127,6 +128,13 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
 	private Periodicity periodicity;
+
+	/**
+	 * If this template is part of a group of templates, informs this is a required file (the other
+	 * ones without this indication are considered optional)
+	 */
+	@Field(type=Boolean)
+	private Boolean required;
 	
 	@Field(type=Nested)
 	private List<DocumentField> fields;
@@ -202,6 +210,22 @@ public class DocumentTemplate implements Serializable, Cloneable {
 
 	public void setPeriodicity(Periodicity periodicity) {
 		this.periodicity = periodicity;
+	}
+
+	/**
+	 * If this template is part of a group of templates, informs this is a required file (the other
+	 * ones without this indication are considered optional)
+	 */
+	public Boolean getRequired() {
+		return required;
+	}
+
+	/**
+	 * If this template is part of a group of templates, informs this is a required file (the other
+	 * ones without this indication are considered optional)
+	 */
+	public void setRequired(Boolean required) {
+		this.required = required;
 	}
 
 	/**
