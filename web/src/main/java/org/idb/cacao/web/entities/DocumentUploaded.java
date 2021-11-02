@@ -119,6 +119,12 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	 */
 	@Field(type=Boolean)
 	private Boolean rectified;
+	
+	/**
+	 * Hash code of file
+	 */
+	@Field(type=Keyword)
+	private String hash;
 
 	/**
 	 * Date/time of last modification or creation of any part of this object
@@ -260,6 +266,14 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	 */
 	public Boolean getRectified() {
 		return rectified;
+	}
+	
+	public String getHash() {
+		return hash;
+	}
+
+	public void setHash(String hash) {
+		this.hash = hash;
 	}
 
 	/**

@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<!--/*-->
+The fragment 'choose_div' displays a div for choosing a document template. You
+must pass the 'templates' variable with a collection of templates names
+(strings).
+<!--*/-->
+<div class="ui floating dropdown labeled icon button sel_template"
+	th:fragment="choose_div">
+	<i class="filter icon"></i> <span class="text" th:text="#{template.choose}">Declaration
+		Type</span>
+	<div class="menu">
+		<div class="ui icon search input">
+			<i class="search icon"></i> <input type="text" placeholder="Search tags..."
+				th:placeholder="#{search}">
+		</div>
+		<div class="divider"></div>
+		<!--/*-->
+		<div class="header">
+			<i class="tags icon"></i> <span th:text="#{templates}">Declarations</span>
+		</div>
+		<!--*/-->
+		<div class="scrolling menu">
+			<th:block th:each="template : ${templates}">
+				<div class="item" data-value="Type" th:attr="data-value=${template}">
+					<div class="ui blue empty circular label"></div>
+					<span th:text="${template}">Type</span>
+				</div>
+			</th:block>
+		</div>
+	</div>
+</div>
+</html>

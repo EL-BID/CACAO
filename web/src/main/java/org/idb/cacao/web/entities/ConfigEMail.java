@@ -29,7 +29,7 @@ import javax.persistence.Id;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 
-import org.idb.cacao.web.utils.AFieldDescriptor;
+import org.idb.cacao.web.AFieldDescriptor;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 

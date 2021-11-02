@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.idb.cacao.web.utils;
+package org.idb.cacao.web;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;

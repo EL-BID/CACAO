@@ -13,23 +13,25 @@
 	<div class="ui container">
 		<h2 class="ui header">
 			<i class="upload icon"></i>
-			<span class="content" th:text="#{docs_main_upload}">Upload documents</span>
+			<span class="content" th:text="#{docs.main.upload}">Upload documents</span>
 		</h2>
+		<div th:if="${templates==null or templates.empty}" class="ui negative message" th:text="#{templates.empty}">No templates!</div>
 		<div class="ui orange segment middle aligned center aligned">
 			<p />
-			<span th:text="#{docs_main_max_size(${@environment.getProperty('spring.servlet.multipart.max-file-size')})}"></span>
+			<div th:replace="fragments/template_choose :: choose_div"></div>
+			<span th:text="#{docs.main.max.size(${@environment.getProperty('spring.servlet.multipart.max-file-size')})}"></span>
 			<p />
 			<div class="upload_tabs" style="display: none">
 				<div class="ui top attached tabular menu">
-					<a class="item active" data-tab="one_file" th:text="#{docs_main_upload_one}">One file</a>
+					<a class="item active" data-tab="one_file" th:text="#{docs.main.upload.one}">One file</a>
 				</div>
 				<div class="ui bottom attached tab segment active" data-tab="one_file">
 					<form id="uploadform" method="POST" enctype="multipart/form-data" action="/">
-						<div class="ui positive message" th:text="#{docs_main_upload_file_help}">Upload one file</div>
+						<div class="ui positive message" th:text="#{docs.main.upload.file.help}">Upload one file</div>
 						<div class="ui middle aligned center aligned grid container">
 						    <input type="hidden" name="template" value=""/>
 							<input type="file" name="fileinput" class="inputfile" id="fileinput"/>
-							<label for="fileinput" class="ui blue right floated button" th:text="#{docs_main_upload_file}">
+							<label for="fileinput" class="ui blue right floated button" th:text="#{docs.main.upload.file}">
 								<i class="ui upload icon"></i>
 								Upload file
 							</label>
@@ -81,7 +83,7 @@ function uploadFile(file_el, form_el, dimmer_el, upload_url, filename) {
                 }
                 else {
                     dimmer_el.dimmer('hide');
-                    $('#modal_failed_upload').find('.description').html([[#{docs_main_upload_failed}]])
+                    $('#modal_failed_upload').find('.description').html([[#{docs.main.upload.failed}]])
                     $('#modal_failed_upload').modal('show')
                 }
                 form_el.trigger('reset');

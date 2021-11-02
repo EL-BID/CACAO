@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -62,7 +63,7 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.UserService;
-import org.idb.cacao.web.controllers.services.storage.StorageService;
+import org.idb.cacao.web.controllers.services.storage.IStorageService;
 import org.idb.cacao.web.entities.DocumentUploaded;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
@@ -71,6 +72,7 @@ import org.idb.cacao.web.errors.GeneralException;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
+import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ParserUtils;
@@ -99,6 +101,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashingInputStream;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -140,15 +144,15 @@ public class DocumentStoreAPIController {
 	@Autowired
 	private ApplicationContext app;
 
-	/*
+	
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
-	*/
+	
 	@Autowired
 	private DocumentTemplateService templateService;
 	
     @Autowired
-    private StorageService storageService;
+    private IStorageService storageService;
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -184,7 +188,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));
 		}
-		/*
+		
 		if (template==null || template.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
@@ -198,7 +202,7 @@ public class DocumentStoreAPIController {
 			// if we have more than one possible choice, let's give higher priority to most recent ones
 			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
-		*/
+		
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 		
 		final Map<String, String> result;
@@ -369,17 +373,19 @@ public class DocumentStoreAPIController {
 			
 			log.log(Level.INFO, "User "+user.getLogin()+" uploading file "+originalFilename+" for template "+template+" from "+remoteIpAddr);
 
+			String fileId = UUID.randomUUID().toString();
+			
 			final long timestamp = System.currentTimeMillis();
-			storageService.store(originalFilename, fileStream, closeInputStream);
-
+			HashingInputStream his = new HashingInputStream(Hashing.sha256(),fileStream);
+			storageService.store(originalFilename, his, closeInputStream);
 								
 			// Keep this information in history of all uploads
-			DocumentUploaded reg_upload = new DocumentUploaded();
-			String fileId = UUID.randomUUID().toString();
+			DocumentUploaded reg_upload = new DocumentUploaded();			
 			reg_upload.setFileId(fileId);
 			reg_upload.setFilename(originalFilename);
 			reg_upload.setTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()));
 			reg_upload.setIpAddress(remoteIpAddr);
+			reg_upload.setHash(his.hash().toString()); 
 	    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 	    	if (auth!=null) {
 	    		reg_upload.setUser(String.valueOf(auth.getName()));

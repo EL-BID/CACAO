@@ -115,7 +115,8 @@ public class LoginUIController {
 		List<MenuItem> menu = new LinkedList<>();
 
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_WRITE)) {
-			menu.add(new MenuItem(messages.getMessage("docs_main_upload", null, LocaleContextHolder.getLocale()),
+			menu.add(new MenuItem("Add Sample Documents", "/addSamples"));
+			menu.add(new MenuItem(messages.getMessage("docs.main.upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
 		}
 

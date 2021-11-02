@@ -24,6 +24,7 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -72,5 +73,14 @@ public class HttpUtils {
         return customRequestFactory;
 	}
 
-
+	/**
+	 * Extract and returns remote IP address from a given {@link HttpServletRequest}
+	 * 
+	 * @param request	An object {@link HttpServletRequest} 
+	 * @return	Remote IP address
+	 */
+	public static String getRemoteIPAddress(HttpServletRequest request) {
+		return (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+	}
+	
 }

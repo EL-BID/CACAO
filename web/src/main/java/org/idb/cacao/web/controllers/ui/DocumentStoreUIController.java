@@ -19,8 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
-import java.util.logging.Logger;
+import java.util.List;
 
+import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.repositories.DocumentTemplateRepository;
+import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,10 +39,27 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class DocumentStoreUIController {
 	
-	private static final Logger log = Logger.getLogger(DocumentStoreUIController.class.getName());
-
+	//private static final Logger log = Logger.getLogger(DocumentStoreUIController.class.getName());
+	@Autowired
+	private DocumentTemplateRepository templateRepository;
+	
+	@Autowired
+	private DocumentTemplateService templateService;
+	
 	@GetMapping("/docs")
     public String getDocs(Model model) {
+		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
+        return "docs/docs_main";
+    }
+	
+	@GetMapping("/addSamples")
+    public String addSampleDocs(Model model) {
+		
+		List<DocumentTemplate> samples = CreateDocumentTemplatesSamples.getSampleTemplates();
+		
+		samples.forEach(s->templateRepository.saveWithTimestamp(s));
+		
+		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
         return "docs/docs_main";
     }
 	

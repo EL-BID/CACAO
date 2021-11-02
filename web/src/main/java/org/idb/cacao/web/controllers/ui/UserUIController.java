@@ -107,13 +107,13 @@ public class UserUIController {
 
 		model.addAttribute("filter_options", new AdvancedSearch()
 				.withFilter(new AdvancedSearch.QueryFilterTerm("taxpayerId")
-						.withDisplayName(messages.getMessage("taxpayer_id", null, LocaleContextHolder.getLocale())))
+						.withDisplayName(messages.getMessage("taxpayer.id", null, LocaleContextHolder.getLocale())))
 				.withFilter(new AdvancedSearch.QueryFilterTerm("name")
-						.withDisplayName(messages.getMessage("user_name", null, LocaleContextHolder.getLocale())))
+						.withDisplayName(messages.getMessage("user.name", null, LocaleContextHolder.getLocale())))
 				.withFilter(new AdvancedSearch.QueryFilterTerm("login")
-						.withDisplayName(messages.getMessage("user_login", null, LocaleContextHolder.getLocale())))
+						.withDisplayName(messages.getMessage("user.login", null, LocaleContextHolder.getLocale())))
 				.withFilter(new AdvancedSearch.QueryFilterTerm("profile")
-						.withDisplayName(messages.getMessage("user_profile", null, LocaleContextHolder.getLocale()))));
+						.withDisplayName(messages.getMessage("user.profile", null, LocaleContextHolder.getLocale()))));
 		model.addAttribute("applied_filters", filters
 				.map(f -> f.withDisplayNames((AdvancedSearch) model.getAttribute("filter_options")).wiredTo(messages)));
 

@@ -8,7 +8,7 @@ import java.nio.file.Path;
 
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.idb.cacao.web.controllers.services.UserService;
-import org.idb.cacao.web.controllers.services.storage.StorageService;
+import org.idb.cacao.web.controllers.services.storage.IStorageService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ class DocumentStoreAPIControllerTests {
 	private static ElasticsearchMockClient mockElastic;
 
 	@Autowired
-	private StorageService storageService;
+	private IStorageService storageService;
 	
 	@Autowired
 	private UserService userService;
