@@ -118,6 +118,11 @@ public class LoginUIController {
 			menu.add(new MenuItem(messages.getMessage("docs_main_upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
 		}
+		if (hasPrivilege(roles, SystemPrivilege.USER_READ)) {
+			menu.add(new MenuItem(messages.getMessage("users.title", null, LocaleContextHolder.getLocale()),
+				"/users"));
+		}
+
 
 		MenuItem submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
 		menu.add(submenu);

@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="users icon"></i>
+			<div class="content" th:text="#{users.title}">Users</div>
+		</h2>
+			<div id="app">
+				<div id="table" class="ui orange table"></div>
+			</div>
+		<div class="ui column right floated">
+			<div class="ui right floated primary labeled icon">
+				<a th:href="@{/adduser}" class="ui button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
+			</div>
+		</div>
+	</div>
+ 
+<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
+   
+<script th:nonce="${cspNonce}" th:inline="javascript">
+var app = new Vue({
+	el: '#app',
+	data: {
+		table: null
+	},
+	methods: {
+		editRow(e, cell) {
+			console.log('edit  ' + cell.getRow().getIndex() )
+			window.location.replace([[@{/edituser/}]] +  cell.getRow().getIndex());
+			
+		},
+		sendDelete(userId) {
+			$.ajax({
+			    url: [[@{/api/user/}]] + userId,
+			    type: 'DELETE',
+			    dataType: 'json',
+			    contentType: 'application/json',
+			    cache: false,  
+			    success: this.onDeleteSuccess,
+			    error: this.onDeleteError
+			})
+		},
+		onDeleteSuccess(result) {
+			$('#modal_successful').modal('show')
+			setTimeout(function(){
+				window.location.replace([[@{/users}]])
+			}, 2000);
+		},
+		onDeleteError(e) {
+			var msg = e.responseText.replace(/\n/g, "<br />");
+			$('#modal_failed').find('.description').html(msg)
+			$('#modal_failed').modal('show')
+			console.log("ERROR : "+ msg);
+		},
+		deleteRow(e, cell) {
+			console.log('delete ' + cell.getRow().getIndex())
+			var dlg = $('#modal_confirm')
+			dlg.find('.description').html([[#{user.delete.confirm}]])
+			var self=this
+			dlg.modal({
+			  closable:false,
+			  onApprove: function() { self.sendDelete(cell.getRow().getIndex()) }
+	        })
+			dlg.modal('show');
+		}
+	},
+	mounted() {
+		var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+		var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+		this.table = new Tabulator('#table', {
+			index: 'id',
+			layout: "fitColumns", //fit columns to width of table (optional)
+		    pagination: true,
+			paginationMode: "remote", //enable remote pagination
+    		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
+			paginationSize: 5,
+			ajaxContentType: "json",
+			
+			columns:[ //Define Table Columns
+				{title: /*{{#user.name}}*/ "Name", field:"name"},
+				{title: /*{{#user.login}}*/ "Login", field:"login", hozAlign:"left" },
+				{title: /*{{#user.profile}}*/ "Profile", field:"profile", width: 150 },
+				{formatter:editIcon, width:50, cellClick: this.editRow},
+				{formatter:trashIcon, width:50, cellClick: this.deleteRow}
+			]
+		})
+	}
+})
+</script>
+</body>
+</html>
+    

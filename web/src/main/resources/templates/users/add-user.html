@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="user icon"></i>
+			<div class="content" th:text="#{user.new}">New User</div>
+		</h2>
+		<div id="app">
+		<div class="ui center aligned container">
+			<div class="ui orange segment">
+				<form class="ui large form" action="#" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
+					<div class="row">
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{user.name}">User Name</div>
+						</h4>
+						<div class="ui form">
+							<input type="text" v-model="user.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}">
+							<span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
+						</div>
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{user.login}">"LoginD</div>
+						</h4>
+						<div class="ui form">
+							<input type="text" v-model="user.login" class="form-control" id="login" placeholder="Login" th:placeholder="#{user.login}">
+							<span th:if="${#fields.hasErrors('login')}" th:errors="*{login}" class="ui warning message"></span>
+						</div>
+						<th:block th:unless="${omit_password}">
+							<h4 class="ui header" style="margin-bottom: 0px; display:inline-block; text-transform: uppercase;">
+								<i class="lock icon"></i>
+								<div class="content" th:text="#{user.password}">Password</div>
+							</h4>
+							<div class="ui form">
+								<input type="password" v-model="user.password" class="form-control" id="password" placeholder="Password" th:placeholder="#{user.password}">
+								<span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="ui warning message"></span>
+							</div>
+							<h4 class="ui header" style="margin-bottom: 0px; display:inline-block; text-transform: uppercase;">
+								<i class="lock icon"></i>
+								<div class="content" th:text="#{user.password.confirm}">Confirm Password</div>
+							</h4>
+							<div class="ui form">
+								<input type="password" v-model="user.confirmPassword" class="form-control" id="confirmPassword" placeholder="Password" th:placeholder="#{user.password.confirm}">
+								<span th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}" class="ui warning message"></span>
+							</div>
+						</th:block>
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{user_profile}">Profile</div>
+						</h4>
+						<div class="ui form">
+							<option disabled value="">Select a profile</option>
+							<select v-model="user.profile" class="ui fluid dropdown">
+								<option th:each="i : ${T(org.idb.cacao.web.entities.UserProfile).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+							</select>
+						</div>
+					</div>
+					<div class="row">
+						<div class="ui segment">
+							<input type="submit" class="ui blue submit button" th:value="#{user.add.title}" value="Add User">
+							<input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel" @click.prevent="cancel">
+						</div>
+					</div>
+					<div class="ui error message"></div>
+				</form>
+			</div>
+		</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+  $('#cancel').click(function(){
+	  go_to_location_keeping_state([[@{/users}]]) 
+  })
+</script>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+var app = new Vue({
+	el: '#app',
+	data: {
+		user: {
+			name: '',
+			login: '',
+			password: '',
+			confirmPassword: '',
+			profile: ''
+		}
+	},
+	methods: {
+		cancel() {
+			window.location.replace([[@{/users}]])
+		},
+		processForm() {
+			$.ajax({
+   			    url: [[@{/api/user}]],
+   			    type: 'POST',
+   			    dataType: 'json',
+   			    contentType: 'application/json',
+   			    data: JSON.stringify(this.user),
+   			    cache: false,    
+   				success: function(result) {
+   					$('#modal_successful').modal('show')
+   					setTimeout(function(){
+   						window.location = [[@{/users}]]
+   					}, 2000);
+   				},
+   				error: function(e) {
+   					var msg = e.responseText.replace(/\n/g, "<br />");
+   					$('#modal_failed').find('.description').html(msg)
+   					$('#modal_failed').modal('show')
+   					console.log("ERROR : "+msg);
+   				}
+   			});			 
+		}
+	}
+})
+  
+  </script>
+</body>
+</html>

@@ -29,6 +29,7 @@
 <title th:text="#{app.name}">Application Title</title>
 <link rel="stylesheet" type="text/css" class="ui" href="/css/semantic.min.css">
 <link rel="stylesheet" type="text/css" class="ui" href="/css/jquery-ui.min.css">
+<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
 <link rel="icon" type="image/ico" href="/images/favicon.ico">
 <th:block th:if="${more_links}">
 	<th:block th:replace="${more_links}" />
@@ -36,6 +37,8 @@
 <script src="/js/jquery.min.js"></script>
 <script src="/js/jquery-ui.min.js"></script>
 <script src="/js/semantic.min.js"></script>
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/vue.min.js"></script>
 <th:block th:if="${more_scripts}">
 	<th:block th:replace="${more_scripts}" />
 </th:block>
