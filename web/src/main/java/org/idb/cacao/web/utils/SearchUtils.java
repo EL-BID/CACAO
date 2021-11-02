@@ -207,17 +207,24 @@ public class SearchUtils {
 				if (multiple_terms.isEmpty())
 					return;
 				if (multiple_terms.size()==1) {
-					query_builder.accept(new WildcardQueryBuilder(field.getName(), multiple_terms.get(0)));
+					String v = multiple_terms.get(0);
+					if (v!=null)
+						v = v.toLowerCase();
+					query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
 				}
 				else {
 					BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 					for (String sub_term: multiple_terms) {
+						if (sub_term!=null)
+							sub_term = sub_term.toLowerCase();
 						subquery = subquery.must(new WildcardQueryBuilder(field.getName(), sub_term));
 					}
 					query_builder.accept(subquery);
 				}
 			}
 			else {
+				if (argument!=null)
+					argument = argument.toLowerCase();
 				query_builder.accept(new WildcardQueryBuilder(field.getName(), argument));
 			}
 		}
@@ -225,11 +232,17 @@ public class SearchUtils {
 			if (((AdvancedSearch.QueryFilterEnum)field).getEnumeration()==null) {
 				Class<?> type = ReflectUtils.getMemberType(entity, field.getName());
 				if (type!=null && type.isEnum()) {
-					query_builder.accept(new WildcardQueryBuilder(field.getName(), ((AdvancedSearch.QueryFilterEnum)field).getSelectedConstant(type)));
+					String v = ((AdvancedSearch.QueryFilterEnum)field).getSelectedConstant(type);
+					if (v!=null)
+						v = v.toLowerCase();
+					query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
 				}
 			}
 			else {
-				query_builder.accept(new WildcardQueryBuilder(field.getName(), ((AdvancedSearch.QueryFilterEnum)field).getSelectedConstant()));
+				String v = ((AdvancedSearch.QueryFilterEnum)field).getSelectedConstant();
+				if (v!=null)
+					v = v.toLowerCase();
+				query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
 			}
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterBoolean) {
