@@ -112,6 +112,8 @@ import io.swagger.annotations.ApiParam;
  * Controller class for all endpoints related to 'document' object interacting by a REST interface
  * 
  * @author Gustavo Figueiredo
+ * @author Luis Kauer
+ * @author Rivelino Patrício
  *
  */
 @RestController
@@ -246,7 +248,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));
 		}
-		/*
+		
 		if (template==null || template.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
@@ -260,7 +262,7 @@ public class DocumentStoreAPIController {
 			// if we have more than one possible choice, let's give higher priority to most recent ones
 			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
-		*/
+		
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		final List<Map<String, String>> results = new ArrayList<>();
@@ -318,7 +320,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
 		}
-		/*
+		
 		if (template==null || template.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
@@ -332,7 +334,7 @@ public class DocumentStoreAPIController {
 			// if we have more than one possible choice, let's give higher priority to most recent ones
 			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
-		*/
+		
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		List<Map<String, String>> results = new ArrayList<>();
@@ -377,20 +379,21 @@ public class DocumentStoreAPIController {
 			
 			final long timestamp = System.currentTimeMillis();
 			HashingInputStream his = new HashingInputStream(Hashing.sha256(),fileStream);
-			storageService.store(originalFilename, his, closeInputStream);
+			String subDir = storageService.store(fileId, his, closeInputStream);
 								
 			// Keep this information in history of all uploads
-			DocumentUploaded reg_upload = new DocumentUploaded();			
-			reg_upload.setFileId(fileId);
-			reg_upload.setFilename(originalFilename);
-			reg_upload.setTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()));
-			reg_upload.setIpAddress(remoteIpAddr);
-			reg_upload.setHash(his.hash().toString()); 
+			DocumentUploaded regUpload = new DocumentUploaded();			
+			regUpload.setFileId(fileId);
+			regUpload.setFilename(originalFilename);
+			regUpload.setSubDir(subDir);
+			regUpload.setTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()));
+			regUpload.setIpAddress(remoteIpAddr);
+			regUpload.setHash(his.hash().toString()); 
 	    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 	    	if (auth!=null) {
-	    		reg_upload.setUser(String.valueOf(auth.getName()));
+	    		regUpload.setUser(String.valueOf(auth.getName()));
 	    	}
-			DocumentUploaded saved_info = documentsUploadedRepository.saveWithTimestamp(reg_upload);
+			DocumentUploaded saved_info = documentsUploadedRepository.saveWithTimestamp(regUpload);
 			
 			rollback_procedures.add(()->documentsUploadedRepository.delete(saved_info)); // in case of error delete the DocumentUploaded
 			Map<String, String> result = new HashMap<>();
@@ -600,15 +603,15 @@ public class DocumentStoreAPIController {
     	Set<String> indices_verified = new HashSet<>(); // avoids redundancy (may happen if we have different versions of the same template name)
     	
     	// Build the query for each template of interest
-    	List<Object> all_docs = new LinkedList<>();
+    	List<Object> allDocs = new LinkedList<>();
     	for (DocumentTemplate template: requested_templates) {
     		
-    		if (all_docs.size()>=MAX_RESULTS_PER_REQUEST)
+    		if (allDocs.size()>=MAX_RESULTS_PER_REQUEST)
     			break;
     		
         	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         			.query(query); 
-        	searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST - all_docs.size());    	
+        	searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST - allDocs.size());    	
         	searchSourceBuilder.sort("timestamp", SortOrder.DESC);
         	
         	String index_name = "doc_"+formatIndexName(/*indexName*/template.getName());
@@ -645,14 +648,14 @@ public class DocumentStoreAPIController {
     		}
     		
     		for (SearchHit hit : sresp.getHits()) {
-    			Map<String, Object> doc_as_map_of_fields = hit.getSourceAsMap();
-    			doc_as_map_of_fields.put("docId", hit.getId());
-    			all_docs.add(doc_as_map_of_fields);
+    			Map<String, Object> docAsMapOfFields = hit.getSourceAsMap();
+    			docAsMapOfFields.put("docId", hit.getId());
+    			allDocs.add(docAsMapOfFields);
     		}
     		
     	} // LOOP for each DocumentTemplate
 
-		return ResponseEntity.ok().body(all_docs);
+		return ResponseEntity.ok().body(allDocs);
 	}
 
 }
