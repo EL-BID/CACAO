@@ -35,6 +35,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.idb.cacao.web.controllers.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -43,6 +44,7 @@ import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonView;
 
 /**
  * Persistent entity defining a 'user' of this application
@@ -59,6 +61,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
+	@JsonView(Views.Public.class)
 	@Id   
 	private String id;
 
@@ -78,6 +81,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Public.class)
 	@NotBlank
 	@NotNull
 	@NotEmpty
@@ -94,12 +98,14 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Public.class)
 	@NotBlank
 	@NotNull
 	@NotEmpty
 	@Size(min=4, max=120)
 	private String name;
 	
+	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
 	@Field(type=Keyword)
 	@NotNull
@@ -111,6 +117,9 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@Field(type=Keyword)
 	@Size(max=60)
     private String password;
+	
+	@Transient
+	private String confirmPassword;
 	
 	/**
 	 * API TOKEN (for user operations with external system through REST API)
@@ -289,6 +298,14 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 				return comp;
 		}
 		return 0;
+	}
+
+	public String getConfirmPassword() {
+		return confirmPassword;
+	}
+
+	public void setConfirmPassword(String confirmPassword) {
+		this.confirmPassword = confirmPassword;
 	}
 	
 }

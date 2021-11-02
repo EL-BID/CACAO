@@ -19,35 +19,18 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.IConfigEMailService;
-import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.ConfigEMail;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
-import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.env.Environment;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Controller class for all endpoints related to 'user' object interacting by a
@@ -60,19 +43,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class UserUIController {
 
 	@Autowired
-	private MessageSource messages;
-
-	@Autowired
-	private Environment env;
-
-	@Autowired
 	private UserRepository userRepository;
 
 	@Autowired
 	private IConfigEMailService configEmailService;
-
-	@Autowired
-	private UserService userService;
 
 	@GetMapping("/institutional")
 	public String showInstitutional(Model model) {
@@ -86,38 +60,9 @@ public class UserUIController {
 	@Secured({ "ROLE_USER_READ" })
 	@GetMapping("/users")
 	@Transactional
-	public String getUsers(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
-		int currentPage = page.orElse(1);
-		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
-		Page<User> users;
-		if (filters.isPresent() && !filters.get().isEmpty()) {
-			users = userService.searchUsers(filters, page, size);
-		} else {
-			users = searchPage(() -> userRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("name").ascending())));
-		}
-		model.addAttribute("users", users);
-		int totalPages = users.getTotalPages();
-		if (totalPages > 0) {
-			List<Integer> pageNumbers = IntStream.rangeClosed(1, totalPages).boxed().collect(Collectors.toList());
-			model.addAttribute("pageNumbers", pageNumbers);
-		}
-
-		model.addAttribute("filter_options", new AdvancedSearch()
-				.withFilter(new AdvancedSearch.QueryFilterTerm("taxpayerId")
-						.withDisplayName(messages.getMessage("taxpayer.id", null, LocaleContextHolder.getLocale())))
-				.withFilter(new AdvancedSearch.QueryFilterTerm("name")
-						.withDisplayName(messages.getMessage("user.name", null, LocaleContextHolder.getLocale())))
-				.withFilter(new AdvancedSearch.QueryFilterTerm("login")
-						.withDisplayName(messages.getMessage("user.login", null, LocaleContextHolder.getLocale())))
-				.withFilter(new AdvancedSearch.QueryFilterTerm("profile")
-						.withDisplayName(messages.getMessage("user.profile", null, LocaleContextHolder.getLocale()))));
-		model.addAttribute("applied_filters", filters
-				.map(f -> f.withDisplayNames((AdvancedSearch) model.getAttribute("filter_options")).wiredTo(messages)));
-
-		return "/user/users";
+	public String getUsers(Model model) {
+		
+		return "users/users";
 	}
 
 	//@Secured({ "ROLE_USER_WRITE" })
@@ -128,7 +73,7 @@ public class UserUIController {
 				&& config_email.getSupportEmail().trim().length() > 0) {
 			model.addAttribute("omit_password", true);
 		}
-		return "/user/add-user";
+		return "/users/add-user";
 	}
 
 	@Secured({ "ROLE_USER_WRITE" })
@@ -137,7 +82,7 @@ public class UserUIController {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
 		model.addAttribute("user", user);
-		return "/user/update-user";
+		return "/users/update-user";
 	}
 
 }

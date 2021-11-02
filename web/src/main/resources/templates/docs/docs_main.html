@@ -16,8 +16,8 @@
 			<span class="content" th:text="#{docs.main.upload}">Upload documents</span>
 		</h2>
 		<div th:if="${templates==null or templates.empty}" class="ui negative message" th:text="#{templates.empty}">No templates!</div>
-		<div class="ui orange segment middle aligned center aligned">
-			<p />
+		<div class="ui orange segment middle aligned center aligned" th:unless="${templates==null or templates.empty}">
+			<p/>
 			<div th:replace="fragments/template_choose :: choose_div"></div>
 			<span th:text="#{docs.main.max.size(${@environment.getProperty('spring.servlet.multipart.max-file-size')})}"></span>
 			<p />
@@ -49,7 +49,15 @@
 	<div th:replace="fragments/modals_upload :: failed">MODAL DIALOG FOR FAILURE ALERT ABOUT UPLOADS</div>
 	<script th:nonce="${cspNonce}" th:inline="javascript" type="module">
 $('.menu .item').tab();
-$('.upload_tabs').show();
+
+$('.upload_tabs').hide()
+  $('.ui.dropdown').dropdown({
+	action: 'activate',
+	onChange: function(value, text, $selectedItem) {
+		$('.upload_tabs').show()		
+	}  
+  } );
+
 $('#fileinput').change(function(){
       var file_el = $( this )
       var form_el = $('#uploadform')
