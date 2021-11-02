@@ -28,8 +28,7 @@
 				<div class="ui bottom attached tab segment active" data-tab="one_file">
 					<form id="uploadform" method="POST" enctype="multipart/form-data" action="/">
 						<div class="ui positive message" th:text="#{docs.main.upload.file.help}">Upload one file</div>
-						<div class="ui middle aligned center aligned grid container">
-						    <input type="hidden" name="template" value=""/>
+						<div class="ui middle aligned center aligned grid container">						    
 							<input type="file" name="fileinput" class="inputfile" id="fileinput"/>
 							<label for="fileinput" class="ui blue right floated button" th:text="#{docs.main.upload.file}">
 								<i class="ui upload icon"></i>
@@ -62,12 +61,13 @@ $('#fileinput').change(function(){
       var file_el = $( this )
       var form_el = $('#uploadform')
       var dimmer_el = $('#dimmer')
-      var upload_url = '/api/doc?template='//+encodeURIComponent($('.ui.dropdown').dropdown('get value'))
-      var filename = file_el.val().split('\\').pop();
+      var upload_url = '/api/doc?template='+encodeURIComponent($('.ui.dropdown').dropdown('get value'))	  
+      var filename = file_el.val().split('\\').pop();      
       uploadFile(file_el, form_el, dimmer_el, upload_url, filename);
   });
-function uploadFile(file_el, form_el, dimmer_el, upload_url, filename) {
-  var msg = [[#{docs_confirm_upload}]]+' '+filename+'?';
+
+function uploadFile(file_el, form_el, dimmer_el, upload_url, filename) {  
+  var msg = [[#{docs.confirm.upload}]]+' '+filename+'?';
   var dlg = $('#modal_confirm_upload')
   dlg.find('.description').html(msg)
   dlg.modal({
@@ -75,7 +75,7 @@ function uploadFile(file_el, form_el, dimmer_el, upload_url, filename) {
       onDeny: function(){
           form_el.trigger('reset');
       },
-      onApprove: function(){
+      onApprove: function(){		 
          $.ajax({
             url: upload_url,
             type: 'POST',

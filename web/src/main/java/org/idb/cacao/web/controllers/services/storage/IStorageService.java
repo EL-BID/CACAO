@@ -31,6 +31,7 @@ import org.springframework.core.io.Resource;
  * An interface to a storage system
  * 
  * @author Luis Kauer
+ * @author Rivelino Patrício
  *
  */
 public interface IStorageService {
@@ -42,7 +43,7 @@ public interface IStorageService {
 	 * @param closeInputStream
 	 * @return
 	 */
-	Path store(String originalFilename, InputStream inputStream, boolean closeInputStream);
+	String store(String originalFilename, InputStream inputStream, boolean closeInputStream);
 
 	/**
 	 * 
@@ -65,6 +66,18 @@ public interface IStorageService {
 	public default String getSubDir() {		
 		OffsetDateTime now = DateTimeUtils.now();
 		return now.getYear() + File.separator + now.getMonthValue();		
+	}
+	
+	/**
+	 * 
+	 * @param originalFilename	The name of file to store
+	 * @return	The full path relative to the root path where the file has to be stored
+	 */
+	public default String getFilenameWithPath(String originalFilename) {
+		if ( originalFilename == null )
+			return null;
+	
+		return getSubDir() + File.separator + originalFilename;
 	}
 
 }

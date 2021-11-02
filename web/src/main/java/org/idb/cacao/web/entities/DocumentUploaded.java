@@ -79,11 +79,20 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	@Field(type=Keyword)
 	private String templateVersion;
 	
+	/**
+	 * Original file name. The name used to store in disk is the fileId.
+	 */
 	@Field(type=Keyword)
 	private String filename;
 	
 	@Field(type=Keyword)
 	private String fileId;
+	
+	/**
+	 * A folder where the file was stored in system storage.
+	 */
+	@Field(type=Keyword)
+	private String subDir;
 
 	@Field(type=Integer)
 	private Integer taxYear;
@@ -194,8 +203,16 @@ public class DocumentUploaded implements Serializable, Cloneable {
 
 	public void setFileId(String fileId) {
 		this.fileId = fileId;
-	}
+	}	
 	
+	public String getSubDir() {
+		return subDir;
+	}
+
+	public void setSubDir(String subDir) {
+		this.subDir = subDir;
+	}
+
 	public Integer getTaxYear() {
 		return taxYear;
 	}

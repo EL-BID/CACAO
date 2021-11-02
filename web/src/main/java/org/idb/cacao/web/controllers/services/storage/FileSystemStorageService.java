@@ -26,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.idb.cacao.web.errors.StorageException;
 import org.idb.cacao.web.errors.StorageFileNotFoundException;
@@ -34,15 +36,13 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
-import com.google.common.hash.Hashing;
-import com.google.common.hash.HashingInputStream;
-
 /**
  * Service for save files on file system. <br>
  * 
  * It's necessary to define "storage.incoming.files.original.dir" on application.properties file.
  * 
  * @author Luiz Kauer
+ * @author Rivelino Patrício
  *
  */
 @Service
@@ -54,6 +54,8 @@ public class FileSystemStorageService implements IStorageService {
 	 *  Example: /var/uploaded-files/original
 	 */
 	private final Path rootLocation;
+	
+	private static final Logger log = Logger.getLogger(FileSystemStorageService.class.getName());
 
 	/**
 	 * 
@@ -72,15 +74,19 @@ public class FileSystemStorageService implements IStorageService {
 	 * Save file to storage
 	 */
 	@Override
-	public Path store(String originalFilename, InputStream inputStream, boolean closeInputStream) {
+	public String store(String originalFilename, InputStream inputStream, boolean closeInputStream) {
 		try {
-			Path destinationFile = this.rootLocation.resolve(Paths.get(originalFilename)).normalize().toAbsolutePath();
-			if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+			
+			String subDir = getSubDir();
+			Path location = getLocation(subDir);
+			Path destinationFile = location.resolve(Paths.get(originalFilename)).normalize().toAbsolutePath();
+			
+			if (!destinationFile.getParent().equals(location.toAbsolutePath())) {
 				// This is a security check
 				throw new StorageException("Cannot store file outside current directory.");
 			}
 			Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
-			return destinationFile;
+			return subDir;
 		} catch (IOException e) {
 			throw new StorageException("Failed to store file.", e);
 		} finally {
@@ -88,10 +94,29 @@ public class FileSystemStorageService implements IStorageService {
 				try {
 					inputStream.close();
 				} catch (IOException e) {
-					// TODO: raise error or continue?
+					log.log(Level.WARNING, "Couldn't close inputstream for file " + originalFilename, e);	
 				}
 			}
 		}
+	}
+
+	/**
+	 * 
+	 * @return	Specific location for store a file
+	 */
+	private Path getLocation(String subDir) {
+		if ( subDir == null || subDir.isEmpty() )
+			return rootLocation;
+		
+		Path location = rootLocation.resolve(subDir);
+		try {
+			Files.createDirectories(location);
+		} catch (IOException e) {			
+			log.log(Level.WARNING, "Couldn't create subdir to store file: " + location.getFileName(), e);
+			return rootLocation;
+		}
+		
+		return location;
 	}
 
 	/**

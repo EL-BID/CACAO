@@ -5,6 +5,13 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Keywo
 
 import java.time.OffsetDateTime;
 
+import javax.swing.JLabel;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+import org.idb.cacao.web.AFieldDescriptor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -20,13 +27,25 @@ public class Item {
 	 * Date/time this record was created or updated. 
 	 * This is important for 'synchronizing' external replicas of this database.
 	 */
+	@AFieldDescriptor(externalName = "timestamp", editable = false, alignment = JLabel.CENTER, width = 120, tooltip = "timestamp.tooltip")
+	@NotNull	
 	@Field(type=Date, store = true, format = DateFormat.date_time)
     private OffsetDateTime timestamp;	
     
+	@AFieldDescriptor(externalName = "item.name", alignment = JLabel.LEFT, width = 250, tooltip = "item.name.tooltip")
 	@Field(type=Keyword)
+	@NotNull
+	@NotBlank
+	@NotEmpty	
+	@Size(min=5, max=100)
 	private String name;
 
-	@Field(type=Keyword)	
+	@AFieldDescriptor(externalName = "item.category", alignment = JLabel.LEFT, width = 150, tooltip = "item.category.tooltip")
+	@Field(type=Keyword)
+	@NotNull
+	@NotBlank
+	@NotEmpty	
+	@Size(min=5, max=50)	
 	private String category;
 
     public Item() {
