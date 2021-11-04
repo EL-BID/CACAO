@@ -72,6 +72,7 @@ import org.springframework.data.util.CloseableIterator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
  * Utility methods for advanced search facility with elastic search base
@@ -127,6 +128,8 @@ public class SearchUtils {
 		
 		String indexName = an_doc.indexName();
 		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		Page<Map<String,Object>> result = doSearch(queryArguments, entity, indexName, elasticsearchClient, page, size, sortBy, sortOrder);
 		return result.map(m->mapper.convertValue(m, entity));

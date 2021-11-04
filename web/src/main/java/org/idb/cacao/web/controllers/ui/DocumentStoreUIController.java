@@ -52,6 +52,12 @@ public class DocumentStoreUIController {
         return "docs/docs_main";
     }
 	
+	@GetMapping("/docs_search")
+    public String searchDocs(Model model) {
+		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
+        return "docs/docs_search";
+    }
+	
 	@GetMapping("/addSamples")
     public String addSampleDocs(Model model) {
 		

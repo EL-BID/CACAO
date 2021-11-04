@@ -18,21 +18,20 @@
 		<div id="app">
 		<div class="ui center aligned container">
 			<div class="ui orange segment">
-				<form class="ui large form" action="#" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
-					<div class="row">
+				<form class="ui large form" :class="{ error: msg }" action="#" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
 						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
 							<div class="content" th:text="#{user.name}">User Name</div>
 						</h4>
-						<div class="ui form">
-							<input type="text" v-model="user.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}">
-							<span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
+						<div class="field">
+							<input type="text" v-model="user.name" class="field" id="name" placeholder="Name" th:placeholder="#{user.name}">
+							<span class="ui error message">{{ msg.name }}</span>
 						</div>
 						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{user.login}">"LoginD</div>
+							<div class="content" th:text="#{user.login}">"Login</div>
 						</h4>
 						<div class="ui form">
 							<input type="text" v-model="user.login" class="form-control" id="login" placeholder="Login" th:placeholder="#{user.login}">
-							<span th:if="${#fields.hasErrors('login')}" th:errors="*{login}" class="ui warning message"></span>
+							<span v-if="msg.login" class="ui error message">{{ msg.login }}</span>
 						</div>
 						<th:block th:unless="${omit_password}">
 							<h4 class="ui header" style="margin-bottom: 0px; display:inline-block; text-transform: uppercase;">
@@ -41,7 +40,7 @@
 							</h4>
 							<div class="ui form">
 								<input type="password" v-model="user.password" class="form-control" id="password" placeholder="Password" th:placeholder="#{user.password}">
-								<span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="ui warning message"></span>
+								<span v-if="msg.password" class="ui error message">{{ msg.password }}</span>
 							</div>
 							<h4 class="ui header" style="margin-bottom: 0px; display:inline-block; text-transform: uppercase;">
 								<i class="lock icon"></i>
@@ -49,26 +48,25 @@
 							</h4>
 							<div class="ui form">
 								<input type="password" v-model="user.confirmPassword" class="form-control" id="confirmPassword" placeholder="Password" th:placeholder="#{user.password.confirm}">
-								<span th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}" class="ui warning message"></span>
+								<span v-if="msg.confirmPassword" class="ui warning message">{{ msg.confirmPassword }}</span>
 							</div>
 						</th:block>
 						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
 							<div class="content" th:text="#{user.profile}">Profile</div>
 						</h4>
 						<div class="ui form">
-							<option disabled value="">Select a profile</option>
 							<select v-model="user.profile" class="ui fluid dropdown">
+								<option disabled value="">Select a profile</option>
 								<option th:each="i : ${T(org.idb.cacao.web.entities.UserProfile).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
 							</select>
+							<span v-if="msg.profile" class="ui warning message">{{ msg.profile }}</span>
 						</div>
-					</div>
 					<div class="row">
 						<div class="ui segment">
 							<input type="submit" class="ui blue submit button" th:value="#{user.add.title}" value="Add User">
 							<input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel" @click.prevent="cancel">
 						</div>
 					</div>
-					<div class="ui error message"></div>
 				</form>
 			</div>
 		</div>
@@ -76,12 +74,8 @@
 	</div>
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
-	<script th:nonce="${cspNonce}" th:inline="javascript">
-  $('#cancel').click(function(){
-	  go_to_location_keeping_state([[@{/users}]]) 
-  })
-</script>
-	<script th:nonce="${cspNonce}" th:inline="javascript">
+
+<script th:nonce="${cspNonce}" th:inline="javascript">
 var app = new Vue({
 	el: '#app',
 	data: {
@@ -91,7 +85,8 @@ var app = new Vue({
 			password: '',
 			confirmPassword: '',
 			profile: ''
-		}
+		},
+		msg: []
 	},
 	methods: {
 		cancel() {
@@ -118,6 +113,27 @@ var app = new Vue({
    					console.log("ERROR : "+msg);
    				}
    			});			 
+		}
+	}, 
+	watch: {
+		'user.name': function(value, old) {
+			delete this.msg['name']
+			if(value.split(' ').length<2) {
+				this.msg['name']='Name must have 2 parts'
+			}
+		},
+		'user.login': function(value, old) {
+			delete this.msg['login']
+			const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+		    if( !re.test(String(value).toLowerCase()) ) {
+		    	this.msg['login'] = 'Login must be a valid email'
+		    } 
+		},
+		'user.password': function(value, old) {
+			delete this.msg['password']
+			if(value.length<6) {
+				this.msg['password'] = 'Minimum 6 characters'
+			}
 		}
 	}
 })

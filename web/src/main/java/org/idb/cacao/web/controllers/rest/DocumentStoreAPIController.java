@@ -19,6 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
+import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -61,6 +63,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.IncomingFileStorage;
+import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.Views;
+import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.services.storage.IStorageService;
@@ -74,13 +79,20 @@ import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
+import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ParserUtils;
+import org.idb.cacao.web.utils.SearchUtils;
+import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +101,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -98,6 +111,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -146,6 +160,8 @@ public class DocumentStoreAPIController {
 	@Autowired
 	private ApplicationContext app;
 
+	@Autowired
+	private Environment env;
 	
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
@@ -382,7 +398,8 @@ public class DocumentStoreAPIController {
 			String subDir = storageService.store(fileId, his, closeInputStream);
 								
 			// Keep this information in history of all uploads
-			DocumentUploaded regUpload = new DocumentUploaded();			
+			DocumentUploaded regUpload = new DocumentUploaded();
+			regUpload.setTemplateName(template);
 			regUpload.setFileId(fileId);
 			regUpload.setFilename(originalFilename);
 			regUpload.setSubDir(subDir);
@@ -492,6 +509,57 @@ public class DocumentStoreAPIController {
 		if (indexName==null || indexName.trim().length()==0)
 			return "generic";
 		return indexName;
+	}
+	
+	/**
+	 * Search documents upload with pagination and filters
+	 * @return
+	 */
+	@JsonView(Views.Declarant.class)
+	@GetMapping(value="/docs_search", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Method used for listing documents uploaded using pagination")
+	public PaginationData<DocumentUploaded> getDocsWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+
+    	// Only SYSADMIN users may see every documents. Other users are restricted to their relationships
+    	final Set<String> filter_taxpayers_ids;
+    	try {
+    		filter_taxpayers_ids = userService.getFilteredTaxpayersForUserAsManager(auth);
+    	}
+    	catch (MissingParameter missing) {
+    		/*
+			model.addAttribute("message",messageSource.getMessage("user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
+			model.addAttribute("docs", Page.empty());
+			model.addAttribute("filter_options", new AdvancedSearch());
+			model.addAttribute("applied_filters", Optional.empty());
+			*/
+			return null;
+    	}
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
+		Page<DocumentUploaded> docs;
+		try {
+			if (filter_taxpayers_ids!=null && filter_taxpayers_ids.isEmpty())
+				docs = Page.empty();
+			else if (filter_taxpayers_ids==null)
+				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentUploaded.class, elasticsearchClient, page, size, Optional.of("timestamp"), Optional.of(SortOrder.DESC));
+			else
+				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
+						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filter_taxpayers_ids)), 
+						DocumentUploaded.class, elasticsearchClient, page, size, Optional.of("timestamp"), Optional.of(SortOrder.DESC));
+		}
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error while searching for all documents", ex);
+			docs = Page.empty();
+		}		
+		PaginationData<DocumentUploaded> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
+		return result;
 	}
 	
 	
