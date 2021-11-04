@@ -188,12 +188,12 @@ public class DocumentStoreAPIController {
 
 		if (fileinput.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
 		
 		if (template==null || template.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
 		List<DocumentTemplate> template_versions = templateRepository.findByName(template);
 		if (template_versions==null || template_versions.isEmpty()) {
@@ -218,7 +218,7 @@ public class DocumentStoreAPIController {
 		catch (IOException ex) {
 			log.log(Level.SEVERE, "Failed upload "+fileinput.getOriginalFilename(), ex);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_file", new Object[] {fileinput.getOriginalFilename()}, LocaleContextHolder.getLocale())));
+					messageSource.getMessage("upload.failed.file", new Object[] {fileinput.getOriginalFilename()}, LocaleContextHolder.getLocale())));
 		}
 		return ResponseEntity.ok(result);
 	}
@@ -246,12 +246,12 @@ public class DocumentStoreAPIController {
 
 		if (filezip.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
 		
 		if (template==null || template.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
 		List<DocumentTemplate> template_versions = templateRepository.findByName(template);
 		if (template_versions==null || template_versions.isEmpty()) {
@@ -282,7 +282,7 @@ public class DocumentStoreAPIController {
 		catch (IOException ex) {
 			log.log(Level.SEVERE, "Failed upload "+filezip.getOriginalFilename(), ex);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_file", new Object[] {filezip.getOriginalFilename()}, LocaleContextHolder.getLocale())));
+					messageSource.getMessage("upload.failed.file", new Object[] {filezip.getOriginalFilename()}, LocaleContextHolder.getLocale())));
 		}
 		
 		// TODO: retornar a situação de todos arquivos
@@ -310,7 +310,7 @@ public class DocumentStoreAPIController {
 
 		if (files==null) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
 
 		final long all_sizes = Arrays.stream(files).mapToLong(MultipartFile::getSize).sum();
@@ -318,12 +318,12 @@ public class DocumentStoreAPIController {
 		
 		if (files.length==0) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
 		
 		if (template==null || template.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload_failed_empty_file", null, LocaleContextHolder.getLocale())));			
+					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
 		List<DocumentTemplate> template_versions = templateRepository.findByName(template);
 		if (template_versions==null || template_versions.isEmpty()) {
@@ -351,7 +351,7 @@ public class DocumentStoreAPIController {
 			catch (IOException ex) {
 				log.log(Level.SEVERE, "Failed upload "+fileinput.getOriginalFilename(), ex);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-						messageSource.getMessage("upload_failed_file", new Object[] {fileinput.getOriginalFilename()}, LocaleContextHolder.getLocale())));
+						messageSource.getMessage("upload.failed.file", new Object[] {fileinput.getOriginalFilename()}, LocaleContextHolder.getLocale())));
 			}
 
 		}

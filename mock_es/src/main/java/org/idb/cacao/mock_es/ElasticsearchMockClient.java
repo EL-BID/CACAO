@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -403,9 +404,13 @@ public class ElasticsearchMockClient {
 	/**
 	 * Parse a query according to Elastic Search syntax.<BR>
 	 * WARNING: just implemented a small part of the query syntax!<BR>
-	 * E.g.:<BR>
+	 * E.g.(1):<BR>
 	 * {"bool":{"must":[{"query_string":{"query":"something",
-	 * "fields"=["login"]}}]}}
+	 * "fields"=["login"]}}]}}<BR>
+	 * E.g.(2):<BR>
+	 * {"wrapper":{"query":"eyJtYXRjaCI6IHsibmFtZS5rZXl3b3JkIjogeyJxdWVyeSI6ICJURVNUIn19fQ=="}}<BR>
+	 * E.g.(3):<BR>
+	 * {"match": {"name.keyword": {"query": "TEST"}}}<BR>
 	 */
 	public static Predicate<Map<?, ?>> parseQuery(Map<?, ?> query) throws IOException {
 		Object bool_query = query.get("bool");
@@ -459,6 +464,42 @@ public class ElasticsearchMockClient {
 				}
 			};
 		}
+		Object wrapper_query = query.get("wrapper");
+		if (wrapper_query != null) {
+			if (!(wrapper_query instanceof Map))
+				throw new UnsupportedOperationException(
+						"Unexpected value type for wrapper query operation for TESTING purpose: "
+								+ wrapper_query.getClass().getName());
+			String query_b64 = (String)((Map<?,?>)wrapper_query).get("query");
+			if (query_b64==null) {
+				throw new UnsupportedOperationException(
+						"Missing 'query' inside 'wrapper query': "
+								+ new ObjectMapper().writeValueAsString(query));
+			}
+			String query_decoded_as_json = new String(Base64.getDecoder().decode(query_b64), StandardCharsets.UTF_8);
+			Map<?,?> query_decoded = new ObjectMapper().readValue(query_decoded_as_json, Map.class);
+			return parseQuery(query_decoded);
+		}
+		Object match_query = query.get("match");
+		if (match_query != null) {
+			if (!(match_query instanceof Map))
+				throw new UnsupportedOperationException(
+						"Unexpected value type for match query operation for TESTING purpose: "
+								+ match_query.getClass().getName());
+			Map.Entry<?,?> match_query_entry = ((Map<?,?>)match_query).entrySet().iterator().next();
+			final String field_name_to_match = (String)match_query_entry.getKey();
+			final String value_to_match = (String)((Map<?,?>)match_query_entry.getValue()).get("query");
+			return new Predicate<Map<?, ?>>() {
+				@Override
+				public boolean test(Map<?, ?> doc) {
+					String value = (String) doc.get(treatFieldName(field_name_to_match));
+					if (value != null && value.equalsIgnoreCase(value_to_match)) {
+						return true;
+					}
+					return false;
+				}
+			};
+		}
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(query);
 		throw new UnsupportedOperationException("Unsupported query: " + json);
@@ -508,6 +549,8 @@ public class ElasticsearchMockClient {
 	 * (discards unused and unsupported features like 'fuzzyness')
 	 */
 	public static String treatFieldName(Object n) {
-		return ((String) n).replaceAll("\\^[\\d\\.]+$", ""); // something like "fieldname^1.0" becomes "fieldname"
+		return ((String) n)
+				.replaceAll("\\.keyword$", "")    // something like "name.keyword" becomes "name"
+				.replaceAll("\\^[\\d\\.]+$", ""); // something like "fieldname^1.0" becomes "fieldname"
 	}
 }

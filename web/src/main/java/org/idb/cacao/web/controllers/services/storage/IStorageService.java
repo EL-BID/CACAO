@@ -20,7 +20,9 @@
 package org.idb.cacao.web.controllers.services.storage;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 
@@ -51,6 +53,21 @@ public interface IStorageService {
 	 * @return
 	 */
 	Path find(String filename);
+	
+	/**
+	 * Deletes the file from the storage
+	 */
+	default boolean delete(String filename) {
+		Path p = find(filename);
+		if (p==null)
+			return false;
+		try {
+			Files.delete(p);
+			return true;
+		} catch (IOException ex) {
+			return false;
+		}
+	}
 	
 	/**
 	 * 
