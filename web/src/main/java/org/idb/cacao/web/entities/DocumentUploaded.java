@@ -32,6 +32,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
 import org.idb.cacao.api.Periodicity;
+import org.idb.cacao.web.controllers.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -39,6 +40,7 @@ import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonView;
 
 @Document(indexName="cacao_docs_uploaded")
 public class DocumentUploaded implements Serializable, Cloneable {
@@ -49,12 +51,15 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
+	@JsonView(Views.Declarant.class)
 	@Id   
 	private String id;
 
+	@JsonView(Views.Declarant.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime timestamp;
 	
+	@JsonView(Views.Declarant.class)
 	@MultiField(
 			mainField = @Field(type=Text, fielddata=true),
 			otherFields = {
@@ -63,6 +68,7 @@ public class DocumentUploaded implements Serializable, Cloneable {
 		)
 	private String user;
 
+	@JsonView(Views.Declarant.class)
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
 		otherFields = {
@@ -71,6 +77,7 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	)
 	private String taxPayerId;
 
+	@JsonView(Views.Declarant.class)
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
 		otherFields = {
@@ -114,6 +121,7 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	/**
 	 * Usually YYYYMM (YYYY = year, MM = month) for MONTHLY, or simply YYYY for YEARLY, or YYYYS (YYYY = year, S = semester) for SEMIANNUALLY
 	 */
+	@JsonView(Views.Declarant.class)
 	@Field(type=Integer)
 	private Integer taxPeriodNumber;
 

@@ -45,6 +45,8 @@ public interface DocumentUploadedRepository extends ElasticsearchRepository<Docu
 
 	Page<DocumentUploaded> findByFileId(String fileId, Pageable pageable);
 	
+	Page<DocumentUploaded> findByFilename(String filename, Pageable pageable);
+	
 	default public <S extends DocumentUploaded> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);

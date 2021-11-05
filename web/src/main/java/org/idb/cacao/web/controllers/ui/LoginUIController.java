@@ -119,6 +119,9 @@ public class LoginUIController {
 			menu.add(new MenuItem(messages.getMessage("docs.main.upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
 		}
+		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ)) {
+			menu.add(new MenuItem(messages.getMessage("docs.history", null, LocaleContextHolder.getLocale()), "/docs_search"));
+		}
 		if (hasPrivilege(roles, SystemPrivilege.USER_READ)) {
 			menu.add(new MenuItem(messages.getMessage("users.title", null, LocaleContextHolder.getLocale()),
 				"/users"));

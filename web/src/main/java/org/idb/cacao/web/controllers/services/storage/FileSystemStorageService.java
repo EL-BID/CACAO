@@ -128,7 +128,8 @@ public class FileSystemStorageService implements IStorageService {
 	public Path find(String filename) {
 		if ( rootLocation == null )			
 			throw new StorageException("Path for default storage wasn't defined: " + "storage.incoming.files.original.dir");
-		return rootLocation.resolve(filename);
+		Path p = rootLocation.resolve(filename);
+		return Files.exists(p) ? p : null;
 	}
 
 	/**
