@@ -28,6 +28,9 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+
 import org.idb.cacao.api.Periodicity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -134,6 +137,10 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	 */
 	@Field(type=Keyword)
 	private String hash;
+	
+	@Enumerated(EnumType.STRING)
+	@Field(type=Text)
+	private DocumentSituation situation; 
 
 	/**
 	 * Date/time of last modification or creation of any part of this object
@@ -291,6 +298,16 @@ public class DocumentUploaded implements Serializable, Cloneable {
 
 	public void setHash(String hash) {
 		this.hash = hash;
+	}
+
+	public DocumentSituation getSituation() {
+		if ( situation == null )
+			situation = DocumentSituation.RECEIVED;
+		return situation;
+	}
+
+	public void setSituation(DocumentSituation situation) {
+		this.situation = situation;
 	}
 
 	/**
