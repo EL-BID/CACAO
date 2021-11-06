@@ -30,6 +30,8 @@ import java.util.List;
  *
  */
 public class GenericTemplateArchetype implements TemplateArchetype {
+	
+	public static final String NAME = "general.archetype";
 
 	/*
 	 * (non-Javadoc)
@@ -37,7 +39,7 @@ public class GenericTemplateArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public String getName() {
-		return "general.archetype";
+		return NAME;
 	}
 
 	/*
