@@ -21,7 +21,7 @@ package org.idb.cacao.web.controllers.dto;
 
 import java.util.List;
 
-import org.idb.cacao.web.controllers.Views;
+import org.idb.cacao.api.Views;
 
 import com.fasterxml.jackson.annotation.JsonView;
 

@@ -33,8 +33,8 @@ import java.util.stream.StreamSupport;
 
 import javax.validation.Valid;
 
+import org.idb.cacao.api.Views;
 import org.idb.cacao.web.controllers.AdvancedSearch;
-import org.idb.cacao.web.controllers.Views;
 import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;

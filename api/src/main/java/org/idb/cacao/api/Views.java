@@ -17,52 +17,30 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.entities;
-
-import java.util.Arrays;
-
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
+package org.idb.cacao.api;
 
 /**
- * Enumeration of different situations of documents receiveds from tax payers
- * 
- * @author Rivelino Patrício
- * 
- * @since 03/11/2021
- *
+ * This class is intended to enumerate all possible 'views' for use in User Interfaces. Each
+ * entity will refer to these 'views' by using some 'annotations' over its 'fields'.<BR>
+ * The controllers at the back-end will choose the fields of interest given one of these
+ * 'views'.<BR> 
+ * Doing this way, the same entity object may project different 'views' depending on the
+ * context.
  */
-public enum DocumentSituation {
-
-	RECEIVED("document.situation.received"),
-	ACCEPTED("document.situation.accepted"),		
-	VALID("document.situation.valid"),
-	INVALID("document.situation.invalid"),
-	PROCESSED("document.situation.processed");	
-
-	private final String display;
+public class Views {
 	
-	DocumentSituation(String display) {
-		this.display = display;
-	}
-
-	@Override
-	public String toString() {
-		return display;
-	}
+	/**
+	 * View representing 'any context'
+	 */
+	public class Public {}
 	
-	public static DocumentSituation parse(String s) {
-		if (s==null || s.trim().length()==0)
-			return null;
-		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny().orElse(null);
-	}
-
-	public static DocumentSituation parse(String s, MessageSource messageSource) {
-		if (s==null || s.trim().length()==0)
-			return null;
-		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny()
-				.orElse(Arrays.stream(values()).filter(t->messageSource.getMessage(t.toString(),null,LocaleContextHolder.getLocale()).equalsIgnoreCase(s)).findAny()
-						.orElse(null));
-	}
-
+	/**
+	 * View representing 'contexts of interest of declarants'
+	 */
+	public class Declarant extends Public {}
+	
+	/**
+	 * View representing 'contexts of interest of tax authorities'
+	 */
+	public class Authority extends Declarant {} 
 }

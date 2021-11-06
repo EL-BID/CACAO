@@ -17,39 +17,52 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.api;
 
-import org.idb.cacao.api.DocumentUploaded;
-import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.utils.DateTimeUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+import java.util.Arrays;
+
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
- * DAO for DocumentUploaded objects (history of all uploads from each user)
+ * Enumeration of different situations of documents receiveds from tax payers
  * 
- * @author Gustavo Figueiredo
+ * @author Rivelino Patrício
+ * 
+ * @since 03/11/2021
  *
  */
-@Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DocumentUploadedRepository extends ElasticsearchRepository<DocumentUploaded, String> {
-	
-	Page<DocumentUploaded> findByTemplateName(String templateName, Pageable pageable);
-	
-	Page<DocumentUploaded> findByUser(String user, Pageable pageable);
+public enum DocumentSituation {
 
-	Page<DocumentUploaded> findByUserOrderByTimestampDesc(String user, Pageable pageable);
+	RECEIVED("document.situation.received"),
+	ACCEPTED("document.situation.accepted"),		
+	VALID("document.situation.valid"),
+	INVALID("document.situation.invalid"),
+	PROCESSED("document.situation.processed");	
 
-	Page<DocumentUploaded> findByFileId(String fileId, Pageable pageable);
+	private final String display;
 	
-	Page<DocumentUploaded> findByFilename(String filename, Pageable pageable);
+	DocumentSituation(String display) {
+		this.display = display;
+	}
+
+	@Override
+	public String toString() {
+		return display;
+	}
 	
-	default public <S extends DocumentUploaded> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
+	public static DocumentSituation parse(String s) {
+		if (s==null || s.trim().length()==0)
+			return null;
+		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny().orElse(null);
+	}
+
+	public static DocumentSituation parse(String s, MessageSource messageSource) {
+		if (s==null || s.trim().length()==0)
+			return null;
+		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny()
+				.orElse(Arrays.stream(values()).filter(t->messageSource.getMessage(t.toString(),null,LocaleContextHolder.getLocale()).equalsIgnoreCase(s)).findAny()
+						.orElse(null));
 	}
 
 }

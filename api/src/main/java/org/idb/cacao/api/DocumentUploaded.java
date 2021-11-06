@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.entities;
+package org.idb.cacao.api;
 
 import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
@@ -31,8 +31,6 @@ import java.time.OffsetDateTime;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
-import org.idb.cacao.api.Periodicity;
-import org.idb.cacao.web.controllers.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
