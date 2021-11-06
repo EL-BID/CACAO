@@ -38,6 +38,7 @@ public class TemplateArchetypesTest {
 
 	/**
 	 * List installed archetypes (Consider all those modules present at current classpath)
+	 * WARNING: at least the 'CACAO-ACCOUNT' plugin should be present at current classpath for this test case!
 	 */
 	@Test
 	public void listArchetypes() throws Exception {
@@ -69,4 +70,21 @@ public class TemplateArchetypesTest {
 		
 	}
 	
+	/**
+	 * Test utility methods regarding searching for installed archetypes (Consider all those modules present at current classpath)
+	 * WARNING: at least the 'CACAO-ACCOUNT' plugin should be present at current classpath for this test case!
+	 */
+	@Test
+	public void findArchetypes() throws Exception {
+		
+		assertTrue(TemplateArchetypes.hasArchetype("general.archetype"), "Should find the General-Purpose archetype defined in API module!");
+		assertTrue(TemplateArchetypes.hasArchetype("accounting.general.ledger"), "Should find the General Ledger archetype defined in Account (plugin) module!");
+		assertTrue(TemplateArchetypes.hasArchetype("accounting.chart.accounts"), "Should find the Chart of Accounts archetype defined in Account (plugin) module!");
+		assertFalse(TemplateArchetypes.hasArchetype("!!!inexistent!!!"), "Should not find an inexistent archetype!");
+		
+		assertEquals("general.archetype",TemplateArchetypes.getArchetype("general.archetype").get().getName(), "The archetype returned does not match the requested name!");
+		assertEquals("accounting.general.ledger",TemplateArchetypes.getArchetype("accounting.general.ledger").get().getName(), "The archetype returned does not match the requested name!");
+		assertEquals("accounting.chart.accounts",TemplateArchetypes.getArchetype("accounting.chart.accounts").get().getName(), "The archetype returned does not match the requested name!");
+		
+	}
 }
