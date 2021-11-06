@@ -1,5 +1,8 @@
 FROM cacao_api AS MAVEN_TOOL_CHAIN
 
+# copy plugins compiled at other Docker images to local repository
+COPY --from=cacao_plugin_account /root/.m2/repository/org/idb/cacao/CACAO_ACCOUNT /root/.m2/repository/org/idb/cacao/CACAO_ACCOUNT
+
 # copy application specific configuration files
 COPY validator/pom.xml $HOME
 
