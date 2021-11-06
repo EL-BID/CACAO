@@ -69,6 +69,7 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.PaginationData;
+import org.idb.cacao.web.controllers.dto.TabulatorFilter;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
@@ -522,7 +523,8 @@ public class DocumentStoreAPIController {
 	@GetMapping(value="/docs_search", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing documents uploaded using pagination")
 	public PaginationData<DocumentUploaded> getDocsWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
+			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
     		throw new UserNotFoundException();
@@ -545,17 +547,20 @@ public class DocumentStoreAPIController {
 			return null;
     	}
 
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
+		Optional<AdvancedSearch> filters = SearchUtils.fromJSON2(filter);
 		Page<DocumentUploaded> docs;
+		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
+		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			if (filter_taxpayers_ids!=null && filter_taxpayers_ids.isEmpty())
 				docs = Page.empty();
 			else if (filter_taxpayers_ids==null)
-				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentUploaded.class, elasticsearchClient, page, size, Optional.of("timestamp"), Optional.of(SortOrder.DESC));
+				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentUploaded.class, elasticsearchClient, page, size, 
+						sortField, direction);
 			else
 				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
 						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filter_taxpayers_ids)), 
-						DocumentUploaded.class, elasticsearchClient, page, size, Optional.of("timestamp"), Optional.of(SortOrder.DESC));
+						DocumentUploaded.class, elasticsearchClient, page, size, sortField, direction);
 		}
 		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
