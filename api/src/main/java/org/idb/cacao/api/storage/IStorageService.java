@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.services.storage;
+package org.idb.cacao.api.storage;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +25,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
-import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.core.io.Resource;
 
 /**
@@ -81,7 +81,7 @@ public interface IStorageService {
 	 * @return	A subdir of storage where a file should be stored
 	 */
 	public default String getSubDir() {		
-		OffsetDateTime now = DateTimeUtils.now();
+		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 		return now.getYear() + File.separator + now.getMonthValue();		
 	}
 	

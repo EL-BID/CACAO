@@ -26,10 +26,10 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 
+import org.idb.cacao.api.errors.StorageException;
+import org.idb.cacao.api.errors.StorageFileNotFoundException;
+import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.idb.cacao.web.controllers.services.storage.FileSystemStorageService;
-import org.idb.cacao.web.errors.StorageException;
-import org.idb.cacao.web.errors.StorageFileNotFoundException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

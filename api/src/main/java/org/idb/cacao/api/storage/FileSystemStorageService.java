@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.services.storage;
+package org.idb.cacao.api.storage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,8 +29,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.idb.cacao.web.errors.StorageException;
-import org.idb.cacao.web.errors.StorageFileNotFoundException;
+import org.idb.cacao.api.errors.StorageException;
+import org.idb.cacao.api.errors.StorageFileNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;

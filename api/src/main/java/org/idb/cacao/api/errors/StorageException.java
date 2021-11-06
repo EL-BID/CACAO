@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.errors;
+package org.idb.cacao.api.errors;
 
 /**
  * An exception raised when the storage wasn't available

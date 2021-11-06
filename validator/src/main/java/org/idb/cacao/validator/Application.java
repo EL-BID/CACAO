@@ -29,6 +29,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 
@@ -40,6 +41,7 @@ import org.springframework.core.env.Environment;
  */
 @SpringBootApplication
 @ServletComponentScan
+@ComponentScan(basePackages = {"org.idb.cacao.validator","org.idb.cacao.api.storage"})
 public class Application {
 
 	static final Logger log = Logger.getLogger(Application.class.getName());

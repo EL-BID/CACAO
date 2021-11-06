@@ -29,9 +29,9 @@ import java.io.File;
 import java.nio.file.Path;
 
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.storage.IStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.idb.cacao.web.controllers.services.storage.IStorageService;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.junit.jupiter.api.AfterAll;
