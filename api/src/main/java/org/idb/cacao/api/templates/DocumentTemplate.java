@@ -69,6 +69,17 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	 */
 	@Id   
 	private String id;
+	
+	/**
+	 * The TemplateArchetype from where this DocumentTemplate was generated
+	 */
+	@MultiField(
+		mainField = @Field(type=Text, fielddata=true),
+		otherFields = {
+			@InnerField(suffix = "keyword", type=Keyword)
+		}
+	)
+	private String archetype;
 
 	/**
 	 * Name of this template
@@ -154,6 +165,20 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	/**
+	 * The TemplateArchetype from where this DocumentTemplate was generated
+	 */
+	public String getArchetype() {
+		return archetype;
+	}
+
+	/**
+	 * The TemplateArchetype from where this DocumentTemplate was generated
+	 */
+	public void setArchetype(String archetype) {
+		this.archetype = archetype;
 	}
 
 	/**

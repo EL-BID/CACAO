@@ -8,6 +8,14 @@ services:
       context: ./
       dockerfile: ./api/Dockerfile
       network: host      
+  plugin_account:
+    image: cacao_plugin_account
+    build:
+      args:
+        - USE_PROXY
+      context: ./
+      dockerfile: ./account/Dockerfile
+      network: host      
   web:
     container_name: web
     build:
@@ -23,6 +31,7 @@ services:
 #      - "8080:8080"
     depends_on:
       - api
+      - plugin_account
       - es01
       - es02
       - es03
@@ -50,6 +59,7 @@ services:
 #      - "8081:8081"
     depends_on:
       - api
+      - plugin_account
       - es01
       - es02
       - es03
@@ -76,6 +86,7 @@ services:
 #      - "8082:8082"
     depends_on:
       - api
+      - plugin_account
       - es01
       - es02
       - es03

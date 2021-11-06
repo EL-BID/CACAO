@@ -193,6 +193,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		this.fieldMapping = fieldMapping;
 	}
 	
+	public DocumentField withFieldMapping(FieldMapping fieldMapping) {
+		setFieldMapping(fieldMapping);
+		return this;
+	}
+	
 	/**
 	 * Field type (for validating incoming files accordingly)
 	 */
@@ -205,6 +210,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 */
 	public void setFieldType(FieldType fieldType) {
 		this.fieldType = fieldType;
+	}
+	
+	public DocumentField withFieldType(FieldType fieldType) {
+		setFieldType(fieldType);
+		return this;
 	}
 
 	/**
@@ -220,6 +230,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	public void setMaxLength(Integer maxLength) {
 		this.maxLength = maxLength;
 	}
+	
+	public DocumentField withMaxLength(Integer maxLength) {
+		setMaxLength(maxLength);
+		return this;
+	}
 
 	/**
 	 * Optional description of this field for documentation purpose
@@ -233,6 +248,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 */
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	
+	public DocumentField withDescription(String description) {
+		setDescription(description);
+		return this;
 	}
 
 	/**
@@ -248,6 +268,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	public void setPersonalData(Boolean personalData) {
 		this.personalData = personalData;
 	}
+	
+	public DocumentField withPersonalData(Boolean personalData) {
+		setPersonalData(personalData);
+		return this;
+	}
 
 	/**
 	 * Indicates this field is required and its value should not be empty or null.
@@ -261,6 +286,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 */
 	public void setRequired(Boolean required) {
 		this.required = required;
+	}
+	
+	public DocumentField withRequired(Boolean required) {
+		setRequired(required);
+		return this;
 	}
 
 	public boolean isAssigned() {

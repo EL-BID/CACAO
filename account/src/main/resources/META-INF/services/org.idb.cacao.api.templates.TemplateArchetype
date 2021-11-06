@@ -1,0 +1,3 @@
+org.idb.cacao.account.archetypes.ChartOfAccountsArchetype
+org.idb.cacao.account.archetypes.GeneralLedgerArchetype
+org.idb.cacao.account.archetypes.OpeningBalanceArchetype

@@ -25,6 +25,7 @@
 		<module>proxy</module>
 		<module>api</module>
 		<module>mock_es</module>
+		<module>account</module>
 		<module>web</module>
 		<module>validator</module>
 		<module>etl</module>

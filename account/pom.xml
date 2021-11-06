@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.idb.cacao</groupId>
+		<artifactId>CACAO</artifactId>
+		<version>1.0</version>
+	</parent>
+	<artifactId>CACAO_ACCOUNT</artifactId>
+	<name>CACAO ACCOUNT</name>
+	<description>MVP for an accounting data system</description>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.8</java.version>
+		<jaxb.api.version>2.3.0</jaxb.api.version>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+	<packaging>jar</packaging>
+	<build>
+		<finalName>cacao_account-${project.version}</finalName>
+	</build>
+
+	<dependencies>
+	
+		<dependency>
+			<groupId>org.idb.cacao.api</groupId>
+			<artifactId>CACAO_API</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>provided</scope>
+		</dependency>
+				
+		<dependency>
+			<groupId>org.idb.cacao</groupId>
+			<artifactId>CACAO_MOCK_ES</artifactId>
+			<version>${project.version}</version>
+			<type>jar</type>
+			<scope>test</scope>
+		</dependency>
+				
+	</dependencies>
+
+</project>
