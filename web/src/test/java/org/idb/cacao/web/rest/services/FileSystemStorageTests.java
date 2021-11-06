@@ -22,20 +22,52 @@ package org.idb.cacao.web.rest.services;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 
+import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.idb.cacao.web.controllers.services.storage.FileSystemStorageService;
 import org.idb.cacao.web.errors.StorageException;
 import org.idb.cacao.web.errors.StorageFileNotFoundException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 
+@RunWith(JUnitPlatform.class)
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
+@SpringBootTest( webEnvironment = WebEnvironment.RANDOM_PORT,
+properties = {
+"storage.incoming.files.original.dir=${java.io.tmpdir}/cacao/storage"
+})
 class FileSystemStorageTests {
+
+	private static ElasticsearchMockClient mockElastic;
 
 	private FileSystemStorageService service;
 	
+	@BeforeAll
+	public static void beforeClass() throws Exception {
+
+		int port = ElasticsearchMockClient.findRandomPort();
+		mockElastic = new ElasticsearchMockClient(port);
+		System.setProperty("es.port", String.valueOf(port));
+	}
+	
+	@AfterAll
+	public static void afterClass() {
+		if (mockElastic!=null)
+			mockElastic.stop();
+	}
+
 	@BeforeEach
 	public void init(@TempDir Path uploadFileDir) {
 		service = new FileSystemStorageService(uploadFileDir.toString());
@@ -50,8 +82,8 @@ class FileSystemStorageTests {
 	void saveAndFind() {
 		String name="foo.txt";
 		InputStream inputStream = new ByteArrayInputStream("sample".getBytes());
-		service.store(name, inputStream, true);
-		assertEquals("foo.txt", service.find("foo.txt").getFileName().toString());
+		String subdir = service.store(name, inputStream, true);
+		assertEquals("foo.txt", service.find(subdir+File.separator+"foo.txt").getFileName().toString());
 		
 	}
 	

@@ -120,9 +120,9 @@ public class FileSystemStorageService implements IStorageService {
 	}
 
 	/**
-	 * @param filename	A filename to store
-	 * 
-	 * @return The path to save a file indicated on filename against root storage path
+	 * Look for a file with the given filename in the current file storage. Returns NULL if absent.
+	 * @param filename Filename including relative sub directories if any. 
+	 * @return Returns the resolved Path object if the file could be found. Returns NULL if file is not found.
 	 */
 	@Override
 	public Path find(String filename) {
@@ -141,6 +141,8 @@ public class FileSystemStorageService implements IStorageService {
 	public Resource load(String filename) {
 		try {
 			Path file = find(filename);
+			if (file==null)
+				throw new StorageFileNotFoundException("Could not find file: " + filename);
 			Resource resource = new UrlResource(file.toUri());
 			if (resource.exists() || resource.isReadable()) {
 				return resource;

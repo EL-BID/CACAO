@@ -48,9 +48,9 @@ public interface IStorageService {
 	String store(String originalFilename, InputStream inputStream, boolean closeInputStream);
 
 	/**
-	 * 
-	 * @param filename
-	 * @return
+	 * Look for a file with the given filename in the current file storage. Returns NULL if absent.
+	 * @param filename Filename including relative sub directories if any. 
+	 * @return Returns the resolved Path object if the file could be found. Returns NULL if file is not found.
 	 */
 	Path find(String filename);
 	
@@ -86,7 +86,9 @@ public interface IStorageService {
 	}
 	
 	/**
-	 * 
+	 * Returns the filename with subdirectory reference. The subdirectory if take from
+	 * the current system clock. So different calls of this method with the same filename
+	 * at different times may have different outcomes.
 	 * @param originalFilename	The name of file to store
 	 * @return	The full path relative to the root path where the file has to be stored
 	 */
