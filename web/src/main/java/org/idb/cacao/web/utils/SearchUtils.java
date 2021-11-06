@@ -60,6 +60,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.hibernate.jpa.QueryHints;
 import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.dto.TabulatorFilter;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
@@ -96,6 +97,22 @@ public class SearchUtils {
 		}
 	}
 
+	public static Optional<AdvancedSearch> fromJSON2(Optional<String> as_json) {
+		if (as_json==null || !as_json.isPresent())
+			return Optional.empty();
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		try {
+			TabulatorFilter[] filters = mapper.readValue(as_json.get(), TabulatorFilter[].class);
+			AdvancedSearch search = new AdvancedSearch();
+			Arrays.stream(filters)
+			  .forEach(filter -> search.addFilter(new AdvancedSearch.QueryFilterTerm(filter.getField(), filter.getValue())));
+			return Optional.of(search);
+		} catch (JsonProcessingException e) {
+			return Optional.empty();
+		}
+	}
+	
 	public static Optional<String> toJSON(Optional<AdvancedSearch> queryArguments) {
 		if (queryArguments==null || !queryArguments.isPresent())
 			return Optional.empty();

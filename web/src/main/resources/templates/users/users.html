@@ -1,9 +1,13 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
-<head th:replace="fragments/page_fragments :: header">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script})">
 	<!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+	
 </head>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
