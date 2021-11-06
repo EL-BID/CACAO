@@ -69,6 +69,7 @@ import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.services.storage.IStorageService;
+import org.idb.cacao.web.entities.DocumentSituation;
 import org.idb.cacao.web.entities.DocumentUploaded;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
@@ -80,6 +81,7 @@ import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
+import org.idb.cacao.web.utils.DateTimeUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ParserUtils;
 import org.idb.cacao.web.utils.SearchUtils;
@@ -393,7 +395,7 @@ public class DocumentStoreAPIController {
 
 			String fileId = UUID.randomUUID().toString();
 			
-			final long timestamp = System.currentTimeMillis();
+			final OffsetDateTime timestamp = DateTimeUtils.now();
 			HashingInputStream his = new HashingInputStream(Hashing.sha256(),fileStream);
 			String subDir = storageService.store(fileId, his, closeInputStream);
 								
@@ -403,9 +405,10 @@ public class DocumentStoreAPIController {
 			regUpload.setFileId(fileId);
 			regUpload.setFilename(originalFilename);
 			regUpload.setSubDir(subDir);
-			regUpload.setTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()));
+			regUpload.setTimestamp(timestamp);
 			regUpload.setIpAddress(remoteIpAddr);
 			regUpload.setHash(his.hash().toString()); 
+			regUpload.setSituation(DocumentSituation.RECEIVED);
 	    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 	    	if (auth!=null) {
 	    		regUpload.setUser(String.valueOf(auth.getName()));

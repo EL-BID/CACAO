@@ -19,7 +19,9 @@
  *******************************************************************************/
 package org.idb.cacao.web.rest.services;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,7 +30,6 @@ import java.nio.file.Path;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.services.storage.IStorageService;
 import org.idb.cacao.web.entities.DocumentUploaded;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
@@ -64,9 +65,6 @@ class DocumentStoreAPIControllerTests {
 
 	@Autowired
 	private IStorageService storageService;
-	
-	@Autowired
-	private UserService userService;
 	
 	@Autowired
 	private DocumentTemplateRepository templateRepository;

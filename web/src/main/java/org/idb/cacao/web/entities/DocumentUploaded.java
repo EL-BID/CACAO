@@ -146,8 +146,9 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	@Field(type=Keyword)
 	private String hash;
 	
+	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@Field(type=Keyword)
 	private DocumentSituation situation; 
 
 	/**
