@@ -32,6 +32,40 @@ ___
 
 ## How to BUILD
 
+For full-stack deployment, use DOCKER-COMPOSE for building all CACAO modules.
+
+    docker-compose build
+    
+If the application has already been deployed, use this command in order to build and update only the modified CACAO modules:
+
+    docker-compose up --build -d
+    
+For building specific modules (for example, using an IDE), use MAVEN standing at the specific module.
+
+    mvn install
+
+___
+
+## Developing new CACAO modules
+
+The CACAO infrastructure contains general-purpose modules and also specific modules.
+
+One example of a specific module is the 'CACAO_ACCOUNT' module related to ACCOUNTING.
+
+New modules may be developed and integrated into the CACAO infrastructure, sharing all the common application components.
+
+The new module should implement the interface 'TemplateArchetype' defined at CACAO_API. It's allowed to have multiple implementations of the same interface 'TemplateArchetype' in the same specific module.
+
+CACAO use Java's Service Provider Interface for discovery of 'TemplateArchetype' implementations. So, for this reason, the new module should also give its implementations in static file inside 'META-INF/services' according to the Java SPI specification.
+
+It's also necessary to include references to the new module at the following locations:
+
+- includes referente to the new module at the 'modules' session of 'pom.xml' at project's root directory
+- add a new service entry at 'docker-compose.yml' intended to build and tag a new docker image related to this module (similar to 'plugin_account' declared in 'docker-compose.yml')
+- include references to this new service in 'depends_on' session of the following services declared at 'docker-compose.yml': web , validator and etl
+- modify the 'Dockerfile' of 'etl', 'validator' and 'web' modules in order to include an additional 'COPY' line at the beggining of the file, similar to 'cacao_plugin_account'
+- modify the 'pom.xml' of 'etl', 'validator' and 'web' modules in order to include an additional 'dependency' to the artifact produced by the module (similar to 'CACAO_ACCOUNT')
+
 ___
 
 ## How to setup REPOSITORY MANAGER
