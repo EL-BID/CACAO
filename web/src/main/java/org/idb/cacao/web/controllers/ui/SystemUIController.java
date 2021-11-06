@@ -225,7 +225,7 @@ public class SystemUIController {
 		}
 		if (es_cluster_health!=null) {
 			if (es_cluster_health.isTimedOut()) {
-				es_health.addChild(new MenuItem(text("sysinfo.es.cluster.timed_out")).withActive(false));
+				es_health.addChild(new MenuItem(text("sysinfo.es.cluster.timed.out")).withActive(false));
 			}
 			else {
 				es_health.addChild(new MenuItem(text("sysinfo.es.cluster.name")).withChild(es_cluster_health.getClusterName()));

@@ -21,14 +21,20 @@ package org.idb.cacao.web.controllers.ui;
 
 import java.util.List;
 
+import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * Controller class for all endpoints related to 'document' object interacting by a user interface
@@ -39,12 +45,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class DocumentStoreUIController {
 	
-	//private static final Logger log = Logger.getLogger(DocumentStoreUIController.class.getName());
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
 	
 	@Autowired
 	private DocumentTemplateService templateService;
+	
+	@Autowired
+	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
+	
+	@Autowired
+	private MessageSource messageSource;
 	
 	@GetMapping("/docs")
     public String getDocs(Model model) {
@@ -67,6 +78,20 @@ public class DocumentStoreUIController {
 		
 		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
         return "docs/docs_main";
-    }
+    }	
+	
+	@GetMapping("/docs/situations/{documentId}")
+    public String getDocs(@PathVariable("documentId") String documentId, Model model) {
+		
+		// Parse the 'templateName' informed at request path
+		if (documentId==null || documentId.trim().length()==0) {
+			throw new MissingParameter("documentId");
+		}
+		List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
+		
+		model.addAttribute("situations", situations);
+		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
+        return "docs/docs_situation";
+    }	
 	
 }

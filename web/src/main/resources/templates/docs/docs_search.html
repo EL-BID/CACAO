@@ -43,7 +43,14 @@ var app = new Vue({
 		table: null,
 		headerFilter: false
 	},
+	methods: {
+		showSituationHistory(e, cell) {
+			console.log('edit  ' + cell.getRow().getIndex() )
+			window.location.replace([[@{/docs/situations/}]] + cell.getRow().getIndex());			
+		},
+	},	
 	mounted() {
+		var situationsIcon = function(cell, formatterParams){ return "<i class='file alternate outline icon'></i>"};
 		this.table = new Tabulator('#table', {
 			index: 'id',
 			layout: "fitColumns", //fit columns to width of table (optional)
@@ -76,6 +83,7 @@ var app = new Vue({
 				{title: /*[[#{doc.timestamp}]]*/ "Date/time uploaded", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
 				{title: /*[[#{doc.situation}]]*/ "Situation", field:"situation", headerFilter:this.headerFilter},
 				{title: /*{{#doc.id}}} */ "Document Id", field:"id", headerFilter:this.headerFilter},
+				{formatter:situationsIcon, width:50, cellClick: this.showSituationHistory, tooltip : /*[[#{doc.situation.history}]]*/}
 			]
 		})
 	}

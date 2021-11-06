@@ -30,7 +30,7 @@
 						<div th:if="${param.error != null and session[SPRING_SECURITY_LAST_EXCEPTION]!=null}" class="ui negative message" th:utext="${session[SPRING_SECURITY_LAST_EXCEPTION]}">error</div>
 						<div th:if="${param.error != null and session[SPRING_SECURITY_LAST_EXCEPTION]==null}" class="ui negative message" th:text="${param.error}">error</div>
 						<div th:if="${param.message != null}" class="ui info message" th:text="${param.message}">message</div>
-						<div th:if="${param.logout}" class="ui warning message" th:text="#{login.logged_out}">You have been logged out.</div>
+						<div th:if="${param.logout}" class="ui warning message" th:text="#{login.logged.out}">You have been logged out.</div>
 						<div class="ui orange segment" th:if="${has_login_google}">
 							<a href="/oauth2/authorization/google" style="text-transform: none">
 								<img style="margin-top: 7px; margin-right: 8px; width: 20px;" alt="Google sign-in"
@@ -69,7 +69,7 @@
 								</div>
 								<div class="ui fluid large primary submit button" id="submit_btn">Login</div>
 								<br>
-								<div class="ui fluid small button" th:text="#{pwd.reset_password}" id="forgotbtn">Forgot Password</div>
+								<div class="ui fluid small button" th:text="#{pwd.reset.password}" id="forgotbtn">Forgot Password</div>
 							</div>
 							<div class="ui error message"></div>
 						</form>
@@ -97,11 +97,11 @@
               rules: [
                 {
                   type   : 'empty',
-                  prompt : [[#{pwd.missing_login}]]
+                  prompt : [[#{pwd.missing.login}]]
                 },
                 {
                   type   : 'email',
-                  prompt : [[#{pwd.invalid_login}]]
+                  prompt : [[#{pwd.invalid.login}]]
                 }
               ]
             },
@@ -110,11 +110,11 @@
               rules: [
                 {
                   type   : 'empty',
-                  prompt : [[#{pwd.missing_password}]]
+                  prompt : [[#{pwd.missing.password}]]
                 },
                 {
                   type   : 'length[6]',
-                  prompt : [[#{pwd.invalid_password}]]
+                  prompt : [[#{pwd.invalid.password}]]
                 }
               ]
             }

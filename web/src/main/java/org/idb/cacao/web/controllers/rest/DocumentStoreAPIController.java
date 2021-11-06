@@ -19,16 +19,12 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.Normalizer;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -62,6 +58,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.DocumentSituation;
+import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.Views;
 import org.idb.cacao.api.storage.IStorageService;
@@ -69,7 +66,6 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.PaginationData;
-import org.idb.cacao.web.controllers.dto.TabulatorFilter;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
@@ -79,9 +75,9 @@ import org.idb.cacao.web.errors.GeneralException;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
+import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
-import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.DateTimeUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ParserUtils;
@@ -91,11 +87,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -114,8 +107,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.hash.Hashing;
@@ -164,9 +157,6 @@ public class DocumentStoreAPIController {
 	private ApplicationContext app;
 
 	@Autowired
-	private Environment env;
-	
-	@Autowired
 	private DocumentTemplateRepository templateRepository;
 	
 	@Autowired
@@ -180,6 +170,9 @@ public class DocumentStoreAPIController {
 	
 	@Autowired
 	private DocumentUploadedRepository documentsUploadedRepository;
+	
+	@Autowired
+	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
 
 	@Autowired
 	private UserService userService;
@@ -214,22 +207,22 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
-		List<DocumentTemplate> template_versions = templateRepository.findByName(template);
-		if (template_versions==null || template_versions.isEmpty()) {
+		List<DocumentTemplate> templateVersions = templateRepository.findByName(template);
+		if (templateVersions==null || templateVersions.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("unknown_template", null, LocaleContextHolder.getLocale())));						
+					messageSource.getMessage("unknown.template", null, LocaleContextHolder.getLocale())));						
 		}
-		if (template_versions.size()>1) {
+		if (templateVersions.size()>1) {
 			// if we have more than one possible choice, let's give higher priority to most recent ones
-			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
+			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
 		
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+		final String remoteIpAddr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 		
 		final Map<String, String> result;
 			
-		try (InputStream input_stream=fileinput.getInputStream()) {
-			result = uploadFile(fileinput.getOriginalFilename(), input_stream, /*closeInputStream*/true, template, remote_ip_addr, user);
+		try (InputStream inputStream=fileinput.getInputStream()) {
+			result = uploadFile(fileinput.getOriginalFilename(), inputStream, /*closeInputStream*/true, template, remoteIpAddr, user);
 		}
 		catch (GeneralException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", ex.getMessage()));	
@@ -272,26 +265,26 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
-		List<DocumentTemplate> template_versions = templateRepository.findByName(template);
-		if (template_versions==null || template_versions.isEmpty()) {
+		List<DocumentTemplate> templateVersions = templateRepository.findByName(template);
+		if (templateVersions==null || templateVersions.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("unknown_template", null, LocaleContextHolder.getLocale())));						
+					messageSource.getMessage("unknown.template", null, LocaleContextHolder.getLocale())));						
 		}
-		if (template_versions.size()>1) {
+		if (templateVersions.size()>1) {
 			// if we have more than one possible choice, let's give higher priority to most recent ones
-			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
+			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
 		
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+		final String remoteIpAddr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		final List<Map<String, String>> results = new ArrayList<>();
 		
-		try (ZipInputStream zip_stream=new ZipInputStream(filezip.getInputStream())){
+		try (ZipInputStream zipStream=new ZipInputStream(filezip.getInputStream())){
 			ZipEntry ze;
 			
-			while ((ze = zip_stream.getNextEntry()) != null) {
+			while ((ze = zipStream.getNextEntry()) != null) {
 				
-				Map<String, String> result = uploadFile(ze.getName(), zip_stream, /*closeInputStream*/false, template, remote_ip_addr, user);
+				Map<String, String> result = uploadFile(ze.getName(), zipStream, /*closeInputStream*/false, template, remoteIpAddr, user);
 				results.add(result);
 			}
 		}
@@ -332,8 +325,8 @@ public class DocumentStoreAPIController {
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
 
-		final long all_sizes = Arrays.stream(files).mapToLong(MultipartFile::getSize).sum();
-		log.log(Level.FINE, "Incoming files (upload): "+files.length+", size: "+all_sizes);
+		final long allSizes = Arrays.stream(files).mapToLong(MultipartFile::getSize).sum();
+		log.log(Level.FINE, "Incoming files (upload): "+files.length+", size: "+allSizes);
 		
 		if (files.length==0) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
@@ -344,24 +337,24 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
 		}
-		List<DocumentTemplate> template_versions = templateRepository.findByName(template);
-		if (template_versions==null || template_versions.isEmpty()) {
+		List<DocumentTemplate> templateVersions = templateRepository.findByName(template);
+		if (templateVersions==null || templateVersions.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("unknown_template", null, LocaleContextHolder.getLocale())));						
+					messageSource.getMessage("unknown.template", null, LocaleContextHolder.getLocale())));						
 		}
-		if (template_versions.size()>1) {
+		if (templateVersions.size()>1) {
 			// if we have more than one possible choice, let's give higher priority to most recent ones
-			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
+			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
 		
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+		final String remoteIpAddr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		List<Map<String, String>> results = new ArrayList<>();
 		
 		for (MultipartFile fileinput: files) {
 			
-			try (InputStream input_stream=fileinput.getInputStream()) {
-				Map<String,String> result = uploadFile(fileinput.getOriginalFilename(), input_stream, /*closeInputStream*/true, template, remote_ip_addr, user);
+			try (InputStream inputStream=fileinput.getInputStream()) {
+				Map<String,String> result = uploadFile(fileinput.getOriginalFilename(), inputStream, /*closeInputStream*/true, template, remoteIpAddr, user);
 				results.add(result);
 			}
 			catch (GeneralException ex) {
@@ -388,8 +381,8 @@ public class DocumentStoreAPIController {
 			final String template, 
 			final String remoteIpAddr,
 			final User user) throws IOException, GeneralException {
-		File temp_file1 = null;
-		List<Runnable> rollback_procedures = new LinkedList<>(); // hold rollback procedures only to be used in case of error
+		File tempFile1 = null;
+		List<Runnable> rollbackProcedures = new LinkedList<>(); // hold rollback procedures only to be used in case of error
 		try {
 			
 			log.log(Level.INFO, "User "+user.getLogin()+" uploading file "+originalFilename+" for template "+template+" from "+remoteIpAddr);
@@ -414,9 +407,19 @@ public class DocumentStoreAPIController {
 	    	if (auth!=null) {
 	    		regUpload.setUser(String.valueOf(auth.getName()));
 	    	}
-			DocumentUploaded saved_info = documentsUploadedRepository.saveWithTimestamp(regUpload);
+			DocumentUploaded savedInfo = documentsUploadedRepository.saveWithTimestamp(regUpload);
 			
-			rollback_procedures.add(()->documentsUploadedRepository.delete(saved_info)); // in case of error delete the DocumentUploaded
+			DocumentSituationHistory situationHistory = new DocumentSituationHistory();
+			situationHistory.setDocumentId(savedInfo.getId());			
+			situationHistory.setDocumentFilename(savedInfo.getFilename());
+			situationHistory.setTemplateName(savedInfo.getTemplateName());
+			situationHistory.setSituation(DocumentSituation.RECEIVED);
+			situationHistory.setTimestamp(timestamp);			
+			
+			DocumentSituationHistory savedSituation = documentsSituationHistoryRepository.saveWithTimestamp(situationHistory);
+			
+			rollbackProcedures.add(()->documentsUploadedRepository.delete(savedInfo)); // in case of error delete the DocumentUploaded
+			rollbackProcedures.add(()->documentsSituationHistoryRepository.delete(savedSituation)); // in case of error delete the DocumentUploaded
 			Map<String, String> result = new HashMap<>();
 			result.put("result", "ok");
 			result.put("file_id", fileId);
@@ -424,22 +427,22 @@ public class DocumentStoreAPIController {
 			return result; 
 		}
 		catch (GeneralException ex) {
-			callRollbackProcedures(rollback_procedures);
+			callRollbackProcedures(rollbackProcedures);
 			throw ex;
 		}
 		finally {
-			if (temp_file1!=null && temp_file1.exists()) {
-				if (!temp_file1.delete()) {
-					log.log(Level.WARNING, "Could not delete temporary file "+temp_file1.getAbsolutePath()+" created from incoming file "+originalFilename);
+			if (tempFile1!=null && tempFile1.exists()) {
+				if (!tempFile1.delete()) {
+					log.log(Level.WARNING, "Could not delete temporary file "+tempFile1.getAbsolutePath()+" created from incoming file "+originalFilename);
 				}
 			}
 		}
 	}
 	
-	public static void callRollbackProcedures(Collection<Runnable> rollback_procedures) {
-		if (rollback_procedures==null || rollback_procedures.isEmpty())
+	public static void callRollbackProcedures(Collection<Runnable> rollbackProcedures) {
+		if (rollbackProcedures==null || rollbackProcedures.isEmpty())
 			return;
-		for (Runnable proc: rollback_procedures) {
+		for (Runnable proc: rollbackProcedures) {
 			try {
 				proc.run();
 			}
@@ -460,35 +463,35 @@ public class DocumentStoreAPIController {
     		throw new UserNotFoundException();
     	User user = userService.getUser(auth);
     	
-    	Optional<DocumentUploaded> ref_doc = documentsUploadedRepository.findById(id);
-    	if (!ref_doc.isPresent()) {
+    	Optional<DocumentUploaded> refDoc = documentsUploadedRepository.findById(id);
+    	if (!refDoc.isPresent()) {
     		throw new DocumentNotFoundException();
     	}
     	
     	// Check permission
     	
     	Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
-    	boolean is_sysadmin_or_officer = roles.stream().anyMatch(a->UserProfile.SYSADMIN.getRole().equalsIgnoreCase(a.getAuthority())
+    	boolean isSysadminOrOfficer = roles.stream().anyMatch(a->UserProfile.SYSADMIN.getRole().equalsIgnoreCase(a.getAuthority())
     			|| UserProfile.MASTER.getRole().equalsIgnoreCase(a.getAuthority())
     			|| UserProfile.SUPPORT.getRole().equalsIgnoreCase(a.getAuthority())
     			|| UserProfile.AUTHORITY.getRole().equalsIgnoreCase(a.getAuthority()));
-    	if (!is_sysadmin_or_officer && ref_doc.get().getUser()!=null) {
-    		if (!ref_doc.get().getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
-    			&& !userService.isUserAuthorizedForSubject(user, ref_doc.get().getTaxPayerId()))
+    	if (!isSysadminOrOfficer && refDoc.get().getUser()!=null) {
+    		if (!refDoc.get().getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
+    			&& !userService.isUserAuthorizedForSubject(user, refDoc.get().getTaxPayerId()))
     			throw new InsufficientPrivilege();
     	}
     	
     	// Locate file in file repository
     	
-    	String filename = ref_doc.get().getFilename();
+    	String filename = refDoc.get().getFilename();
     	if (filename==null || filename.trim().length()==0) {
     		throw new FileNotFoundException("");
     	}
     	
-    	OffsetDateTime timestamp = ref_doc.get().getTimestamp();
+    	OffsetDateTime timestamp = refDoc.get().getTimestamp();
 
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		File file = file_storage.getOriginalFile(filename, timestamp);
+		IncomingFileStorage fileStorage = app.getBean(IncomingFileStorage.class);
+		File file = fileStorage.getOriginalFile(filename, timestamp);
 		if (file==null || !file.exists()) {
 			throw new FileNotFoundException(filename);
 		}
@@ -533,9 +536,9 @@ public class DocumentStoreAPIController {
     		throw new UserNotFoundException();
 
     	// Only SYSADMIN users may see every documents. Other users are restricted to their relationships
-    	final Set<String> filter_taxpayers_ids;
+    	final Set<String> filterTaxpayersIds;
     	try {
-    		filter_taxpayers_ids = userService.getFilteredTaxpayersForUserAsManager(auth);
+    		filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
     	}
     	catch (MissingParameter missing) {
     		/*
@@ -552,14 +555,14 @@ public class DocumentStoreAPIController {
 		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
-			if (filter_taxpayers_ids!=null && filter_taxpayers_ids.isEmpty())
+			if (filterTaxpayersIds!=null && filterTaxpayersIds.isEmpty())
 				docs = Page.empty();
-			else if (filter_taxpayers_ids==null)
+			else if (filterTaxpayersIds==null)
 				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentUploaded.class, elasticsearchClient, page, size, 
 						sortField, direction);
 			else
 				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
-						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filter_taxpayers_ids)), 
+						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds)), 
 						DocumentUploaded.class, elasticsearchClient, page, size, sortField, direction);
 		}
 		catch (Exception ex) {
@@ -588,19 +591,19 @@ public class DocumentStoreAPIController {
     	SearchRequest searchRequest = new SearchRequest("docs_uploaded");
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
     	if (days!=null && days.isPresent() && days.get().trim().length()>0) {
-	    	RangeQueryBuilder timestamp_query = new RangeQueryBuilder("timestamp");
+	    	RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
 	    	Calendar cal = Calendar.getInstance();
 	    	cal.add(Calendar.DAY_OF_YEAR, -Integer.parseInt(days.get()));
-    		timestamp_query.from(ParserUtils.formatTimestampES(cal.getTime()), true);
-	    	query.must(timestamp_query);
+	    	timestampQuery.from(ParserUtils.formatTimestampES(cal.getTime()), true);
+	    	query.must(timestampQuery);
     	}
     	else if ((fromDate!=null && fromDate.isPresent()) || (toDate!=null && toDate.isPresent())) {
-	    	RangeQueryBuilder timestamp_query = new RangeQueryBuilder("timestamp");
+	    	RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
 	    	if (fromDate!=null && fromDate.isPresent())
-	    		timestamp_query.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(fromDate.get())), true);
+	    		timestampQuery.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(fromDate.get())), true);
 	    	if (toDate!=null && toDate.isPresent())
-	    		timestamp_query.to(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(toDate.get())), true);
-	    	query.must(timestamp_query);
+	    		timestampQuery.to(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(toDate.get())), true);
+	    	query.must(timestampQuery);
     	}
     	
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -640,47 +643,47 @@ public class DocumentStoreAPIController {
 	 * days: Number of past days (overrides 'from' and 'to' parameters)
 	 */
 	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
-	@GetMapping(value="/docs/{template_name}",produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value="/docs/{templateName}",produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Return documents (their parsed contents) via API for a given template. The template may be identified by the internal numerical ID, "
 			+ "or by its name (in this case, replace all spaces and symbols with underlines).")
 	public ResponseEntity<Object> getDocs(
-			@PathVariable("template_name") String template_name,
+			@PathVariable("templateName") String templateName,
 			@ApiParam(value="Date/time for first day/time of document receipt",required=false) @RequestParam("fromDate") Optional<String> fromDate,
 			@ApiParam(value="Date/time for last day/time of document receipt",required=false) @RequestParam("toDate") Optional<String> toDate,
 			@ApiParam(value="Number of past days (overrides 'from' and 'to' parameters)",required=false) @RequestParam("days") Optional<String> days) {
 		
-		// Parse the 'template_name' informed at request path
-		if (template_name==null || template_name.trim().length()==0) {
-			throw new MissingParameter("template_name");
+		// Parse the 'templateName' informed at request path
+		if (templateName==null || templateName.trim().length()==0) {
+			throw new MissingParameter("templateName");
 		}
-		List<DocumentTemplate> requested_templates = templateService.findTemplateWithNameOrId(template_name);
-		if (requested_templates.isEmpty()) {
+		List<DocumentTemplate> requestedTemplates = templateService.findTemplateWithNameOrId(templateName);
+		if (requestedTemplates.isEmpty()) {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
 		// Parse the optional temporal query parameters
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
     	if (days!=null && days.isPresent() && days.get().trim().length()>0) {
-	    	RangeQueryBuilder timestamp_query = new RangeQueryBuilder("timestamp");
+	    	RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
 	    	Calendar cal = Calendar.getInstance();
 	    	cal.add(Calendar.DAY_OF_YEAR, -Integer.parseInt(days.get()));
-    		timestamp_query.from(ParserUtils.formatTimestampES(cal.getTime()), true);
-	    	query.must(timestamp_query);
+    		timestampQuery.from(ParserUtils.formatTimestampES(cal.getTime()), true);
+	    	query.must(timestampQuery);
     	}
     	else if ((fromDate!=null && fromDate.isPresent()) || (toDate!=null && toDate.isPresent())) {
-	    	RangeQueryBuilder timestamp_query = new RangeQueryBuilder("timestamp");
+	    	RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
 	    	if (fromDate!=null && fromDate.isPresent())
-	    		timestamp_query.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(fromDate.get())), true);
+	    		timestampQuery.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(fromDate.get())), true);
 	    	if (toDate!=null && toDate.isPresent())
-	    		timestamp_query.to(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(toDate.get())), true);
-	    	query.must(timestamp_query);
+	    		timestampQuery.to(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(toDate.get())), true);
+	    	query.must(timestampQuery);
     	}
     	
-    	Set<String> indices_verified = new HashSet<>(); // avoids redundancy (may happen if we have different versions of the same template name)
+    	Set<String> indicesVerified = new HashSet<>(); // avoids redundancy (may happen if we have different versions of the same template name)
     	
     	// Build the query for each template of interest
     	List<Object> allDocs = new LinkedList<>();
-    	for (DocumentTemplate template: requested_templates) {
+    	for (DocumentTemplate template: requestedTemplates) {
     		
     		if (allDocs.size()>=MAX_RESULTS_PER_REQUEST)
     			break;
@@ -690,13 +693,13 @@ public class DocumentStoreAPIController {
         	searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST - allDocs.size());    	
         	searchSourceBuilder.sort("timestamp", SortOrder.DESC);
         	
-        	String index_name = "doc_"+formatIndexName(/*indexName*/template.getName());
+        	String indexName = "doc_"+formatIndexName(/*indexName*/template.getName());
         	
-        	if (indices_verified.contains(index_name))
+        	if (indicesVerified.contains(indexName))
         		continue;
-        	indices_verified.add(index_name);
+        	indicesVerified.add(indexName);
         	
-        	SearchRequest searchRequest = new SearchRequest(index_name);
+        	SearchRequest searchRequest = new SearchRequest(indexName);
         	searchRequest.source(searchSourceBuilder);
         	SearchResponse sresp = null;    	
     		try {
@@ -732,6 +735,25 @@ public class DocumentStoreAPIController {
     	} // LOOP for each DocumentTemplate
 
 		return ResponseEntity.ok().body(allDocs);
+	}
+
+	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
+	@GetMapping(value="/docs/situations/{documentId}",produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Return situation history via API for a given document. The document may be identified by the internal numerical ID.")
+	public ResponseEntity<Object> getDocsSituation(
+			@PathVariable("documentId") String documentId) {
+	
+		// Parse the 'templateName' informed at request path
+		if (documentId==null || documentId.trim().length()==0) {
+			throw new MissingParameter("documentId");
+		}
+		List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
+		if (situations.isEmpty()) {
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		return ResponseEntity.ok().body(situations);
+	
 	}
 
 }

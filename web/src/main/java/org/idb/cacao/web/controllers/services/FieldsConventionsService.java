@@ -127,7 +127,7 @@ public class FieldsConventionsService {
 	private final ThreadLocal<SimpleDateFormat> sdfDisplay = new ThreadLocal<SimpleDateFormat>() {
 		@Override
 		protected SimpleDateFormat initialValue() {
-			return new SimpleDateFormat(messageSource.getMessage("timestamp_format", null, LocaleContextHolder.getLocale()));
+			return new SimpleDateFormat(messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
 		}
 	};
 

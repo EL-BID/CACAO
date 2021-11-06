@@ -379,7 +379,7 @@ public class StringUtils {
 	 * Formats a date/time according to the regional defaults
 	 */
 	public static String text(MessageSource messages, Date timestamp) {
-		return new SimpleDateFormat(messages.getMessage("timestamp_format", null, LocaleContextHolder.getLocale())).format(timestamp);
+		return new SimpleDateFormat(messages.getMessage("timestamp.format", null, LocaleContextHolder.getLocale())).format(timestamp);
 	}
 	
 	/**
