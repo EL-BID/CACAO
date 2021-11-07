@@ -82,7 +82,7 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	private String archetype;
 
 	/**
-	 * Name of this template
+	 * Name of this template. Name and version must be unique in the system (for DocumentTemplates).
 	 */
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
@@ -110,7 +110,7 @@ public class DocumentTemplate implements Serializable, Cloneable {
 
 	/**
 	 * Version of this template (in case it's necessary to keep a history of
-	 * different versions of the same template over time)
+	 * different versions of the same template over time). Name and version must be unique in the system (for DocumentTemplates).
 	 */
 	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
