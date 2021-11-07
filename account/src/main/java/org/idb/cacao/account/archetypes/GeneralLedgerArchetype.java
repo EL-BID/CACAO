@@ -47,6 +47,15 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 
 	/*
 	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getSuggestedGroup()
+	 */
+	@Override
+	public String getSuggestedGroup() {
+		return "Accounting";
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getBuiltInDomainTables()
 	 */
 	@Override

@@ -59,6 +59,14 @@ public interface TemplateArchetype {
 		return null;
 	}
 	
+	/**
+	 * Returns the suggested 'group name' for DocumentTemplates generated from this TemplateArchetype.
+	 * Returns NULL if there is no name to suggest.
+	 */
+	default public String getSuggestedGroup() {
+		return null;
+	}
+	
 	// TODO:
 	// There should be additional members implemented by plugins for doing validations that are
 	// specific to a given file related to this archetype. For example, if this is a

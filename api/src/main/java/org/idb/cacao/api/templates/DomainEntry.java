@@ -148,7 +148,7 @@ public class DomainEntry implements Serializable, Cloneable, Comparable<DomainEn
 		this.language = language;
 	}
 	
-	public DomainEntry withLanuage(DomainLanguage language) {
+	public DomainEntry withLanguage(DomainLanguage language) {
 		setLanguage(language);
 		return this;
 	}
@@ -186,6 +186,11 @@ public class DomainEntry implements Serializable, Cloneable, Comparable<DomainEn
 	 */
 	public void setLocked(Boolean locked) {
 		this.locked = locked;
+	}
+
+	public DomainEntry withLocked(Boolean locked) {
+		setLocked(locked);
+		return this;
 	}
 
 	public DomainEntry withDescription(String description) {

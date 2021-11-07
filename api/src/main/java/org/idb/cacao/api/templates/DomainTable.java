@@ -416,6 +416,10 @@ public class DomainTable implements Serializable, Cloneable {
 		addEntry(new DomainEntry(name, language, description));
 	}
 	
+	public void addEntry(String name, DomainLanguage language, String description, Boolean locked) {
+		addEntry(new DomainEntry(name, language, description).withLocked(locked));
+	}
+
 	public void addBuiltInEntry(String name, String messagePropertyReference) {
 		addEntry(new DomainEntry(name, messagePropertyReference));
 	}
