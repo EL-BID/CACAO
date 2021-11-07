@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotBlank;
@@ -178,6 +179,48 @@ public class DomainTable implements Serializable, Cloneable {
 	public DomainTable(String name, String version) {
 		this.name = name;
 		this.version = version;
+	}
+	
+	/**
+	 * Creates a new built-in DomainTable given enumeration constants (this must be resolved at
+	 * runtime). The 'keys' are the 'constant names'. The 'descriptions' are the 'toString' results
+	 * for each enum constant. IMPORTANT: it's expected that the enum's toString method return
+	 * a 'messages.properties' entry, not the description itself.
+	 */
+	public static <T extends Enum<?>> DomainTable fromEnum(String name, String version, Class<T> enumeration) {
+		return fromEnum(name, version, enumeration, /*getKey*/Enum::name, /*getValue*/Object::toString);
+	}
+
+	/**
+	 * Creates a new built-in DomainTable given enumeration constants (this must be resolved at
+	 * runtime). The 'keys' are calculated using the provided 'getKey' function over each enum constant. The constants that evaluates
+	 * to NULL key are filtered out.<BR>
+	 * The 'descriptions' are the 'toString' results for each enum constant. IMPORTANT: it's expected that the enum's toString method return
+	 * a 'messages.properties' entry, not the description itself.
+	 */
+	public static <T extends Enum<?>> DomainTable fromEnum(String name, String version, Class<T> enumeration, Function<T,String> getKey) {
+		return fromEnum(name, version, enumeration, getKey, /*getValue*/Object::toString);
+	}
+	
+	/**
+	 * Creates a new built-in DomainTable given enumeration constants (this must be resolved at
+	 * runtime). The 'keys' are calculated using the provided 'getKey' function over each enum constant. The constants that evaluates
+	 * to NULL or empty key are filtered out.<BR> 
+	 * The 'descriptions' are calculated using the provided 'getValue' function over each enum constant. 
+	 * IMPORTANT: it's expected that the 'getValue' method return a 'messages.properties' entry, not the description itself.
+	 */
+	public static <T extends Enum<?>> DomainTable fromEnum(String name, String version, Class<T> enumeration, 
+			Function<T,String> getKey,
+			Function<T,String> getValue) {
+		DomainTable domain = new DomainTable(name, version);
+		for (T element: enumeration.getEnumConstants()) {
+			String key = getKey.apply(element);
+			if (key==null || key.trim().length()==0)
+				continue;
+			String messagePropertyRef = getValue.apply(element);			
+			domain.addBuiltInEntry(key, messagePropertyRef);
+		}
+		return domain;
 	}
 
 	/**
@@ -371,6 +414,10 @@ public class DomainTable implements Serializable, Cloneable {
 	
 	public void addEntry(String name, DomainLanguage language, String description) {
 		addEntry(new DomainEntry(name, language, description));
+	}
+	
+	public void addBuiltInEntry(String name, String messagePropertyReference) {
+		addEntry(new DomainEntry(name, messagePropertyReference));
 	}
 	
 	public void removeEntry(DomainEntry entry) {
