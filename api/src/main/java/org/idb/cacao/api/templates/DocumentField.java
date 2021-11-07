@@ -108,6 +108,16 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 */
 	@Field(type=Boolean)
 	private Boolean required;
+
+	/**
+	 * Indicates this field is also used for identification of this file. No other file in the system
+	 * should have the same identification. Multiple fields with this indication are combined together
+	 * to form the 'unique identification' of a file. It may repeat in different lines of the same file.
+	 * If there is another file with the same identification, it must be considered 'replaced' by the
+	 * new one. 
+	 */
+	@Field(type=Boolean)
+	private Boolean fileUniqueness;
 	
 	public DocumentField() { }
 
@@ -340,6 +350,33 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	
 	public DocumentField withRequired(Boolean required) {
 		setRequired(required);
+		return this;
+	}
+
+	/**
+	 * Indicates this field is also used for identification of this file. No other file in the system
+	 * should have the same identification. Multiple fields with this indication are combined together
+	 * to form the 'unique identification' of a file. It may repeat in different lines of the same file.
+	 * If there is another file with the same identification, it must be considered 'replaced' by the
+	 * new one. 
+	 */
+	public Boolean getFileUniqueness() {
+		return fileUniqueness;
+	}
+
+	/**
+	 * Indicates this field is also used for identification of this file. No other file in the system
+	 * should have the same identification. Multiple fields with this indication are combined together
+	 * to form the 'unique identification' of a file. It may repeat in different lines of the same file.
+	 * If there is another file with the same identification, it must be considered 'replaced' by the
+	 * new one. 
+	 */
+	public void setFileUniqueness(Boolean fileUniqueness) {
+		this.fileUniqueness = fileUniqueness;
+	}
+
+	public DocumentField withFileUniqueness(Boolean fileUniqueness) {
+		setFileUniqueness(fileUniqueness);
 		return this;
 	}
 
