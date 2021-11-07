@@ -65,11 +65,6 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 				.withDescription("Fiscal year of this financial reporting")
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("Date")
-				.withFieldType(FieldType.DATE)
-				.withDescription("Date of the bookentry")
-				.withRequired(true),
-			new DocumentField()
 				.withFieldName("AccountCode")
 				.withFieldType(FieldType.CHARACTER)
 				.withFieldMapping(FieldMapping.ACCOUNT_CODE)
@@ -77,12 +72,17 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("ParentAccountCode")
+				.withFieldName("AccountCategory")
 				.withFieldType(FieldType.CHARACTER)
-				.withFieldMapping(FieldMapping.ACCOUNT_CODE)
-				.withDescription("Account code of the parent of this account according to the Chart of Accounts hierarchy")
+				.withDescription("Category of this account")
 				.withMaxLength(256)
-				.withRequired(false),
+				.withRequired(true),
+			new DocumentField()
+				.withFieldName("AccountSubcategory")
+				.withFieldType(FieldType.CHARACTER)
+				.withDescription("Sub-category of this account")
+				.withMaxLength(256)
+				.withRequired(true),
 			new DocumentField()
 				.withFieldName("AccountName")
 				.withFieldType(FieldType.CHARACTER)
