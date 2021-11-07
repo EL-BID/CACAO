@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
+import org.idb.cacao.web.controllers.services.FileUploadedProducer;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.controllers.services.UserService;
@@ -58,8 +59,8 @@ public class WebApplication {
 	@Autowired
 	private ResourceMonitorService resourceMonitorService;
 	
-	//@Autowired
-	//#private FileUploadedProducer fileUploadedProducer;
+	@Autowired
+	private FileUploadedProducer fileUploadedProducer;
 	
 
 	@Autowired

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FileUploadedProducerService {
+public class FileUploadedProcessorService {
 
 	@Bean
 	public Function<String, String> processorBean() {

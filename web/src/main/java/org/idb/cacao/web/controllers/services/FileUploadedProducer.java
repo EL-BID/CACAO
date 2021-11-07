@@ -21,17 +21,44 @@ package org.idb.cacao.web.controllers.services;
 
 import java.util.function.Supplier;
 
+import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 /**
  * 
  * @author leon
  *
  */
+@Component
 @Service
 public class FileUploadedProducer {
-	@Bean
+	
+	@Autowired
+	private final StreamBridge streamBridge;
+	
+
+/*
 	public Supplier<String> supplierBean() {
 		return () -> "File uploaded";
 	}
+*/
+	
+	public FileUploadedProducer(StreamBridge streamBridge) {
+		this.streamBridge = streamBridge;
+	}
+	/*	
+	@Bean
+	public Supplier<String> fileUploaded(FileUploadedEvent fileEvent) {
+		return () -> fileEvent.getFileId();
+	}
+	*/
+
+	public void fileUploaded(FileUploadedEvent fileEvent) {
+		System.out.println("MANDANDO MENSAGEM");
+        streamBridge.send("fileUploaded-out-0", fileEvent.getFileId());
+    }
+
 }
