@@ -80,11 +80,23 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	private String domainTableName;
 	
 	/**
-	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 * Reference to a domain table version (only if fieldType = DOMAIN)
 	 */
 	@Field(type=Keyword)
 	private String domainTableVersion;
 	
+	/**
+	 * Reference to a DocumentTemplate name (only if fieldType = NESTED)
+	 */
+	@Field(type=Keyword)
+	private String nestedTemplateName;
+	
+	/**
+	 * Reference to a DocumentTemplate (only if fieldType = NESTED)
+	 */
+	@Field(type=Keyword)
+	private String nestedTemplateVersion;
+
 	/**
 	 * Maximum field length (only applies to Text fields)
 	 */
@@ -297,14 +309,14 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	}
 
 	/**
-	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 * Reference to a domain table version (only if fieldType = DOMAIN)
 	 */
 	public String getDomainTableVersion() {
 		return domainTableVersion;
 	}
 
 	/**
-	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 * Reference to a domain table version (only if fieldType = DOMAIN)
 	 */
 	public void setDomainTableVersion(String domainTableVersion) {
 		this.domainTableVersion = domainTableVersion;
@@ -312,6 +324,44 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 
 	public DocumentField withDomainTableVersion(String domainTableVersion) {
 		setDomainTableVersion(domainTableVersion);
+		return this;
+	}
+
+	/**
+	 * Reference to a DocumentTemplate name (only if fieldType = NESTED)
+	 */
+	public String getNestedTemplateName() {
+		return nestedTemplateName;
+	}
+
+	/**
+	 * Reference to a DocumentTemplate name (only if fieldType = NESTED)
+	 */
+	public void setNestedTemplateName(String nestedTemplateName) {
+		this.nestedTemplateName = nestedTemplateName;
+	}
+
+	public DocumentField withNestedTemplateName(String nestedTemplateName) {
+		setNestedTemplateName(nestedTemplateName);
+		return this;
+	}
+
+	/**
+	 * Reference to a DocumentTemplate (only if fieldType = NESTED)
+	 */
+	public String getNestedTemplateVersion() {
+		return nestedTemplateVersion;
+	}
+
+	/**
+	 * Reference to a DocumentTemplate (only if fieldType = NESTED)
+	 */
+	public void setNestedTemplateVersion(String nestedTemplateVersion) {
+		this.nestedTemplateVersion = nestedTemplateVersion;
+	}
+
+	public DocumentField withNestedTemplateVersion(String nestedTemplateVersion) {
+		setNestedTemplateVersion(nestedTemplateVersion);
 		return this;
 	}
 
