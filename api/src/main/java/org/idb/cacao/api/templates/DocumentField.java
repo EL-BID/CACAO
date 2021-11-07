@@ -74,6 +74,18 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	private FieldType fieldType;
 	
 	/**
+	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 */
+	@Field(type=Keyword)
+	private String domainTableName;
+	
+	/**
+	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 */
+	@Field(type=Keyword)
+	private String domainTableVersion;
+	
+	/**
 	 * Maximum field length (only applies to Text fields)
 	 */
 	@Field(type=Integer)
@@ -252,6 +264,44 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	
 	public DocumentField withDescription(String description) {
 		setDescription(description);
+		return this;
+	}
+
+	/**
+	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 */
+	public String getDomainTableName() {
+		return domainTableName;
+	}
+
+	/**
+	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 */
+	public void setDomainTableName(String domainTableName) {
+		this.domainTableName = domainTableName;
+	}
+
+	public DocumentField withDomainTableName(String domainTableName) {
+		setDomainTableName(domainTableName);
+		return this;
+	}
+
+	/**
+	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 */
+	public String getDomainTableVersion() {
+		return domainTableVersion;
+	}
+
+	/**
+	 * Reference to a domain table name (only if fieldType = DOMAIN)
+	 */
+	public void setDomainTableVersion(String domainTableVersion) {
+		this.domainTableVersion = domainTableVersion;
+	}
+
+	public DocumentField withDomainTableVersion(String domainTableVersion) {
+		setDomainTableVersion(domainTableVersion);
 		return this;
 	}
 
