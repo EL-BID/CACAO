@@ -47,6 +47,15 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 
 	/*
 	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getSuggestedGroup()
+	 */
+	@Override
+	public String getSuggestedGroup() {
+		return "Accounting";
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getBuiltInDomainTables()
 	 */
 	@Override
@@ -82,21 +91,19 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 			new DocumentField()
 				.withFieldName("AccountCode")
 				.withFieldType(FieldType.CHARACTER)
-				.withFieldMapping(FieldMapping.ACCOUNT_CODE)
 				.withDescription("Account code (reference to Chart of Account)")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("InitialBalance")
 				.withFieldType(FieldType.DECIMAL)
-				.withFieldMapping(FieldMapping.ACCOUNT_VALUE)
 				.withDescription("The monetary amount of this initial balance")
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("DebitCredit")
 				.withFieldType(FieldType.DOMAIN)
 				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
-				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
+				.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
 				.withDescription("This is an indication of whether this balance is debit or credit")
 				.withMaxLength(32)
 				.withRequired(true)

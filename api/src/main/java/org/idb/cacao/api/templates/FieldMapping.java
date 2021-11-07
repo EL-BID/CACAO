@@ -40,12 +40,7 @@ public enum FieldMapping implements Comparable<FieldMapping> {
 	TAX_DAY("field.map.tday"),		
 	TAX_VALUE("field.map.tvalue"),						  
 	TAX_CODE("field.map.tcode"),		
-	TAX_TYPE("field.map.tax"),
-	
-	// All built-in field mapping options applicable to ACCOUNTING
-	ACCOUNT_CODE("field.map.account.code"),
-	ACCOUNT_NAME("field.map.account.name"),
-	ACCOUNT_VALUE("field.map.account.value");
+	TAX_TYPE("field.map.tax");
 
 	private final String display;
 	

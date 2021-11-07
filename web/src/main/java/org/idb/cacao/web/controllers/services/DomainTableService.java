@@ -107,7 +107,7 @@ public class DomainTableService {
 			String message = messages.getMessage(entry.getDescription(), /*args*/null, /*defaultMessage*/null, locale);
 			if (message==null)
 				continue;
-			resolved.addEntry(entry.getKey(), language, message);
+			resolved.addEntry(entry.getKey(), language, message, /*locked*/true);
 		}
 		
 		return resolved;
@@ -138,7 +138,7 @@ public class DomainTableService {
 				String message = messages.getMessage(entry.getDescription(), /*args*/null, /*defaultMessage*/null, locale);
 				if (message==null)
 					continue;
-				resolved.addEntry(entry.getKey(), language, message);
+				resolved.addEntry(entry.getKey(), language, message, /*locked*/true);
 			}
 			
 		}

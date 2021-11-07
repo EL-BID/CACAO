@@ -19,6 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.account.archetypes;
 
+import org.idb.cacao.account.elements.AccountCategory;
+import org.idb.cacao.account.elements.AccountSubcategory;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 
@@ -39,4 +41,31 @@ public class AccountBuiltInDomainTables {
 					new DomainEntry("D", "account.debit"),
 					new DomainEntry("C", "account.credit"));
 	
+	/**
+	 * Domain table for the category of accounts according to GAAP
+	 */
+	public static DomainTable ACCOUNT_CATEGORY_GAAP = DomainTable.fromEnum("Account Category GAAP", /*version*/"1.0", 
+			/*enumeration with values*/AccountCategory.class, 
+			/*getKey*/AccountCategory::getGaapNumber);
+
+	/**
+	 * Domain table for the category of accounts according to IFRS
+	 */
+	public static DomainTable ACCOUNT_CATEGORY_IFRS = DomainTable.fromEnum("Account Category IFRS", /*version*/"1.0", 
+			/*enumeration with values*/AccountCategory.class, 
+			/*getKey*/AccountCategory::getIfrsNumber);
+
+	/**
+	 * Domain table for the category of accounts according to GAAP
+	 */
+	public static DomainTable ACCOUNT_SUBCATEGORY_GAAP = DomainTable.fromEnum("Account Sub-Category GAAP", /*version*/"1.0", 
+			/*enumeration with values*/AccountSubcategory.class, 
+			/*getKey*/AccountSubcategory::getGaapNumber);
+
+	/**
+	 * Domain table for the category of accounts according to IFRS
+	 */
+	public static DomainTable ACCOUNT_SUBCATEGORY_IFRS = DomainTable.fromEnum("Account Sub-Category IFRS", /*version*/"1.0", 
+			/*enumeration with values*/AccountSubcategory.class, 
+			/*getKey*/AccountSubcategory::getIfrsNumber);
 }

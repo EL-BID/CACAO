@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.templates.TemplateArchetype;
@@ -46,6 +47,27 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getSuggestedGroup()
+	 */
+	@Override
+	public String getSuggestedGroup() {
+		return "Accounting";
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getBuiltInDomainTables()
+	 */
+	@Override
+	public List<DomainTable> getBuiltInDomainTables() {
+		return Arrays.asList( AccountBuiltInDomainTables.ACCOUNT_CATEGORY_GAAP,
+				AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS,
+				AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_GAAP,
+				AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS );
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRequiredFields()
 	 */
 	@Override
@@ -67,26 +89,28 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 			new DocumentField()
 				.withFieldName("AccountCode")
 				.withFieldType(FieldType.CHARACTER)
-				.withFieldMapping(FieldMapping.ACCOUNT_CODE)
 				.withDescription("Account code")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("AccountCategory")
-				.withFieldType(FieldType.CHARACTER)
+				.withFieldType(FieldType.DOMAIN)
+				.withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS.getName())
+				.withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS.getVersion())
 				.withDescription("Category of this account")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("AccountSubcategory")
-				.withFieldType(FieldType.CHARACTER)
+				.withFieldType(FieldType.DOMAIN)
+				.withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS.getName())
+				.withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS.getVersion())
 				.withDescription("Sub-category of this account")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("AccountName")
 				.withFieldType(FieldType.CHARACTER)
-				.withFieldMapping(FieldMapping.ACCOUNT_NAME)
 				.withDescription("Account name for displaying alongside the account code in different financial reports")
 				.withMaxLength(256)
 				.withRequired(true),

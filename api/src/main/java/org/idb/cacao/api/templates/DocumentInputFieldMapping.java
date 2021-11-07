@@ -69,6 +69,13 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 */
 	@Field(type=Integer)
 	private int fieldId;
+	
+	/**
+	 * Some regular expression including group capturing syntax for retrieving the information from the filename.<BR>
+	 * May be NULL if this field is not related to the filename.<BR>
+	 */
+	@Field(type=Keyword)
+	private String fileNameExpression;
 
 	/**
 	 * The column (0-based) position of this information in the input file.<BR>
@@ -151,6 +158,22 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 */
 	public void setFieldId(int fieldId) {
 		this.fieldId = fieldId;
+	}
+
+	/**
+	 * Some regular expression including group capturing syntax for retrieving the information from the filename.<BR>
+	 * May be NULL if this field is not related to the filename.<BR>
+	 */
+	public String getFileNameExpression() {
+		return fileNameExpression;
+	}
+
+	/**
+	 * Some regular expression including group capturing syntax for retrieving the information from the filename.<BR>
+	 * May be NULL if this field is not related to the filename.<BR>
+	 */
+	public void setFileNameExpression(String fileNameExpression) {
+		this.fileNameExpression = fileNameExpression;
 	}
 
 	/**

@@ -47,6 +47,15 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 
 	/*
 	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getSuggestedGroup()
+	 */
+	@Override
+	public String getSuggestedGroup() {
+		return "Accounting";
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getBuiltInDomainTables()
 	 */
 	@Override
@@ -82,7 +91,6 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 			new DocumentField()
 				.withFieldName("AccountCode")
 				.withFieldType(FieldType.CHARACTER)
-				.withFieldMapping(FieldMapping.ACCOUNT_CODE)
 				.withDescription("Account code (reference to Chart of Account)")
 				.withMaxLength(256)
 				.withRequired(true),
@@ -101,14 +109,13 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 			new DocumentField()
 				.withFieldName("Amount")
 				.withFieldType(FieldType.DECIMAL)
-				.withFieldMapping(FieldMapping.ACCOUNT_VALUE)
 				.withDescription("The monetary amount of this bookeeping entry")
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("DebitCredit")
 				.withFieldType(FieldType.DOMAIN)
 				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
-				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
+				.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
 				.withDescription("This is an indication of whether this entry is a debit or a credit to the account")
 				.withMaxLength(32)
 				.withRequired(true)
