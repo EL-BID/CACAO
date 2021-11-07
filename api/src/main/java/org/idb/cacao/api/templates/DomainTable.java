@@ -51,6 +51,55 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * <BR>
  * It is a template with fields definitions (i.e.: contains fields types and fields names).<BR>
  * <BR>
+ * This class is intended to be used in two different ways:<BR>
+ * BUILT-IN DOMAIN TABLE<BR>
+ * ===========================================<BR>
+ * Some of the CACAO plugins and modules may declare built-in domain tables. These are domain tables
+ * created by the system itself. It may be the case for some 'TemplateArchetype' that defines DocumentField's
+ * related to internal built-in domain table.<BR>
+ * In this case, the object is defined in code or it's loaded in runtime. Each DomainEntry contains a key,
+ * but do not define a specific 'language'. Instead it will assign for each DomainEntry a 'message key'
+ * to be searched in 'messages.properties' files according to the provided languages at application classpath.<BR>
+ * For example, suppose we have a 'built-in' domain table with the following entries (DomainEntry):<BR>
+ * <table>
+ * <tr><th>key</th><th>language</th><th>description</th></tr>
+ * <tr><td>1</td><td>null</td><td>my.table.code.1</td></tr>
+ * <tr><td>2</td><td>null</td><td>my.table.code.2</td></tr>
+ * </table>
+ * Suppose we have provided to the application a 'messages_en.properties' file with the following entries:<BR>
+ * <pre>
+ * my.table.code.1=One
+ * my.table.code.2=Two
+ * </pre>
+ * And suppose we have provided to the application a 'messages_es.properties' file with the following entries:<BR>
+ * <pre>
+ * my.table.code.1=Uno
+ * my.table.code.2=Dos
+ * </pre>
+ * With the above configuration, the application will automatically create and store a new 'resolved' domain table with the
+ * following entries:<BR>
+ * <table>
+ * <tr><th>key</th><th>language</th><th>description</th></tr>
+ * <tr><td>1</td><td>ENGLISH</td><td>One</td></tr>
+ * <tr><td>2</td><td>ENGLISH</td><td>Two</td></tr>
+ * <tr><td>1</td><td>SPANISH</td><td>Uno</td></tr>
+ * <tr><td>2</td><td>SPANISH</td><td>Dos</td></tr>
+ * </table>
+ * <BR>
+ * USER PROVIDED DOMAIN TABLE<BR>
+ * ===========================================<BR>
+ * This is the normal use case of 'domain tables'. The user of CACAO may create, update and delete any domain tables.
+ * In this case, the user must provide each DomainEntry with all the required information:<BR>
+ * <pre>
+ * key
+ * language
+ * description
+ * </pre>
+ * Doing this, the same information in the 'domain table' may resolve to different languages as determined by the user.
+ * Unlike a 'built-in' table, the user-provided table may not refer to 'messages.properties' files because his definitions
+ * are only given at runtime, not at compile time.<BR>
+ *
+ * <BR>
  * @author Gustavo Figueiredo
  *
  */
