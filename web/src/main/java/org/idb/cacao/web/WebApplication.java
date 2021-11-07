@@ -104,8 +104,7 @@ public class WebApplication {
 	 * Do some initialization here
 	 */
 	public void startupCode() {
-		userService.assertInitialSetup();
-		
+		userService.assertInitialSetup();		
 
 		try {
 			if ("true".equalsIgnoreCase(env.getProperty("resource.monitor"))) {

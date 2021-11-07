@@ -482,23 +482,7 @@ public class ElasticsearchMockClient {
 		}
 		Object match_query = query.get("match");
 		if (match_query != null) {
-			if (!(match_query instanceof Map))
-				throw new UnsupportedOperationException(
-						"Unexpected value type for match query operation for TESTING purpose: "
-								+ match_query.getClass().getName());
-			Map.Entry<?,?> match_query_entry = ((Map<?,?>)match_query).entrySet().iterator().next();
-			final String field_name_to_match = (String)match_query_entry.getKey();
-			final String value_to_match = (String)((Map<?,?>)match_query_entry.getValue()).get("query");
-			return new Predicate<Map<?, ?>>() {
-				@Override
-				public boolean test(Map<?, ?> doc) {
-					String value = (String) doc.get(treatFieldName(field_name_to_match));
-					if (value != null && value.equalsIgnoreCase(value_to_match)) {
-						return true;
-					}
-					return false;
-				}
-			};
+			return getCondition(query);
 		}
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(query);
@@ -538,6 +522,28 @@ public class ElasticsearchMockClient {
 				}
 			};
 		} else {
+			
+			Object match_query = query_properties.get("match");
+			if (match_query != null) {
+				if (!(match_query instanceof Map))
+					throw new UnsupportedOperationException(
+							"Unexpected value type for match query operation for TESTING purpose: "
+									+ match_query.getClass().getName());
+				Map.Entry<?,?> match_query_entry = ((Map<?,?>)match_query).entrySet().iterator().next();
+				final String field_name_to_match = (String)match_query_entry.getKey();
+				final String value_to_match = (String)((Map<?,?>)match_query_entry.getValue()).get("query");
+				return new Predicate<Map<?, ?>>() {
+					@Override
+					public boolean test(Map<?, ?> doc) {
+						String value = (String) doc.get(treatFieldName(field_name_to_match));
+						if (value != null && value.equalsIgnoreCase(value_to_match)) {
+							return true;
+						}
+						return false;
+					}
+				};
+			}
+
 			ObjectMapper mapper = new ObjectMapper();
 			String json = mapper.writeValueAsString(query_properties);
 			throw new UnsupportedOperationException("Unexpected query properties: " + json);

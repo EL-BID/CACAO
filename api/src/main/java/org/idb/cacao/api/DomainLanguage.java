@@ -2,6 +2,7 @@ package org.idb.cacao.api;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -18,17 +19,20 @@ import org.springframework.context.i18n.LocaleContextHolder;
  */
 public enum DomainLanguage {
 
-	ENGLISH("domain.lang.english",	/*abbreviations*/"en"),
-	SPANISH("domain.lang.spanish",	/*abbreviations*/"sp"),		
-	FRENCH("domain.lang.french",	/*abbreviations*/"fr"),
-	PORTUGUESE("domain.lang.portuguese",	/*abbreviations*/"pt");	
+	ENGLISH("domain.lang.english",	Locale.ENGLISH, /*abbreviations*/"en"),
+	SPANISH("domain.lang.spanish",	new Locale("es", "ES"), /*abbreviations*/"sp"),		
+	FRENCH("domain.lang.french",	Locale.FRENCH, /*abbreviations*/"fr"),
+	PORTUGUESE("domain.lang.portuguese",	new Locale("pt", "BR"), /*abbreviations*/"pt");	
 
 	private final String display;
 	
+	private final Locale defaultLocale;
+	
 	private final Set<String> abbreviations;
 	
-	DomainLanguage(String display, String... abbreviations) {
+	DomainLanguage(String display, Locale defaultLocale, String... abbreviations) {
 		this.display = display;
+		this.defaultLocale = defaultLocale;
 		this.abbreviations = (abbreviations==null) ? Collections.emptySet()
 			: Arrays.stream(abbreviations).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 	}
@@ -38,6 +42,10 @@ public enum DomainLanguage {
 		return display;
 	}
 	
+	public Locale getDefaultLocale() {
+		return defaultLocale;
+	}
+
 	public Set<String> getAbbreviations() {
 		return abbreviations;
 	}

@@ -283,9 +283,12 @@ public class DomainTable implements Serializable, Cloneable {
 	 */
 	@JsonIgnore
 	public List<DomainEntry> getEntriesOfLanguage(DomainLanguage language) {
-		if (entries==null || language==null)
+		if (entries==null)
 			return Collections.emptyList();
-		return entries.stream().filter(f->language.equals(f.getLanguage())).collect(Collectors.toList());		
+		if (language==null)
+			return entries.stream().filter(f->f.getLanguage()==null).collect(Collectors.toList());
+		else
+			return entries.stream().filter(f->language.equals(f.getLanguage())).collect(Collectors.toList());		
 	}
 
 	public void setEntries(List<DomainEntry> entries) {
@@ -345,16 +348,48 @@ public class DomainTable implements Serializable, Cloneable {
 	public int getNumEntries(DomainLanguage language) {
 		if (entries==null)
 			return 0;
+		else if (language==null)
+			return (int)entries.stream().filter(s->s.getLanguage()==null).count();
 		else
 			return (int)entries.stream().filter(s->language.equals(s.getLanguage())).count();
 	}
 	
 	public DomainTable clone() {
 		try {
-			return (DomainTable)super.clone();
+			DomainTable clone = (DomainTable)super.clone();
+			if (this.entries!=null)
+				clone.setEntries(this.entries.stream().map(DomainEntry::clone).collect(Collectors.toCollection(LinkedList::new)));
+			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this==o)
+			return true;
+		if (!(o instanceof DomainTable))
+			return false;
+		DomainTable ref = (DomainTable)o;
+		if (name!=ref.name) {
+			if (name==null || ref.name==null)
+				return false;
+			if (!name.equalsIgnoreCase(ref.name))
+				return false;
+		}
+		if (version!=ref.version) {
+			if (version==null || ref.version==null)
+				return false;
+			if (!version.equalsIgnoreCase(ref.version))
+				return false;			
+		}
+		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		return 17 + 37 * ( (name==null?0:name.hashCode()) + 37 * (version==null?0:version.hashCode()) );
 	}
 
     @Override

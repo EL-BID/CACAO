@@ -19,6 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.api.templates;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -89,5 +91,17 @@ public class TemplateArchetypes {
 		return
 		StreamSupport.stream(getTemplateArchetypes().spliterator(),false)
 		.anyMatch(arch->String.CASE_INSENSITIVE_ORDER.compare(name,arch.getName())==0);		
+	}
+	
+	/**
+	 * Returns all the built-in domain tables referenced by all defined 'TemplateArchetypes'.
+	 */
+	public static List<DomainTable> getBuiltInDomainTables() {
+		return 
+		StreamSupport.stream(getTemplateArchetypes().spliterator(),false)
+		.flatMap(arch->Optional.ofNullable(arch.getBuiltInDomainTables()).orElse(Collections.emptyList()).stream())
+		.distinct()
+		.sorted()
+		.collect(Collectors.toList());
 	}
 }

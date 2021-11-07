@@ -51,6 +51,14 @@ public interface TemplateArchetype {
 	 */
 	public List<DocumentField> getRequiredFields();
 	
+	/**
+	 * Returns all built-in domain table definitions that are referenced by the archetype's fields. 
+	 * Returns NULL if there is none.
+	 */
+	default public List<DomainTable> getBuiltInDomainTables() {
+		return null;
+	}
+	
 	// TODO:
 	// There should be additional members implemented by plugins for doing validations that are
 	// specific to a given file related to this archetype. For example, if this is a

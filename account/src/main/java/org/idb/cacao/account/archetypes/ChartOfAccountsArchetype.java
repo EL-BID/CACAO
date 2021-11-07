@@ -43,7 +43,7 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 	public String getName() {
 		return "accounting.chart.accounts";
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRequiredFields()

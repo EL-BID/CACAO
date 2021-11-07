@@ -20,6 +20,7 @@
 package org.idb.cacao.web.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.web.Synchronizable;
@@ -37,7 +38,7 @@ public interface DomainTableRepository extends ElasticsearchRepository<DomainTab
 	
 	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public List<DomainTable> findByNameAndVersion(String name, String version);
+	public Optional<DomainTable> findByNameAndVersion(String name, String version);
 	
 	default public <S extends DomainTable> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());

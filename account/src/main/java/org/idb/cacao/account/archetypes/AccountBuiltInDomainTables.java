@@ -17,54 +17,26 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.api.templates;
+package org.idb.cacao.account.archetypes;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import org.idb.cacao.api.templates.DomainEntry;
+import org.idb.cacao.api.templates.DomainTable;
 
 /**
- * Enumeration of field mappings that have special meaning for some CACAO functionalities.<BR>
+ * Built-in domain tables related to accounting. These are 'in-memory replicas'. The application
+ * must store domain tables at Elastic Search in order to be used (e.g. to be referenced by DocumentField).
  * 
  * @author Gustavo Figueiredo
  *
  */
-public enum FieldMapping implements Comparable<FieldMapping> {
-
-	ANY("field.map.any"),
+public class AccountBuiltInDomainTables {
 	
-	// All built-in generic field mapping options applicable to any context in tax administration
-	TAXPAYER_ID("field.map.tpid"), 	
-	TAX_YEAR("field.map.tyear"),		
-	TAX_SEMESTER("field.map.tsemester"),	
-	TAX_MONTH("field.map.tmonth"),	
-	TAX_DAY("field.map.tday"),		
-	TAX_VALUE("field.map.tvalue"),						  
-	TAX_CODE("field.map.tcode"),		
-	TAX_TYPE("field.map.tax"),
+	/**
+	 * Domain table for nature of account (i.e. DEBIT or CREDIT)
+	 */
+	public static DomainTable DEBIT_CREDIT = new DomainTable("Debit/Credit", /*version*/"1.0")
+			.withEntries(
+					new DomainEntry("D", "account.debit"),
+					new DomainEntry("C", "account.credit"));
 	
-	// All built-in field mapping options applicable to ACCOUNTING
-	ACCOUNT_CODE("field.map.account.code"),
-	ACCOUNT_NAME("field.map.account.name"),
-	ACCOUNT_VALUE("field.map.account.value");
-
-	private final String display;
-	
-	FieldMapping(String display) {
-		this.display = display;
-	}
-	
-	@Override
-	public String toString() {
-		return display;
-	}
-	
-	public static FieldMapping parse(String s) {
-		if (s==null || s.trim().length()==0)
-			return null;
-		return Arrays.stream(values()).filter(t->t.name().equalsIgnoreCase(s)).findAny().orElse(null);
-	}
-	
-	public static FieldMapping[] ordered() {
-		return Arrays.stream(values()).sorted(Comparator.comparing(FieldMapping::name)).toArray(FieldMapping[]::new);
-	}
 }

@@ -89,6 +89,15 @@ public class DomainEntry implements Serializable, Cloneable, Comparable<DomainEn
 	
 	public DomainEntry() { }
 	
+	/**
+	 * This constructor should only be used by static 'built-in' definitions. In runtime it should
+	 * be resolved to specific languages according to message.property files.
+	 */
+	public DomainEntry(String key, String messagePropertyReference) { 
+		this.key = key;
+		this.description = messagePropertyReference;
+	}
+
 	public DomainEntry(String key, DomainLanguage language, String description) {
 		this.key = key;
 		this.language = language;

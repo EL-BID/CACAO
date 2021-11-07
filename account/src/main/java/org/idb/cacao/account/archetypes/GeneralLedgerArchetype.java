@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.templates.TemplateArchetype;
@@ -42,6 +43,15 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	@Override
 	public String getName() {
 		return "accounting.general.ledger";
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getBuiltInDomainTables()
+	 */
+	@Override
+	public List<DomainTable> getBuiltInDomainTables() {
+		return Arrays.asList( AccountBuiltInDomainTables.DEBIT_CREDIT );
 	}
 
 	/*
@@ -96,8 +106,9 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 				.withRequired(true),
 			new DocumentField()
 				.withFieldName("DebitCredit")
-				.withFieldType(FieldType.CHARACTER)
-				.withFieldMapping(FieldMapping.ACCOUNT_DC)
+				.withFieldType(FieldType.DOMAIN)
+				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
+				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
 				.withDescription("This is an indication of whether this entry is a debit or a credit to the account")
 				.withMaxLength(32)
 				.withRequired(true)
