@@ -57,6 +57,7 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	 */
 	@JsonView(Views.Declarant.class)
 	@Id   
+	@AFieldDescriptor(externalName = "doc.id")
 	private String id;
 
 	/**
@@ -64,6 +65,7 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	 */
 	@JsonView(Views.Declarant.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "doc.timestamp")
     private OffsetDateTime timestamp;
 	
 	@JsonView(Views.Declarant.class)
@@ -73,32 +75,39 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@AFieldDescriptor(externalName = "doc.template")
 	private String templateName;	
 	
 	/**
 	 * Referenced document for this situation
 	 */
+	@JsonView(Views.Declarant.class)
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.situation.documentId")
 	private String documentId;
 	
 	/**
 	 * Original file name. The name used to store in disk is the fileId.
 	 */
+	@JsonView(Views.Declarant.class)
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.situation.documentFilename")
 	private String documentFilename;	
 	
 	/**
 	 * The situation
-	 */
+	 */	
 	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.situation")
 	private DocumentSituation situation; 
 
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "changed.time")
 	private OffsetDateTime changedTime;	
 
 	public String getId() {

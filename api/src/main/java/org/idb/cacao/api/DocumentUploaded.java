@@ -50,11 +50,13 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
 	@JsonView(Views.Declarant.class)
-	@Id   
+	@Id	
+	@AFieldDescriptor(externalName = "doc.id")
 	private String id;
 
 	@JsonView(Views.Declarant.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "doc.timestamp")
     private OffsetDateTime timestamp;
 	
 	@JsonView(Views.Declarant.class)
@@ -64,6 +66,7 @@ public class DocumentUploaded implements Serializable, Cloneable {
 				@InnerField(suffix = "keyword", type=Keyword)
 			}
 		)
+	@AFieldDescriptor(externalName = "doc.user")
 	private String user;
 
 	@JsonView(Views.Declarant.class)
@@ -73,6 +76,7 @@ public class DocumentUploaded implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxPayerId;
 
 	@JsonView(Views.Declarant.class)
@@ -82,27 +86,33 @@ public class DocumentUploaded implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@AFieldDescriptor(externalName = "doc.template")
 	private String templateName;
 	
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "template.version")
 	private String templateVersion;
 	
 	/**
 	 * Original file name. The name used to store in disk is the fileId.
 	 */
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.file.name")
 	private String filename;
 	
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.file.id")
 	private String fileId;
 	
 	/**
 	 * A folder where the file was stored in system storage.
 	 */
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.file.subdir")
 	private String subDir;
 
 	@Field(type=Integer)
+	@AFieldDescriptor(externalName = "tax.year")
 	private Integer taxYear;
 	
 	@MultiField(
@@ -111,9 +121,11 @@ public class DocumentUploaded implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@AFieldDescriptor(externalName = "tax.month")
 	private String taxMonth;
 	
 	@Field(type=Integer)
+	@AFieldDescriptor(externalName = "tax.month.number")
 	private Integer taxMonthNumber;
 
 	/**
@@ -121,38 +133,45 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	 */
 	@JsonView(Views.Declarant.class)
 	@Field(type=Integer)
+	@AFieldDescriptor(externalName = "tax.period.number")
 	private Integer taxPeriodNumber;
 
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.ipAddr")
 	private String ipAddress;
 
 	/**
 	 * Tells if this document rectified another
 	 */
 	@Field(type=Boolean)
+	@AFieldDescriptor(externalName = "doc.rectifying")
 	private Boolean rectifying;
 
 	/**
 	 * Tells if this document was rectified by another (what means it's inactive)
 	 */
 	@Field(type=Boolean)
+	@AFieldDescriptor(externalName = "doc.rectified")
 	private Boolean rectified;
 	
 	/**
 	 * Hash code of file
 	 */
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.file.hash")
 	private String hash;
 	
 	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "doc.situation")
 	private DocumentSituation situation; 
 
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "changed.time")
 	private OffsetDateTime changedTime;
 
 	public String getId() {

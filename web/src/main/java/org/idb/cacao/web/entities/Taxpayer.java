@@ -31,6 +31,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.idb.cacao.api.AFieldDescriptor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -52,10 +53,12 @@ public class Taxpayer implements Serializable, Cloneable {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
-	@Id   
+	@Id
+	@AFieldDescriptor(externalName = "doc.id")
 	private String id;
 
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "saved.time")
     private OffsetDateTime timestamp;
 
 	@MultiField(
@@ -68,6 +71,7 @@ public class Taxpayer implements Serializable, Cloneable {
 	@NotNull
 	@NotEmpty
 	@Size(min=9, max=9)
+	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxPayerId;
 
 	@Field(type=Text)
@@ -75,20 +79,24 @@ public class Taxpayer implements Serializable, Cloneable {
 	@NotNull
 	@NotEmpty
 	@Size(min=2, max=300)
+	@AFieldDescriptor(externalName = "taxpayer.name")
 	private String name;
 
 	@Field(type=Text)
 	@Size(max=500)
+	@AFieldDescriptor(externalName = "taxpayer.address")
 	private String address;
 	
 	@Field(type=Keyword)
 	@Size(max=100)
+	@AFieldDescriptor(externalName = "taxpayer.zip.code")
 	private String zipCode;
 
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "changed.time")
 	private OffsetDateTime changedTime;
 
 	@MultiField(

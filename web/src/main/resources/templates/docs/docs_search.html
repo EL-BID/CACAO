@@ -62,6 +62,12 @@ var app = new Vue({
 			filterMode:"remote",
 			sortMode: "remote",
 			headerFilterLiveFilterDelay:700,
+		    persistence:{
+				sort:true,
+				filter:true,
+				columns:true,
+			},			
+			persistenceID:"all_documents_persistence",
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)

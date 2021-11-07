@@ -35,6 +35,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.idb.cacao.api.AFieldDescriptor;
 import org.idb.cacao.api.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
@@ -62,7 +63,8 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
 	@JsonView(Views.Public.class)
-	@Id   
+	@Id
+	@AFieldDescriptor(externalName = "doc.id")
 	private String id;
 
 	/**
@@ -70,6 +72,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 * This is important for 'synchronizing' external replicas of this database.
 	 */
 	@Field(type=Date, store = true, format = DateFormat.date_time)
+	@AFieldDescriptor(externalName = "saved.time")
     private OffsetDateTime timestamp;
 	
 	/**
@@ -87,6 +90,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@NotEmpty
 	@Size(max=60)
 	@Email
+	@AFieldDescriptor(externalName = "user.login")
 	private String login;
 
 	/**
@@ -103,12 +107,14 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@NotNull
 	@NotEmpty
 	@Size(min=4, max=120)
+	@AFieldDescriptor(externalName = "user.name")
 	private String name;
 	
 	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
 	@Field(type=Keyword)
 	@NotNull
+	@AFieldDescriptor(externalName = "user.profile")
 	private UserProfile profile;	
 
 	/**
@@ -116,19 +122,30 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 */
 	@Field(type=Keyword)
 	@Size(max=60)
+	@AFieldDescriptor(externalName = "user.password")
     private String password;
 	
 	@Transient
+	@AFieldDescriptor(externalName = "user.password.confirm")
 	private String confirmPassword;
 	
 	/**
 	 * API TOKEN (for user operations with external system through REST API)
 	 */
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "user.token")
 	private String apiToken;
 	
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxpayerId;
+	
+	/**
+	 * Date/time of last modification or creation of any part of this object
+	 */
+	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
+	@AFieldDescriptor(externalName = "changed.time")
+	private OffsetDateTime changedTime;	
 	
 	/**
 	 * Page size of last UI request from logged user (not persistent)
@@ -307,5 +324,13 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	public void setConfirmPassword(String confirmPassword) {
 		this.confirmPassword = confirmPassword;
 	}
+	
+	public OffsetDateTime getChangedTime() {
+		return changedTime;
+	}
+
+	public void setChangedTime(OffsetDateTime changedTime) {
+		this.changedTime = changedTime;
+	}	
 	
 }

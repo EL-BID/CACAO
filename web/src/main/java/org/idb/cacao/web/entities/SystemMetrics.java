@@ -24,6 +24,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.*;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
+import org.idb.cacao.api.AFieldDescriptor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -46,34 +47,44 @@ public class SystemMetrics implements Serializable {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
-	@Id   
+	@Id
+	@AFieldDescriptor(externalName = "doc.id")
 	private String id;
 	
 	@Field(type=Date, store = true, format = DateFormat.date_time)
+	@AFieldDescriptor(externalName = "saved.time")
     private OffsetDateTime timestamp;
 	
 	@Field(type=Boolean)
+	@AFieldDescriptor(externalName = "system.metrics.restarted")
 	private Boolean restarted;
 
 	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "system.metrics.host")
 	private String host;
 
 	@Field(type=Long)
+	@AFieldDescriptor(externalName = "system.metrics.heap.used.bytes")
 	private Long heapUsedBytes;
 	
 	@Field(type=Long)
+	@AFieldDescriptor(externalName = "system.metrics.heap.free.bytes")
 	private Long heapFreeBytes;
 	
 	@Field(type=Long)
+	@AFieldDescriptor(externalName = "system.metrics.memory.used.bytes")
 	private Long memoryUsedBytes;
 	
 	@Field(type=Long)
+	@AFieldDescriptor(externalName = "system.metrics.memory.free.bytes")
 	private Long memoryFreeBytes;
 
 	@Field(type=Long)
+	@AFieldDescriptor(externalName = "system.metrics.disk.temporary.files.used.bytes")
 	private Long diskTemporaryFilesUsedBytes;
 	
 	@Field(type=Long)
+	@AFieldDescriptor(externalName = "system.metrics.disk.temporary.files.free.bytes")
 	private Long diskTemporaryFilesFreeBytes;
 
 	public String getId() {
