@@ -68,9 +68,8 @@ public class FileUploadedProcessorService {
 			
 			doc.setSituation(DocumentSituation.ACCEPTED);
 			
-			DocumentUploaded savedDoc = documentsUploadedRepository.saveWithTimestamp(doc);
-			
-			rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); // in case of error delete the DocumentUploaded
+			//DocumentUploaded savedDoc = documentsUploadedRepository.saveWithTimestamp(doc);			
+			//rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); // in case of error delete the DocumentUploaded
 			
 			DocumentSituationHistory situation = new DocumentSituationHistory();
 			situation.setDocumentId(documentId);
