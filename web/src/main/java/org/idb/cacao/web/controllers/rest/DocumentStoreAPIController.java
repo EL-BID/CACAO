@@ -65,8 +65,10 @@ import org.idb.cacao.api.storage.IStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.controllers.services.FileUploadedProducer;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
@@ -176,6 +178,9 @@ public class DocumentStoreAPIController {
 
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private FileUploadedProducer fileUploadedProducer;
 
     /**
      * Endpoint for uploading a document to be parsed
@@ -423,6 +428,11 @@ public class DocumentStoreAPIController {
 			Map<String, String> result = new HashMap<>();
 			result.put("result", "ok");
 			result.put("file_id", fileId);
+			
+			//fileUploadedProducer.supplierBean(savedInfo);
+			FileUploadedEvent event = new FileUploadedEvent();
+			event.setFileId(savedInfo.getFileId());
+			fileUploadedProducer.fileUploaded(event);
 			
 			return result; 
 		}
