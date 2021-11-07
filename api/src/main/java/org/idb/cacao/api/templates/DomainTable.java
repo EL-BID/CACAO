@@ -123,6 +123,13 @@ public class DomainTable implements Serializable, Cloneable {
 
 	@Field(type=Nested)
 	private List<DomainEntry> entries;
+	
+	public DomainTable() { }
+	
+	public DomainTable(String name, String version) {
+		this.name = name;
+		this.version = version;
+	}
 
 	/**
 	 * ID's are being generated automatically.
@@ -153,6 +160,11 @@ public class DomainTable implements Serializable, Cloneable {
 	public void setName(String name) {
 		this.name = name;
 	}
+	
+	public DomainTable withName(String name) {
+		setName(name);
+		return this;
+	}
 
 	/**
 	 * Optional group of this domain table. Its only purpose is to organize different domain
@@ -168,6 +180,11 @@ public class DomainTable implements Serializable, Cloneable {
 	 */
 	public void setGroup(String group) {
 		this.group = group;
+	}
+	
+	public DomainTable withGroup(String group) {
+		setGroup(group);
+		return this;
 	}
 
 	/**
@@ -185,6 +202,11 @@ public class DomainTable implements Serializable, Cloneable {
 	public void setVersion(String version) {
 		this.version = version;
 	}
+	
+	public DomainTable withVersion(String version) {
+		setVersion(version);
+		return this;
+	}
 
 	/**
 	 * Date/time the domain table was created
@@ -198,6 +220,11 @@ public class DomainTable implements Serializable, Cloneable {
 	 */
 	public void setDomainTableCreateTime(OffsetDateTime domainTableCreateTime) {
 		this.domainTableCreateTime = domainTableCreateTime;
+	}
+	
+	public DomainTable withDomainTableCreateTime(OffsetDateTime domainTableCreateTime) {
+		setDomainTableCreateTime(domainTableCreateTime);
+		return this;
 	}
 
 	/**
@@ -232,11 +259,21 @@ public class DomainTable implements Serializable, Cloneable {
 	}
 	
 	/**
+	 * Find entries with the given key, ignoring languages (return any one of the existent languages).
+	 */
+	@JsonIgnore
+	public DomainEntry getEntry(String key) {
+		if (entries==null || key==null)
+			return null;
+		return entries.stream().filter(f->key.equalsIgnoreCase(f.getKey())).findAny().orElse(null);
+	}
+
+	/**
 	 * Find entries with the given key, ignoring languages.
 	 */
 	@JsonIgnore
-	public List<DomainEntry> getEntry(String key) {
-		if (entries==null)
+	public List<DomainEntry> getEntryAllLanguages(String key) {
+		if (entries==null || key==null)
 			return Collections.emptyList();
 		return entries.stream().filter(f->key.equalsIgnoreCase(f.getKey())).collect(Collectors.toList());
 	}
@@ -251,10 +288,24 @@ public class DomainTable implements Serializable, Cloneable {
 		return entries.stream().filter(f->language.equals(f.getLanguage())).collect(Collectors.toList());		
 	}
 
-	public void setEntries(List<DomainEntry> Entries) {
-		this.entries = Entries;
+	public void setEntries(List<DomainEntry> entries) {
+		this.entries = entries;
 	}
 	
+	public DomainTable withEntries(List<DomainEntry> entries) {
+		setEntries(entries);
+		return this;
+	}
+	
+	public DomainTable withEntries(DomainEntry... entries) {
+		List<DomainEntry> new_entries = new LinkedList<>();
+		for (DomainEntry e: entries) {
+			new_entries.add(e);
+		}		
+		setEntries(new_entries);
+		return this;
+	}
+
 	public void clearEntries() {
 		if (entries!=null)
 			entries.clear();
