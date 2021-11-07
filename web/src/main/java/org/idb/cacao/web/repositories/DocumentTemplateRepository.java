@@ -22,8 +22,8 @@ package org.idb.cacao.web.repositories;
 import java.util.List;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;

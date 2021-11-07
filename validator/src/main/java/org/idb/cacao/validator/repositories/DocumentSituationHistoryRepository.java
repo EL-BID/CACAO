@@ -17,32 +17,31 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.validator.repositories;
 
 import java.util.List;
-import java.util.Optional;
 
-import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.utils.DateTimeUtils;
-import org.idb.cacao.web.Synchronizable;
-import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * DAO for DocumentSituationHistory objects (history of all situation for a given document uploaded)
+ * 
+ * @author Rivelino Patrício
+ * 
+ * @since 06/11/2021
+ *
+ */
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DomainTableRepository extends ElasticsearchRepository<DomainTable, String> {
-
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DomainTable> findByName(String name);
+public interface DocumentSituationHistoryRepository extends ElasticsearchRepository<DocumentSituationHistory, String> {
 	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public Optional<DomainTable> findByNameAndVersion(String name, String version);
+	List<DocumentSituationHistory> findByDocumentId(String documentId);
 	
-	default public <S extends DomainTable> S saveWithTimestamp(S entity) {
+	default public <S extends DocumentSituationHistory> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
-	
+
 }

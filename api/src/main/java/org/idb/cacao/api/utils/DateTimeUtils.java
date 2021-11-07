@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.utils;
+package org.idb.cacao.api.utils;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

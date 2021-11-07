@@ -19,12 +19,9 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
-import java.util.function.Supplier;
-
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 /**

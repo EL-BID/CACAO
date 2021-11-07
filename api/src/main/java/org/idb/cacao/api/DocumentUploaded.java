@@ -25,6 +25,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Integ
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
+import java.io.File;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
@@ -244,6 +245,10 @@ public class DocumentUploaded implements Serializable, Cloneable {
 
 	public void setSubDir(String subDir) {
 		this.subDir = subDir;
+	}
+	
+	public String getFileIdWithPath() {
+		return getSubDir() + File.separator + getFileId();
 	}
 
 	public Integer getTaxYear() {

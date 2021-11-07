@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.errors;
+package org.idb.cacao.api.errors;
 
 public class DocumentCancelled extends RuntimeException {
 	

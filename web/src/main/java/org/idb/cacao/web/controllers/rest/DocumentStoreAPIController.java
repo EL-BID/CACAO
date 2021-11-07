@@ -61,8 +61,11 @@ import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.Views;
+import org.idb.cacao.api.errors.DocumentNotFoundException;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.IStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
@@ -72,15 +75,12 @@ import org.idb.cacao.web.controllers.services.FileUploadedProducer;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
-import org.idb.cacao.web.errors.DocumentNotFoundException;
-import org.idb.cacao.web.errors.GeneralException;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
-import org.idb.cacao.web.utils.DateTimeUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ParserUtils;
 import org.idb.cacao.web.utils.SearchUtils;
@@ -429,9 +429,8 @@ public class DocumentStoreAPIController {
 			result.put("result", "ok");
 			result.put("file_id", fileId);
 			
-			//fileUploadedProducer.supplierBean(savedInfo);
 			FileUploadedEvent event = new FileUploadedEvent();
-			event.setFileId(savedInfo.getFileId());
+			event.setFileId(savedInfo.getId());
 			fileUploadedProducer.fileUploaded(event);
 			
 			return result; 

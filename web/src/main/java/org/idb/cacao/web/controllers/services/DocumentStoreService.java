@@ -76,9 +76,6 @@ public class DocumentStoreService {
 
 	@Autowired
 	private MessageSource messageSource;
-	
-	@Autowired
-	private FieldsConventionsService fieldsConventionsService;
 
 	/**
 	 * Queries ElasticSearch for structured information collected and stored for an uploaded file.

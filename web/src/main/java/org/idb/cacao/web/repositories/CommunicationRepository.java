@@ -19,9 +19,9 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.Communication;
-import org.idb.cacao.web.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.annotations.Query;

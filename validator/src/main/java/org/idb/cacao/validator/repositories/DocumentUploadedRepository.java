@@ -17,32 +17,41 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.validator.repositories;
 
-import java.util.List;
 import java.util.Optional;
 
-import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.utils.DateTimeUtils;
-import org.idb.cacao.web.Synchronizable;
-import org.springframework.data.elasticsearch.annotations.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * DAO for DocumentUploaded objects (history of all uploads from each user)
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
-public interface DomainTableRepository extends ElasticsearchRepository<DomainTable, String> {
+public interface DocumentUploadedRepository extends ElasticsearchRepository<DocumentUploaded, String> {
+	
+	Page<DocumentUploaded> findByTemplateName(String templateName, Pageable pageable);
+	
+	Page<DocumentUploaded> findByUser(String user, Pageable pageable);
 
-	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
-	public List<DomainTable> findByName(String name);
+	Page<DocumentUploaded> findByUserOrderByTimestampDesc(String user, Pageable pageable);
+
+	Page<DocumentUploaded> findByFileId(String fileId, Pageable pageable);
 	
-	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
-			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
-	public Optional<DomainTable> findByNameAndVersion(String name, String version);
+	Page<DocumentUploaded> findByFilename(String filename, Pageable pageable);
 	
-	default public <S extends DomainTable> S saveWithTimestamp(S entity) {
+	Optional<DocumentUploaded> findById(String documentId);	
+	
+	default public <S extends DocumentUploaded> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
-	
+
 }

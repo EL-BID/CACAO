@@ -42,7 +42,7 @@ import org.springframework.stereotype.Service;
  * It's necessary to define "storage.incoming.files.original.dir" on application.properties file.
  * 
  * @author Luiz Kauer
- * @author Rivelino PatrÃ­cio
+ * @author Rivelino Patrício
  *
  */
 @Service

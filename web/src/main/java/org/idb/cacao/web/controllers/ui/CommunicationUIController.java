@@ -37,6 +37,7 @@ import java.util.stream.IntStream;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.CommunicationService;
 import org.idb.cacao.web.controllers.services.FieldsConventionsService;
@@ -51,7 +52,6 @@ import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.repositories.CommunicationRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
-import org.idb.cacao.web.utils.DateTimeUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
