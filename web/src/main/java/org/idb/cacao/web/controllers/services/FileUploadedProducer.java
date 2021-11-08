@@ -25,7 +25,6 @@ import java.util.logging.Logger;
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 /**
@@ -51,5 +50,7 @@ public class FileUploadedProducer {
 		
         streamBridge.send("fileUploaded-out-0", fileEvent.getFileId());
     }
+
+	
 
 }
