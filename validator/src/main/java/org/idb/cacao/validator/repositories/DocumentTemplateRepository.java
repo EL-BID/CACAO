@@ -17,20 +17,23 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.repositories;
+package org.idb.cacao.validator.repositories;
 
 import java.util.List;
 import java.util.Optional;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
-import org.idb.cacao.api.utils.DateTimeUtils;
-import org.idb.cacao.web.Synchronizable;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Repository for document templates
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
 public interface DocumentTemplateRepository extends ElasticsearchRepository<DocumentTemplate, String> {
 	
 	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
@@ -40,9 +43,4 @@ public interface DocumentTemplateRepository extends ElasticsearchRepository<Docu
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
 	public Optional<DocumentTemplate> findByNameAndVersion(String name, String version);
 	
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
-		entity.setChangedTime(DateTimeUtils.now());
-		return save(entity);
-	}
-
 }

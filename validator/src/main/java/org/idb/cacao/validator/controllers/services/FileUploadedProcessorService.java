@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,10 +12,15 @@ import java.util.logging.Logger;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.errors.DocumentNotFoundException;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.validator.repositories.DocumentSituationHistoryRepository;
+import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +33,9 @@ public class FileUploadedProcessorService {
 	
 	@Autowired
 	private DocumentUploadedRepository documentsUploadedRepository;
+	
+	@Autowired
+	private DocumentTemplateRepository documentTemplateRepository;
 	
 	@Autowired
 	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
@@ -53,6 +62,8 @@ public class FileUploadedProcessorService {
 		
 		List<Runnable> rollbackProcedures = new LinkedList<>(); // hold rollback procedures only to be used in case of error
 		
+		ValidationContext validationContext = new ValidationContext();
+
 		try {
 		
 			DocumentUploaded doc = documentsUploadedRepository.findById(documentId).orElse(null);
@@ -60,10 +71,20 @@ public class FileUploadedProcessorService {
 			if ( doc == null )
 				throw new DocumentNotFoundException("Document with id " + documentId + " wasn't found in database.");
 			
+			validationContext.setDocumentUploaded(doc);
+			
+			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(), doc.getTemplateVersion());
+			if (template==null || !template.isPresent()) {
+				throw new DocumentNotFoundException("Template with name " + doc.getTemplateName() + " and version " + doc.getTemplateVersion() + " wasn't found in database.");
+			}
+			
+			validationContext.setDocumentTemplate(template.get());
+			
 			String fullPath = doc.getFileIdWithPath();
 			
 			Path filePath = fileSystemStorageService.find(fullPath);
-			
+			validationContext.setDocumentPath(filePath);
+
 			System.out.println("File: " + filePath.getFileName());
 			System.out.println("Original file: " + doc.getFilename());
 			System.out.println("Template: " + doc.getTemplateName());
@@ -82,6 +103,27 @@ public class FileUploadedProcessorService {
 			DocumentSituationHistory savedSituation = documentsSituationHistoryRepository.save(situation);
 			
 			rollbackProcedures.add(()->documentsSituationHistoryRepository.delete(savedSituation)); // in case of error delete the DocumentUploaded
+			
+			// TODO:
+			// Should fill validationContext.parsedContents with the parsed contents from the incoming file !!!!!
+			// ....
+			
+			
+			// Check for domain-specific validations related to a built-in archetype
+			if (template.get().getArchetype()!=null && template.get().getArchetype().trim().length()>0) {
+				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());
+				if (archetype!=null && archetype.isPresent()) {
+					
+					boolean ok = archetype.get().validateDocumentUploaded(validationContext);
+					if (!ok) {
+						
+						// TODO: should report the warnings back to the ElasticSearch, to be displayed to the user !!!!
+						// ...
+						
+					}
+					
+				}
+			}
 			
 			return documentId;
 		

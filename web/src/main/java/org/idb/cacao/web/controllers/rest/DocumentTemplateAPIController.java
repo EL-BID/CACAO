@@ -51,12 +51,12 @@ public class DocumentTemplateAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-		List<DocumentTemplate> existing_template = templateRepository.findByNameAndVersion(template.getName(), template.getVersion());
-		if (existing_template!=null && !existing_template.isEmpty()) {
+        Optional<DocumentTemplate> existing_template = templateRepository.findByNameAndVersion(template.getName(), template.getVersion());
+		if (existing_template!=null && existing_template.isPresent()) {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 			String username = (auth==null) ? null : auth.getName();
 			log.log(Level.FINE, "User "+username+" attempted to create new template with name "+template.getName()+" and version "+template.getVersion()+", but there is already an existing template with the same name and version");
-			return ResponseEntity.ok().body(existing_template.get(0));
+			return ResponseEntity.ok().body(existing_template.get());
 		}
         
 //        template.setTemplateCreateTime(new Date());
