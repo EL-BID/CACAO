@@ -126,7 +126,10 @@ public class LoginUIController {
 			menu.add(new MenuItem(messages.getMessage("users.title", null, LocaleContextHolder.getLocale()),
 				"/users"));
 		}
-
+		if (hasPrivilege(roles, SystemPrivilege.TAX_TEMPLATE_WRITE)) {
+			menu.add(new MenuItem(messages.getMessage("templates", null, LocaleContextHolder.getLocale()),
+					"/templates"));
+		}
 
 		MenuItem submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
 		menu.add(submenu);

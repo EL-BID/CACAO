@@ -1,0 +1,140 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="file alternate outline icon"></i>
+			<div class="content" th:text="#{template.new}">New Declaration Template</div>
+		</h2>
+		<div id="app">
+		<div class="ui center aligned container">
+			<div class="ui orange segment">
+				<form action="#" class="ui large form" :class="{ error: msg }" th:object="${template}" method="post" @submit.prevent="processForm">
+					<div class="row">
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{template.name}">Declaration Name</div>
+						</h4>
+						<div class="ui form">
+							<input type="text" v-model="template.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
+							<span v-if="msg.name" class="ui error message">{{ msg.name }}</span>
+						</div>
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{template.version}">"Version</div>
+						</h4>
+						<div class="ui form">
+							<input type="text" v-model="template.version" class="form-control" id="version" placeholder="version" th:placeholder="#{template.version}">
+							<span v-if="msg.version" class="ui error message">{{ msg.version }}</span>
+						</div>
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{template.group}">"Group</div>
+						</h4>
+						
+						<div class="ui form">
+							<input type="text" v-model="template.group" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
+							<span v-if="msg.grouip" class="ui error message">{{ msg.group }}</span>
+						</div>
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{template.periodicity}">"Periodicity</div>
+						</h4>
+						
+						<div class="ui form">
+							<select v-model="template.periodicity" class="ui fluid dropdown">
+								<option disabled value="">Select the periodicity</option>
+								<option th:each="i : ${T(org.idb.cacao.api.Periodicity).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+							</select>
+							<span v-if="msg.periodicity" class="ui error message">{{ msg.periodicity }}</span>
+						</div>
+						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
+							<div class="content" th:text="#{template.required}">Required</div>
+						</h4>
+						<div class="ui form">
+							<div class="ui radio checkbox"></div>
+								<input type="radio" v-model="template.required" id="required.true" value="true">
+								<label for="required.true">Yes</label>
+								<input type="radio" v-model="template.required" id="required.false" value="false">
+								<label for="required.false">No</label>
+							</div>
+						</div>
+						
+					</div>
+					<div class="row">
+						<div class="ui segment">
+							<input type="submit" class="ui blue button" th:value="#{save}" value="Save" @click.prevent="processForm">
+							<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" @click.prevent="cancel">
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+var app = new Vue({
+	el: '#app',
+	data: {
+		template: {
+			name: null,
+			version: null,
+			group: null,
+			periodicity: null,
+			required: null
+		},
+		msg: []
+	},
+	methods: {
+		cancel() {
+			window.location.replace([[@{/templates}]])
+		},
+		processForm() {
+			$.ajax({
+   			    url: [[@{/api/template}]],
+   			    type: 'POST',
+   			    dataType: 'json',
+   			    contentType: 'application/json',
+   			    data: JSON.stringify(this.template),
+   			    cache: false,    
+   				success: function(result) {
+   					$('#modal_successful').modal('show')
+   					setTimeout(function(){
+   						window.location = [[@{/templates}]]
+   					}, 2000);
+   				},
+   				error: function(e) {
+   					var msg = e.responseText.replace(/\n/g, "<br />");
+   					$('#modal_failed').find('.description').html(msg)
+   					$('#modal_failed').modal('show')
+   					console.log("ERROR : "+msg);
+   				}
+   			});			 
+		}
+	},
+	watch: {
+		'template.name': function(value, old) {
+			delete this.msg['name']
+			var len=value.length 
+			if(len<2) {
+				this.msg['name']='Minimum 2 characters'
+			}
+			else if(len>120) {
+				this.msg['name']='Maximum 120 characters'
+			}
+			console.log(this.msg.name)
+		}
+	}
+})
+
+</script>
+</body>
+</html>

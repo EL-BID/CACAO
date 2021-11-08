@@ -24,7 +24,7 @@
 						</h4>
 						<div class="field">
 							<input type="text" v-model="user.name" class="field" id="name" placeholder="Name" th:placeholder="#{user.name}">
-							<span class="ui error message">{{ msg.name }}</span>
+							<span v-if="msg.name" class="ui error message">{{ msg.name }}</span>
 						</div>
 						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
 							<div class="content" th:text="#{user.login}">"Login</div>
