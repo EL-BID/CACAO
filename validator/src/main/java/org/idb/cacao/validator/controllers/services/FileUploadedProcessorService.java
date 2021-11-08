@@ -60,7 +60,9 @@ public class FileUploadedProcessorService {
 			if ( doc == null )
 				throw new DocumentNotFoundException("Document with id " + documentId + " wasn't found in database.");
 			
-			Path filePath = fileSystemStorageService.find(doc.getFileIdWithPath());
+			String fullPath = doc.getFileIdWithPath();
+			
+			Path filePath = fileSystemStorageService.find(fullPath);
 			
 			System.out.println("File: " + filePath.getFileName());
 			System.out.println("Original file: " + doc.getFilename());
