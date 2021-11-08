@@ -203,7 +203,14 @@ public class SystemUIController {
 				.withChild(formatMemory(info.getMemUsed(), decimals)));
 		info_mem.addChild(new MenuItem(text("sysinfo.mem.free"))
 				.withChild(formatMemory(info.getMemFree(), decimals)));
-
+		
+		MenuItem plugins = new MenuItem(text("sysinfo.plugins")).withActive(false);
+		info_web_app.addChild(plugins);
+		if (info.getInstalledPlugins()!=null) {
+			for (String pluginName: info.getInstalledPlugins()) {
+				plugins.addChild(new MenuItem(pluginName));
+			}
+		}
 	}
 	
 	/**

@@ -25,6 +25,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -39,6 +40,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.idb.cacao.api.ComponentSystemInformation;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.validator.entities.SystemMetrics;
 import org.idb.cacao.validator.repositories.SystemMetricsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -183,6 +185,8 @@ public class ResourceMonitorService implements Runnable {
 			info.setMemFree(metrics.getMemoryFreeBytes());
 		}
 		
+		info.setInstalledPlugins(new ArrayList<>(TemplateArchetypes.getInstalledPackages()));
+
 		return info;
 	}
 

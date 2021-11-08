@@ -21,6 +21,8 @@ package org.idb.cacao.api;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
@@ -49,6 +51,8 @@ public class ComponentSystemInformation {
 	private Long memUsed;
 	
 	private Long memFree;
+	
+	private List<String> installedPlugins;
 
 	public String getJavaVersion() {
 		return javaVersion;
@@ -120,6 +124,14 @@ public class ComponentSystemInformation {
 
 	public void setMemFree(Long memFree) {
 		this.memFree = memFree;
+	}
+
+	public List<String> getInstalledPlugins() {
+		return installedPlugins;
+	}
+
+	public void setInstalledPlugins(List<String> installedPlugins) {
+		this.installedPlugins = installedPlugins;
 	}
 	
 }
