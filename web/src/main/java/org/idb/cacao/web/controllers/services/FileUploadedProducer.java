@@ -19,6 +19,9 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
@@ -32,6 +35,8 @@ import org.springframework.stereotype.Service;
 @Component
 @Service
 public class FileUploadedProducer {
+	
+	private static final Logger log = Logger.getLogger(FileUploadedProducer.class.getName());
 	
 	@Autowired
 	private final StreamBridge streamBridge;
@@ -54,7 +59,8 @@ public class FileUploadedProducer {
 	*/
 
 	public void fileUploaded(FileUploadedEvent fileEvent) {
-		System.out.println("MANDANDO MENSAGEM");
+		log.log(Level.INFO, "Sending a message with documentId " + fileEvent.getFileId());
+		
         streamBridge.send("fileUploaded-out-0", fileEvent.getFileId());
     }
 
