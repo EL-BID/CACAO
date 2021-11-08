@@ -16,6 +16,8 @@ services:
       context: ./
       dockerfile: ./account/Dockerfile
       network: host      
+    depends_on:
+      - api
   web:
     container_name: web
     build:

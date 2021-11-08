@@ -38,6 +38,15 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 
 	/*
 	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getPluginName()
+	 */
+	@Override
+	public String getPluginName() {
+		return "CACAO Accounting Plug-in";
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getName()
 	 */
 	@Override

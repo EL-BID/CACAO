@@ -104,4 +104,15 @@ public class TemplateArchetypes {
 		.sorted()
 		.collect(Collectors.toList());
 	}
+	
+	/**
+	 * Returns the names of the installed packages containing CACAO TemplateArchetypes
+	 */
+	public static Set<String> getInstalledPackages() {
+		return 
+		StreamSupport.stream(getTemplateArchetypes().spliterator(),false)
+		.map(TemplateArchetype::getPluginName)
+		.filter(name->name!=null)
+		.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+	}
 }

@@ -36,6 +36,7 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 
 /**
  * SpringBoot WebApplication entry point.
@@ -65,11 +66,12 @@ public class WebApplication {
 
 	@Autowired
 	private Environment env;
-
+	
 	/**
 	 * This is the entrypoint for the entire web application
 	 */
 	public static void main(String[] args) {
+		
 		SpringApplication.run(WebApplication.class, args);
 	}
 
@@ -81,6 +83,10 @@ public class WebApplication {
 
 		keyStoreService.assertKeyStoreForSSL();
 		// fileProducerService.sendBookkeepingFile();
+		
+		if ("true".equalsIgnoreCase(env.getProperty("use.kafka.embedded", "false"))) {
+			startKafkaEmbedded();
+		}
 
 	}
 
@@ -114,6 +120,21 @@ public class WebApplication {
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
+
+	}
+	
+	/**
+	 * Starts an 'embedded Kafka broker' (including Zookeeper). Should be used only at development environment.
+	 */
+	public static void startKafkaEmbedded() {
+
+		try {
+			EmbeddedKafkaBroker broker = new EmbeddedKafkaBroker(/*count brokers*/1, /*controlledShutdown*/true, /*partitions*/1)
+			      .kafkaPorts(9092);
+			broker.afterPropertiesSet();
+		}catch (Throwable ex) { 
+			log.log(Level.WARNING, "Error starting Embedded Kafka");
 		}
 
 	}

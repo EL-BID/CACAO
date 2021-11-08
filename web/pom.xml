@@ -73,6 +73,15 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
+		<!-- Redefines dependecy from parent POM in order to change the 'scope'. Parent POM declares it as 'test' scope,
+		so it's supposed to be used only at test use cases. Here we are changing to the 'provided' scope, so that it can be
+		used at runtime, what can be the case for development environment -->
+		<dependency>
+		    <groupId>org.springframework.kafka</groupId>
+		    <artifactId>spring-kafka-test</artifactId>
+		    <scope>provided</scope>
+		</dependency>
+
 		<!-- <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream</artifactId> 
 			<version>3.1.3</version> </dependency> <dependency> <groupId>org.springframework.cloud</groupId> 
 			<artifactId>spring-cloud-stream-binder-kafka</artifactId> <version>3.1.3</version> 

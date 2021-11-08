@@ -73,7 +73,7 @@ public class UserUIController {
 				&& config_email.getSupportEmail().trim().length() > 0) {
 			model.addAttribute("omit_password", true);
 		}
-		return "/users/add-user";
+		return "users/add-user";
 	}
 
 	@Secured({ "ROLE_USER_WRITE" })
@@ -82,7 +82,7 @@ public class UserUIController {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
 		model.addAttribute("user", user);
-		return "/users/update-user";
+		return "users/update-user";
 	}
 
 }

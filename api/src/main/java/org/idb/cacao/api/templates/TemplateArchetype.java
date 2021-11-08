@@ -33,6 +33,15 @@ import java.util.List;
  *
  */
 public interface TemplateArchetype {
+	
+	/**
+	 * Name of the plugin that declared this archetype. Should be the same name for all archetypes in the
+	 * same plugin. It's usefull for listing dependencies and diagnosing problems.<BR>
+	 * If it's NULL, than it won't be listed as 'installed plugins'.
+	 */
+	default public String getPluginName() {
+		return null;
+	}
 
 	/**
 	 * Name of this archetype to choose from an user interface. It should correspond to
