@@ -21,6 +21,8 @@ package org.idb.cacao.api.templates;
 
 import java.util.List;
 
+import org.idb.cacao.api.ValidationContext;
+
 /**
  * Archetype for DocumentTemplate's that may be related to some application specific
  * context (e.g. some artifact specific to Accounting).<BR>
@@ -76,11 +78,19 @@ public interface TemplateArchetype {
 		return null;
 	}
 	
-	// TODO:
-	// There should be additional members implemented by plugins for doing validations that are
-	// specific to a given file related to this archetype. For example, if this is a
-	// General Ledger, the sum of credits in any particular day should match the sum of
-	// debits in the same day.
+	/**
+	 * Performs domain-specific validations over the uploaded file contents.
+	 * The method should return TRUE if the document is OK to proceed in the workflow and should return FALSE if the document
+	 * should be rejected.<BR>
+	 * This method may insert into {@link org.idb.cacao.api.ValidationContext#addAlert(String) addAlert} any alerts regarding this validation.
+	 * It doesn't mean that the file should be rejected. If this method returns TRUE and also outputs some alerts, those alerts
+	 * are considered simple warnings (i.e. the file may be accepted despite of these warnings).
+	 * @param context Object created by the validator with information regarding the incoming document
+	 * @return Returns TRUE if the document is OK and may be considered. Returns FALSE if the document should be rejected
+	 */
+	default public boolean validateDocumentUploaded(ValidationContext context) {
+		return true;
+	}
 	
 	// TODO:
 	// There should be additional members implemented by plugins for doing cross-validations
