@@ -17,39 +17,31 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.services;
+package org.idb.cacao.etl.repositories;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.List;
 
-import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+import org.idb.cacao.api.DocumentSituationHistory;
+import org.idb.cacao.api.utils.DateTimeUtils;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
+
 /**
+ * DAO for DocumentSituationHistory objects (history of all situation for a given document uploaded)
  * 
- * @author leon
+ * @author Rivelino Patrício
+ * 
+ * @since 06/11/2021
  *
  */
-@Component
-@Service
-public class FileUploadedProducer {
+@Repository
+public interface DocumentSituationHistoryRepository extends ElasticsearchRepository<DocumentSituationHistory, String> {
 	
-	private static final Logger log = Logger.getLogger(FileUploadedProducer.class.getName());
+	List<DocumentSituationHistory> findByDocumentId(String documentId);
 	
-	@Autowired
-	private final StreamBridge streamBridge;
-	
-	public FileUploadedProducer(StreamBridge streamBridge) {
-		this.streamBridge = streamBridge;
+	default public <S extends DocumentSituationHistory> S saveWithTimestamp(S entity) {
+		entity.setChangedTime(DateTimeUtils.now());
+		return save(entity);
 	}
-
-	public void fileUploaded(FileUploadedEvent fileEvent) {
-		log.log(Level.INFO, "Sending a message with documentId " + fileEvent.getFileId());
-		
-        streamBridge.send("fileUploaded-out-0", fileEvent.getFileId());
-    }
 
 }

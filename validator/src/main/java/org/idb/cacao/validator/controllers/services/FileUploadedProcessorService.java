@@ -35,7 +35,7 @@ public class FileUploadedProcessorService {
 	private FileSystemStorageService fileSystemStorageService;
 
 	@Bean
-	public Function<String, String> processorBean() {		
+	public Function<String, String> receiveAndValidateFile() {		
 		return documentId -> {
 			return validateDocument(documentId);			
 		};
