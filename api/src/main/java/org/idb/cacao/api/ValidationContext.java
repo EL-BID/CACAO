@@ -176,6 +176,10 @@ public class ValidationContext {
 	public List<String> getAlerts() {
 		return alerts;
 	}
+	
+	public boolean hasAlerts() {
+		return alerts!=null && !alerts.isEmpty();
+	}
 
 	/**
 	 * Warnings produced by the validation phase. Texts informed in braces should be resolved with messages.properties.<BR>
@@ -233,6 +237,14 @@ public class ValidationContext {
 	 */
 	public void setParsedContents(List<Map<String,Object>> parsedContents) {
 		this.parsedContents = parsedContents;
+	}
+	
+	public void addParsedContent(Map<String,Object> record) {
+		if (record==null)
+			return;
+		if (this.parsedContents==null)
+			this.parsedContents = new LinkedList<>();
+		this.parsedContents.add(record);
 	}
 	
 	/**
