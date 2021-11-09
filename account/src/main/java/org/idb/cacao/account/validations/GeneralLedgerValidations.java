@@ -49,7 +49,8 @@ public class GeneralLedgerValidations {
 	 */
 	public static boolean validateDocumentUploaded(ValidationContext context, List<Map<String,Object>> records) {
 		if (context==null 
-				|| context.isEmpty())
+				|| records==null
+				|| records.isEmpty())
 			return false;
 		
 		Date previous_date = null;
@@ -90,6 +91,7 @@ public class GeneralLedgerValidations {
 				current_balance = 0;
 				total_debits = 0;
 				total_credits = 0;
+				previous_date = date;
 				
 			}
 			
