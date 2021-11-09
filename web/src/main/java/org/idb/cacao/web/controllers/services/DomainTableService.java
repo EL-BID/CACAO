@@ -24,11 +24,14 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.idb.cacao.api.DomainLanguage;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.web.repositories.DomainTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -46,6 +49,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class DomainTableService {
+
+	private static final Logger log = Logger.getLogger(DomainTableService.class.getName());
 
 	private static final String PROPERTIES_PREFIX = "classpath:messages_";
 	private static final String PROPERTIES_SUFFIX = ".properties";
@@ -161,25 +166,63 @@ public class DomainTableService {
 			return;
 		
 		for (DomainTable builtInDomainTable: builtInDomainTables) {
+			try {
+				assertDomainTable(builtInDomainTable, /*overwrite*/false);
+			}
+			catch (Throwable ex) {
+				log.log(Level.SEVERE, "Error while asserting the built-in domain table "+builtInDomainTable.getName(), ex);
+			}
+		}
+	}
+	
+	/**
+	 * Check if the domain table exists. If it does not exist, creates the domain table resolving all its message according
+	 * to the provided languages.
+	 * @param overwrite If FALSE, will not overwrite existing domain tables.
+	 */
+	public void assertDomainTable(DomainTable builtInDomainTable, boolean overwrite) {
+		
+		if (!overwrite) {
 			// Locate domain table
 			Optional<DomainTable> matchingDomainTable = domainTableRepository.findByNameAndVersion(builtInDomainTable.getName(), builtInDomainTable.getVersion());
 			// If the table already exists, keep the existing one
-			if (matchingDomainTable.isPresent())
-				continue;
-			
-			// If the table does not exists yet, creates according to the domain table specification
-			
-			if (builtInDomainTable.getNumEntries(null)>0) {
-				// The built-in domain table has entries without a language specification, so let's resolve them to the provided messages.properties files
-				DomainTable resolvedDomainTable = resolveDomainTableForLanguages(builtInDomainTable);
-				// If it could not resolve the domain table entries, does not create one
-				if (resolvedDomainTable==null)
-					continue;
-				domainTableRepository.saveWithTimestamp(resolvedDomainTable);
+			if (matchingDomainTable.isPresent()) 
+				return;
+		}
+		
+		// If the table does not exists yet, creates according to the domain table specification
+		
+		if (builtInDomainTable.getNumEntries(null)>0) {
+			// The built-in domain table has entries without a language specification, so let's resolve them to the provided messages.properties files
+			DomainTable resolvedDomainTable = resolveDomainTableForLanguages(builtInDomainTable);
+			// If it could not resolve the domain table entries, does not create one
+			if (resolvedDomainTable==null)
+				return;
+			domainTableRepository.saveWithTimestamp(resolvedDomainTable);
+		}
+		else if (builtInDomainTable.getNumEntries()>0) {
+			// The built-in domain table has entries for a specific language, so let's create the domain table with the provided information
+			domainTableRepository.saveWithTimestamp(builtInDomainTable);
+		}		
+	}
+	
+	/**
+	 * For all installed 'TemplateArchetype's, check for the presence of built-in DomainTable's and creates the missing
+	 * ones.
+	 * @param overwrite If FALSE, will not overwrite existing domain tables.
+	 */
+	public void assertDomainTablesForAllArchetypes(boolean overwrite) {
+		
+		List<DomainTable> builtInDomainTables = TemplateArchetypes.getBuiltInDomainTables();
+		if (builtInDomainTables==null || builtInDomainTables.isEmpty())
+			return;
+
+		for (DomainTable builtInDomainTable: builtInDomainTables) {
+			try {
+				assertDomainTable(builtInDomainTable, overwrite);
 			}
-			else if (builtInDomainTable.getNumEntries()>0) {
-				// The built-in domain table has entries for a specific language, so let's create the domain table with the provided information
-				domainTableRepository.saveWithTimestamp(builtInDomainTable);
+			catch (Throwable ex) {
+				log.log(Level.SEVERE, "Error while asserting the built-in domain table "+builtInDomainTable.getName(), ex);
 			}
 		}
 	}

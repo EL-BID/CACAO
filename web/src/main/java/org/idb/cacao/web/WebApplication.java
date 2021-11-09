@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
+import org.idb.cacao.web.controllers.services.DomainTableService;
 import org.idb.cacao.web.controllers.services.FileUploadedProducer;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
@@ -62,6 +63,9 @@ public class WebApplication {
 	
 	@Autowired
 	private FileUploadedProducer fileUploadedProducer;
+	
+	@Autowired
+	private DomainTableService domainTableService;
 	
 
 	@Autowired
@@ -122,6 +126,13 @@ public class WebApplication {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
+		try {
+			boolean overwrite = "true".equalsIgnoreCase(env.getProperty("built-in.domain.tables.overwrite"));
+			domainTableService.assertDomainTablesForAllArchetypes(overwrite);
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
 	}
 	
 	/**
