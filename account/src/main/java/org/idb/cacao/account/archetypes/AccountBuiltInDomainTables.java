@@ -21,8 +21,20 @@ package org.idb.cacao.account.archetypes;
 
 import org.idb.cacao.account.elements.AccountCategory;
 import org.idb.cacao.account.elements.AccountSubcategory;
+import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.templates.FieldType;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES;
 
 /**
  * Built-in domain tables related to accounting. These are 'in-memory replicas'. The application
@@ -41,6 +53,126 @@ public class AccountBuiltInDomainTables {
 					new DomainEntry("D", "account.debit"),
 					new DomainEntry("C", "account.credit"));
 	
+	/**
+	 * Returns TRUE if the domain table is related to GAAP built-in domain tables
+	 */
+	public static boolean isRelatedToGAAP(String domainTableName) {
+		if (domainTableName==null)
+			return false;
+		return ACCOUNT_CATEGORY_GAAP.getName().equalsIgnoreCase(domainTableName)
+				|| ACCOUNT_SUBCATEGORY_GAAP.getName().equalsIgnoreCase(domainTableName);
+	}
+
+	/**
+	 * Returns TRUE if the domain table is related to IFRS built-in domain tables
+	 */
+	public static boolean isRelatedToIFRS(String domainTableName) {
+		if (domainTableName==null)
+			return false;
+		return ACCOUNT_CATEGORY_IFRS.getName().equalsIgnoreCase(domainTableName)
+				|| ACCOUNT_SUBCATEGORY_IFRS.getName().equalsIgnoreCase(domainTableName);		
+	}
+	
+	/**
+	 * Given a category name (one of the constants defined in 'AccountCategory' enumeration) and given
+	 * a DocumentTemplate (from where we get the field mappings to domain tables), returns the corresponding
+	 * code. Returns NULL if it's not possible to get a code from these information.
+	 */
+	public static String getAccountCategoryKey(
+			String categoryName,
+			DocumentTemplate template) {
+		DocumentField account_category_field_map = template.getField(FIELDS_NAMES.AccountCategory.name());
+		if (account_category_field_map==null 
+				|| !FieldType.DOMAIN.equals(account_category_field_map.getFieldType())
+				|| account_category_field_map.getDomainTableName()==null)
+			return null;
+		if (isRelatedToGAAP(account_category_field_map.getDomainTableName())) {
+			return AccountCategory.parse(categoryName).getGaapNumber();
+		}
+		if (isRelatedToIFRS(account_category_field_map.getDomainTableName())) {
+			return AccountCategory.parse(categoryName).getIfrsNumber();
+		}
+		return null;
+	}
+
+	/**
+	 * Given a category name (one of the constants defined in 'AccountSubcategory' enumeration) and given
+	 * a DocumentTemplate (from where we get the field mappings to domain tables), returns the corresponding
+	 * code. Returns NULL if it's not possible to get a code from these information.
+	 */
+	public static String getAccountSubcategoryKey(
+			String subcategoryName,
+			DocumentTemplate template) {
+		DocumentField account_subcategory_field_map = template.getField(FIELDS_NAMES.AccountSubcategory.name());
+		if (account_subcategory_field_map==null 
+				|| !FieldType.DOMAIN.equals(account_subcategory_field_map.getFieldType())
+				|| account_subcategory_field_map.getDomainTableName()==null)
+			return null;
+		if (isRelatedToGAAP(account_subcategory_field_map.getDomainTableName())) {
+			return AccountSubcategory.parse(subcategoryName).getGaapNumber();
+		}
+		if (isRelatedToIFRS(account_subcategory_field_map.getDomainTableName())) {
+			return AccountSubcategory.parse(subcategoryName).getIfrsNumber();
+		}
+		return null;
+	}
+	
+	/**
+	 * Given a DocumentTemplate (from where we get the field mappings to domain tables), returns the corresponding
+	 * Map the correlates the numeric code according to a specific account system (e.g. GAAP) to the corresponding
+	 * category definition.
+	 */
+	public static Map<String, AccountCategory> getMapOfAccountCategories(DocumentTemplate template) {
+		DocumentField account_category_field_map = template.getField(FIELDS_NAMES.AccountCategory.name());
+		if (account_category_field_map==null 
+				|| !FieldType.DOMAIN.equals(account_category_field_map.getFieldType())
+				|| account_category_field_map.getDomainTableName()==null)
+			return Collections.emptyMap();
+		if (isRelatedToGAAP(account_category_field_map.getDomainTableName())) {
+			return Arrays.stream(AccountCategory.values()).collect(Collectors.toMap(
+				AccountCategory::getGaapNumber, 
+				Function.identity(), 
+				(a,b)->a, 
+				()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		}
+		if (isRelatedToIFRS(account_category_field_map.getDomainTableName())) {
+			return Arrays.stream(AccountCategory.values()).collect(Collectors.toMap(
+				AccountCategory::getIfrsNumber, 
+				Function.identity(), 
+				(a,b)->a, 
+				()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		}
+		return Collections.emptyMap();
+	}
+
+	/**
+	 * Given a DocumentTemplate (from where we get the field mappings to domain tables), returns the corresponding
+	 * Map the correlates the numeric code according to a specific account system (e.g. GAAP) to the corresponding
+	 * sub-category definition.
+	 */
+	public static Map<String, AccountSubcategory> getMapOfAccountSubcategories(DocumentTemplate template) {
+		DocumentField account_subcategory_field_map = template.getField(FIELDS_NAMES.AccountSubcategory.name());
+		if (account_subcategory_field_map==null 
+				|| !FieldType.DOMAIN.equals(account_subcategory_field_map.getFieldType())
+				|| account_subcategory_field_map.getDomainTableName()==null)
+			return Collections.emptyMap();
+		if (isRelatedToGAAP(account_subcategory_field_map.getDomainTableName())) {
+			return Arrays.stream(AccountSubcategory.values()).collect(Collectors.toMap(
+					AccountSubcategory::getGaapNumber, 
+				Function.identity(), 
+				(a,b)->a, 
+				()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		}
+		if (isRelatedToIFRS(account_subcategory_field_map.getDomainTableName())) {
+			return Arrays.stream(AccountSubcategory.values()).collect(Collectors.toMap(
+					AccountSubcategory::getIfrsNumber, 
+				Function.identity(), 
+				(a,b)->a, 
+				()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		}
+		return Collections.emptyMap();		
+	}
+
 	/**
 	 * Domain table for the category of accounts according to GAAP
 	 */

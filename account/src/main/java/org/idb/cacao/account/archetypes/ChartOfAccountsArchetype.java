@@ -22,11 +22,15 @@ package org.idb.cacao.account.archetypes;
 import java.util.Arrays;
 import java.util.List;
 
+import org.idb.cacao.account.validations.ChartOfAccountsValidations;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.templates.TemplateArchetype;
+
+import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.*;
 
 /**
  * This is the archetype for DocumentTemplate's related to CHART OF ACCOUNTS in ACCOUNTING
@@ -75,6 +79,23 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 				AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS );
 	}
 
+	public static enum FIELDS_NAMES {
+		
+		TaxPayerId,
+		
+		TaxYear,
+		
+		AccountCode,
+		
+		AccountCategory,
+		
+		AccountSubcategory,
+		
+		AccountName,
+		
+		AccountDescription
+	};
+	
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRequiredFields()
@@ -83,26 +104,26 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 	public List<DocumentField> getRequiredFields() {
 		return Arrays.asList(
 			new DocumentField()
-				.withFieldName("TaxPayerId")
+				.withFieldName(TaxPayerId.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withFieldMapping(FieldMapping.TAXPAYER_ID)
 				.withDescription("Taxpayer Identification Number")
 				.withMaxLength(128)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("TaxYear")
+				.withFieldName(TaxYear.name())
 				.withFieldType(FieldType.INTEGER)
 				.withFieldMapping(FieldMapping.TAX_YEAR)
 				.withDescription("Fiscal year of this financial reporting")
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("AccountCode")
+				.withFieldName(AccountCode.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withDescription("Account code")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("AccountCategory")
+				.withFieldName(AccountCategory.name())
 				.withFieldType(FieldType.DOMAIN)
 				.withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS.getName())
 				.withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS.getVersion())
@@ -110,7 +131,7 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("AccountSubcategory")
+				.withFieldName(AccountSubcategory.name())
 				.withFieldType(FieldType.DOMAIN)
 				.withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS.getName())
 				.withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS.getVersion())
@@ -118,13 +139,13 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("AccountName")
+				.withFieldName(AccountName.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withDescription("Account name for displaying alongside the account code in different financial reports")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("AccountDescription")
+				.withFieldName(AccountDescription.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withDescription("Account description")
 				.withMaxLength(1024)
@@ -132,4 +153,12 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 		);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#validateDocumentUploaded(org.idb.cacao.api.ValidationContext)
+	 */
+	@Override
+	public boolean validateDocumentUploaded(ValidationContext context) {
+		return ChartOfAccountsValidations.validateDocumentUploaded(context, context.getParsedContents());
+	}
 }

@@ -42,7 +42,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 /**
- * Service methods for domain tables
+ * Service methods for domain tables related to the WEB component
  * 
  * @author Gustavo Figueiredo
  *
