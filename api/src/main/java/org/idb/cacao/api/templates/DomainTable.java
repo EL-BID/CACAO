@@ -105,7 +105,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  *
  */
 @Document(indexName="cacao_domain_tables")
-public class DomainTable implements Serializable, Cloneable {
+public class DomainTable implements Serializable, Cloneable, Comparable<DomainTable> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -496,5 +496,34 @@ public class DomainTable implements Serializable, Cloneable {
     public String toString() {
         return "DomainTable{" + "id=" + id + ", name=" + name +", version=" + version + '}';
     }
+
+	@Override
+	public int compareTo(DomainTable o) {		
+		if (name==null)
+			return -1;
+		if (o.name==null)
+			return 1;
+		int comp = String.CASE_INSENSITIVE_ORDER.compare(name, o.name);
+		if (comp!=0)
+			return comp;
+
+		if (group==null)
+			return -1;
+		if (o.group==null)
+			return 1;
+		comp = String.CASE_INSENSITIVE_ORDER.compare(group, o.group);
+		if (comp!=0)
+			return comp;
+		
+		if (version==null)
+			return -1;
+		if (o.version==null)
+			return 1;
+		comp = String.CASE_INSENSITIVE_ORDER.compare(version, o.version);
+		if (comp!=0)
+			return comp;		
+		
+		return comp;
+	}
 
 }
