@@ -175,6 +175,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setFileNameExpression(String fileNameExpression) {
 		this.fileNameExpression = fileNameExpression;
 	}
+	
+	public DocumentInputFieldMapping withFileNameExpression(String fileNameExpression) {
+		setFileNameExpression(fileNameExpression);
+		return this;
+	}
 
 	/**
 	 * The column (0-based) position of this information in the input file.<BR>
@@ -326,6 +331,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 */
 	public void setFieldName(String fieldName) {
 		this.fieldName = fieldName;
+	}
+	
+	public DocumentInputFieldMapping withFieldName(String fieldName) {
+		setFieldName(fieldName);
+		return this;
 	}
 
 	@Override

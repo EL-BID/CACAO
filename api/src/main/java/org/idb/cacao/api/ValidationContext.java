@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -248,6 +249,21 @@ public class ValidationContext {
 	}
 	
 	/**
+	 * Fills in all the records with the provided field fixed contents. If there is no contents,
+	 * creates a new record with only the provided information.
+	 */
+	public void setFieldInParsedContents(String fieldName, Object fixedContents) {
+		if (this.parsedContents==null)
+			this.parsedContents = new LinkedList<>();
+		if (this.parsedContents.isEmpty()) {
+			this.parsedContents.add(new HashMap<>());
+		}
+		for (Map<String, Object> record: this.parsedContents) {
+			record.put(fieldName, fixedContents);
+		}
+	}
+	
+	/**
 	 * Returns TRUE if there is no parsed contents yet
 	 */
 	public boolean isEmpty() {
@@ -262,13 +278,21 @@ public class ValidationContext {
 	}
 	
 	/**
+	 * Removes the parsed contents
+	 */
+	public void clearParsedContents() {
+		if (parsedContents!=null)
+			parsedContents.clear();
+	}
+	
+	/**
 	 * Returns the parsed content related to a given field name.
 	 * @param nestedFieldNames Optional parameter with other field names to look in nested structure.
 	 */
 	public <T> T getParsedContent(int index, String fieldName, String... nestedFieldNames) {
 		if (parsedContents==null)
 			return null;
-		if (parsedContents.size()>=index)
+		if (parsedContents.size()<=index)
 			return null;
 		Map<String,Object> record = parsedContents.get(index);
 		return getParsedContent(record, fieldName, nestedFieldNames);

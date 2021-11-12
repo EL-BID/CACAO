@@ -17,40 +17,70 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.validator;
+package org.idb.cacao.validator.parsers;
 
-import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+import java.nio.file.Path;
 
-@RunWith(JUnitPlatform.class)
-@SpringBootTest
-@DirtiesContext
-class WebApplicationTests {
+import org.idb.cacao.api.templates.DocumentInput;
 
-	private static ElasticsearchMockClient mockElastic;
+public class XMLParser implements FileParser {
 
-	@BeforeAll
-	public static void beforeClass() throws Exception {
+	private Path path;
 
-		int port = ElasticsearchMockClient.findRandomPort();
-		mockElastic = new ElasticsearchMockClient(port);
-		System.setProperty("es.port", String.valueOf(port));
-	}
-	
-	@AfterAll
-	public static void afterClass() {
-		if (mockElastic!=null)
-			mockElastic.stop();
+	private DocumentInput documentInputSpec;
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
+	 */
+	@Override
+	public Path getPath() {
+		return path;
 	}
 
-	@Test
-	void contextLoads() {
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.validator.parsers.FileParser#setPath(java.nio.file.Path)
+	 */
+	@Override
+	public void setPath(Path path) {
+		this.path = path;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.validator.parsers.FileParser#getDocumentInputSpec()
+	 */
+	@Override
+	public DocumentInput getDocumentInputSpec() {
+		return documentInputSpec;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.validator.parsers.FileParser#setDocumentInputSpec(org.idb.cacao.api.templates.DocumentInput)
+	 */
+	@Override
+	public void setDocumentInputSpec(DocumentInput inputSpec) {
+		this.documentInputSpec = inputSpec;
+	}
+
+	@Override
+	public void start() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public DataIterator iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void close() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

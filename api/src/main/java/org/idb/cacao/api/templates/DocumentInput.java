@@ -24,6 +24,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Neste
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.persistence.EnumType;
@@ -126,6 +127,14 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 
 	public void setFields(List<DocumentInputFieldMapping> fields) {
 		this.fields = fields;
+	}
+	
+	public void addField(DocumentInputFieldMapping field) {
+		if (field==null)
+			return;
+		if (this.fields==null)
+			this.fields = new LinkedList<>();
+		this.fields.add(field);
 	}
 
 	@Override

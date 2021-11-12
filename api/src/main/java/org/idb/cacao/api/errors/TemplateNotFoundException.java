@@ -17,40 +17,26 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.validator;
+package org.idb.cacao.api.errors;
 
-import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+public class TemplateNotFoundException extends RuntimeException {
 
-@RunWith(JUnitPlatform.class)
-@SpringBootTest
-@DirtiesContext
-class WebApplicationTests {
+	private static final long serialVersionUID = 7894229821743138687L;
 
-	private static ElasticsearchMockClient mockElastic;
+	public TemplateNotFoundException() {
+        super();
+    }
 
-	@BeforeAll
-	public static void beforeClass() throws Exception {
+    public TemplateNotFoundException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 
-		int port = ElasticsearchMockClient.findRandomPort();
-		mockElastic = new ElasticsearchMockClient(port);
-		System.setProperty("es.port", String.valueOf(port));
-	}
-	
-	@AfterAll
-	public static void afterClass() {
-		if (mockElastic!=null)
-			mockElastic.stop();
-	}
+    public TemplateNotFoundException(final String message) {
+        super(message);
+    }
 
-	@Test
-	void contextLoads() {
-	}
+    public TemplateNotFoundException(final Throwable cause) {
+        super(cause);
+    }
 
 }

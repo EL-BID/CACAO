@@ -17,40 +17,21 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.validator;
+package org.idb.cacao.validator.parsers;
 
-import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+import java.util.Map;
 
-@RunWith(JUnitPlatform.class)
-@SpringBootTest
-@DirtiesContext
-class WebApplicationTests {
+import org.idb.cacao.api.ValidationContext;
+import org.springframework.data.util.CloseableIterator;
 
-	private static ElasticsearchMockClient mockElastic;
-
-	@BeforeAll
-	public static void beforeClass() throws Exception {
-
-		int port = ElasticsearchMockClient.findRandomPort();
-		mockElastic = new ElasticsearchMockClient(port);
-		System.setProperty("es.port", String.valueOf(port));
-	}
-	
-	@AfterAll
-	public static void afterClass() {
-		if (mockElastic!=null)
-			mockElastic.stop();
-	}
-
-	@Test
-	void contextLoads() {
-	}
+/**
+ * Object used for iterating over records associated to a particular DocumentTemplate.<BR>
+ * Each record is represented as the generic form of a 'map of fields'.<BR>
+ * For more information about this generic form, please see {@link ValidationContext#setParsedContents(java.util.List) setParsedContents}.
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
+public interface DataIterator extends CloseableIterator<Map<String,Object>> {
 
 }

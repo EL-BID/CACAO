@@ -17,40 +17,33 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.validator;
+package org.idb.cacao.api.errors;
 
-import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+/**
+ * Exception related to some required configuration missing (i.e. something that was expected
+ * by the System Administrator or Tax Authority).
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
+public class MissingConfigurationException extends RuntimeException {
 
-@RunWith(JUnitPlatform.class)
-@SpringBootTest
-@DirtiesContext
-class WebApplicationTests {
+	private static final long serialVersionUID = 1890358289841844271L;
 
-	private static ElasticsearchMockClient mockElastic;
+	public MissingConfigurationException() {
+        super();
+    }
 
-	@BeforeAll
-	public static void beforeClass() throws Exception {
+    public MissingConfigurationException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 
-		int port = ElasticsearchMockClient.findRandomPort();
-		mockElastic = new ElasticsearchMockClient(port);
-		System.setProperty("es.port", String.valueOf(port));
-	}
-	
-	@AfterAll
-	public static void afterClass() {
-		if (mockElastic!=null)
-			mockElastic.stop();
-	}
+    public MissingConfigurationException(final String message) {
+        super(message);
+    }
 
-	@Test
-	void contextLoads() {
-	}
+    public MissingConfigurationException(final Throwable cause) {
+        super(cause);
+    }
 
 }
