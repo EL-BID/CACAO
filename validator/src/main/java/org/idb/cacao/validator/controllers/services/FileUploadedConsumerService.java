@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -46,9 +45,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FileUploadedProcessorService {
+public class FileUploadedConsumerService {
 
-    private static final Logger log = Logger.getLogger(FileUploadedProcessorService.class.getName());
+    private static final Logger log = Logger.getLogger(FileUploadedConsumerService.class.getName());
 
     /**
      * Size in bytes of the small sample to read from the file head

@@ -22,7 +22,7 @@ package org.idb.cacao.validator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.idb.cacao.validator.controllers.services.FileUploadedProcessorService;
+import org.idb.cacao.validator.controllers.services.FileUploadedConsumerService;
 import org.idb.cacao.validator.controllers.services.ResourceMonitorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -50,7 +50,7 @@ public class Application {
 	private ResourceMonitorService resourceMonitorService;
 
 	@Autowired
-	private FileUploadedProcessorService fileUploadedProcessorService;
+	private FileUploadedConsumerService fileUploadedProcessorService;
 	
 	@Autowired
 	private Environment env;
