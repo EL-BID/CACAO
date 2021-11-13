@@ -232,7 +232,7 @@ public class DocumentStoreAPIController {
 		if ( parts.length > 1 ) 
 			templateVersion = parts[1] == null ? null : parts[1].trim();
 		
-		if ( templateVersion == null || templateVersion.isEmpty() || templateVersion.isBlank() ) {
+		if ( templateVersion == null || templateVersion.isEmpty() ) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload.failed.missing.template.version", null, LocaleContextHolder.getLocale())));	
 		}			
@@ -247,6 +247,7 @@ public class DocumentStoreAPIController {
 			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
 		
+		//Try to validate template version
 		boolean versionFound = false;
 		for ( DocumentTemplate doc : templateVersions ) {
 			if ( templateVersion.equalsIgnoreCase(doc.getVersion()) ) {
@@ -255,6 +256,7 @@ public class DocumentStoreAPIController {
 			}
 		}
 		
+		//If version is not found, return error
 		if ( !versionFound ) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("upload.failed.missing.template.version", null, LocaleContextHolder.getLocale())));	
