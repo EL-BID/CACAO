@@ -20,17 +20,16 @@
 
 package org.idb.cacao.web.controllers.ui;
 
+import java.util.Collections;
+
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
-
-import java.util.Collections;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 

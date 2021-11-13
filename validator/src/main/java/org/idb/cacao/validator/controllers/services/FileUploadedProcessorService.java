@@ -112,26 +112,14 @@ public class FileUploadedProcessorService {
 			System.out.println("Original file: " + doc.getFilename());
 			System.out.println("Template: " + doc.getTemplateName());
 			
-			doc.setSituation(DocumentSituation.ACCEPTED);
-			
-			//DocumentUploaded savedDoc = documentsUploadedRepository.saveWithTimestamp(doc);			
-			//rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); // in case of error delete the DocumentUploaded
-			
-			DocumentSituationHistory situation = new DocumentSituationHistory();
-			situation.setDocumentId(documentId);
-			situation.setSituation(DocumentSituation.ACCEPTED);
-			situation.setTimestamp(doc.getChangedTime());
-			situation.setDocumentFilename(doc.getFilename());
-			situation.setTemplateName(doc.getTemplateName());
-			DocumentSituationHistory savedSituation = documentsSituationHistoryRepository.save(situation);
-			
-			rollbackProcedures.add(()->documentsSituationHistoryRepository.delete(savedSituation)); // in case of error delete the DocumentUploaded
+			setSituation(doc,DocumentSituation.ACCEPTED);
 			
 			// Check the DocumentInput related to this file
 			
 			List<DocumentInput> possibleInputs = template.get().getInputs();
 			DocumentInput docInputExpected;
-			if (possibleInputs.isEmpty()) {
+			if (possibleInputs == null || possibleInputs.isEmpty()) {
+				setSituation(doc,DocumentSituation.INVALID);
 				throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version " + doc.getTemplateVersion() + " was not configured with proper input format!");
 			}
 			else if (possibleInputs.size()==1) {
@@ -141,6 +129,7 @@ public class FileUploadedProcessorService {
 				// If we have more than one possible input for the same DocumentTemplate, we need to choose one
 				docInputExpected = chooseFileInput(filePath, possibleInputs);
 				if (docInputExpected==null) {
+					setSituation(doc,DocumentSituation.INVALID);
 					throw new UnknownFileFormatException("The file did not match any of the expected file formats for template "+doc.getTemplateName() +" and version " + doc.getTemplateVersion());
 				}
 			}
@@ -148,6 +137,7 @@ public class FileUploadedProcessorService {
 			// Given the DocumentInput, get the corresponding FileFormat object
 			DocumentFormat format = docInputExpected.getFormat();
 			if (format==null) {
+				setSituation(doc,DocumentSituation.INVALID);
 				throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version " + doc.getTemplateVersion() + " was not configured with proper input format!");
 			}
 			FileFormat fileFormat = FileFormatFactory.getFileFormat(format);
@@ -227,6 +217,28 @@ public class FileUploadedProcessorService {
 		
 	}
 	
+	/**
+	 * Changes the situation for a given DocumentUploaded and saves new situation on DocumentSituationHistory
+	 * @param doc	Document to be updated
+	 * @param docSituation	Document Situation to be saved
+	 */
+	private void setSituation(DocumentUploaded doc, DocumentSituation docSituation) {
+		
+		doc.setSituation(docSituation);
+		
+		DocumentUploaded savedDoc = documentsUploadedRepository.saveWithTimestamp(doc);			
+		//rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); // in case of error delete the DocumentUploaded
+		
+		DocumentSituationHistory situation = new DocumentSituationHistory();
+		situation.setDocumentId(savedDoc.getId());
+		situation.setSituation(docSituation);
+		situation.setTimestamp(doc.getChangedTime());
+		situation.setDocumentFilename(doc.getFilename());
+		situation.setTemplateName(doc.getTemplateName());
+		documentsSituationHistoryRepository.save(situation);
+		
+	}
+
 	/**
 	 * Given multiple possible choices of DocumentInput for an incoming file, tries to figure out which one
 	 * should be used.

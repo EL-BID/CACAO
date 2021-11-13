@@ -71,20 +71,20 @@ public class DocumentTemplateService {
 			pTemplate = Pattern.compile("^"+Pattern.quote(template)+"$",Pattern.CASE_INSENSITIVE);
 		}
 		
-		List<DocumentTemplate> matching_templates = new LinkedList<>();
+		List<DocumentTemplate> matchingTemplates = new LinkedList<>();
 		
 		for (DocumentTemplate t: templateRepository.findAll()) {
 			if (t.getId()!=null && t.getId().equals(template)) {
-				matching_templates.add(t);
+				matchingTemplates.add(t);
 				continue;
 			}
 			if (t.getName()!=null && pTemplate.matcher(t.getName()).find()) {
-				matching_templates.add(t);
+				matchingTemplates.add(t);
 				continue;				
 			}
 		}
 		
-		return matching_templates;
+		return matchingTemplates;
 		
 	}
 	
@@ -94,17 +94,17 @@ public class DocumentTemplateService {
 	 */
 	public Set<String> getAllTemplates() {
 
-		Set<String> templates_names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = templateRepository.findAll();
-		for (DocumentTemplate template:all_templates) {
+		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		Iterable<DocumentTemplate> allTemplates = templateRepository.findAll();
+		for (DocumentTemplate template:allTemplates) {
 			if (null==template.getName())
 				continue;
 			if (template.getName().trim().length()==0)
 				continue;
-			templates_names.add(template.getName());
+			templatesNames.add(template.getName());
 		}
 
-		return templates_names;
+		return templatesNames;
 	}
 	
 	/**
@@ -147,8 +147,8 @@ public class DocumentTemplateService {
 	 */
 	public List<DocumentTemplate> getTemplatesWithFiles() {
 		try {
-			Page<DocumentTemplate> all_templates = templateRepository.findAll(PageRequest.of(0, 10_000, Sort.by("name.keyword","version.keyword").ascending()));
-			return all_templates.getContent();
+			Page<DocumentTemplate> allTemplates = templateRepository.findAll(PageRequest.of(0, 10_000, Sort.by("name.keyword","version.keyword").ascending()));
+			return allTemplates.getContent();
 		}
 		catch (Throwable ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex))
@@ -162,17 +162,36 @@ public class DocumentTemplateService {
 	 */
 	public Set<String> getNamesTemplatesWithFiles() {
 		
-		Set<String> templates_names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = getTemplatesWithFiles();
-		for (DocumentTemplate template:all_templates) {
+		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
+		for (DocumentTemplate template:allTemplates) {
 			if (null==template.getName())
 				continue;
 			if (template.getName().trim().length()==0)
 				continue;
-			templates_names.add(template.getName());
+			templatesNames.add(template.getName());
 		}
 
-		return templates_names;
+		return templatesNames;
+	}
+	
+	/**
+	 * Returns the names of all templates that have some 'file' configured (i.e. they are 'downloadable' and 'uploadable'). 
+	 * Returns only their names and version.
+	 */
+	public Map<String,String> getNamesTemplatesWithVersions() {
+		
+		Map<String,String> templatesNames = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
+		for (DocumentTemplate template:allTemplates) {
+			if (null==template.getName())
+				continue;
+			if (template.getName().trim().length()==0)
+				continue;
+			templatesNames.put(template.getName(),template.getVersion());
+		}
+		
+		return templatesNames;
 	}
 
 	/**
@@ -180,19 +199,19 @@ public class DocumentTemplateService {
 	 */
 	public Set<String> getNamesTemplatesWithPeriodicity() {
 		
-		Set<String> templates_names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = getTemplatesWithFiles();
-		for (DocumentTemplate template:all_templates) {
+		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
+		for (DocumentTemplate template:allTemplates) {
 			if (null==template.getName())
 				continue;
 			if (template.getName().trim().length()==0)
 				continue;
 			if (Periodicity.UNKNOWN.equals(template.getPeriodicity()))
 				continue;
-			templates_names.add(template.getName());
+			templatesNames.add(template.getName());
 		}
 
-		return templates_names;
+		return templatesNames;
 	}
 
 	/**
@@ -200,19 +219,19 @@ public class DocumentTemplateService {
 	 */
 	public Set<String> getNamesTemplatesWithPeriodicity(Periodicity periodicity) {
 		
-		Set<String> templates_names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		Iterable<DocumentTemplate> all_templates = getTemplatesWithFiles();
-		for (DocumentTemplate template:all_templates) {
+		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
+		for (DocumentTemplate template:allTemplates) {
 			if (null==template.getName())
 				continue;
 			if (template.getName().trim().length()==0)
 				continue;
 			if (!periodicity.equals(template.getPeriodicity()))
 				continue;
-			templates_names.add(template.getName());
+			templatesNames.add(template.getName());
 		}
 
-		return templates_names;
+		return templatesNames;
 	}
 
 	/**
@@ -222,14 +241,14 @@ public class DocumentTemplateService {
 	public Periodicity getPeriodicity(String templateName) {
 		if (templateName==null || templateName.trim().length()==0)
 			return null;
-		List<DocumentTemplate> matching_templates = templateRepository.findByName(templateName);
-		if (matching_templates==null || matching_templates.isEmpty())
+		List<DocumentTemplate> matchingTemplates = templateRepository.findByName(templateName);
+		if (matchingTemplates==null || matchingTemplates.isEmpty())
 			return Periodicity.UNKNOWN;
-		if (matching_templates.size()==1)
-			return matching_templates.get(0).getPeriodicity();
+		if (matchingTemplates.size()==1)
+			return matchingTemplates.get(0).getPeriodicity();
 		// If we got more than one template (different versions of the same template), returns the periodicity of the last
 		// created template, unless it's null.
-		DocumentTemplate t = matching_templates.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).filter(d->d.getPeriodicity()!=null).findFirst().orElse(null);
+		DocumentTemplate t = matchingTemplates.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).filter(d->d.getPeriodicity()!=null).findFirst().orElse(null);
 		if (t==null)
 			return Periodicity.UNKNOWN;
 		else

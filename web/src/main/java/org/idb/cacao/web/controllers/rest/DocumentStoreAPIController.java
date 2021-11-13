@@ -189,7 +189,7 @@ public class DocumentStoreAPIController {
 	@ApiOperation("Endpoint for uploading a document to be parsed")
 	public ResponseEntity<Map<String,String>> handleFileUpload(
 			@RequestParam("fileinput") MultipartFile fileinput,
-			@RequestParam("template") String template,
+			@RequestParam("template") String templateAndVersion,
 			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
 
@@ -208,11 +208,36 @@ public class DocumentStoreAPIController {
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
 		
-		if (template==null || template.isEmpty()) {
+		if (templateAndVersion==null || templateAndVersion.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
-					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));			
+					messageSource.getMessage("upload.failed.missing.template", null, LocaleContextHolder.getLocale())));			
 		}
-		List<DocumentTemplate> templateVersions = templateRepository.findByName(template);
+		
+		String templateName = null, templateVersion = null;
+		
+		String[] parts = templateAndVersion.split("=");
+		
+		if ( parts == null || parts.length == 0 ) { 
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
+					messageSource.getMessage("upload.failed.missing.template", null, LocaleContextHolder.getLocale())));	
+		}
+		
+		templateName = parts[0] == null ? null : parts[0].trim();
+		
+		if (templateName==null || templateName.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
+					messageSource.getMessage("upload.failed.missing.template", null, LocaleContextHolder.getLocale())));			
+		}		
+		
+		if ( parts.length > 1 ) 
+			templateVersion = parts[1] == null ? null : parts[1].trim();
+		
+		if ( templateVersion == null || templateVersion.isEmpty() || templateVersion.isBlank() ) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
+					messageSource.getMessage("upload.failed.missing.template.version", null, LocaleContextHolder.getLocale())));	
+		}			
+		
+		List<DocumentTemplate> templateVersions = templateRepository.findByName(templateName);
 		if (templateVersions==null || templateVersions.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
 					messageSource.getMessage("unknown.template", null, LocaleContextHolder.getLocale())));						
@@ -222,12 +247,25 @@ public class DocumentStoreAPIController {
 			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 		}
 		
+		boolean versionFound = false;
+		for ( DocumentTemplate doc : templateVersions ) {
+			if ( templateVersion.equalsIgnoreCase(doc.getVersion()) ) {
+				versionFound = true;
+				break;
+			}
+		}
+		
+		if ( !versionFound ) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", 
+					messageSource.getMessage("upload.failed.missing.template.version", null, LocaleContextHolder.getLocale())));	
+		}		
+		
 		final String remoteIpAddr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 		
 		final Map<String, String> result;
 			
 		try (InputStream inputStream=fileinput.getInputStream()) {
-			result = uploadFile(fileinput.getOriginalFilename(), inputStream, /*closeInputStream*/true, template, remoteIpAddr, user);
+			result = uploadFile(fileinput.getOriginalFilename(), inputStream, /*closeInputStream*/true, templateName, templateVersion, remoteIpAddr, user);
 		}
 		catch (GeneralException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", ex.getMessage()));	
@@ -289,7 +327,7 @@ public class DocumentStoreAPIController {
 			
 			while ((ze = zipStream.getNextEntry()) != null) {
 				
-				Map<String, String> result = uploadFile(ze.getName(), zipStream, /*closeInputStream*/false, template, remoteIpAddr, user);
+				Map<String, String> result = uploadFile(ze.getName(), zipStream, /*closeInputStream*/false, template, /*template version*/ null, remoteIpAddr, user);
 				results.add(result);
 			}
 		}
@@ -359,7 +397,7 @@ public class DocumentStoreAPIController {
 		for (MultipartFile fileinput: files) {
 			
 			try (InputStream inputStream=fileinput.getInputStream()) {
-				Map<String,String> result = uploadFile(fileinput.getOriginalFilename(), inputStream, /*closeInputStream*/true, template, remoteIpAddr, user);
+				Map<String,String> result = uploadFile(fileinput.getOriginalFilename(), inputStream, /*closeInputStream*/true, template, /*template version*/ null, remoteIpAddr, user);
 				results.add(result);
 			}
 			catch (GeneralException ex) {
@@ -384,6 +422,7 @@ public class DocumentStoreAPIController {
 			final InputStream fileStream, 
 			final boolean closeInputStream,
 			final String template, 
+			final String templateVersion,
 			final String remoteIpAddr,
 			final User user) throws IOException, GeneralException {
 		File tempFile1 = null;
@@ -401,6 +440,7 @@ public class DocumentStoreAPIController {
 			// Keep this information in history of all uploads
 			DocumentUploaded regUpload = new DocumentUploaded();
 			regUpload.setTemplateName(template);
+			regUpload.setTemplateVersion(templateVersion);
 			regUpload.setFileId(fileId);
 			regUpload.setFilename(originalFilename);
 			regUpload.setSubDir(subDir);

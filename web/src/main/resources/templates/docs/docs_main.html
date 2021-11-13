@@ -61,7 +61,7 @@ $('#fileinput').change(function(){
       var file_el = $( this )
       var form_el = $('#uploadform')
       var dimmer_el = $('#dimmer')
-      var upload_url = '/api/doc?template='+encodeURIComponent($('.ui.dropdown').dropdown('get value'))	  
+      var upload_url = '/api/doc?template='+encodeURIComponent($('.ui.dropdown').dropdown('get value'))
       var filename = file_el.val().split('\\').pop();      
       uploadFile(file_el, form_el, dimmer_el, upload_url, filename);
   });

@@ -23,7 +23,9 @@ The fragment 'choose_div' displays a div for choosing a document template. You m
 			<th:block th:each="template : ${templates}">
 				<div class="item" data-value="Type" th:attr="data-value=${template}">
 					<div class="ui blue empty circular label"></div>
-					<span th:text="${template}">Type</span>
+					<span th:text="${template.getKey()}">Type</span>
+					<span th:text="#{version}"></span>
+					<span th:text="${template.getValue()}"></span>
 				</div>
 			</th:block>
 		</div>

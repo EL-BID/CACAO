@@ -59,7 +59,7 @@ public class DocumentStoreUIController {
 	
 	@GetMapping("/docs")
     public String getDocs(Model model) {
-		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
+		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
         return "docs/docs_main";
     }
 	
