@@ -40,6 +40,10 @@ table = new Tabulator('#table', {
     pagination: true,
 	paginationSize: 5,
 	data: tableData,
+    persistence:{
+		columns:true,
+	},			
+	persistenceID:"docs_templates_persistence",	
 	columns:[ //Define Table Columns
 		{title: /*[[#{template.name}]]*/ "Name", field:"name"},
 		{title: /*[[#{template.group}]]*/ "Group", field:"group"},
@@ -48,7 +52,7 @@ table = new Tabulator('#table', {
 		{title: /*{{#{template.required}}} */ "Required", field:"required", 
 			formatter:"tickCross", width:100, 
 			formatterParams: { crossElement:false} },
-		{formatter:editIcon, width:50, cellClick: editRow}
+		{formatter:editIcon, width:50, cellClick: editRow, hozAlign:"center"}
 	]
 })
 </script>

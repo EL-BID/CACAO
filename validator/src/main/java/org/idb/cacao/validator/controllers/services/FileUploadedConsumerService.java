@@ -107,6 +107,7 @@ public class FileUploadedConsumerService {
 
             Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(), doc.getTemplateVersion());
             if (template == null || !template.isPresent()) {
+            	setSituation(doc, DocumentSituation.INVALID);
                 throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version " + doc.getTemplateVersion() + " wasn't found in database.");
             }
 
@@ -117,9 +118,9 @@ public class FileUploadedConsumerService {
             Path filePath = fileSystemStorageService.find(fullPath);
             validationContext.setDocumentPath(filePath);
 
-            System.out.println("File: " + filePath.getFileName());
-            System.out.println("Original file: " + doc.getFilename());
-            System.out.println("Template: " + doc.getTemplateName());
+//            System.out.println("File: " + filePath.getFileName());
+//            System.out.println("Original file: " + doc.getFilename());
+//            System.out.println("Template: " + doc.getTemplateName());
 
             setSituation(doc, DocumentSituation.ACCEPTED);
 
@@ -192,7 +193,6 @@ public class FileUploadedConsumerService {
             // check for required fields
             // check for mismatch in field types (should try to automatically convert some field types, e.g. String -> Date)
             // check for domain table fields
-
 
             // Check for domain-specific validations related to a built-in archetype
             if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {

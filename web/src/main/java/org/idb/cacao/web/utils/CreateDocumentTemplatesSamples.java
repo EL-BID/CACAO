@@ -30,6 +30,9 @@ import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentFormat;
+import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
@@ -103,6 +106,7 @@ public class CreateDocumentTemplatesSamples {
 		);
 		
 		docTemplate.setFields(fields);
+		addInputsGeneralLedger(docTemplate);
 		
 		//Plano de contas
 		docTemplate = new DocumentTemplate();
@@ -165,6 +169,7 @@ public class CreateDocumentTemplatesSamples {
 		);		
 		
 		docTemplate.setFields(fields);
+		addInputsChartOfAccounts(docTemplate);
 		
 		//Saldos Iniciais
 		docTemplate = new DocumentTemplate();
@@ -217,6 +222,7 @@ public class CreateDocumentTemplatesSamples {
 		);	
 		
 		docTemplate.setFields(fields);
+		addInputsOpeningBalance(docTemplate);
 		
 		//Lalur
 		docTemplate = new DocumentTemplate();
@@ -272,10 +278,174 @@ public class CreateDocumentTemplatesSamples {
 				.withRequired(true)
 		);		
 		
-		docTemplate.setFields(fields);				
+		docTemplate.setFields(fields);
+		addInputsLalur(docTemplate);
 		
 		return toRet;
 		
+	}
+
+	/**
+	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
+	 * @param docTemplate
+	 */	
+	private static void addInputsLalur(DocumentTemplate docTemplate) {
+
+		if ( docTemplate == null )
+			return;
+
+		DocumentInput input = new DocumentInput("CSV Lalur");
+		input.setFormat(DocumentFormat.CSV);
+		docTemplate.addInput(input);
+		
+		List<DocumentInputFieldMapping> mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxPayerId")
+				.withColumnIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxYear")
+				.withColumnIndex(1),
+				new DocumentInputFieldMapping()
+				.withFieldName("AccountCode")
+				.withColumnIndex(2),
+				new DocumentInputFieldMapping()
+				.withFieldName("InitialDate")
+				.withColumnIndex(3),
+				new DocumentInputFieldMapping()
+				.withFieldName("FinalDate")
+				.withColumnIndex(4),
+				new DocumentInputFieldMapping()
+				.withFieldName("FinalBalance")
+				.withColumnIndex(5),
+				new DocumentInputFieldMapping()
+				.withFieldName("DebitCredit")
+				.withColumnIndex(6)
+				);
+		
+		input.setFields(mappings);
+		
+	}
+
+	/**
+	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
+	 * @param docTemplate
+	 */
+	private static void addInputsOpeningBalance(DocumentTemplate docTemplate) {
+		
+		if ( docTemplate == null )
+			return;
+		
+		DocumentInput input = new DocumentInput("CSV Opening Balance");
+		input.setFormat(DocumentFormat.CSV);
+		docTemplate.addInput(input);
+		
+		List<DocumentInputFieldMapping> mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxPayerId")
+				.withColumnIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxYear")
+				.withColumnIndex(1),
+				new DocumentInputFieldMapping()
+				.withFieldName("InitialDate")
+				.withColumnIndex(2),
+				new DocumentInputFieldMapping()
+				.withFieldName("AccountCode")
+				.withColumnIndex(3),
+				new DocumentInputFieldMapping()
+				.withFieldName("FinalDate")
+				.withColumnIndex(4),
+				new DocumentInputFieldMapping()
+				.withFieldName("DebitCredit")
+				.withColumnIndex(5)
+				);
+		
+		input.setFields(mappings);
+				
+	}
+
+	/**
+	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
+	 * @param docTemplate
+	 */
+	private static void addInputsChartOfAccounts(DocumentTemplate docTemplate) {
+
+		if ( docTemplate == null )
+			return;
+		
+		DocumentInput input = new DocumentInput("CSV Chart Of Accounts");
+		input.setFormat(DocumentFormat.CSV);
+		docTemplate.addInput(input);
+		
+		List<DocumentInputFieldMapping> mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name())
+				.withColumnIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name())
+				.withColumnIndex(1),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name())
+				.withColumnIndex(2),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())
+				.withColumnIndex(3),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())
+				.withColumnIndex(4),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountName.name())
+				.withColumnIndex(5),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())
+				.withColumnIndex(6)
+				);
+		
+		input.setFields(mappings);
+		
+	}
+
+	/**
+	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
+	 * @param docTemplate
+	 */
+	private static void addInputsGeneralLedger(DocumentTemplate docTemplate) {
+
+		if ( docTemplate == null )
+			return;
+		
+		DocumentInput input = new DocumentInput("CSV General Ledger");
+		input.setFormat(DocumentFormat.CSV);
+		docTemplate.addInput(input);
+		
+		List<DocumentInputFieldMapping> mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name())
+				.withColumnIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name())
+				.withColumnIndex(1),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Date.name())
+				.withColumnIndex(2),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name())
+				.withColumnIndex(3),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name())
+				.withColumnIndex(4),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Description.name())
+				.withColumnIndex(5),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name())
+				.withColumnIndex(6),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name())
+				.withColumnIndex(7)
+				);
+		
+		input.setFields(mappings);		
 	}
 	
 }

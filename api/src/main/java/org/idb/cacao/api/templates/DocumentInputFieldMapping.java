@@ -204,6 +204,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setColumnIndex(Integer columnIndex) {
 		this.columnIndex = columnIndex;
 	}
+	
+	public DocumentInputFieldMapping withColumnIndex(Integer columnIndex) {
+		setColumnIndex(columnIndex);
+		return this;
+	}
 
 	/**
 	 * The column name expression of this information in the input file.<BR>
@@ -228,6 +233,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setColumnNameExpression(String columnNameExpression) {
 		this.columnNameExpression = columnNameExpression;
 	}
+	
+	public DocumentInputFieldMapping withColumnNameExpression(String columnNameExpression) {
+		setColumnNameExpression(columnNameExpression);
+		return this;
+	}	
 
 	/**
 	 * The row (0-based) position of this information in the input file.<BR>
@@ -252,6 +262,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setRowIndex(Integer rowIndex) {
 		this.rowIndex = rowIndex;
 	}
+	
+	public DocumentInputFieldMapping withRowIndex(Integer rowIndex) {
+		setRowIndex(rowIndex);
+		return this;
+	}		
 
 	/**
 	 * The sheet (0-based) position of this information in the input file.<BR>
@@ -272,6 +287,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setSheetIndex(Integer sheetIndex) {
 		this.sheetIndex = sheetIndex;
 	}
+	
+	public DocumentInputFieldMapping withSheetIndex(Integer sheetIndex) {
+		setSheetIndex(sheetIndex);
+		return this;
+	}		
 
 	/**
 	 * The sheet name expression of this information in the input file.<BR>
@@ -292,6 +312,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setSheetNameExpression(String sheetNameExpression) {
 		this.sheetNameExpression = sheetNameExpression;
 	}
+	
+	public DocumentInputFieldMapping withNameExpression(String sheetNameExpression) {
+		setSheetNameExpression(sheetNameExpression);
+		return this;
+	}		
 
 	/**
 	 * The XPATH expression of this information in the input file.<BR>
@@ -312,6 +337,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	public void setPathExpression(String pathExpression) {
 		this.pathExpression = pathExpression;
 	}
+	
+	public DocumentInputFieldMapping withPathExpression(String pathExpression) {
+		setPathExpression(pathExpression);
+		return this;
+	}	
 
 	/**
 	 * The form field name of this information in the input file.<BR>

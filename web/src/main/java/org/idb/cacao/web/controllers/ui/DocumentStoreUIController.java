@@ -65,7 +65,7 @@ public class DocumentStoreUIController {
 	
 	@GetMapping("/docs_search")
     public String searchDocs(Model model) {
-		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
+		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
         return "docs/docs_search";
     }
 	
@@ -76,7 +76,7 @@ public class DocumentStoreUIController {
 		
 		samples.forEach(s->templateRepository.saveWithTimestamp(s));
 		
-		model.addAttribute("templates", templateService.getNamesTemplatesWithFiles());
+		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
         return "docs/docs_main";
     }	
 	
