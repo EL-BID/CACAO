@@ -19,16 +19,23 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 
 public class CSVParser implements FileParser {
 	
 	private Path path;
 	
 	private DocumentInput documentInputSpec;
-
+	
+	private Scanner scanner;
+	
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
@@ -67,20 +74,95 @@ public class CSVParser implements FileParser {
 
 	@Override
 	public void start() {
-		// TODO Auto-generated method stub
+		if ( path == null || !path.toFile().exists() ) {		
+			return;			
+		}			
+		
+		if ( scanner != null ) {
+			try {
+				scanner.close();
+			} catch (Exception e) {
+			}
+		}
+		
+		try {
+			scanner = new Scanner(path.toFile());
+			//Skips first line
+			scanner.nextLine();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
 		
 	}
 
 	@Override
 	public DataIterator iterator() {
-		// TODO Auto-generated method stub
+		
+		if ( path == null || !path.toFile().exists() ) {		
+			return null;			
+		}			
+		
+		if ( scanner == null ) {
+			start();
+		}
+		
+		if ( scanner == null )
+			return null;
+		
+		try {			
+			
+			return new DataIterator() {
+				
+				@Override
+				public Map<String, Object> next() {
+					String line = scanner.nextLine();
+					
+					if ( line != null ) {					
+						String[] parts = line.split(";");
+						
+						Map<String,Object> toRet = new LinkedHashMap<>();
+						
+						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
+							
+							String value = parts.length > fieldMapping.getColumnIndex() ? parts[fieldMapping.getColumnIndex()] : null; 
+							toRet.put(fieldMapping.getFieldName(), value);
+							
+						}
+						
+						return toRet;
+						
+					}
+					return null;
+				}
+				
+				@Override
+				public boolean hasNext() {					
+					return scanner.hasNextLine();
+				}
+				
+				@Override
+				public void close() {
+					scanner.close();					
+				}
+			}; 
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();			
+		}
+		
 		return null;
 	}
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
-		
+		if ( scanner != null ) {
+			try {
+				scanner.close();
+			} catch (Exception e) {
+			}
+		}
 	}
 
 }

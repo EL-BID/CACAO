@@ -135,7 +135,7 @@ public class FileUploadedConsumerService {
                 docInputExpected = possibleInputs.get(0);
             } else {
                 // If we have more than one possible input for the same DocumentTemplate, we need to choose one
-                docInputExpected = chooseFileInput(filePath, possibleInputs);
+                docInputExpected = chooseFileInput(filePath, doc.getFilename(), possibleInputs);
                 if (docInputExpected == null) {
                     setSituation(doc, DocumentSituation.INVALID);
                     throw new UnknownFileFormatException("The file did not match any of the expected file formats for template " + doc.getTemplateName() + " and version " + doc.getTemplateVersion());
@@ -171,6 +171,12 @@ public class FileUploadedConsumerService {
                     Map<String, Object> record = iterator.next();
                     if (record == null)
                         continue;
+                    
+                    for ( Map.Entry<String, Object> value : record.entrySet() ) {
+                    
+                    	System.out.println(value.getKey() + " => " + value.getValue());
+                    	
+                    }
 
                     validationContext.addParsedContent(record);
 
@@ -214,6 +220,7 @@ public class FileUploadedConsumerService {
 
         } catch (GeneralException ex) {
             callRollbackProcedures(rollbackProcedures);
+            ex.printStackTrace();
             throw ex;
         } finally {
             //TODO Add logging
@@ -248,12 +255,11 @@ public class FileUploadedConsumerService {
      * Given multiple possible choices of DocumentInput for an incoming file, tries to figure out which one
      * should be used.
      */
-    public DocumentInput chooseFileInput(Path path, List<DocumentInput> possibleInputs) {
+    public DocumentInput chooseFileInput(Path path, String filename, List<DocumentInput> possibleInputs) {
 
         // First let's try to find a particular DocumentInput matching the filename (e.g. looking the file extension)
         List<DocumentInput> matchingDocumentInputs = new LinkedList<>();
-        Map<DocumentInput, FileFormat> mapFileFormats = new IdentityHashMap<>();
-        final String filename = path.toString();
+        Map<DocumentInput, FileFormat> mapFileFormats = new IdentityHashMap<>();        
         for (DocumentInput input : possibleInputs) {
             DocumentFormat format = input.getFormat();
             if (format == null)

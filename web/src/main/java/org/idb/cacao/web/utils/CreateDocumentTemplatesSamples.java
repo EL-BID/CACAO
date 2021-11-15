@@ -324,6 +324,43 @@ public class CreateDocumentTemplatesSamples {
 		
 		input.setFields(mappings);
 		
+		input = new DocumentInput("XLS Lalur");
+		input.setFormat(DocumentFormat.XLS);
+		docTemplate.addInput(input);
+		
+		mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxPayerId")
+				.withColumnIndex(0)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxYear")
+				.withColumnIndex(1)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("AccountCode")
+				.withColumnIndex(2)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("InitialDate")
+				.withColumnIndex(3)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("FinalDate")
+				.withColumnIndex(4)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("FinalBalance")
+				.withColumnIndex(5)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("DebitCredit")
+				.withColumnIndex(6)
+				.withSheetIndex(0)
+				);
+		
+		input.setFields(mappings);		
+		
 	}
 
 	/**
@@ -353,7 +390,7 @@ public class CreateDocumentTemplatesSamples {
 				.withFieldName("AccountCode")
 				.withColumnIndex(3),
 				new DocumentInputFieldMapping()
-				.withFieldName("FinalDate")
+				.withFieldName("InitialBalance")
 				.withColumnIndex(4),
 				new DocumentInputFieldMapping()
 				.withFieldName("DebitCredit")
@@ -361,6 +398,39 @@ public class CreateDocumentTemplatesSamples {
 				);
 		
 		input.setFields(mappings);
+		
+		input = new DocumentInput("XLS Opening Balance");
+		input.setFormat(DocumentFormat.XLS);
+		docTemplate.addInput(input);
+		
+		mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxPayerId")
+				.withColumnIndex(0)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("TaxYear")
+				.withColumnIndex(1)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("InitialDate")
+				.withColumnIndex(2)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("AccountCode")
+				.withColumnIndex(3)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("InitialBalance")
+				.withColumnIndex(4)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName("DebitCredit")
+				.withColumnIndex(5)
+				.withSheetIndex(0)
+				);
+		
+		input.setFields(mappings);		
 				
 	}
 
@@ -399,6 +469,43 @@ public class CreateDocumentTemplatesSamples {
 				new DocumentInputFieldMapping()
 				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())
 				.withColumnIndex(6)
+				);
+		
+		input.setFields(mappings);
+		
+		input = new DocumentInput("XLS Chart Of Accounts");
+		input.setFormat(DocumentFormat.XLS);
+		docTemplate.addInput(input);
+		
+		mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name())
+				.withColumnIndex(0)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name())
+				.withColumnIndex(1)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name())
+				.withColumnIndex(2)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())
+				.withColumnIndex(3)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())
+				.withColumnIndex(4)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountName.name())
+				.withColumnIndex(5)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())
+				.withColumnIndex(6)
+				.withSheetIndex(0)
 				);
 		
 		input.setFields(mappings);
@@ -443,6 +550,47 @@ public class CreateDocumentTemplatesSamples {
 				new DocumentInputFieldMapping()
 				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name())
 				.withColumnIndex(7)
+				);
+		
+		input.setFields(mappings);		
+		
+		input = new DocumentInput("XLS General Ledger");
+		input.setFormat(DocumentFormat.XLS);
+		docTemplate.addInput(input);
+		
+		mappings = Arrays.asList(
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name())
+				.withColumnIndex(0)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name())
+				.withColumnIndex(1)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Date.name())
+				.withColumnIndex(2)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name())
+				.withColumnIndex(3)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name())
+				.withColumnIndex(4)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Description.name())
+				.withColumnIndex(5)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name())
+				.withColumnIndex(6)
+				.withSheetIndex(0),
+				new DocumentInputFieldMapping()
+				.withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name())
+				.withColumnIndex(7)
+				.withSheetIndex(0)
 				);
 		
 		input.setFields(mappings);		
