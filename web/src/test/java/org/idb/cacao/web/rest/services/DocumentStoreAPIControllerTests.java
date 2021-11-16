@@ -108,7 +108,7 @@ class DocumentStoreAPIControllerTests {
 		this.mockMvc.perform(
 				multipart("/api/doc")
 				.file(multipartFile)
-				.param("template", "TEST"))
+				.param("template", "TEST=1.0"))
 				.andExpect(status().isOk());
 		
 		Page<DocumentUploaded> match_uploads = documentsUploadedRepository.findByFilename("test.txt", PageRequest.ofSize(1));

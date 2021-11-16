@@ -96,13 +96,26 @@ public class ParserUtils {
 
     };
     
+    private static final ThreadLocal<DecimalFormat> tlDecimalGroupingFormat = new ThreadLocal<DecimalFormat>() {
+  	  
+		@Override
+		protected DecimalFormat initialValue() {
+			DecimalFormatSymbols sym = new DecimalFormatSymbols();
+			sym.setDecimalSeparator('.');
+			sym.setGroupingSeparator(',');
+			return new DecimalFormat("###,###.#############", sym);
+		}
+
+    };
+
     private static final ThreadLocal<DecimalFormat> tlDecimalCommaFormat = new ThreadLocal<DecimalFormat>() {
     	  
 		@Override
 		protected DecimalFormat initialValue() {
 			DecimalFormatSymbols sym = new DecimalFormatSymbols();
 			sym.setDecimalSeparator(',');
-			return new DecimalFormat("######.#############", sym);
+			sym.setGroupingSeparator('.');
+			return new DecimalFormat("###,###.#############", sym);
 		}
 
     };
@@ -433,6 +446,12 @@ public class ParserUtils {
     	return tlDecimalFormat.get().parse(value);
     }
 
+    public static Number parseDecimalGrouping(String value) throws ParseException {
+    	if (value==null || value.trim().length()==0)
+    		return null;
+    	return tlDecimalGroupingFormat.get().parse(value);
+    }
+
     public static Number parseDecimalWithComma(String value) throws ParseException {
     	if (value==null || value.trim().length()==0)
     		return null;
@@ -440,11 +459,69 @@ public class ParserUtils {
     }
     
     public static Number parseDecimalFlexible(String value) throws ParseException {
-    	try {
-    		return parseDecimalWithComma(value);
+    	if (value==null || value.trim().length()==0)
+    		return null;
+    	value = value.trim();
+    	int comma_position = value.indexOf(",");
+    	int dot_position = value.indexOf(".");
+    	if (comma_position>=0 && dot_position>=0) {
+    		if (comma_position<dot_position) {
+    	    	try {
+    	    		return parseDecimalGrouping(value);
+    	    	}
+    	    	catch (Throwable ex) {
+    	    		return parseDecimalWithComma(value);
+    	    	}  
+    		}
+    		else {
+    	    	try {
+    	    		return parseDecimalWithComma(value);
+    	    	}
+    	    	catch (Throwable ex) {
+    	    		return parseDecimal(value);
+    	    	}    			
+    		}
     	}
-    	catch (Throwable ex) {
-    		return parseDecimal(value);
+    	else if (comma_position>=0) {
+	    	try {
+	    		return parseDecimalWithComma(value);
+	    	}
+	    	catch (Throwable ex) {
+	    		return parseDecimal(value);
+	    	}    			    		
+    	}
+    	else if (dot_position>=0) {
+    		if (value.indexOf('.', dot_position+1)>0) {
+    			// If we have more dots, probably dots are grouping separators
+    	    	try {
+    	    		return parseDecimalWithComma(value);
+    	    	}
+    	    	catch (Throwable ex) {
+    	    		return parseDecimal(value);
+    	    	}    			    		
+    		}
+    		else if (Pattern.compile("\\d{4,}\\.").matcher(value).find()
+    			|| !Pattern.compile("\\d\\.\\d{3}").matcher(value).find()) {
+    			// If we have four or more digits before any dot, or if we don't have
+    			// three digits after any dot, probably dots are decimal separators
+    	    	try {
+    	    		return parseDecimal(value);
+    	    	}
+    	    	catch (Throwable ex) {
+    	    		return parseDecimalWithComma(value);
+    	    	}    			    		    			
+    		}
+	    	try {
+	    		// For other cases (e.g.: only one dot and three digits after the dot)
+	    		// we will assume it's a grouping separator
+	    		return parseDecimalWithComma(value);
+	    	}
+	    	catch (Throwable ex) {
+	    		return parseDecimal(value);
+	    	}    			    		
+    	}
+    	else {
+    		return parseDecimalWithComma(value);
     	}
     }
 
