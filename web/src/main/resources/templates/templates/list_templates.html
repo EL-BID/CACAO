@@ -50,9 +50,9 @@ table = new Tabulator('#table', {
 		{title: /*[[#{template.version}]]*/ "Version", field:"version"},
 		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity"},
 		{title: /*{{#{template.required}}} */ "Required", field:"required", 
-			formatter:"tickCross", width:100, 
+			formatter:"tickCross",  
 			formatterParams: { crossElement:false} },
-		{formatter:editIcon, width:50, cellClick: editRow, hozAlign:"center"}
+		{formatter:editIcon, width:50, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editRow}
 	]
 })
 </script>

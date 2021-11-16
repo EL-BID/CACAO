@@ -1,9 +1,12 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
-<head th:replace="fragments/page_fragments :: header">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
 <!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
 </head>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
@@ -16,66 +19,115 @@
 			<div class="content" th:text="#{template.new}">New Declaration Template</div>
 		</h2>
 		<div id="app">
-		<div class="ui center aligned container">
+		<div class="ui container">
 			<div class="ui orange segment">
 				<form action="#" class="ui large form" :class="{ error: msg }" th:object="${template}" method="post" @submit.prevent="processForm">
-					<div class="row">
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{template.name}">Declaration Name</div>
-						</h4>
-						<div class="ui form">
-							<input type="text" v-model="template.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
-							<span v-if="msg.name" class="ui error message">{{ msg.name }}</span>
-						</div>
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{template.version}">"Version</div>
-						</h4>
-						<div class="ui form">
-							<input type="text" v-model="template.version" class="form-control" id="version" placeholder="version" th:placeholder="#{template.version}">
-							<span v-if="msg.version" class="ui error message">{{ msg.version }}</span>
-						</div>
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{template.group}">"Group</div>
-						</h4>
-						
-						<div class="ui form">
-							<input type="text" v-model="template.group" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
-							<span v-if="msg.grouip" class="ui error message">{{ msg.group }}</span>
-						</div>
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{template.periodicity}">"Periodicity</div>
-						</h4>
-						
-						<div class="ui form">
-							<select v-model="template.periodicity" class="ui fluid dropdown">
-								<option disabled value="">Select the periodicity</option>
-								<option th:each="i : ${T(org.idb.cacao.api.Periodicity).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
-							</select>
-							<span v-if="msg.periodicity" class="ui error message">{{ msg.periodicity }}</span>
-						</div>
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{template.required}">Required</div>
-						</h4>
-						<div class="ui form">
-							<div class="ui radio checkbox"></div>
-								<input type="radio" v-model="template.required" id="required.true" value="true">
-								<label for="required.true">Yes</label>
-								<input type="radio" v-model="template.required" id="required.false" value="false">
-								<label for="required.false">No</label>
-							</div>
-						</div>
-						
+				  <div class="fields">
+					<div class="ten wide field">
+						<label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label>
+						<input type="text" v-model="template.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
+						<span v-if="msg.name" class="ui error message">{{ msg.name }}</span>
 					</div>
+					<div class="six wide field">
+						<label th:text="#{template.version}" style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
+						<input type="text" v-model="template.version" class="form-control" id="version" placeholder="version" th:placeholder="#{template.version}">
+						<span v-if="msg.version" class="ui error message">{{ msg.version }}</span>
+					</div>
+				  </div>
+				  <div class="fields">
+					<div class="five wide field">
+						<label th:text="#{template.periodicity}" style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
+						<select v-model="template.periodicity" class="ui fluid dropdown">
+							<option disabled value="">Select the periodicity</option>
+							<option th:each="i : ${T(org.idb.cacao.api.Periodicity).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+						</select>
+						<span v-if="msg.periodicity" class="ui error message">{{ msg.periodicity }}</span>
+					</div>
+					<div class="eleven wide field"> 
+						<label th:text="#{template.group}" style="margin-bottom: 0px; text-transform: uppercase;">"Group</label>
+						<input type="text" v-model="template.group" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
+						<span v-if="msg.grouip" class="ui error message">{{ msg.group }}</span>
+					</div>
+				  </div>
+					<div class="field">
+    					<div class="ui checkbox">
+	      					<input type="checkbox" tabindex="0" class="hidden" v-model="template.required">
+	      					<label th:text="#{template.required}">Required</label>
+    					</div>
+  					</div>
 					<div class="row">
-						<div class="ui segment">
-							<input type="submit" class="ui blue button" th:value="#{save}" value="Save" @click.prevent="processForm">
-							<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" @click.prevent="cancel">
-						</div>
+						<input type="submit" class="ui blue button" th:value="#{save}" value="Save" @click.prevent="processForm">
+						<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" @click.prevent="cancel">
 					</div>
 				</form>
 			</div>
-		</div>
-		</div>
+			<h4 class="ui dividing header" th:text="#{template.fields.title}">Template Fields</h4>
+            <div id="table" class="ui table"></div>
+            <button class="ui primary button" @click="newField" th:text="#{field.new}"></button>
+            </div>
+		<div class="ui container">
+          <div class="ui overlay modal" id='modal_edit_field' v-if="field">
+          <div class="header" th:text="#{template.field}"></div>
+          <div class="scrolling content">
+          <div class="ui container">
+          <form class="ui form" id="form_edit_field">
+            <div class="field">
+              <label th:text="#{field.name}">Field Name <i class="blue info circle icon"></i></label>
+              <input type="text" v-model="field.fieldName" placeholder="Field Name">
+            </div>
+            <div class="field">
+              <label th:text="#{field.description}">Description</label>
+              <textarea rows="2" v-model="field.description"></textarea>
+            </div>
+            <div class="field">
+              <label th:text="#{field.type}">Field Type</label>
+              <select class="ui selection dropdown" v-model="field.fieldType">
+                <option value="">Select</option>
+                <option v-for="(name, value) in fieldTypes" :value="value">{{ name }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label th:text="#{field.mapping}">Field Mapping</label>
+              <select class="ui selection dropdown" v-model="field.fieldMapping" id="selectFieldMapping">
+                <option value="">Select</option>
+                <option v-for="(name, value) in fieldMappings" v-if="value" :value="value">{{ name }}</option>
+              </select>
+            </div>
+            <div class="field" v-show="isText">
+              <label th:text="#{field.length.max}">Max Length</label>
+              <div class="ui input">
+              <input type="number" v-model.number="field.maxLength" max="9999">
+              </div>
+            </div>
+            <div class="field">
+              <div class="ui checkbox">
+                <input type="checkbox" v-model="field.required" class="hidden">
+                <label th:text="#{field.required}">Required</label>
+              </div>
+            </div>
+            <div class="field">
+              <div class="ui checkbox">
+                <input type="checkbox" v-model="field.personalData" class="hidden">
+                <label th:text="#{field.personal.data}">Personal Data</label>
+              </div>
+            </div>
+            <div class="inline field">
+              <div class="ui checkbox">
+                <input type="checkbox" v-model="field.fileUniqueness" class="hidden">
+                <label th:text="#{field.file.uniqueness}">File Uniqueness</label>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="ui approve button" th:text="#{continue}">Continue</div>
+        <div class="ui cancel button" th:text="#{cancel}">Cancel</div>
+      </div>
+    </div>
+			
+	</div>
+	</div>
 	</div>
 	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
@@ -90,9 +142,15 @@ var app = new Vue({
 			version: [[${template.version}]],
 			group: [[${template.group}]],
 			periodicity: [[${template.periodicity}]],
-			required: [[${template.required}]]
+			required: [[${template.required}]],
+			fields: [[${template.fields}]]
 		},
-		msg: []
+		msg: [],
+		table: null,
+	    field: null,
+	    field_old: null,
+	    fieldTypes: [[${fieldTypes}]],
+	    fieldMappings: [[${fieldMappings}]]
 	},
 	methods: {
 		cancel() {
@@ -119,7 +177,45 @@ var app = new Vue({
    					console.log("ERROR : "+msg);
    				}
    			});			 
-		}
+		},
+		showEditor: function() {
+	      $('.ui.dropdown').dropdown({clearable: true})
+	      $('.ui.checkbox').checkbox()
+	      $("#modal_edit_field").modal({ closable: false, onApprove: this.addField }).modal('show')
+	    },
+	    editField: function(e, cell) {
+	      this.field_old = cell.getRow().getData()
+	      this.field = Object.assign({}, this.field_old)
+	      Vue.nextTick( this.showEditor )
+	    },
+	    newField: function() {
+		  $('#form_edit_field').form('clear')
+	      this.field = Object.assign({}, {
+	          id: null,
+	          fieldName: null,
+	          description: null,
+	          fieldType: null,
+	          fieldMapping: null,
+	          personalData: null,
+	          required: null,
+	          fileUniqueness: null,
+	          maxLength: null,
+	          domainTableName: null,
+	          domainTableVersion: null,
+	          nestedTemplateName: null
+	        })
+	      Vue.nextTick( this.showEditor )
+	    },
+	    addField: function() {
+	      if(this.field.id==null) {
+	        this.field.id=Math.max(...this.table.getData().map(o => o.id),0)+1
+	        this.template.fields.push(this.field)
+	      }
+	      else {
+			Object.assign(this.field_old, this.field)
+	      }
+         this.table.replaceData(this.template.fields)
+	    }
 	},
 	watch: {
 		'template.name': function(value, old) {
@@ -133,6 +229,32 @@ var app = new Vue({
 			}
 			console.log(this.msg.name)
 		}
+	},
+	computed: {
+	    isText: function() {
+	        return this.field.fieldType=='CHARACTER'
+	    }
+
+	},
+	mounted() {
+		$('.ui.checkbox').checkbox()
+		var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+		this.table = new Tabulator('#table', {
+			index: 'id',
+			layout: "fitColumns", //fit columns to width of table (optional)
+      		responsiveLayout: "collapse",
+			columns:[ //Define Table Columns
+				{title: /*[[#{field.name}]]*/ "Name", field:"fieldName", width: "200"},
+				{title: /*[[#{field.type}]]*/ "Type", field:"fieldType", width: "150", formatter: "lookup", formatterParams: this.fieldTypes, responsive: 3 },
+				{title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", width: "150", formatter: "lookup", formatterParams: this.fieldMappings, responsive: 3 },
+				{title: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: "50", headerSort: false, responsive: 5},
+		        {title: /*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: "30", headerSort: false, responsive: 5},
+		        {title: /*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: "30", headerSort: false, responsive: 5 },
+				{title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, responsive: 10},
+        		{formatter:editIcon, width:50, tooltip: /*{{#{edit}}} */ "Edit", cellClick: this.editField, headerSort: false }
+			],
+		    data: this.template.fields
+		})
 	}
 })
 
