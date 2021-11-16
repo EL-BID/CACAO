@@ -20,6 +20,7 @@
 package org.idb.cacao.api;
 
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -29,6 +30,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.springframework.context.MessageSource;
@@ -384,5 +388,75 @@ public class ValidationContext {
 		}			
 		return anyvalue;
 
+	}
+
+	/**
+	 * Tries to match an expression in different ways.
+	 * @param options Options with values to compare
+	 * @param toText Function to extract a comparable text value out of one of the 'options'
+	 * @param expression Expression to test for.
+	 */
+	public static <R> Optional<R> matchExpression(Iterable<R> options, Function<R,String> toText, String expression) {
+		
+		if (options==null || toText==null || expression==null || expression.trim().length()==0)
+			return Optional.empty();
+		
+		expression = expression.trim();
+		
+		// First trial: compares ignoring cases
+
+		for (R option: options) {
+			if (option==null)
+				continue;
+			String text = toText.apply(option);
+			if (text==null)
+				continue;
+			if (expression.equalsIgnoreCase(text.trim()))
+				return Optional.of(option);
+		}
+		
+		// Second trial: removes diacritics'
+
+		String normalizedExpression =
+				Normalizer.normalize(expression, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", "") // removes all diacritics
+				.toUpperCase();
+		for (R option: options) {
+			if (option==null)
+				continue;
+			String text = toText.apply(option);
+			if (text==null)
+				continue;
+			String normalizedText =
+					Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", "") // removes all diacritics
+					.toUpperCase();
+			if (normalizedExpression.equalsIgnoreCase(normalizedText.trim()))
+				return Optional.of(option);
+		}
+		
+		// Third trial: consider expression as a 'regular expression'
+		Pattern patternExpression;
+		try {
+			patternExpression = Pattern.compile(normalizedExpression, Pattern.CASE_INSENSITIVE);
+		}
+		catch (Throwable ex) {
+			patternExpression = null;
+		}
+		
+		if (patternExpression!=null) {
+			for (R option: options) {
+				if (option==null)
+					continue;
+				String text = toText.apply(option);
+				if (text==null)
+					continue;
+				String normalizedText =
+						Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", "") // removes all diacritics
+						.toUpperCase();
+				if (patternExpression.matcher(normalizedText).find())
+					return Optional.of(option);
+			}			
+		}
+		
+		return Optional.empty();
 	}
 }

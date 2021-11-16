@@ -313,7 +313,7 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 		this.sheetNameExpression = sheetNameExpression;
 	}
 	
-	public DocumentInputFieldMapping withNameExpression(String sheetNameExpression) {
+	public DocumentInputFieldMapping withSheetNameExpression(String sheetNameExpression) {
 		setSheetNameExpression(sheetNameExpression);
 		return this;
 	}		
