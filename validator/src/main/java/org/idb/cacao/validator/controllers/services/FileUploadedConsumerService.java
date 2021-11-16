@@ -173,9 +173,7 @@ public class FileUploadedConsumerService {
                         continue;
                     
                     for ( Map.Entry<String, Object> value : record.entrySet() ) {
-                    
                     	System.out.println(value.getKey() + " => " + value.getValue());
-                    	
                     }
 
                     validationContext.addParsedContent(record);
@@ -191,7 +189,7 @@ public class FileUploadedConsumerService {
             }
 
             // Fetch information from file name according to the configuration
-            fetchInformationFromFileName(docInputExpected, doc.getFilename(), validationContext);
+            fetchInformationFromFileName(docInputExpected, validationContext);
 
             // TODO:
             // Should perform generic validations:
@@ -331,7 +329,9 @@ public class FileUploadedConsumerService {
      * Fetch information from filename according to the configurations in DocumentInput. Feed this information in the records
      * stored in ValidationContext
      */
-    public static void fetchInformationFromFileName(DocumentInput docInputExpected, final String filename, ValidationContext validationContext) {
+    public static void fetchInformationFromFileName(DocumentInput docInputExpected, ValidationContext validationContext) {
+    	
+    	final String filename = validationContext.getDocumentUploaded().getFilename(); 
 
         for (DocumentInputFieldMapping field : docInputExpected.getFields()) {
 

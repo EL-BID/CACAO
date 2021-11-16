@@ -26,9 +26,6 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -97,7 +94,6 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	 * The error message
 	 */	
 	@JsonView(Views.Public.class)
-	@Enumerated(EnumType.STRING)	
 	@AFieldDescriptor(externalName = "doc.error.message")
 	private String errorMessage; 
 

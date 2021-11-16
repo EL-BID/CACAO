@@ -30,6 +30,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
@@ -60,8 +61,11 @@ public class FilenameTests {
 		// Test a hypothetical filename
 		String filename = "123456789-JAN-2021.TXT";
 		ValidationContext validationContext = new ValidationContext();
+		DocumentUploaded doc = new DocumentUploaded();
+		doc.setFilename(filename);
 		validationContext.setDocumentPath(new File(filename).toPath());
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
+		validationContext.setDocumentUploaded(doc);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
 		
 		assertFalse(validationContext.isEmpty(), "Should have created a record regarding the 'TaxPayerId' fetched from the file name!");
 		assertEquals(1, validationContext.size());
@@ -73,7 +77,7 @@ public class FilenameTests {
 		validationContext.addParsedContent(genRecord("Field1", "456",  "Field2", "02/01/2020"));
 		validationContext.addParsedContent(genRecord("Field1", "555",  "Field2", "03/01/2020"));
 		
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
 		
 		assertFalse(validationContext.isEmpty(), "Should have filled the existing three records with the 'TaxPayerId' field fetched from the file name!");
 		assertEquals(3, validationContext.size());
@@ -90,8 +94,9 @@ public class FilenameTests {
 		// Test another hypothetical filename that SHOULD NOT MATCH
 		filename = "AAAAAAAAA-JAN-2021.TXT";
 		validationContext.clearParsedContents();
+		doc.setFilename(filename);
 		validationContext.setDocumentPath(new File(filename).toPath());
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
 
 		assertTrue(validationContext.isEmpty(), "Shouldn't have get the TaxPayerId because the filename does not match the configured expression");
 		
@@ -100,7 +105,7 @@ public class FilenameTests {
 		validationContext.addParsedContent(genRecord("Field1", "456",  "Field2", "02/01/2020"));
 		validationContext.addParsedContent(genRecord("Field1", "555",  "Field2", "03/01/2020"));
 		
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
 		assertFalse(validationContext.isEmpty(), "The pre-existent fields should remain the same (even if we could not get the information from filename)!");
 		assertEquals(3, validationContext.size());
 		assertNull(validationContext.getParsedContent(0, "TaxPayerId"));
