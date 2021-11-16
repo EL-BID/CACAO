@@ -326,6 +326,12 @@ public class DocumentTemplate implements Serializable, Cloneable {
 
 	public void setFields(List<DocumentField> fields) {
 		this.fields = fields;
+		if (fields!=null && !fields.isEmpty()) {
+			for (DocumentField field: fields) {
+				if (field.getId()==0)
+					field.setId(getNextUnassignedFieldId());
+			}
+		}
 	}
 	
 	public void clearFields() {

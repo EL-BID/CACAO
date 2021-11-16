@@ -138,10 +138,7 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	private String pathExpression;
 
 	/**
-	 * The form field name of this information in the input file.<BR>
-	 * Applies to these file formats:<BR>
-	 * XLS/XLSX (named cells)<BR>
-	 * PDF (FORMS)<BR>
+	 * The field name according to the DocumentTemplate.
 	 */
 	@Field(type=Keyword)
 	private String fieldName;
@@ -344,20 +341,14 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	}	
 
 	/**
-	 * The form field name of this information in the input file.<BR>
-	 * Applies to these file formats:<BR>
-	 * XLS/XLSX (named cells)<BR>
-	 * PDF (FORMS)<BR>
+	 * The field name according to the DocumentTemplate.
 	 */
 	public String getFieldName() {
 		return fieldName;
 	}
 
 	/**
-	 * The form field name of this information in the input file.<BR>
-	 * Applies to these file formats:<BR>
-	 * XLS/XLSX (named cells)<BR>
-	 * PDF (FORMS)<BR>
+	 * The field name according to the DocumentTemplate.
 	 */
 	public void setFieldName(String fieldName) {
 		this.fieldName = fieldName;
