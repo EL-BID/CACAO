@@ -19,15 +19,27 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Scanner;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.idb.cacao.api.errors.InvalidFileException;
 import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentInputFieldMapping;
+import org.idb.cacao.validator.utils.JSONUtils;
 
 public class JSONParser implements FileParser {
 
 	private Path path;
 
 	private DocumentInput documentInputSpec;
+
+	private Scanner scanner;
 
 	/*
 	 * (non-Javadoc)
@@ -67,13 +79,102 @@ public class JSONParser implements FileParser {
 
 	@Override
 	public void start() {
-		// TODO Auto-generated method stub
-		
+		if ( path == null || !path.toFile().exists() ) {
+			return;
+		}
+
+		if ( scanner != null ) {
+			try {
+				scanner.close();
+			} catch (Exception e) {
+			}
+		}
+
+		try {
+			scanner = new Scanner(path.toFile());
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public DataIterator iterator() {
-		// TODO Auto-generated method stub
+		if ( path == null || !path.toFile().exists() ) {
+			return null;
+		}
+
+		if ( scanner == null ) {
+			start();
+		}
+
+		if ( scanner == null )
+			return null;
+
+		String jsonText = "";
+
+		while (scanner.hasNextLine()) {
+			jsonText += scanner.nextLine();
+		}
+		scanner.close();
+
+		if (!JSONUtils.isJSONValid(jsonText)) {
+			throw new InvalidFileException("Invalid JSON file");
+		}
+
+		Map<String,Object> result =
+				null;
+
+		try {
+			result = new ObjectMapper().readValue(jsonText, HashMap.class);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+
+		System.out.println(result);
+
+		try {
+
+			return new DataIterator() {
+
+				@Override
+				public Map<String, Object> next() {
+					String line = scanner.nextLine();
+
+					if ( line != null ) {
+						String[] parts = line.split(";");
+
+						Map<String,Object> toRet = new LinkedHashMap<>();
+
+						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
+
+							String value = parts.length > fieldMapping.getColumnIndex() ? parts[fieldMapping.getColumnIndex()] : null;
+							toRet.put(fieldMapping.getFieldName(), value);
+
+						}
+
+						return toRet;
+
+					}
+					return null;
+				}
+
+				@Override
+				public boolean hasNext() {
+					return scanner.hasNextLine();
+				}
+
+				@Override
+				public void close() {
+					scanner.close();
+				}
+			};
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		return null;
 	}
 

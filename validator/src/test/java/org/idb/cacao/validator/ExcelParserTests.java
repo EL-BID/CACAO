@@ -43,7 +43,7 @@ import java.util.Map;
 import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.*;
 
 /**
- * Tests sample files in Excel format with the ExcepParser implemented in VALIDATOR
+ * Tests sample files in Excel format with the ExcelParser implemented in VALIDATOR
  * 
  * @author Gustavo Figueiredo
  *
