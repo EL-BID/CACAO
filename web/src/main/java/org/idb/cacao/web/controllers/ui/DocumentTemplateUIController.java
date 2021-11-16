@@ -20,12 +20,21 @@
 
 package org.idb.cacao.web.controllers.ui;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldMapping;
+import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,6 +47,9 @@ public class DocumentTemplateUIController {
 	@Autowired
 	private DocumentTemplateRepository documentTemplateRepository;
 
+	@Autowired
+	private MessageSource messages;
+	
 	//@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
 	@GetMapping("/templates")
 	public String getTemplates(Model model) {
@@ -63,6 +75,12 @@ public class DocumentTemplateUIController {
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
         model.addAttribute("template", template);
+        Map<Object, Object> fieldTypes = Arrays.stream(FieldType.values())
+        	.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
+        model.addAttribute("fieldTypes", fieldTypes);
+        Map<String, String> fieldMappings = Arrays.stream(FieldMapping.values())
+			.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
+        model.addAttribute("fieldMappings", fieldMappings);
         return "templates/edit_template";
     }
 }
