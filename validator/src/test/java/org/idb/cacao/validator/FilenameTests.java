@@ -61,7 +61,7 @@ public class FilenameTests {
 		String filename = "123456789-JAN-2021.TXT";
 		ValidationContext validationContext = new ValidationContext();
 		validationContext.setDocumentPath(new File(filename).toPath());
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
 		
 		assertFalse(validationContext.isEmpty(), "Should have created a record regarding the 'TaxPayerId' fetched from the file name!");
 		assertEquals(1, validationContext.size());
@@ -73,7 +73,7 @@ public class FilenameTests {
 		validationContext.addParsedContent(genRecord("Field1", "456",  "Field2", "02/01/2020"));
 		validationContext.addParsedContent(genRecord("Field1", "555",  "Field2", "03/01/2020"));
 		
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
 		
 		assertFalse(validationContext.isEmpty(), "Should have filled the existing three records with the 'TaxPayerId' field fetched from the file name!");
 		assertEquals(3, validationContext.size());
@@ -91,7 +91,7 @@ public class FilenameTests {
 		filename = "AAAAAAAAA-JAN-2021.TXT";
 		validationContext.clearParsedContents();
 		validationContext.setDocumentPath(new File(filename).toPath());
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
 
 		assertTrue(validationContext.isEmpty(), "Shouldn't have get the TaxPayerId because the filename does not match the configured expression");
 		
@@ -100,7 +100,7 @@ public class FilenameTests {
 		validationContext.addParsedContent(genRecord("Field1", "456",  "Field2", "02/01/2020"));
 		validationContext.addParsedContent(genRecord("Field1", "555",  "Field2", "03/01/2020"));
 		
-		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, validationContext);
+		FileUploadedConsumerService.fetchInformationFromFileName(docInputSpec, filename, validationContext);
 		assertFalse(validationContext.isEmpty(), "The pre-existent fields should remain the same (even if we could not get the information from filename)!");
 		assertEquals(3, validationContext.size());
 		assertNull(validationContext.getParsedContent(0, "TaxPayerId"));

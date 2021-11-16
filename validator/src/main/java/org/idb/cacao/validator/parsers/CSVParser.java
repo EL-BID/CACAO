@@ -125,7 +125,7 @@ public class CSVParser implements FileParser {
 						
 						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 							
-							String value = parts.length > fieldMapping.getColumnIndex() ? parts[fieldMapping.getColumnIndex()] : null; 
+							String value = parts.length > fieldMapping.getColumnIndex() ? parts[fieldMapping.getColumnIndex()] : null;
 							toRet.put(fieldMapping.getFieldName(), value);
 							
 						}

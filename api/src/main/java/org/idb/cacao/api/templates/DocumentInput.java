@@ -69,8 +69,7 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	@Field(type=Nested)
 	private List<DocumentInputFieldMapping> fields;
 	
-	public DocumentInput() {
-		
+	public DocumentInput() {		
 	}
 	
 	public DocumentInput(String name) {

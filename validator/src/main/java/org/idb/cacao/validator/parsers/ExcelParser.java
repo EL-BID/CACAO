@@ -143,6 +143,10 @@ public class ExcelParser implements FileParser {
 		if (sheetsByNumber == null || sheetsByName == null) {
 			start();
 		}
+		
+		if (sheetsByNumber == null || sheetsByName == null) {
+			return null;
+		}
 
 		try {
 
@@ -260,8 +264,12 @@ public class ExcelParser implements FileParser {
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
-
+		if (workbook != null) {
+			try {
+				workbook.close();
+			} catch (Exception e) {
+			}
+		}
 	}
 
 }
