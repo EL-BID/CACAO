@@ -24,6 +24,11 @@ import static org.idb.cacao.validator.fileformats.FileFormat.*;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.validator.parsers.FileParser;
 import org.idb.cacao.validator.parsers.JSONParser;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.regex.Pattern;
 
 /**
  * FileFormat for files associated to JSON format.
@@ -32,6 +37,7 @@ import org.idb.cacao.validator.parsers.JSONParser;
  *
  */
 public class JSONFileFormat implements FileFormat {
+	public static Pattern COMMON_FILE_EXTENSION = Pattern.compile("\\.json",Pattern.CASE_INSENSITIVE);
 
 	/*
 	 * (non-Javadoc)
@@ -55,7 +61,7 @@ public class JSONFileFormat implements FileFormat {
 			|| XMLFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find())
 			return false;
 
-		return null; // for any other extension, may be a CSV or may be not
+		return COMMON_FILE_EXTENSION.matcher(getFileExtension(filename)).find(); // for any other extension, may be a CSV or may be not
 	}
 
 	/*

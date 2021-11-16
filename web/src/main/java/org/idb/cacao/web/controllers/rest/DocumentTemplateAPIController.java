@@ -86,7 +86,7 @@ public class DocumentTemplateAPIController {
 			// let's copy all the properties to be preserved, except the properties that might change
 			BeanUtils.copyProperties(existing_template.get(), template, 
 					/*ignoreProperties = editable properties*/
-					"name", "version", "periodicity", "required");
+					"name", "version", "periodicity", "required", "fields");
 		}
 
         template.setId(id);

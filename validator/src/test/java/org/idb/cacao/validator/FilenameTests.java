@@ -136,6 +136,9 @@ public class FilenameTests {
 
 		assertTrue(FileFormatFactory.getFileFormat(DocumentFormat.PDF).matchFilename("SOME_FILE.PDF"));
 		assertFalse(FileFormatFactory.getFileFormat(DocumentFormat.PDF).matchFilename("SOME_FILE.ODT"));
+
+		assertTrue(FileFormatFactory.getFileFormat(DocumentFormat.JSON).matchFilename("SOME_FILE.JSON"));
+		assertFalse(FileFormatFactory.getFileFormat(DocumentFormat.JSON).matchFilename("SOME_FILE.ODT"));
 	}
 	
 	public static Map<String,Object> genRecord(String... fieldsAndValues) {

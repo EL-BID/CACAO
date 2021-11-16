@@ -107,7 +107,7 @@ public class FileUploadedConsumerService {
 
             Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(), doc.getTemplateVersion());
             if (template == null || !template.isPresent()) {
-            	setSituation(doc, DocumentSituation.INVALID);
+                setSituation(doc, DocumentSituation.INVALID);
                 throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version " + doc.getTemplateVersion() + " wasn't found in database.");
             }
 
@@ -180,6 +180,9 @@ public class FileUploadedConsumerService {
 
                 } // LOOP over each parsed record
 
+            } catch (Exception e) {
+                setSituation(doc, DocumentSituation.INVALID);
+                log.log(Level.SEVERE, "Exception while parsing record for file " + documentId);
             } finally {
 
                 if (iterator != null)
@@ -257,7 +260,7 @@ public class FileUploadedConsumerService {
 
         // First let's try to find a particular DocumentInput matching the filename (e.g. looking the file extension)
         List<DocumentInput> matchingDocumentInputs = new LinkedList<>();
-        Map<DocumentInput, FileFormat> mapFileFormats = new IdentityHashMap<>();        
+        Map<DocumentInput, FileFormat> mapFileFormats = new IdentityHashMap<>();
         for (DocumentInput input : possibleInputs) {
             DocumentFormat format = input.getFormat();
             if (format == null)

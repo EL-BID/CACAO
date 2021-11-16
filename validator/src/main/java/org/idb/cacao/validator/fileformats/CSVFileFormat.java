@@ -53,7 +53,8 @@ public class CSVFileFormat implements FileFormat {
 		if (ExcelFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
 			|| PDFFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
 			|| WordFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
-			|| XMLFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find())
+			|| XMLFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
+			|| JSONFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find())
 			return false;
 
 		return null; // for any other extension, may be a CSV or may be not
