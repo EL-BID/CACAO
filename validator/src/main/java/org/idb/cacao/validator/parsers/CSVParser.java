@@ -198,8 +198,7 @@ public class CSVParser implements FileParser {
 								toRet.put(fieldMapping.getFieldName(), null);
 							}
 							else {
-								String value = parts.length > position ? parts[position] : null;
-								toRet.put(fieldMapping.getFieldName(), value);
+								toRet.put(fieldMapping.getFieldName(), parts.length > position ? parts[position] : null);
 							}
 							
 						}

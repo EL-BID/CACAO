@@ -17,6 +17,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.validation.ValidationException;
+
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
@@ -40,6 +42,7 @@ import org.idb.cacao.validator.parsers.FileParser;
 import org.idb.cacao.validator.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
+import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -166,19 +169,19 @@ public class FileUploadedConsumerService {
 
                 iterator = parser.iterator();
 
+                long added = 0;
                 while (iterator.hasNext()) {
 
                     Map<String, Object> record = iterator.next();
+                    
                     if (record == null)
                         continue;
                     
-                    for ( Map.Entry<String, Object> value : record.entrySet() ) {
-                    	System.out.println(value.getKey() + " => " + value.getValue());
-                    }
-
                     validationContext.addParsedContent(record);
+                    added++;
 
                 } // LOOP over each parsed record
+                log.log(Level.INFO, added + " records added to validator from " + doc.getFilename());
 
             } catch (Exception e) {
                 setSituation(doc, DocumentSituation.INVALID);
@@ -198,8 +201,20 @@ public class FileUploadedConsumerService {
             // Should perform generic validations:
             // ....
             // check for required fields
+            Validations.checkForRequiredFields(validationContext);
+            
             // check for mismatch in field types (should try to automatically convert some field types, e.g. String -> Date)
+            Validations.checkForFieldDataTypes(validationContext);
+            
             // check for domain table fields
+            Validations.checkForDomainTableValues(validationContext);
+            
+            if ( !validationContext.getAlerts().isEmpty() ) {
+            	setSituation(doc, DocumentSituation.INVALID);
+                log.log(Level.SEVERE, "Not all domain values are compatible with domain tables on document " + documentId + ". " 
+                		+ "Please check document error messagens for details." );
+                throw new ValidationException();
+            }            
 
             // Check for domain-specific validations related to a built-in archetype
             if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {

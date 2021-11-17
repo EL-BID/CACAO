@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -272,7 +273,7 @@ public class ExcelParser implements FileParser {
 			return new DataIterator() {
 				
 				boolean moved = false;
-				Map<String, Object> toRet = new LinkedHashMap<>();
+				Map<String, Object> toRet;
 				int countRecords;
 				
 				private void moveForward() {
@@ -281,7 +282,7 @@ public class ExcelParser implements FileParser {
 					
 					for (int r=0; r<MAXIMUM_NUMBER_OF_EMPTY_ROWS_TO_BREAK; r++) {
 					
-						toRet.clear();
+						toRet = new LinkedHashMap<>(); 
 						
 						int count_fixed_fields = 0;
 						int count_variable_fields = 0;
@@ -326,7 +327,7 @@ public class ExcelParser implements FileParser {
 					
 					// If we got here, there is no data left
 					moved = true;
-					toRet.clear();
+					toRet = new LinkedHashMap<>();
 
 				}
 
@@ -391,6 +392,9 @@ public class ExcelParser implements FileParser {
 		}
 		
 		if ( CellType.NUMERIC.equals(type) ) { 
+			if (DateUtil.isCellDateFormatted(cell)) {
+				return cell.getDateCellValue();
+	        }
 			return cell.getNumericCellValue();
 		}
 		
