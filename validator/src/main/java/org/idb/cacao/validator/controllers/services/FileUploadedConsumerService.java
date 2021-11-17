@@ -68,6 +68,9 @@ public class FileUploadedConsumerService {
 
     @Autowired
     private FileSystemStorageService fileSystemStorageService;
+    
+    @Autowired
+    private ValidatedDataStorageService validatedDataStorageService;
 
     @Bean
     public Consumer<String> receiveAndValidateFile() {
@@ -231,6 +234,9 @@ public class FileUploadedConsumerService {
 
                 }
             }
+            
+            // Stores validated data at Elastic Search
+            validatedDataStorageService.storeValidatedData(validationContext);
 
             return documentId;
 
