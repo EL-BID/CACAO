@@ -25,16 +25,50 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
+
+/**
+ * Implements {@link FileParser} interface to parse CSV files. <br>
+ * <br>
+ * IMPORTANT: CSV file must use comma "," ou TAB '\t' as delimiter. <br> 
+ * 			  None of these characters can be used in field values.
+ *			  Fields can be enclosed in double quotes: aa,bb,"cc,cd",dd 
+ *			  Lines must be separated br CR LF ("\r\n")
+ *			  Empty lines are accepted
+ *  
+ * @author Rivelino Patrício
+ * 
+ * @since 15/11/2021
+ *
+ */
 public class CSVParser implements FileParser {
 	
+	/**
+	 * Path for file in system storage
+	 */
 	private Path path;
 	
+	/**
+	 * Document with field specifications
+	 */
 	private DocumentInput documentInputSpec;
 	
+	/**
+	 * Scanner to iterate over file lines
+	 */
 	private Scanner scanner;
+	
+	/**
+	 * Field positions relative to column positions
+	 */
+	private Map<String,Integer> fieldPositions;
+	
+	private static CsvParser csvParser;
 	
 	/*
 	 * (non-Javadoc)
@@ -87,15 +121,47 @@ public class CSVParser implements FileParser {
 		
 		try {
 			scanner = new Scanner(path.toFile());
-			//Skips first line
-			scanner.nextLine();
+			
+			//Read first line and set field positions according with field mapping atributtes
+			String firstLine = scanner.nextLine();
+			if ( firstLine != null && !firstLine.isEmpty() ) {
+				
+				String[] parts = readLine(firstLine);
+			
+				//Get original column positions
+				Map<String,Integer> columnPositions = new LinkedHashMap<>();
+				fieldPositions = new LinkedHashMap<>();
+				
+				for ( int i = 0; i < parts.length; i++ )
+					columnPositions.put(parts[i], i);
+				
+				//Check all field mappings and set it's corresponding column
+				for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
+					
+					if ( fieldMapping.getColumnIndex() != null && fieldMapping.getColumnIndex() >= 0 ) {
+						fieldPositions.put(fieldMapping.getFieldName(), fieldMapping.getColumnIndex());
+						continue;
+					}
+						
+					String expression = fieldMapping.getColumnNameExpression();
+					if ( expression != null && !expression.isEmpty() ) {							
+						Integer position = ValidationContext.matchExpression(columnPositions.entrySet(), Map.Entry::getKey, expression).map(Map.Entry::getValue).orElse(null);
+						if ( position != null )
+							fieldPositions.put(fieldMapping.getFieldName(), position);
+					}					
+					
+				}
+				
+			}
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	
 		
 	}
-
+	
+	
 	@Override
 	public DataIterator iterator() {
 		
@@ -119,14 +185,22 @@ public class CSVParser implements FileParser {
 					String line = scanner.nextLine();
 					
 					if ( line != null ) {					
-						String[] parts = line.split(";");
+						
+						String[] parts = readLine(line);
 						
 						Map<String,Object> toRet = new LinkedHashMap<>();
 						
 						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 							
-							String value = parts.length > fieldMapping.getColumnIndex() ? parts[fieldMapping.getColumnIndex()] : null;
-							toRet.put(fieldMapping.getFieldName(), value);
+							int position =  fieldPositions.getOrDefault(fieldMapping.getFieldName(), -1);
+							
+							if ( position < 0 ) {
+								toRet.put(fieldMapping.getFieldName(), null);
+							}
+							else {
+								String value = parts.length > position ? parts[position] : null;
+								toRet.put(fieldMapping.getFieldName(), value);
+							}
 							
 						}
 						
@@ -163,6 +237,23 @@ public class CSVParser implements FileParser {
 			} catch (Exception e) {
 			}
 		}
+	}
+	
+	/**
+	 * Parse a CSV line and returns an array of String with line values
+	 * @param line	Line to be parsed
+	 * @return	An array of String with line values
+	 */
+	private static String[] readLine(String line) {
+		
+		if ( csvParser == null ) {
+			// creates a CSV parser
+			CsvParserSettings settings = new CsvParserSettings();
+			settings.detectFormatAutomatically();
+			csvParser = new CsvParser(settings);
+		}
+		
+		return csvParser.parseLine(line);
 	}
 
 }
