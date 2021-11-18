@@ -374,7 +374,7 @@ public class ValidationContext {
 			return (T)date;
 		}
 		
-		T anyvalue;
+		Object anyvalue;
 		try {
 			anyvalue = getParsedContent(record, fieldName, nestedFieldNames);
 		}
@@ -385,8 +385,20 @@ public class ValidationContext {
 		if (anyvalue==null) {
 			context.addAlert("{error.missingField("+fieldName+")}");
 			return null;
-		}			
-		return anyvalue;
+		}
+		if (!type.isInstance(anyvalue)) {
+			if (String.class.equals(type)) {
+				if (anyvalue instanceof Double) {
+					anyvalue = anyvalue.toString();
+					if (((String)anyvalue).endsWith(".0"))
+						anyvalue = ((String)anyvalue).replace(".0", "");
+				}
+				else {
+					anyvalue = anyvalue.toString();
+				}
+			}
+		}
+		return (T)anyvalue;
 
 	}
 

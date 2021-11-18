@@ -80,16 +80,16 @@ public class ValidatedDataStorageService {
 			String rowId = String.format("%s.%014d", fileId, ++count);
 			
 			// Formats all field names according to ElasticSearch standards
-			IndexNamesUtils.normalizeAllKeysForES(record);
+			Map<String,Object> normalized_record = IndexNamesUtils.normalizeAllKeysForES(record);
 			
 			// Includes additional metadata
-			record.put("_file_id", fileId);
-			record.put("_timestamp", timestamp);
+			normalized_record.put("_file_id", fileId);
+			normalized_record.put("_timestamp", timestamp);
 			
 			// Add this record to index
         	request.add(new IndexRequest(index_name)
 				.id(rowId)
-				.source(record));
+				.source(normalized_record));
 
 		} // LOOP over parsed data records
 		
