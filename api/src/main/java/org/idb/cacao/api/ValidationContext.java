@@ -394,18 +394,31 @@ public class ValidationContext {
 		}
 		if (!type.isInstance(anyvalue)) {
 			if (String.class.equals(type)) {
-				if (anyvalue instanceof Double) {
-					anyvalue = anyvalue.toString();
-					if (((String)anyvalue).endsWith(".0"))
-						anyvalue = ((String)anyvalue).replace(".0", "");
-				}
-				else {
-					anyvalue = anyvalue.toString();
-				}
+				anyvalue = toString(anyvalue);
 			}
 		}
 		return (T)anyvalue;
 
+	}
+	
+	/**
+	 * Convert a value of any type to String in a conventional way.
+	 */
+	public static String toString(Object value) {
+		if (value==null)
+			return null;
+		if (value instanceof String) {
+			return (String)value;
+		}
+		else if (value instanceof Double) {
+			value = value.toString();
+			if (((String)value).endsWith(".0"))
+				value = ((String)value).replace(".0", "");
+			return (String)value;
+		}
+		else {
+			return value.toString();
+		}
 	}
 
 	/**

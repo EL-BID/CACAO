@@ -313,7 +313,7 @@ public class Validations {
 		if (fieldValue == null || table == null)
 			return Pair.of(Boolean.TRUE,null);
 
-		String value = fieldValue.toString();
+		String value = ValidationContext.toString(fieldValue);
 
 		// TODO change value to key value when provided value is a description
 
