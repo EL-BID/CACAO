@@ -112,6 +112,10 @@ public class ValidationContext {
 	 * - may be a list of Maps (if there are multiple occurrences of the same NESTED field at the same file)<BR>
 	 */
 	private List<Map<String,Object>> parsedContents;
+	
+	public ValidationContext() {
+		this.alerts = new LinkedList<>();
+	}
 
 	/**
 	 * Object used to resolve errors according to a specific language
