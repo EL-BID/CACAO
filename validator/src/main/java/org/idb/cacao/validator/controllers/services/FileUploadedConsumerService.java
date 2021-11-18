@@ -81,9 +81,9 @@ public class FileUploadedConsumerService {
                 String validationResults = validateDocument(documentId);
                 System.out.println(validationResults);
             } catch (MissingConfigurationException e) {
-                log.log(Level.INFO, "Configuration is missing for document " + documentId);
+                log.log(Level.INFO, "Configuration is missing for document " + documentId, e);
             } catch (Exception e) {
-                log.log(Level.SEVERE, "Something went wrong with document " + documentId + " Exception: " + e);
+                log.log(Level.SEVERE, "Something went wrong with document " + documentId + " Exception: " + e, e);
             }
         };
     }
