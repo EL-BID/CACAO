@@ -22,6 +22,7 @@ import javax.validation.ValidationException;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.errors.DocumentNotFoundException;
 import org.idb.cacao.api.errors.GeneralException;
@@ -42,6 +43,7 @@ import org.idb.cacao.validator.parsers.FileParser;
 import org.idb.cacao.validator.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
+import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageRepository;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -65,6 +67,9 @@ public class FileUploadedConsumerService {
 
     @Autowired
     private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
+    
+    @Autowired
+    private DocumentValidationErrorMessageRepository documentValidationErrorMessageRepository;
 
     @Autowired
     private FileSystemStorageService fileSystemStorageService;
@@ -188,7 +193,7 @@ public class FileUploadedConsumerService {
 
             } catch (Exception e) {
                 setSituation(doc, DocumentSituation.INVALID);
-                log.log(Level.SEVERE, "Exception while parsing record for file " + documentId);
+                log.log(Level.SEVERE, "Exception while parsing record for file " + documentId, e);
             } finally {
 
                 if (iterator != null)
@@ -199,6 +204,9 @@ public class FileUploadedConsumerService {
 
             // Fetch information from file name according to the configuration
             fetchInformationFromFileName(docInputExpected, validationContext);
+            
+            //TODO:
+            //Add TaxPayerId and TaxPeriod to document on database            
 
             // TODO:
             // Should perform generic validations:
@@ -215,7 +223,8 @@ public class FileUploadedConsumerService {
             if ( !validationContext.getAlerts().isEmpty() ) {
             	setSituation(doc, DocumentSituation.INVALID);
                 log.log(Level.SEVERE, "Not all domain values are compatible with domain tables on document " + documentId + ". " 
-                		+ "Please check document error messagens for details." );
+                		+ "Please check document error messagens for details.");
+                saveValidationMessages(validationContext);
                 throw new ValidationException();
             }            
 
@@ -237,6 +246,8 @@ public class FileUploadedConsumerService {
             
             // Stores validated data at Elastic Search
             validatedDataStorageService.storeValidatedData(validationContext);
+            
+            setSituation(doc, DocumentSituation.VALID);
 
             return documentId;
 
@@ -251,6 +262,38 @@ public class FileUploadedConsumerService {
     }
 
     /**
+     * Save validation error/alert messages to database 
+     * @param validationContext	The context on the validation
+     */
+    private void saveValidationMessages(ValidationContext validationContext) {
+		
+    	if ( validationContext == null )
+    		return;
+    	
+    	List<String> alerts = validationContext.getAlerts();
+    	
+    	if ( alerts == null || alerts.isEmpty() ) 
+    		return;
+    	
+    	DocumentUploaded doc = validationContext.getDocumentUploaded();
+    	
+    	if ( doc == null )
+    		return;
+    	
+    	DocumentValidationErrorMessage message = DocumentValidationErrorMessage.create()
+    			.withTemplateName(doc.getTemplateName())
+    			.withDocumentId(doc.getId())
+    			.withDocumentFilename(doc.getFilename());
+    	
+    	alerts.parallelStream().forEach(alert->{
+    		DocumentValidationErrorMessage newMessage = message.clone();
+    		newMessage.setErrorMessage(alert);
+    		documentValidationErrorMessageRepository.save(newMessage);
+    	});    			
+		
+	}
+
+	/**
      * Changes the situation for a given DocumentUploaded and saves new situation on DocumentSituationHistory
      *
      * @param doc          Document to be updated

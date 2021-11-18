@@ -49,7 +49,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.idb.cacao.api.templates.DocumentTemplate;
-import org.idb.cacao.web.utils.ParserUtils;
+import org.idb.cacao.api.utils.ParserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;

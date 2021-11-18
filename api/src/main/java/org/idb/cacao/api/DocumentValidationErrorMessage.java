@@ -102,7 +102,11 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	 */
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@AFieldDescriptor(externalName = "changed.time")
-	private OffsetDateTime changedTime;	
+	private OffsetDateTime changedTime;
+	
+	public static DocumentValidationErrorMessage create() {
+		return new DocumentValidationErrorMessage();
+	}
 
 	public String getId() {
 		return id;
@@ -119,6 +123,11 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	public void setTemplateName(String templateName) {
 		this.templateName = templateName;
 	}
+	
+	public DocumentValidationErrorMessage withTemplateName(String templateName) {
+		this.templateName = templateName;
+		return this;
+	}
 
 	public String getDocumentId() {
 		return documentId;
@@ -127,6 +136,11 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	public void setDocumentId(String documentId) {
 		this.documentId = documentId;
 	}
+	
+	public DocumentValidationErrorMessage withDocumentId(String documentId) {
+		this.documentId = documentId;
+		return this;
+	}	
 
 	public String getDocumentFilename() {
 		return documentFilename;
@@ -135,6 +149,11 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	public void setDocumentFilename(String documentFilename) {
 		this.documentFilename = documentFilename;
 	}
+	
+	public DocumentValidationErrorMessage withDocumentFilename(String documentFilename) {
+		this.documentFilename = documentFilename;
+		return this;
+	}	
 
 	public OffsetDateTime getTimestamp() {
 		return timestamp;
@@ -151,6 +170,11 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;
 	}
+	
+	public DocumentValidationErrorMessage withErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+		return this;
+	}	
 
 	public DocumentValidationErrorMessage clone() {
 		try {

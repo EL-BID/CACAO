@@ -19,12 +19,14 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
@@ -35,11 +37,11 @@ import com.univocity.parsers.csv.CsvParserSettings;
 /**
  * Implements {@link FileParser} interface to parse CSV files. <br>
  * <br>
- * IMPORTANT: CSV file must use comma "," ou TAB '\t' as delimiter. <br> 
- * 			  None of these characters can be used in field values.
- *			  Fields can be enclosed in double quotes: aa,bb,"cc,cd",dd 
- *			  Lines must be separated br CR LF ("\r\n")
- *			  Empty lines are accepted
+ * IMPORTANT: CSV file must use comma ",", semicolon ";", pipe "|" or TAB '\t' as delimiter. <br> 
+ * 			  None of these characters can be used in field values, except if column value is delimited by quotes (""). <br>
+ *			  Fields can be enclosed in double quotes: aa,bb,"cc,cd",dd. <br>
+ *			  Lines must be separated br CR LF ("\r\n"). <br>
+ *			  Empty lines are accepted. <br>
  *  
  * @author Rivelino Patrício
  * 
@@ -68,7 +70,10 @@ public class CSVParser implements FileParser {
 	 */
 	private Map<String,Integer> fieldPositions;
 	
-	private static CsvParser csvParser;
+	/**
+	 * A parser to handle CSV lines
+	 */
+	private CsvParser csvParser;
 	
 	/*
 	 * (non-Javadoc)
@@ -120,7 +125,11 @@ public class CSVParser implements FileParser {
 		}
 		
 		try {
-			scanner = new Scanner(path.toFile());
+			FileInputStream fis = new FileInputStream(path.toFile());
+			//Skips BOM if it exists
+			BOMInputStream bis = new BOMInputStream(fis);
+			String charset = bis.getBOMCharsetName();
+			scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);
 			
 			//Read first line and set field positions according with field mapping atributtes
 			String firstLine = scanner.nextLine();
@@ -154,7 +163,7 @@ public class CSVParser implements FileParser {
 				
 			}
 			
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	
@@ -243,12 +252,23 @@ public class CSVParser implements FileParser {
 	 * @param line	Line to be parsed
 	 * @return	An array of String with line values
 	 */
-	private static String[] readLine(String line) {
+	private String[] readLine(String line) {
 		
 		if ( csvParser == null ) {
 			// creates a CSV parser
 			CsvParserSettings settings = new CsvParserSettings();
 			settings.detectFormatAutomatically();
+			settings.setDelimiterDetectionEnabled(true);
+			settings.setSkipEmptyLines(true);
+			settings.setIgnoreLeadingWhitespaces(true);
+			settings.setIgnoreTrailingWhitespaces(true);
+			settings.setLineSeparatorDetectionEnabled(true);
+			settings.setNormalizeLineEndingsWithinQuotes(true);
+			settings.setQuoteDetectionEnabled(true);
+			settings.setHeaderExtractionEnabled(false);
+			settings.trimValues(true);
+			settings.getFormat().setNormalizedNewline('\n');
+			settings.setMaxColumns(1000);
 			csvParser = new CsvParser(settings);
 		}
 		

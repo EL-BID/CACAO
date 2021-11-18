@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.entities.ConfigSync;
-import org.idb.cacao.web.utils.ParserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

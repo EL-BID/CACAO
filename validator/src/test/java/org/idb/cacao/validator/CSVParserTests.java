@@ -52,6 +52,13 @@ import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_N
 public class CSVParserTests {
 	
 	private static ElasticsearchMockClient mockElastic;
+	
+	private static String[] resources = { "/samples/20211411 - Pauls Guitar Shop - Chart of Accounts.csv",
+			"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts_dois pontos.csv",
+			"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts_pipe.csv",
+			"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts_tab.csv",
+			"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts_virgula.csv"
+	};
 
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -72,10 +79,7 @@ public class CSVParserTests {
 	 * given as column positions and sheet position.
 	 */
 	@Test
-	void testChartOfAccounts01() throws Exception {
-		
-		Resource sampleFile = new ClassPathResource("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts.csv");
-		assertTrue(sampleFile.exists());
+	void testChartOfAccounts01() throws Exception {		
 		
 		TemplateArchetype archetype = new ChartOfAccountsArchetype();
 		DocumentTemplate template = new DocumentTemplate();
@@ -114,57 +118,64 @@ public class CSVParserTests {
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(AccountDescription.name())
 				.withColumnIndex(6));
-
-		try (CSVParser parser = new CSVParser();) {
+		
+		for ( String resource : resources ) {
 			
-			parser.setPath(sampleFile.getFile().toPath());
-			parser.setDocumentInputSpec(inputSpec);
-			parser.start();
+			System.out.println("Testing with: " + resource);
 			
-			try (DataIterator iterator = parser.iterator();) {
+			Resource sampleFile = new ClassPathResource(resource);
+			assertTrue(sampleFile.exists());
+			
+			try (CSVParser parser = new CSVParser();) {
 				
-				assertTrue(iterator.hasNext(), "Should find the first record");
-				Map<String,Object> record = iterator.next();
-				assertEquals("123456", toString(record.get(TaxPayerId.name())));
-				assertEquals("2021", toString(record.get(TaxYear.name())));
-				assertEquals("1.1.1", toString(record.get(AccountCode.name())));
-				assertEquals("1", toString(record.get(AccountCategory.name())));
-				assertEquals("1.1", toString(record.get(AccountSubcategory.name())));
-				assertEquals("Cash", toString(record.get(AccountName.name())));
-				assertEquals("Cash and Cash Equivalents", toString(record.get(AccountDescription.name())));
-
-				assertTrue(iterator.hasNext(), "Should find the second record");
-				record = iterator.next();
-				assertEquals("123456", toString(record.get(TaxPayerId.name())));
-				assertEquals("2021", toString(record.get(TaxYear.name())));
-				assertEquals("1.2.1", toString(record.get(AccountCode.name())));
-				assertEquals("1", toString(record.get(AccountCategory.name())));
-				assertEquals("1.2", toString(record.get(AccountSubcategory.name())));
-				assertEquals("Accounts Receivable", toString(record.get(AccountName.name())));
-				assertEquals("Accounts, Notes And Loans Receivable", toString(record.get(AccountDescription.name())));
-
-				assertTrue(iterator.hasNext(), "Should find the third record");
-				record = iterator.next();
-				assertEquals("123456", toString(record.get(TaxPayerId.name())));
-				assertEquals("2021", toString(record.get(TaxYear.name())));
-				assertEquals("1.3.1", toString(record.get(AccountCode.name())));
-				assertEquals("1", toString(record.get(AccountCategory.name())));
-				assertEquals("1.3", toString(record.get(AccountSubcategory.name())));
-				assertEquals("Inventory", toString(record.get(AccountName.name())));
-				assertEquals("Merchandise in Inventory", toString(record.get(AccountDescription.name())));
-
-				for (int i=4; i<=14; i++) {
-					assertTrue(iterator.hasNext(), "Should find the "+i+"th record");
+				parser.setPath(sampleFile.getFile().toPath());
+				parser.setDocumentInputSpec(inputSpec);
+				parser.start();
+				
+				try (DataIterator iterator = parser.iterator();) {
+					
+					assertTrue(iterator.hasNext(), "Should find the first record");
+					Map<String,Object> record = iterator.next();
+					assertEquals("123456", toString(record.get(TaxPayerId.name())));
+					assertEquals("2021", toString(record.get(TaxYear.name())));
+					assertEquals("1.1.1", toString(record.get(AccountCode.name())));
+					assertEquals("1", toString(record.get(AccountCategory.name())));
+					assertEquals("1.1", toString(record.get(AccountSubcategory.name())));
+					assertEquals("Cash", toString(record.get(AccountName.name())));
+					assertEquals("Cash and Cash Equivalents", toString(record.get(AccountDescription.name())));
+	
+					assertTrue(iterator.hasNext(), "Should find the second record");
 					record = iterator.next();
 					assertEquals("123456", toString(record.get(TaxPayerId.name())));
-					assertEquals("2021", toString(record.get(TaxYear.name())));					
+					assertEquals("2021", toString(record.get(TaxYear.name())));
+					assertEquals("1.2.1", toString(record.get(AccountCode.name())));
+					assertEquals("1", toString(record.get(AccountCategory.name())));
+					assertEquals("1.2", toString(record.get(AccountSubcategory.name())));
+					assertEquals("Accounts Receivable", toString(record.get(AccountName.name())));
+					assertEquals("Accounts, Notes And Loans Receivable", toString(record.get(AccountDescription.name())));
+	
+					assertTrue(iterator.hasNext(), "Should find the third record");
+					record = iterator.next();
+					assertEquals("123456", toString(record.get(TaxPayerId.name())));
+					assertEquals("2021", toString(record.get(TaxYear.name())));
+					assertEquals("1.3.1", toString(record.get(AccountCode.name())));
+					assertEquals("1", toString(record.get(AccountCategory.name())));
+					assertEquals("1.3", toString(record.get(AccountSubcategory.name())));
+					assertEquals("Inventory", toString(record.get(AccountName.name())));
+					assertEquals("Merchandise in Inventory", toString(record.get(AccountDescription.name())));
+	
+					for (int i=4; i<=14; i++) {
+						assertTrue(iterator.hasNext(), "Should find the "+i+"th record");
+						record = iterator.next();
+						assertEquals("123456", toString(record.get(TaxPayerId.name())));
+						assertEquals("2021", toString(record.get(TaxYear.name())));					
+					}
+	
+					assertFalse(iterator.hasNext(), "Should not find any more records!");
 				}
-
-				assertFalse(iterator.hasNext(), "Should not find any more records!");
-			}
-			
-		}		
-		
+				
+			}		
+		}
 	}
 	
 	/**
@@ -173,9 +184,6 @@ public class CSVParserTests {
 	 */
 	@Test
 	void testChartOfAccounts02() throws Exception {
-		
-		Resource sampleFile = new ClassPathResource("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts.csv");
-		assertTrue(sampleFile.exists());
 		
 		TemplateArchetype archetype = new ChartOfAccountsArchetype();
 		DocumentTemplate template = new DocumentTemplate();
@@ -214,57 +222,64 @@ public class CSVParserTests {
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(AccountDescription.name())
 				.withColumnNameExpression("desc"));		// partial match (should find "AccountDescription" column)
+		
+		for ( String resource : resources ) {
+			
+			System.out.println("Testing with: " + resource);
+		
+			Resource sampleFile = new ClassPathResource(resource);
+			assertTrue(sampleFile.exists());
 
-		try (CSVParser parser = new CSVParser();) {
-			
-			parser.setPath(sampleFile.getFile().toPath());
-			parser.setDocumentInputSpec(inputSpec);
-			parser.start();
-			
-			try (DataIterator iterator = parser.iterator();) {
+			try (CSVParser parser = new CSVParser();) {
 				
-				assertTrue(iterator.hasNext(), "Should find the first record");
-				Map<String,Object> record = iterator.next();
-				assertEquals("123456", toString(record.get(TaxPayerId.name())));
-				assertEquals("2021", toString(record.get(TaxYear.name())));
-				assertEquals("1.1.1", toString(record.get(AccountCode.name())));
-				assertEquals("1", toString(record.get(AccountCategory.name())));
-				assertEquals("1.1", toString(record.get(AccountSubcategory.name())));
-				assertEquals("Cash", toString(record.get(AccountName.name())));
-				assertEquals("Cash and Cash Equivalents", toString(record.get(AccountDescription.name())));
-
-				assertTrue(iterator.hasNext(), "Should find the second record");
-				record = iterator.next();
-				assertEquals("123456", toString(record.get(TaxPayerId.name())));
-				assertEquals("2021", toString(record.get(TaxYear.name())));
-				assertEquals("1.2.1", toString(record.get(AccountCode.name())));
-				assertEquals("1", toString(record.get(AccountCategory.name())));
-				assertEquals("1.2", toString(record.get(AccountSubcategory.name())));
-				assertEquals("Accounts Receivable", toString(record.get(AccountName.name())));
-				assertEquals("Accounts, Notes And Loans Receivable", toString(record.get(AccountDescription.name())));
-
-				assertTrue(iterator.hasNext(), "Should find the third record");
-				record = iterator.next();
-				assertEquals("123456", toString(record.get(TaxPayerId.name())));
-				assertEquals("2021", toString(record.get(TaxYear.name())));
-				assertEquals("1.3.1", toString(record.get(AccountCode.name())));
-				assertEquals("1", toString(record.get(AccountCategory.name())));
-				assertEquals("1.3", toString(record.get(AccountSubcategory.name())));
-				assertEquals("Inventory", toString(record.get(AccountName.name())));
-				assertEquals("Merchandise in Inventory", toString(record.get(AccountDescription.name())));
-
-				for (int i=4; i<=14; i++) {
-					assertTrue(iterator.hasNext(), "Should find the "+i+"th record");
+				parser.setPath(sampleFile.getFile().toPath());
+				parser.setDocumentInputSpec(inputSpec);
+				parser.start();
+				
+				try (DataIterator iterator = parser.iterator();) {
+					
+					assertTrue(iterator.hasNext(), "Should find the first record");
+					Map<String,Object> record = iterator.next();
+					assertEquals("123456", toString(record.get(TaxPayerId.name())));
+					assertEquals("2021", toString(record.get(TaxYear.name())));
+					assertEquals("1.1.1", toString(record.get(AccountCode.name())));
+					assertEquals("1", toString(record.get(AccountCategory.name())));
+					assertEquals("1.1", toString(record.get(AccountSubcategory.name())));
+					assertEquals("Cash", toString(record.get(AccountName.name())));
+					assertEquals("Cash and Cash Equivalents", toString(record.get(AccountDescription.name())));
+	
+					assertTrue(iterator.hasNext(), "Should find the second record");
 					record = iterator.next();
 					assertEquals("123456", toString(record.get(TaxPayerId.name())));
-					assertEquals("2021", toString(record.get(TaxYear.name())));					
+					assertEquals("2021", toString(record.get(TaxYear.name())));
+					assertEquals("1.2.1", toString(record.get(AccountCode.name())));
+					assertEquals("1", toString(record.get(AccountCategory.name())));
+					assertEquals("1.2", toString(record.get(AccountSubcategory.name())));
+					assertEquals("Accounts Receivable", toString(record.get(AccountName.name())));
+					assertEquals("Accounts, Notes And Loans Receivable", toString(record.get(AccountDescription.name())));
+	
+					assertTrue(iterator.hasNext(), "Should find the third record");
+					record = iterator.next();
+					assertEquals("123456", toString(record.get(TaxPayerId.name())));
+					assertEquals("2021", toString(record.get(TaxYear.name())));
+					assertEquals("1.3.1", toString(record.get(AccountCode.name())));
+					assertEquals("1", toString(record.get(AccountCategory.name())));
+					assertEquals("1.3", toString(record.get(AccountSubcategory.name())));
+					assertEquals("Inventory", toString(record.get(AccountName.name())));
+					assertEquals("Merchandise in Inventory", toString(record.get(AccountDescription.name())));
+	
+					for (int i=4; i<=14; i++) {
+						assertTrue(iterator.hasNext(), "Should find the "+i+"th record");
+						record = iterator.next();
+						assertEquals("123456", toString(record.get(TaxPayerId.name())));
+						assertEquals("2021", toString(record.get(TaxYear.name())));					
+					}
+	
+					assertFalse(iterator.hasNext(), "Should not find any more records!");
 				}
-
-				assertFalse(iterator.hasNext(), "Should not find any more records!");
-			}
-			
-		}		
-		
+				
+			}		
+		}
 	}
 
 	public static String toString(Object value) {

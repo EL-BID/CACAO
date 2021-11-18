@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.idb.cacao.api.utils.ParserUtils;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -120,22 +121,6 @@ public class StringUtils {
 		}
 	};
 
-    public static boolean isOnlyNumbers(String value) {
-    	return value!=null && pOnlyNumbers.matcher(value).find();
-    }
-    
-    public static boolean isInteger(String value) {
-    	return value!=null && pInteger.matcher(value).find();
-    }
-    
-    public static boolean isDecimal(String value) {
-    	return value!=null && pDecimal.matcher(value).find();
-    }
-    
-    public static boolean isBoolean(String value) {
-    	return value!=null && pBoolean.matcher(value).find();
-    }
-
     /**
      * Return timestamp in a format that conforms to ISO 8601
      */
@@ -143,21 +128,6 @@ public class StringUtils {
 		if (timestamp==null)
 			return null;
 		return tlDateFormat.get().format(timestamp);
-	}
-	
-	/**
-	 * Return indication that provided value looks like timestamp according to ISO 8601
-	 */
-	public static boolean isTimestamp(String value) {
-		if (value==null)
-			return false;
-		try {
-			tlDateFormat.get().parse(value);
-			return true;
-		}
-		catch (Throwable ex) {
-			return false;
-		}
 	}
 
 	/**
@@ -355,9 +325,9 @@ public class StringUtils {
 			return messageSource.getMessage("yes", null, LocaleContextHolder.getLocale());
 		if (((value instanceof String) && "false".equalsIgnoreCase((String)value)) || Boolean.FALSE.equals(value))
 			return messageSource.getMessage("no", null, LocaleContextHolder.getLocale());
-		if ((value instanceof String) && isTimestamp((String)value))
+		if ((value instanceof String) && ParserUtils.isTimestamp((String)value))
 			return text(messageSource, parseTimestamp((String)value)).replace(" 00:00:00", "");
-		if ((value instanceof String) && isDecimal((String)value))
+		if ((value instanceof String) && ParserUtils.isDecimal((String)value))
 			return text(messageSource, Double.parseDouble((String)value));
 		if (value instanceof Date)
 			return text(messageSource, (Date)value).replace(" 00:00:00", "");

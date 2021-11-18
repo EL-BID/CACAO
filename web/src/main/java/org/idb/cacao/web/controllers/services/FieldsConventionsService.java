@@ -38,9 +38,9 @@ import java.util.regex.Pattern;
 
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.rest.DocumentStoreAPIController;
 import org.idb.cacao.web.dto.MenuItem;
-import org.idb.cacao.web.utils.ParserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
