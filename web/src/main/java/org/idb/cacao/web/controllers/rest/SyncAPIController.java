@@ -72,6 +72,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.Synchronizable;
@@ -1159,7 +1160,7 @@ public class SyncAPIController {
 		}
 		
 		final DocumentTemplate template = template_versions.get(0);
-		final String index_name = "doc_"+DocumentStoreAPIController.formatIndexName(/*indexName*/template.getName());
+		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);
 
     	final long end = opt_end.orElseGet(System::currentTimeMillis);
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
@@ -1666,10 +1667,9 @@ public class SyncAPIController {
 		}
 		
 		// Now repeat this verification for all instances of 'parsed documents'. We need their 'template names'
-		Set<String> templateNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		templateRepository.findAll().forEach(t->templateNames.add(t.getName()));
-		for (String templateName: templateNames) {
-			final String index_name = "doc_"+DocumentStoreAPIController.formatIndexName(/*indexName*/templateName);
+		Set<String> indices = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		templateRepository.findAll().forEach(t->indices.add(IndexNamesUtils.formatIndexNameForValidatedData(t)));
+		for (String index_name: indices) {
 	    	SearchRequest searchRequest = new SearchRequest(index_name);
 	    	BoolQueryBuilder query = QueryBuilders.boolQuery();
 	    	query = query.mustNot(QueryBuilders.existsQuery(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP));

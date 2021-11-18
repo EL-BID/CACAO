@@ -46,7 +46,7 @@ import org.elasticsearch.search.aggregations.metrics.Min;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.Periodicity;
-import org.idb.cacao.web.controllers.rest.DocumentStoreAPIController;
+import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -82,7 +82,7 @@ public class DocumentStoreService {
 	 */
 	public void getDocumentInformation(DocumentUploaded doc, Authentication auth, Consumer<Map<String,Object>> consumer) throws Exception {
     	String template = doc.getTemplateName();
-    	String index_name = "doc_"+DocumentStoreAPIController.formatIndexName(/*indexName*/template);
+    	String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template, doc.getTemplateVersion());
     	SearchRequest searchRequest = new SearchRequest(index_name);
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
     			.query(QueryBuilders.idsQuery().addIds(doc.getId()));   

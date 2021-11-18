@@ -66,6 +66,7 @@ import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.IStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.DateTimeUtils;
+import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.AdvancedSearch;
@@ -744,7 +745,7 @@ public class DocumentStoreAPIController {
         	searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST - allDocs.size());    	
         	searchSourceBuilder.sort("timestamp", SortOrder.DESC);
         	
-        	String indexName = "doc_"+formatIndexName(/*indexName*/template.getName());
+        	String indexName = IndexNamesUtils.formatIndexNameForValidatedData(template);
         	
         	if (indicesVerified.contains(indexName))
         		continue;

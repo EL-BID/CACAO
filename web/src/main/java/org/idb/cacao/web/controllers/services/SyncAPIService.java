@@ -59,10 +59,10 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.DateTimeUtils;
+import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.controllers.dto.SyncDto;
-import org.idb.cacao.web.controllers.rest.DocumentStoreAPIController;
 import org.idb.cacao.web.controllers.rest.SyncAPIController;
 import org.idb.cacao.web.entities.ConfigSync;
 import org.idb.cacao.web.entities.SyncCommitHistory;
@@ -687,7 +687,7 @@ public class SyncAPIService {
 		}
 		
 		final DocumentTemplate template = template_versions.get(0);
-		final String index_name = "doc_"+DocumentStoreAPIController.formatIndexName(/*indexName*/template.getName());
+		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);
 
         // Creates the index, in case it has not been created yet
         try {
