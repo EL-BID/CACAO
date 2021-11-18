@@ -16,6 +16,7 @@ import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import static org.idb.cacao.api.utils.ParserUtils.*;
 
@@ -27,6 +28,7 @@ import static org.idb.cacao.api.utils.ParserUtils.*;
  * @since 17/11/2021
  *
  */
+@Component
 public class Validations {
 
 	private static final String FIELD_VALUE_NOT_FOUND = "Field value not found";
@@ -36,7 +38,7 @@ public class Validations {
 	private static final String DOMAIN_TABLE_NOT_FOUND = "Domain table not found";
 
 	@Autowired
-	private static DomainTableRepository domainTableRepository;
+	private DomainTableRepository domainTableRepository;
 
 	/**
 	 * Check for required fields in document uploaded
@@ -231,7 +233,7 @@ public class Validations {
 	 * 
 	 * @param validationContext
 	 */
-	public static void checkForDomainTableValues(ValidationContext validationContext) {
+	public void checkForDomainTableValues(ValidationContext validationContext) {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -337,7 +339,7 @@ public class Validations {
 	 * @return A domain table for name and version specifieds in field or null if
 	 *         table doesn't exist
 	 */
-	private static synchronized DomainTable getDomainTable(DocumentField field, Map<String, DomainTable> domainTables) {
+	private synchronized DomainTable getDomainTable(DocumentField field, Map<String, DomainTable> domainTables) {
 
 		if (domainTables == null)
 			domainTables = new LinkedHashMap<>();

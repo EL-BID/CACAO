@@ -76,6 +76,9 @@ public class FileUploadedConsumerService {
     
     @Autowired
     private ValidatedDataStorageService validatedDataStorageService;
+    
+    @Autowired
+    private Validations validations;
 
     @Bean
     public Consumer<String> receiveAndValidateFile() {
@@ -218,7 +221,7 @@ public class FileUploadedConsumerService {
             Validations.checkForFieldDataTypes(validationContext);
             
             // check for domain table fields
-            Validations.checkForDomainTableValues(validationContext);
+            validations.checkForDomainTableValues(validationContext);
             
             if ( !validationContext.getAlerts().isEmpty() ) {
             	setSituation(doc, DocumentSituation.INVALID);
