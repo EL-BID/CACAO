@@ -1,0 +1,130 @@
+{
+    "Chart of Accounts": [
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "1.1.1",
+            "AccountCategory": "1",
+            "AccountSubcategory": "1.1",
+            "AccountName": "Cash",
+            "AccountDescription": "Cash and Cash Equivalents"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "1.2.1",
+            "AccountCategory": "1",
+            "AccountSubcategory": "1.2",
+            "AccountName": "Accounts Receivable",
+            "AccountDescription": "Accounts, Notes And Loans Receivable"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "1.3.1",
+            "AccountCategory": "1",
+            "AccountSubcategory": "1.3",
+            "AccountName": "Inventory",
+            "AccountDescription": "Merchandise in Inventory"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "2.1.1",
+            "AccountCategory": "2",
+            "AccountSubcategory": "2.1",
+            "AccountName": "Accounts Payable",
+            "AccountDescription": "Accounts and Trade Payables"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "2.3.2",
+            "AccountCategory": "2",
+            "AccountSubcategory": "2.3",
+            "AccountName": "Loans",
+            "AccountDescription": "Loans Payable"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "3.5.2",
+            "AccountCategory": "3",
+            "AccountSubcategory": "3.5",
+            "AccountName": "Stock",
+            "AccountDescription": "Subscribed Stock Receivables"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "4.1.1",
+            "AccountCategory": "4",
+            "AccountSubcategory": "4.1",
+            "AccountName": "Revenue Goods",
+            "AccountDescription": "Revenue from selling Goods"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "4.1.2",
+            "AccountCategory": "4",
+            "AccountSubcategory": "4.1",
+            "AccountName": "Revenue Services",
+            "AccountDescription": "Revenue from Services"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "5.1.2",
+            "AccountCategory": "5",
+            "AccountSubcategory": "5.1",
+            "AccountName": "Employee",
+            "AccountDescription": "Employee Benefits"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "5.1.3",
+            "AccountCategory": "5",
+            "AccountSubcategory": "5.1",
+            "AccountName": "Services",
+            "AccountDescription": "Expenses for Services"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "5.1.4",
+            "AccountCategory": "5",
+            "AccountSubcategory": "5.1",
+            "AccountName": "Rent",
+            "AccountDescription": "Rent, Depreciation, Amortization And Depletion"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "5.2.1",
+            "AccountCategory": "5",
+            "AccountSubcategory": "5.2",
+            "AccountName": "Sales Expenses",
+            "AccountDescription": "Cost Of Sales"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "5.2.2",
+            "AccountCategory": "5",
+            "AccountSubcategory": "5.2",
+            "AccountName": "Adminitrative Expenses",
+            "AccountDescription": "Selling, General And Administrative "
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "6.1.2",
+            "AccountCategory": "6",
+            "AccountSubcategory": "6.1",
+            "AccountName": "Other Expenses",
+            "AccountDescription": "Other non-operating expenses"
+        }
+    ]
+}

@@ -1,0 +1,49 @@
+{
+    "Lalur": [
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "3.2.1",
+            "Initial Date": "1/1/21",
+            "Final Date": "12/31/21",
+            "FinalBalance": "150.00 ",
+            "DebitCredit": "Debit"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "3.2.2",
+            "Initial Date": "1/1/21",
+            "Final Date": "12/31/21",
+            "FinalBalance": "300.00 ",
+            "DebitCredit": "Credit"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "3.2.3",
+            "Initial Date": "1/1/21",
+            "Final Date": "12/31/21",
+            "FinalBalance": "1,000.00 ",
+            "DebitCredit": "Debit"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "3.5.1",
+            "Initial Date": "1/1/21",
+            "Final Date": "12/31/21",
+            "FinalBalance": "1,800.00 ",
+            "DebitCredit": "Debit"
+        },
+        {
+            "TaxPayerId": "123456",
+            "TaxYear": "2021",
+            "AccountCode": "3.5.4",
+            "Initial Date": "1/1/21",
+            "Final Date": "12/31/21",
+            "FinalBalance": "380.00 ",
+            "DebitCredit": "Credit"
+        }
+    ]
+}
