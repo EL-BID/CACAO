@@ -36,20 +36,24 @@ public class Validations {
 	private static final String FIELD_DOMAIN_VALUE_NOT_FOUND = "Field domain value not found";
 
 	private static final String DOMAIN_TABLE_NOT_FOUND = "Domain table not found";
+	
+	/**
+	 * Maximum length of field size saved to elasticsearch database
+	 */
+	private static final int MAX_ES_FIELD_SIZE = 1_000;
 
 	@Autowired
 	private DomainTableRepository domainTableRepository;
 
 	/**
-	 * Check for required fields in document uploaded
+	 * Check for required fields in document uploaded. <br>
 	 * 
-	 * All validations error will be inserted on
-	 * {@link ValidationContext#addAlert(String)}
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
 	 * 
 	 * @param validationContext
 	 * 
 	 */
-	public static void checkForRequiredFields(ValidationContext validationContext) {
+	public void checkForRequiredFields(ValidationContext validationContext) {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -80,7 +84,7 @@ public class Validations {
 
 	}
 
-	private static synchronized void addLogError(ValidationContext validationContext, String field, String message) {
+	private synchronized void addLogError(ValidationContext validationContext, String field, String message) {
 		validationContext.addAlert(message + ":" + field);
 	}
 
@@ -91,7 +95,7 @@ public class Validations {
 	 * @return Boolean.TRUE if all data are compatible with field types.
 	 *         Boolean.FALSE if not.
 	 */
-	public static void checkForFieldDataTypes(ValidationContext validationContext) {
+	public void checkForFieldDataTypes(ValidationContext validationContext) {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -99,9 +103,8 @@ public class Validations {
 		if (allFields == null || allFields.isEmpty())
 			return;
 
-		// Remove CHARACTER fields from validation
-		List<DocumentField> fields = allFields.stream().filter(field -> (!FieldType.GENERIC.equals(field.getFieldType())
-				&& !FieldType.CHARACTER.equals(field.getFieldType()) && !FieldType.DOMAIN.equals(field.getFieldType())
+		//Remove fields from validation
+		List<DocumentField> fields = allFields.stream().filter(field -> (!FieldType.DOMAIN.equals(field.getFieldType())
 				&& !FieldType.NESTED.equals(field.getFieldType()))).collect(Collectors.toList());
 
 		if (fields == null || fields.isEmpty())
@@ -121,15 +124,21 @@ public class Validations {
 				// If field value is null, there is nothing to check
 				if (fieldValue == null)
 					continue;
-
+				
 				if (FieldType.BOOLEAN.equals(field.getFieldType()))
 					fieldValue = checkBooleanValue(fieldValue, validationContext);
+				
+				if (FieldType.CHARACTER.equals(field.getFieldType()))
+					fieldValue = checkCharacterValue(field, fieldValue, validationContext);
 
 				if (FieldType.DATE.equals(field.getFieldType()))
 					fieldValue = checkDateValue(fieldValue, validationContext);
 
 				if (FieldType.DECIMAL.equals(field.getFieldType()))
 					fieldValue = checkDecimalValue(fieldValue, validationContext);
+				
+				if (FieldType.GENERIC.equals(field.getFieldType()))
+					fieldValue = checkGenericValue(field, fieldValue, validationContext);
 
 				if (FieldType.INTEGER.equals(field.getFieldType()))
 					fieldValue = checkIntegerValue(fieldValue, validationContext);
@@ -148,39 +157,116 @@ public class Validations {
 		});
 	}
 
-	private static Object checkTimestampValue(Object fieldValue, ValidationContext validationContext) {
+	/**
+	 * Validate and transform field value from {@link FieldType.GENERIC} 
+	 * @param field
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */
+	private Object checkGenericValue(DocumentField field, Object fieldValue, ValidationContext validationContext) {
+		
+		if (fieldValue == null)
+			return null;
+		
+		String value = ValidationContext.toString(fieldValue);
+		
+		Integer maxLength = field.getMaxLength();
+		
+		if ( maxLength != null && maxLength.intValue() > 0 ) {
+			value = value.substring(0, maxLength);	
+		}
+		else {		
+			if ( value.length() > MAX_ES_FIELD_SIZE )
+				value = value.substring(0, MAX_ES_FIELD_SIZE);
+		}
+		
+		return value;
+	}
+
+	/**
+	 * Validate and transform field value from {@link FieldType.CHARACTER} 
+	 * @param field
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */	
+	private Object checkCharacterValue(DocumentField field, Object fieldValue, ValidationContext validationContext) {
+		if (fieldValue == null)
+			return null;
+		
+		String value = ValidationContext.toString(fieldValue);
+		
+		Integer maxLength = field.getMaxLength();
+		
+		if ( maxLength != null && maxLength.intValue() > 0 ) {
+			value = value.substring(0, maxLength);	
+		}
+		else {		
+			if ( value.length() > MAX_ES_FIELD_SIZE )
+				value = value.substring(0, MAX_ES_FIELD_SIZE);
+		}
+		
+		return value;
+	}
+
+	/**
+	 * Validate and transform field value from {@link FieldType.TIMESTAMP} 
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */		
+	private Object checkTimestampValue(Object fieldValue, ValidationContext validationContext) {
 		// TODO Auto-generated method stub
 		return fieldValue;
 	}
 
-	private static Object checkMonthValue(Object fieldValue, ValidationContext validationContext) {
+	/**
+	 * Validate and transform field value from {@link FieldType.MONTH} 
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */		
+	private Object checkMonthValue(Object fieldValue, ValidationContext validationContext) {
 		// TODO Auto-generated method stub
 		return fieldValue;
 	}
 
-	private static Object checkIntegerValue(Object fieldValue, ValidationContext validationContext) {
+	/**
+	 * Validate and transform field value from {@link FieldType.INTEGER} 
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */	
+	private Object checkIntegerValue(Object fieldValue, ValidationContext validationContext) {
 		if (fieldValue == null)
 			return null;
 
 		if (fieldValue instanceof Integer || fieldValue.getClass().isAssignableFrom(int.class))
 			return fieldValue;
 
-		String value = fieldValue.toString();
-		
+		String value = ValidationContext.toString(fieldValue);
+
 		if (isInteger(value))
-			return Long.parseLong(value);		
+			return Long.parseLong(value);
 
 		// TODO check other situations
 		return fieldValue;
 
 	}
 
-	private static Object checkDecimalValue(Object fieldValue, ValidationContext validationContext) {
+	/**
+	 * Validate and transform field value from {@link FieldType.DECIMAL} 
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */
+	private Object checkDecimalValue(Object fieldValue, ValidationContext validationContext) {
 
 		if (fieldValue == null)
 			return null;
 
-		String value = fieldValue.toString();
+		String value = ValidationContext.toString(fieldValue);
 
 		if (isDecimal(value))
 			return Double.parseDouble(value);
@@ -192,12 +278,18 @@ public class Validations {
 		return fieldValue;
 	}
 
-	private static Object checkDateValue(Object fieldValue, ValidationContext validationContext) {
+	/**
+	 * Validate and transform field value from {@link FieldType.DATE} 
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */
+	private Object checkDateValue(Object fieldValue, ValidationContext validationContext) {
 
 		if (fieldValue == null)
 			return null;
 
-		String value = fieldValue.toString();
+		String value = ValidationContext.toString(fieldValue);
 
 		if (isMDY(value))
 			return formatTimestamp(parseMDY(value));
@@ -210,14 +302,20 @@ public class Validations {
 		return fieldValue;
 	}
 
-	private static Object checkBooleanValue(Object fieldValue, ValidationContext validationContext) {
+	/**
+	 * Validate and transform field value from {@link FieldType.BOOLEAN} 
+	 * @param fieldValue
+	 * @param validationContext
+	 * @return	Validated and transformed field value
+	 */	
+	private Object checkBooleanValue(Object fieldValue, ValidationContext validationContext) {
 		if (fieldValue == null)
 			return null;
 
 		if (fieldValue instanceof Boolean || fieldValue.getClass().isAssignableFrom(boolean.class))
 			return fieldValue;
 
-		String value = fieldValue.toString();
+		String value = ValidationContext.toString(fieldValue);
 
 		// TODO check other situations
 		if (isBoolean(value))
@@ -283,17 +381,16 @@ public class Validations {
 
 				// Check field value against domain table entries
 				// If value is not present on table, add an error message
-				Pair<Boolean,String> result = checkDomainValue(fieldValue, table);
-				
-				//If value is not present at domain table entries, add error message
-				if ( !result.getKey() ) {
+				Pair<Boolean, String> result = checkDomainValue(fieldValue, table);
+
+				// If value is not present at domain table entries, add error message
+				if (!result.getKey()) {
 					addLogError(validationContext, field.getFieldName(),
 							FIELD_DOMAIN_VALUE_NOT_FOUND + ": " + fieldValue);
-				}
-				else {
+				} else {
 					String newValue = result.getValue();
-					//If value need to be updated, chave value in record
-					if ( newValue != null )
+					// If value need to be updated, chave value in record
+					if (newValue != null)
 						values.replace(field.getFieldName(), newValue);
 				}
 
@@ -302,42 +399,39 @@ public class Validations {
 	}
 
 	/**
-	 * Check if a specific given value is present on a given table
+	 * Check if a specific given value is present on a given table. <br>
 	 * 
 	 * @param fieldValue
 	 * @param table
-	 * @return
+	 * @return	A {@link Pair} where key is a boolean that indicates if value is present in domain table, and the value 
+	 * 			is a key value for a given description, in case the provided value is not the key. 
 	 */
-	private static Pair<Boolean,String> checkDomainValue(Object fieldValue, DomainTable table) {
+	private Pair<Boolean, String> checkDomainValue(Object fieldValue, DomainTable table) {
 
 		if (fieldValue == null || table == null)
-			return Pair.of(Boolean.TRUE,null);
+			return Pair.of(Boolean.TRUE, null);
 
 		String value = ValidationContext.toString(fieldValue);
 
-		// TODO change value to key value when provided value is a description
-
 		if (table.getEntry(value) == null) {
-			List<DomainEntry> entries = table.getEntries();
-			for (DomainEntry entry : entries) {
-				if (value.equalsIgnoreCase(entry.getDescription()))
-					return Pair.of(Boolean.TRUE,entry.getKey());
+			DomainEntry entry = table.getEntries().parallelStream()
+					.filter(e -> e.getDescription().equalsIgnoreCase(value)).findFirst().orElse(null);
+			if (entry != null) {
+				return Pair.of(Boolean.TRUE, entry.getKey());
 			}
 		} else {
-			return Pair.of(Boolean.TRUE,null);
+			return Pair.of(Boolean.TRUE, null);
 		}
 
-		return Pair.of(Boolean.FALSE,null);
+		return Pair.of(Boolean.FALSE, null);
 	}
 
 	/**
-	 * Find and return a {@link DomainTable} for a given {@link DocumentField}
+	 * Find and return a {@link DomainTable} for a given {@link DocumentField}. <br>
 	 * 
-	 * @param field        The {@link DocumentField} with information about name and
-	 *                     version
-	 * @param domainTables A {@link Map} with all domain tables needed
-	 * @return A domain table for name and version specifieds in field or null if
-	 *         table doesn't exist
+	 * @param field        The {@link DocumentField} with information about name and version. <br>
+	 * @param domainTables A {@link Map} with all domain tables needed. <br>
+	 * @return A domain table for name and version specifieds in field or null if table doesn't exist. <br>
 	 */
 	private synchronized DomainTable getDomainTable(DocumentField field, Map<String, DomainTable> domainTables) {
 

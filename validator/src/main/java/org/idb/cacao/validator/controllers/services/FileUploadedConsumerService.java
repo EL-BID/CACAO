@@ -215,10 +215,10 @@ public class FileUploadedConsumerService {
             // Should perform generic validations:
             // ....
             // check for required fields
-            Validations.checkForRequiredFields(validationContext);
+            validations.checkForRequiredFields(validationContext);
             
             // check for mismatch in field types (should try to automatically convert some field types, e.g. String -> Date)
-            Validations.checkForFieldDataTypes(validationContext);
+            validations.checkForFieldDataTypes(validationContext);
             
             // check for domain table fields
             validations.checkForDomainTableValues(validationContext);
