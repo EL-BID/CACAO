@@ -46,8 +46,15 @@ import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageRepository;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
+
+/**
+ * 
+ * @author leon
+ *
+ */
 
 @Service
 public class FileUploadedConsumerService {
@@ -80,14 +87,27 @@ public class FileUploadedConsumerService {
     @Autowired
     private Validations validations;
 
+	@Autowired
+	private final StreamBridge streamBridge;
+	
+	public FileUploadedConsumerService(StreamBridge streamBridge) {
+		this.streamBridge = streamBridge;
+	}
+    
     @Bean
     public Consumer<String> receiveAndValidateFile() {
         return documentId -> {
             log.log(Level.INFO, "Received message with documentId " + documentId);
 
             try {
-                String validationResults = validateDocument(documentId);
-                System.out.println(validationResults);
+                Boolean validated = validateDocument(documentId);
+                
+                if (validated) {
+            		log.log(Level.INFO, "Sending a message to ETL with documentId " + documentId);
+            		
+                    streamBridge.send("receiveAndValidateFile-out-0", documentId);
+                }
+                
             } catch (MissingConfigurationException e) {
                 log.log(Level.INFO, "Configuration is missing for document " + documentId, e);
             } catch (Exception e) {
@@ -102,7 +122,7 @@ public class FileUploadedConsumerService {
      * @param documentId The ID of {@link DocumentUploaded} that needs to be validated
      * @return DocumentId if the document has been validated. NULL if it doesn't.
      */
-    private String validateDocument(String documentId) throws GeneralException, DocumentNotFoundException {
+    private Boolean validateDocument(String documentId) throws GeneralException, DocumentNotFoundException {
 
         log.log(Level.INFO, "Received a message with documentId " + documentId);
 
@@ -252,7 +272,7 @@ public class FileUploadedConsumerService {
             
             setSituation(doc, DocumentSituation.VALID);
 
-            return documentId;
+            return true;
 
         } catch (GeneralException ex) {
             callRollbackProcedures(rollbackProcedures);
