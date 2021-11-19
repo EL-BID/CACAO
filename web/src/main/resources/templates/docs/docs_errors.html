@@ -1,0 +1,74 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="archive icon"></i>
+			<div class="content" th:text="#{doc.error.messages}">All Uploads</div>
+		</h2>
+			<div id="app">
+				<div id="table" class="ui orange table"></div>
+			</div>
+		<div class="ui column right floated">
+			<div class="ui right floated primary labeled icon">
+				<a th:href="@{/docs_search}" class="ui button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
+			</div>
+		</div>
+	</div>
+ 
+<script th:nonce="${cspNonce}" th:inline="javascript">
+dateFormatter = function(cell, formatterParams, onRendered) {
+	var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
+	if(newDate.isValid) {
+		return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
+	}
+	return cell.getValue()
+}
+
+var app = new Vue({
+	el: '#app',
+	data: {
+		table: null,
+		headerFilter: false
+	},
+	
+	mounted() {
+		
+		var tableData = /*[[${messages}]]*/ null;
+		
+		this.table = new Tabulator('#table', {
+			index: "timestamp",
+			layout:"fitDataFill",		
+		    persistence:{
+				sort:true,
+				filter:true,
+				columns:true,
+			},
+		    persistenceID:"doc_error_messages_persistence",				
+    		data: tableData,    		
+			columns:[ //Define Table Columns
+				{title: /*{{#doc.error.documentId}}} */ "Document Id", field:"documentId", headerFilter:this.headerFilter},
+				{title: /*{{#doc.template}}} */ "Template", field:"templateName", headerFilter:this.headerFilter},
+				{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
+				{title: /*[[#{doc.error.message}]]*/ "Error message", field:"errorMessage", formatter: dateFormatter, headerFilter:this.headerFilter},								
+			]
+		})
+	},
+		
+})
+</script>
+</body>
+</html>
+    

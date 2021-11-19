@@ -87,7 +87,7 @@ public class ValidatedDataStorageService {
 			normalized_record.put("_timestamp", timestamp);
 			
 			// Add this record to index
-        	request.add(new IndexRequest(index_name)
+			request.add(new IndexRequest(index_name)
 				.id(rowId)
 				.source(normalized_record));
 

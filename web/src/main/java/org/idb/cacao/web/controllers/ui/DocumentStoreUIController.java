@@ -22,12 +22,11 @@ package org.idb.cacao.web.controllers.ui;
 import java.util.List;
 
 import org.idb.cacao.api.DocumentSituationHistory;
-import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
-import org.idb.cacao.web.repositories.DocumentTemplateRepository;
-import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
+import org.idb.cacao.web.repositories.DocumentValidationErrorMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -46,13 +45,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class DocumentStoreUIController {
 	
 	@Autowired
-	private DocumentTemplateRepository templateRepository;
-	
-	@Autowired
 	private DocumentTemplateService templateService;
 	
 	@Autowired
 	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
+	
+	@Autowired
+	private DocumentValidationErrorMessageRepository documentValidationErrorMessageRepository;
 	
 	@Autowired
 	private MessageSource messageSource;
@@ -69,19 +68,8 @@ public class DocumentStoreUIController {
         return "docs/docs_search";
     }
 	
-	@GetMapping("/addSamples")
-    public String addSampleDocs(Model model) {
-		
-		List<DocumentTemplate> samples = CreateDocumentTemplatesSamples.getSampleTemplates();
-		
-		samples.forEach(s->templateRepository.saveWithTimestamp(s));
-		
-		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
-        return "docs/docs_main";
-    }	
-	
 	@GetMapping("/docs/situations/{documentId}")
-    public String getDocs(@PathVariable("documentId") String documentId, Model model) {
+    public String getDocSituations(@PathVariable("documentId") String documentId, Model model) {
 		
 		// Parse the 'templateName' informed at request path
 		if (documentId==null || documentId.trim().length()==0) {
@@ -92,6 +80,20 @@ public class DocumentStoreUIController {
 		model.addAttribute("situations", situations);
 		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
         return "docs/docs_situation";
+    }	
+	
+	@GetMapping("/docs/errors/{documentId}")
+    public String getDocErrors(@PathVariable("documentId") String documentId, Model model) {
+		
+		// Parse the 'templateName' informed at request path
+		if (documentId==null || documentId.trim().length()==0) {
+			throw new MissingParameter("documentId");
+		}
+		List<DocumentValidationErrorMessage> messages = documentValidationErrorMessageRepository.findByDocumentId(documentId);
+		
+		model.addAttribute("messages", messages);
+		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
+        return "docs/docs_errors";
     }	
 	
 }
