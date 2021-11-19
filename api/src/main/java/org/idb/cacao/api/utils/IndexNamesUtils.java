@@ -47,7 +47,16 @@ public class IndexNamesUtils {
 	public static String formatIndexNameForValidatedData(DocumentTemplate template) {
 		String name = template.getName()==null || template.getName().trim().length()==0 ? "generic" : template.getName();
 		String version = template.getVersion()==null || template.getVersion().trim().length()==0 ? "0" : template.getVersion();
-		return IndexNamesUtils.formatIndexName("doc_"+name+"_v_"+version);		
+		return IndexNamesUtils.formatIndexName("cacao_doc_"+name+"_v_"+version);		
+	}
+
+	/**
+	 * Returns a proper index name for using in ElasticSearch for validated documents related to a DocumentTemplate
+	 */
+	public static String formatIndexNameForValidatedData(String templateName, String templateVersion) {
+		String name = templateName==null || templateName.trim().length()==0 ? "generic" : templateName;
+		String version = templateVersion==null || templateVersion.trim().length()==0 ? "0" : templateVersion;
+		return IndexNamesUtils.formatIndexName("cacao_doc_"+name+"_v_"+version);		
 	}
 
 	/**

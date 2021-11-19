@@ -20,6 +20,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
+/**
+ * 
+ * @author leon
+ *
+ */
+
 @Service
 public class FileValidatedConsumerService {
 	private static final Logger log = Logger.getLogger(FileValidatedConsumerService.class.getName());

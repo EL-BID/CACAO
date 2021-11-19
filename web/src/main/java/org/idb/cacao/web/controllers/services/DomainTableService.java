@@ -210,20 +210,25 @@ public class DomainTableService {
 	 * For all installed 'TemplateArchetype's, check for the presence of built-in DomainTable's and creates the missing
 	 * ones.
 	 * @param overwrite If FALSE, will not overwrite existing domain tables.
+	 * @return Returns the number of domain tables created
 	 */
-	public void assertDomainTablesForAllArchetypes(boolean overwrite) {
+	public int assertDomainTablesForAllArchetypes(boolean overwrite) {
 		
 		List<DomainTable> builtInDomainTables = TemplateArchetypes.getBuiltInDomainTables();
 		if (builtInDomainTables==null || builtInDomainTables.isEmpty())
-			return;
+			return 0;
 
+		int count = 0;
 		for (DomainTable builtInDomainTable: builtInDomainTables) {
 			try {
 				assertDomainTable(builtInDomainTable, overwrite);
+				count++;
 			}
 			catch (Throwable ex) {
 				log.log(Level.SEVERE, "Error while asserting the built-in domain table "+builtInDomainTable.getName(), ex);
 			}
 		}
+		
+		return count;
 	}
 }

@@ -77,6 +77,12 @@ public interface IStorageService {
 	Resource load(String filename);
 	
 	/**
+	 * Deletes all files stored.
+	 * @return Return the number of files deleted
+	 */
+	int deleteAll();
+	
+	/**
 	 * 
 	 * @return	A subdir of storage where a file should be stored
 	 */

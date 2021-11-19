@@ -115,7 +115,6 @@ public class LoginUIController {
 		List<MenuItem> menu = new LinkedList<>();
 
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_WRITE)) {
-			menu.add(new MenuItem("Add Sample Documents", "/addSamples"));
 			menu.add(new MenuItem(messages.getMessage("docs.main.upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
 		}
@@ -143,6 +142,11 @@ public class LoginUIController {
 					"/sys_info"));
 		}
 		
+		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
+			menu.add(
+				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin_shell"));
+		}
+
 		return menu;
 	}
 
