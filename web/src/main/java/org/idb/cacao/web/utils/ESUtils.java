@@ -19,16 +19,30 @@
  *******************************************************************************/
 package org.idb.cacao.web.utils;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -38,12 +52,43 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.CloseIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
+import org.elasticsearch.client.security.DisableUserRequest;
+import org.elasticsearch.client.security.EnableUserRequest;
+import org.elasticsearch.client.security.GetRolesRequest;
+import org.elasticsearch.client.security.GetRolesResponse;
+import org.elasticsearch.client.security.GetUsersRequest;
+import org.elasticsearch.client.security.GetUsersResponse;
+import org.elasticsearch.client.security.PutRoleRequest;
+import org.elasticsearch.client.security.PutRoleResponse;
+import org.elasticsearch.client.security.PutUserRequest;
+import org.elasticsearch.client.security.PutUserResponse;
+import org.elasticsearch.client.security.RefreshPolicy;
+import org.elasticsearch.client.security.user.User;
+import org.elasticsearch.client.security.user.privileges.ApplicationResourcePrivileges;
+import org.elasticsearch.client.security.user.privileges.IndicesPrivileges;
+import org.elasticsearch.client.security.user.privileges.Role;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.IndexSettings;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RequestCallback;
+import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Utility methods for Elastic Search
@@ -59,6 +104,12 @@ public class ESUtils {
 	 */
 	public static final String SETTING_IGNORE_MALFORMED = "index.mapping.ignore_malformed";
 	
+	/**
+	 * Property for making the index 'read only' (required for 'clone' operations).
+	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/master/index-modules-blocks.html#index-block-settings
+	 */
+	public static final String SETTING_READ_ONLY = "index.blocks.read_only";
+
 	/**
 	 * Change index-scoped boolean setting
 	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
@@ -105,12 +156,49 @@ public class ESUtils {
 	}	
 
 	/**
+	 * Change property-scoped settings
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name
+	 * @param property_name Property name
+	 * @param settings Settings to provide
+	 */
+	public static void changeMappingSettings(RestHighLevelClient elasticsearchClient, String index_name, String property_name, Map<String, Object> settings) throws IOException {
+		PutMappingRequest request = new PutMappingRequest(index_name);
+		Map<String, Object> jsonMap = new HashMap<>();
+		Map<String, Object> properties = new HashMap<>();
+		jsonMap.put("properties", properties);
+		properties.put(property_name, settings);
+		request.source(jsonMap);
+		
+		elasticsearchClient.indices().putMapping(request, RequestOptions.DEFAULT);
+	}
+
+	/**
+	 * Deletes an existent index
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name to delete
+	 */
+	public static void deleteIndex(RestHighLevelClient elasticsearchClient, String index_name) throws IOException {
+		DeleteIndexRequest request = new DeleteIndexRequest(index_name);
+		elasticsearchClient.indices().delete(request, RequestOptions.DEFAULT);
+	}
+
+	/**
 	 * Get ElasticSearch cluster health information
 	 */
 	public static ClusterHealthResponse getClusterStatus(RestHighLevelClient elasticsearchClient) throws IOException {
 		ClusterHealthRequest request = new ClusterHealthRequest();
 		request.timeout(TimeValue.timeValueSeconds(30));
 		return elasticsearchClient.cluster().health(request, RequestOptions.DEFAULT);
+	}
+
+	/**
+	 * Returns count of documents for a given index at ElasticSearch
+	 */
+	public static long countDocs(RestHighLevelClient elasticsearchClient, String index) throws IOException {
+		CountRequest countRequest = new CountRequest(index);
+		CountResponse countResponse = elasticsearchClient.count(countRequest, RequestOptions.DEFAULT);
+		return countResponse.getCount();
 	}
 
 	/**
@@ -236,6 +324,545 @@ public class ESUtils {
 		createIndex(elasticsearchClient, index_name, settings);
 	}
 	
+	/**
+	 * Creates a new index initialized with some settings
+	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
+	 * @param index_name Index name
+	 * @param ignore_malformed If set to true, allows the 'malformed' exception to be ignored.
+	 * @param max_result_window Maximum value of from + size on a query. The Default maximum value of from + size on a query is 10,000.
+	 */
+	public static void createIndex(RestHighLevelClient elasticsearchClient, String index_name, boolean ignore_malformed, int max_result_window) throws IOException {
+		Settings settings = Settings.builder()
+			.put(IndexSettings.MAX_RESULT_WINDOW_SETTING.getKey(), max_result_window)
+			.put(SETTING_IGNORE_MALFORMED, ignore_malformed)
+			.build();
+		createIndex(elasticsearchClient, index_name, settings);
+	}
+
+	/**
+	 * Return the list of roles registered in ElasticSearch if security module is enabled.
+	 */
+	public static List<Role> getRoles(RestHighLevelClient client) throws IOException {
+		GetRolesRequest request = new GetRolesRequest();
+		GetRolesResponse response = client.security().getRoles(request, RequestOptions.DEFAULT);
+		return response.getRoles();
+	}
+	
+	/**
+	 * Return information about the provided role
+	 */
+	public static Role getRole(RestHighLevelClient client, String roleName) throws IOException {
+		GetRolesRequest request = new GetRolesRequest(roleName);
+		try {
+			GetRolesResponse response = client.security().getRoles(request, RequestOptions.DEFAULT);
+			List<Role> found = response.getRoles();
+			if (found!=null && !found.isEmpty())
+				return found.get(0);
+			else
+				return null;
+		} catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Create a new role for a specific application in ElasticSearch if security module is enabled.
+	 * @param client Object for communication with ElasticSearch
+	 * @param name Name of the new role
+	 * @param application Name of the application associated with this role
+	 * @param privileges Privileges of this role over the application
+	 * @param resources Resources to access with this role and this application
+	 */
+	public static Role createRoleForSingleApplication(RestHighLevelClient client, 
+			String name, 
+			String application, 
+			Collection<String> privileges, 
+			Collection<String> resources,
+			Collection<String> allIndicesPrivilege) throws IOException {
+		Role role = Role.builder()
+				.name(name)
+				.applicationResourcePrivileges(new ApplicationResourcePrivileges(application, privileges, resources))
+				.indicesPrivileges(IndicesPrivileges.builder().indices("*").privileges(allIndicesPrivilege).allowRestrictedIndices(false).build())
+				.build();
+		PutRoleRequest request = new PutRoleRequest(role, RefreshPolicy.IMMEDIATE);
+		PutRoleResponse response = client.security().putRole(request, RequestOptions.DEFAULT);
+		return (response.isCreated()) ? role : null;
+	}
+	
+	/**
+	 * Returns information about the user in ElasticSearch if security module is enabled.
+	 */
+	public static User getUser(RestHighLevelClient client, String username) {
+		Set<User> users_at_es;
+		try {
+			users_at_es = getUsers(client, username);
+		} catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+			return null;
+		} catch (IOException e) {
+			return null;
+		}
+		if (users_at_es!=null && !users_at_es.isEmpty()) 
+			return users_at_es.iterator().next();
+		else
+			return null;
+	}
+	
+	/**
+	 * Returns the users registered in ElasticSearch if security module is enabled.
+	 * @param client Object for communication with ElasticSearch
+	 * @param usernames Names of the users to search for.
+	 */
+	public static Set<User> getUsers(RestHighLevelClient client, String... usernames) throws IOException {
+		try {
+			GetUsersRequest request = new GetUsersRequest(usernames);
+			GetUsersResponse response = client.security().getUsers(request, RequestOptions.DEFAULT);
+			return response.getUsers();
+		}
+		catch (Throwable ex) {
+			if (ErrorUtils.isErrorNotFound(ex))
+				return Collections.emptySet();
+			else
+				throw ex;
+		}
+	}
+	
+	/**
+	 * Creates a new user at ElasticSearch if security module is enabled.
+	 * @param client Object for communication with ElasticSearch
+	 * @param username Username
+	 * @param roles Roles to assign to the user
+	 * @param password Password
+	 */
+	public static User createUser(RestHighLevelClient client, String username, List<String> roles, char[] password) throws IOException {
+		User user = new User(username, roles);
+		PutUserRequest request = PutUserRequest.withPassword(user, password, /*enabled*/true, RefreshPolicy.IMMEDIATE);
+		PutUserResponse response = client.security().putUser(request, RequestOptions.DEFAULT);
+		return response.isCreated() ? user : null;
+	}
+
+	/**
+	 * Updates an existing user at ElasticSearch if security module is enabled.
+	 * @param client Object for communication with ElasticSearch
+	 * @param username Username
+	 * @param roles Roles to assign to the user
+	 */
+	public static User updateUser(RestHighLevelClient client, String username, List<String> roles) throws IOException {
+		User user = new User(username, roles);
+		PutUserRequest request = PutUserRequest.updateUser(user, /*enabled*/true, RefreshPolicy.IMMEDIATE);
+		PutUserResponse response = client.security().putUser(request, RequestOptions.DEFAULT);
+		return response.isCreated() ? user : null;
+	}
+
+	/**
+	 * Disable user at ElasticSearch if security module is enabled
+	 * @param client Object for communication with ElasticSearch
+	 * @param username Username
+	 */
+	public static boolean disableUser(RestHighLevelClient client, String username) throws IOException {
+		DisableUserRequest request = new DisableUserRequest(username, RefreshPolicy.IMMEDIATE);
+		boolean disabled = client.security().disableUser(request, RequestOptions.DEFAULT);
+		return disabled;
+	}
+
+	/**
+	 * Enable user at ElasticSearch if security module is enabled
+	 * @param client Object for communication with ElasticSearch
+	 * @param username Username
+	 */
+	public static boolean enableUser(RestHighLevelClient client, String username) throws IOException {
+		EnableUserRequest request = new EnableUserRequest(username, RefreshPolicy.IMMEDIATE);
+		boolean enabled = client.security().enableUser(request, RequestOptions.DEFAULT);
+		return enabled;
+	}
+	
+	/**
+	 * Create a Kibana SPACE
+	 */
+	public static void createKibanaSpace(Environment env, RestTemplate restTemplate, KibanaSpace space) throws IOException {
+		String url = getKibanaURL(env, "/api/spaces/space");
+		
+		ResponseExtractor<Boolean> responseExtractor = clientHttpResponse->{
+			return true;
+		}; 
+		try {
+			restTemplate.execute(new URI(url), HttpMethod.POST, getKibanaRequestCallback(env,/*requestBody*/space), responseExtractor);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}		
+	}
+
+	/**
+	 * Returns information about all Kibana SPACE's created
+	 */
+	public static List<KibanaSpace> getKibanaSpaces(Environment env, RestTemplate restTemplate) throws IOException {
+		String url = getKibanaURL(env, "/api/spaces/space");
+		
+		ResponseExtractor<List<KibanaSpace>> responseExtractor = clientHttpResponse->{
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			try (InputStream is = clientHttpResponse.getBody();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))) {
+				KibanaSpace[] result = mapper.readValue(reader, KibanaSpace[].class);
+				return Arrays.asList(result);
+			}
+		}; 
+		try {
+			return restTemplate.execute(new URI(url), HttpMethod.GET, getKibanaRequestCallback(env,/*requestBody*/null), responseExtractor);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Returns indication that a Kibana SPACE exists
+	 */
+	public static boolean hasKibanaSpace(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+		String url = getKibanaURL(env, "/api/spaces/space/"+spaceId);
+		
+		ResponseExtractor<Boolean> responseExtractor = clientHttpResponse->{
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			try (InputStream is = clientHttpResponse.getBody();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))) {
+				Map<?,?> result = mapper.readValue(reader, Map.class);
+				return spaceId.equalsIgnoreCase((String)result.get("id"));
+			}
+		}; 
+		try {
+			return restTemplate.execute(new URI(url), HttpMethod.GET, getKibanaRequestCallback(env,/*requestBody*/null), responseExtractor);
+		} catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+			return false;
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Returns information about all Kibana saved objects of some type created
+	 */
+	public static List<KibanaSavedObject> getKibanaSavedObjects(Environment env, RestTemplate restTemplate, String spaceId, String type) throws IOException {
+		String url = getKibanaURL(env, 
+				(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/saved_objects/_find?type="+type+"&per_page=10000" 
+						: "/api/saved_objects/_find?type="+type+"&per_page=10000");
+		
+		ResponseExtractor<List<KibanaSavedObject>> responseExtractor = clientHttpResponse->{
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			try (InputStream is = clientHttpResponse.getBody();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))) {
+				Map<?,?> result = mapper.readValue(reader, Map.class);
+				Number total = (Number)result.get("total");
+				if (total==null || total.longValue()==0)
+					return Collections.emptyList();
+				List<?> saved_objects = (List<?>)result.get("saved_objects");
+				if (saved_objects==null || saved_objects.isEmpty())
+					return Collections.emptyList();
+				return saved_objects.stream().map(obj->new KibanaSavedObject((Map<?,?>)obj)).collect(Collectors.toList());
+			}
+		}; 
+		try {
+			return restTemplate.execute(new URI(url), HttpMethod.GET, getKibanaRequestCallback(env,/*requestBody*/null), responseExtractor);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Returns information about all Kibana Dashboards created
+	 */
+	public static List<KibanaSavedObject> getKibanaDashboards(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+		return getKibanaSavedObjects(env, restTemplate, spaceId, "dashboard");
+	}
+	
+	/**
+	 * Copy one or more SavedObjects (e.g.: Dashboards, IndexPatterns, Lens, etc.) from one SPACE to another
+	 */
+	public static boolean copyKibanaSavedObjects(Environment env, RestTemplate restTemplate, String spaceIdSource, String spaceIdTarget, String type, String[] ids) throws IOException {
+		String url = getKibanaURL(env, 
+				(spaceIdSource!=null && spaceIdSource.trim().length()>0 && !"Default".equalsIgnoreCase(spaceIdSource)) ? "/s/"+spaceIdSource+"/api/spaces/_copy_saved_objects" 
+						: "/api/spaces/_copy_saved_objects");
+		
+		@SuppressWarnings("unused")
+		final class SavedObject {
+			public final String type;
+			public final String id;
+			SavedObject(String type, String id) {
+				this.type = type;
+				this.id = id;
+			}
+		}
+		@SuppressWarnings("unused")
+		final class RequestBody {
+			public final SavedObject objects[];
+			public final String spaces[];
+			public final boolean includeReferences;
+			public final boolean overwrite;
+			public final boolean createNewCopies;
+			RequestBody(String type, String... ids) {
+				this.objects = Arrays.stream(ids).map(id->new SavedObject(type, id)).toArray(SavedObject[]::new);
+				this.spaces = new String[] { spaceIdTarget };
+				this.includeReferences = true;
+				this.overwrite = true;
+				this.createNewCopies = false;
+			}
+		}
+		
+		RequestBody body = new RequestBody(type, ids);
+		
+		ResponseExtractor<Boolean> responseExtractor = clientHttpResponse->{
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			try (InputStream is = clientHttpResponse.getBody();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))) {
+				Map<?,?> result = mapper.readValue(reader, Map.class);
+				Map<?,?> resultForTarget = (Map<?,?>)result.get(spaceIdTarget);
+				if (resultForTarget==null)
+					return null;
+				Boolean success = (Boolean)resultForTarget.get("success");
+				return Boolean.TRUE.equals(success);
+			}
+		}; 
+		try {
+			return restTemplate.execute(new URI(url), HttpMethod.POST, getKibanaRequestCallback(env, body), responseExtractor);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Returns references for a given Kibana Saved Object (e.g. dashboard, index pattern, etc.)
+	 * @return Returns NULL if the object was not found. Returns EMPTY if the object was found but there were no references.
+	 */
+	public static List<KibanaSavedObject> getKibanaSavedObjectReferences(Environment env, RestTemplate restTemplate, String spaceId, String type, String id) {
+		String url = getKibanaURL(env, 
+				(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/saved_objects/"+type+"/"+id 
+						: "/api/saved_objects/"+type+"/"+id);
+		
+		ResponseExtractor<List<KibanaSavedObject>> responseExtractor = clientHttpResponse->{
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			try (InputStream is = clientHttpResponse.getBody();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))) {
+				Map<?,?> result = mapper.readValue(reader, Map.class);
+				// Look for a property called 'references'
+				List<?> references = (List<?>)result.get("references");
+				if (references==null || references.isEmpty()) {
+					// If there were no property called 'references' or if it was empty, check for an additional property called 'attributes'
+					// The 'LENS' object may have internal references to 'index-pattern' object by means of 'attributes'
+					Map<?,?> attributes = (Map<?,?>)result.get("attributes");
+					if (attributes!=null && !attributes.isEmpty()) {
+						Map<?,?> state = (Map<?,?>)attributes.get("state");
+						if (state!=null && !state.isEmpty()) {
+							Set<String> indexPatternIds = new HashSet<>();
+							Map<?,?> datasourceStates = (Map<?,?>)state.get("datasourceStates");
+							if (datasourceStates!=null && !datasourceStates.isEmpty()) {
+								Map<?,?> indexpattern = (Map<?,?>)datasourceStates.get("indexpattern");
+								if (indexpattern!=null && !indexpattern.isEmpty()) {
+									String currentIndexPatternId = (String)indexpattern.get("currentIndexPatternId");
+									if (currentIndexPatternId!=null)
+										indexPatternIds.add(currentIndexPatternId);
+									Map<?,?> layers = (Map<?,?>)indexpattern.get("layers");
+									if (layers!=null && !layers.isEmpty()) {
+										for (Object layer: layers.values()) {
+											String indexPatternId = (String)((Map<?,?>)layer).get("indexPatternId");
+											if (indexPatternId!=null)
+												indexPatternIds.add(indexPatternId);
+										}
+									}
+								}
+							}
+							if (!indexPatternIds.isEmpty())
+								return indexPatternIds.stream().map(ip_id->new KibanaSavedObject(ip_id,"index-pattern")).collect(Collectors.toList());
+						}
+					}
+					return Collections.emptyList();
+				}
+				return references.stream().map(obj->new KibanaSavedObject((Map<?,?>)obj)).collect(Collectors.toList());
+			}
+		}; 
+		try {
+			return restTemplate.execute(new URI(url), HttpMethod.GET, getKibanaRequestCallback(env,/*requestBody*/null), responseExtractor);
+		}
+		catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+			return null;
+		}
+		catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	/**
+	 * Returns information about all Kibana IndexPattern created
+	 */
+	public static List<KibanaSavedObject> getKibanaIndexPatterns(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+		return getKibanaSavedObjects(env, restTemplate, spaceId, "index-pattern");
+	}
+
+	/**
+	 * Returns information about all Kibana Visualization created
+	 */
+	public static List<KibanaSavedObject> getKibanaVisualizations(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+		return getKibanaSavedObjects(env, restTemplate, spaceId, "visualization");
+	}
+
+	/**
+	 * Returns information about all Kibana Lens created
+	 */
+	public static List<KibanaSavedObject> getKibanaLens(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+		return getKibanaSavedObjects(env, restTemplate, spaceId, "lens");
+	}
+
+	/**
+	 * Create a Kibana INDEX-PATTERN. Returns the ID of the new INDEX-PATTERN.
+	 */
+	public static String createKibanaIndexPattern(Environment env, 
+			RestTemplate restTemplate,
+			String spaceId,
+			KibanaIndexPattern indexPattern) throws IOException {
+		
+		String url = getKibanaURL(env, 
+			(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/index_patterns/index_pattern" 
+					: "/api/index_patterns/index_pattern");
+
+		ResponseExtractor<String> responseExtractor = clientHttpResponse->{
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			try (InputStream is = clientHttpResponse.getBody();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))) {
+				Map<?,?> result = mapper.readValue(reader, Map.class);
+				Map<?,?> info = (Map<?,?>)result.get("index_pattern");
+				return (String)info.get("id");
+			}
+		}; 
+		try {
+			Map<Object,Object> requestBody = new HashMap<>();
+			requestBody.put("index_pattern", indexPattern);
+			return restTemplate.execute(new URI(url), HttpMethod.POST, getKibanaRequestCallback(env,requestBody), responseExtractor);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}		
+	}
+
+	/**
+	 * Updates an existent Kibana INDEX-PATTERN. Only the provided (not-null) fields are updated. All others are preserved.
+	 * @param patternId The index patterns fields you want to update.
+	 * @param refreshFields Reloads the index pattern fields after the index pattern is updated. The default is false.
+	 */
+	public static void updateKibanaIndexPattern(Environment env, 
+			RestTemplate restTemplate,
+			String spaceId,
+			String patternId,
+			UpdateIndexPatternRequest request) throws IOException {
+		
+		String url = getKibanaURL(env, 
+			(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/index_patterns/index_pattern/"+patternId 
+					: "/api/index_patterns/index_pattern/"+patternId);
+		
+		ResponseExtractor<Boolean> responseExtractor = clientHttpResponse->{
+			return true;
+		}; 
+		try {
+			restTemplate.execute(new URI(url), HttpMethod.POST, getKibanaRequestCallback(env,/*requestBody*/request), responseExtractor);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}		
+	}
+
+	/**
+	 * Returns information about all Kibana configurations
+	 */
+	public static List<KibanaSavedObject> getKibanaConfig(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+		return getKibanaSavedObjects(env, restTemplate, spaceId, "config");
+	}
+
+	/**
+	 * Returns URL for Kibana API requests
+	 */
+	public static String getKibanaURL(Environment env, String endpoint) {
+		String kibana_host = env.getProperty("kibana.host", "127.0.0.1");
+		int kibana_port = Integer.parseInt(env.getProperty("kibana.port", String.valueOf("5601")));	
+		String protocol = (kibana_port==443 || "true".equalsIgnoreCase(env.getProperty("es.ssl"))) ? "https" : "http";
+		String context = env.getProperty("kibana.endpoint", "/kibana");
+		String uri = String.format("%s://%s:%d/%s/%s", protocol, kibana_host, kibana_port, context, endpoint);
+		return uri;
+	}
+	
+	/**
+	 * Object used with Kibana API requests for passing along authorization token given the application properties
+	 */
+	public static RequestCallback getKibanaRequestCallback(Environment env, Object requestBody) {
+		String kibana_user = env.getProperty("es.user", "elastic");
+		String kibana_password = env.getProperty("es.password");
+		if (kibana_user!=null && kibana_user.length()>0 && kibana_password!=null && kibana_password.length()>0) {
+			String encoding = Base64.getEncoder().encodeToString((String.join(":", kibana_user, kibana_password)).getBytes());
+			RequestCallback requestCallback = req->{
+				req.getHeaders().set(HttpHeaders.AUTHORIZATION, "Basic "+encoding);
+				if (requestBody!=null) {
+					req.getHeaders().set("kbn-xsrf", "reporting");
+					ObjectMapper mapper = new ObjectMapper();
+					mapper.setSerializationInclusion(Include.NON_NULL);
+					req.getBody().write(mapper.writeValueAsBytes(requestBody));
+				}
+			};
+			return requestCallback;
+		}
+		else if (requestBody!=null) {
+			RequestCallback requestCallback = req->{
+				req.getHeaders().set("kbn-xsrf", "reporting");
+				ObjectMapper mapper = new ObjectMapper();
+				mapper.setSerializationInclusion(Include.NON_NULL);
+				req.getBody().write(mapper.writeValueAsBytes(requestBody));
+			};			
+			return requestCallback;
+		}
+		return null;
+	}
+	
+	/**
+	 * Copy transitive dependencies from one SPACE to another at KIBANA
+	 */
+	public static void copyTransitiveDependencies(Environment env, RestTemplate restTemplate, String sourceSpaceId, String targetSpaceId, String type, String id, final int max_iterations) throws IOException {
+		Set<String> checked_id = new HashSet<>();
+		checked_id.add(id);
+		List<org.idb.cacao.web.utils.ESUtils.KibanaSavedObject> references = ESUtils.getKibanaSavedObjectReferences(env, restTemplate, targetSpaceId, type, id);
+		int count_iterations = 0;
+		while (references!=null && !references.isEmpty()) {
+			count_iterations++;
+			if (count_iterations>max_iterations)
+				break;
+			List<org.idb.cacao.web.utils.ESUtils.KibanaSavedObject> ref_to_check = references;
+			references = null;
+			for (org.idb.cacao.web.utils.ESUtils.KibanaSavedObject ref: ref_to_check) {
+				if (checked_id.contains(ref.getId()))
+					continue;
+				checked_id.add(ref.getId());
+				List<org.idb.cacao.web.utils.ESUtils.KibanaSavedObject> transitive_references = ESUtils.getKibanaSavedObjectReferences(env, restTemplate, targetSpaceId, ref.getType(), ref.getId());
+				if (transitive_references==null) {
+					// At this point we know that 'ref' does not exist, so we need to copy
+					boolean success_copy_ref = ESUtils.copyKibanaSavedObjects(env, restTemplate, sourceSpaceId, targetSpaceId, ref.getType(), new String[] { ref.getId() });
+					if (success_copy_ref) {
+						transitive_references = ESUtils.getKibanaSavedObjectReferences(env, restTemplate, targetSpaceId, ref.getType(), ref.getId());
+					}						
+				}
+				if (transitive_references!=null) {
+					if (transitive_references.isEmpty())
+						continue; // 'ref' exists and does not have additional references
+					// At this point we know that 'ref' exists, but there are additional references to be checked at next iteration
+					if (references==null)
+						references = new LinkedList<>();
+					references.addAll(transitive_references);
+				}
+			}
+		}		
+	}
+
+	/**
+	 * Simplified representation of an index summary from ElasticSearch
+	 * 
+	 * @author Gustavo Figueiredo
+	 *
+	 */
 	public static class IndexSummary {
 		private String health;
 		private String status;
@@ -300,5 +927,320 @@ public class ESUtils {
 		public void setPriStoreSize(String priStoreSize) {
 			this.priStoreSize = priStoreSize;
 		}		
+	}
+	
+	@JsonInclude(NON_NULL)
+	public static class UpdateIndexPatternRequest {
+		
+		/**
+		 * Reloads the index pattern fields after the index pattern is updated. The default is false.
+		 */
+		private Boolean refresh_fields;
+		
+		/**
+		 * The index patterns fields you want to update.
+		 */
+		private Map<String,Object> index_pattern;
+
+		/**
+		 * Reloads the index pattern fields after the index pattern is updated. The default is false.
+		 */
+		public Boolean getRefresh_fields() {
+			return refresh_fields;
+		}
+
+		/**
+		 * Reloads the index pattern fields after the index pattern is updated. The default is false.
+		 */
+		public void setRefresh_fields(Boolean refresh_fields) {
+			this.refresh_fields = refresh_fields;
+		}
+
+		/**
+		 * The index patterns fields you want to update.
+		 */
+		public Map<String, Object> getIndex_pattern() {
+			return index_pattern;
+		}
+
+		/**
+		 * The index patterns fields you want to update.
+		 */
+		public void setIndex_pattern(Map<String, Object> index_pattern) {
+			this.index_pattern = index_pattern;
+		}
+		
+	}
+
+	/**
+	 * This object represents a SPACE in KIBANA for usage in API
+	 * 
+	 * @author Gustavo Figueiredo
+	 *
+	 */
+	@JsonInclude(NON_NULL)
+	public static class KibanaSpace implements Comparable<KibanaSpace> {
+
+		private String id;
+		
+		private String name;
+		
+		private String description;
+		
+		private String imageUrl;
+		
+		private String color;
+		
+		private String initials;
+		
+		private String[] disabledFeatures;
+		
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+
+		public void setDescription(String description) {
+			this.description = description;
+		}
+
+		public String getImageUrl() {
+			return imageUrl;
+		}
+
+		public void setImageUrl(String imageUrl) {
+			this.imageUrl = imageUrl;
+		}
+
+		public String getColor() {
+			return color;
+		}
+
+		public void setColor(String color) {
+			this.color = color;
+		}
+
+		public String getInitials() {
+			return initials;
+		}
+
+		public void setInitials(String initials) {
+			this.initials = initials;
+		}
+
+		public String[] getDisabledFeatures() {
+			return disabledFeatures;
+		}
+
+		public void setDisabledFeatures(String[] disabledFeatures) {
+			this.disabledFeatures = disabledFeatures;
+		}
+		
+		public String toString() {
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				return objectMapper.writeValueAsString(this);
+			} catch (JsonProcessingException e) {
+				return super.toString();
+			}
+		}
+
+		@Override
+		public int compareTo(KibanaSpace o) {
+			return String.CASE_INSENSITIVE_ORDER.compare(name, o.name);
+		}
+	}
+	
+	/**
+	 * This object represents a SAVED OBJECT in KIBANA  (e.g.: Dashboard, IndexPattern, Lens, Visualization, etc.) for usage in API
+	 * 
+	 * @author Gustavo Figueiredo
+	 *
+	 */
+	@JsonInclude(NON_NULL)
+	public static class KibanaSavedObject implements Comparable<KibanaSavedObject> {
+
+		private String id;
+		
+		private String type;
+		
+		private String title;
+		
+		private String namespace;
+
+		public KibanaSavedObject() { }
+		
+		public KibanaSavedObject(String id, String type) {
+			this.id = id;
+			this.type = type;
+		}
+		
+		public KibanaSavedObject(Map<?,?> properties) {
+			this.id = (String)properties.get("id");
+			this.type = (String)properties.get("type");
+			Map<?,?> attributes = (Map<?,?>)properties.get("attributes");
+			if (attributes!=null) {
+				this.title = ((String)attributes.get("title"));
+			}
+			else {
+				this.title = (String)properties.get("name");
+			}
+			List<?> namespaces = (List<?>)properties.get("namespaces");
+			if (namespaces!=null && !namespaces.isEmpty()) {
+				this.namespace = (String)namespaces.get(0);
+			}
+		}
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public String getNamespace() {
+			return namespace;
+		}
+
+		public void setNamespace(String namespace) {
+			this.namespace = namespace;
+		}
+		
+		public String toString() {
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				return objectMapper.writeValueAsString(this);
+			} catch (JsonProcessingException e) {
+				return super.toString();
+			}
+		}
+
+		@Override
+		public int compareTo(KibanaSavedObject o) {
+			return String.CASE_INSENSITIVE_ORDER.compare(nvl(title,id), nvl(o.title,o.id));
+		}
+		
+		private static String nvl(String s1, String s2) {
+			if (s1==null)
+				return s2;
+			else
+				return s1;
+		}
+	}
+	
+	/**
+	 * This object represents a INDEX-PATTERN in KIBANA for usage in API
+	 * 
+	 * @author Gustavo Figueiredo
+	 *
+	 */
+	@JsonInclude(NON_NULL)
+	public static class KibanaIndexPattern implements Comparable<KibanaIndexPattern> {
+
+		private String id;
+		
+		private String version;
+		
+		private String title;
+		
+		private String timeFieldName;
+		
+		private Map<?,?> fields;
+		
+		private Boolean allowNoIndex;
+		
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public String getTimeFieldName() {
+			return timeFieldName;
+		}
+
+		public void setTimeFieldName(String timeFieldName) {
+			this.timeFieldName = timeFieldName;
+		}
+
+		public String getVersion() {
+			return version;
+		}
+
+		public void setVersion(String version) {
+			this.version = version;
+		}
+
+		public Map<?, ?> getFields() {
+			return fields;
+		}
+
+		public void setFields(Map<?, ?> fields) {
+			this.fields = fields;
+		}
+
+		public Boolean getAllowNoIndex() {
+			return allowNoIndex;
+		}
+
+		public void setAllowNoIndex(Boolean allowNoIndex) {
+			this.allowNoIndex = allowNoIndex;
+		}
+
+		public String toString() {
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				return objectMapper.writeValueAsString(this);
+			} catch (JsonProcessingException e) {
+				return super.toString();
+			}
+		}
+
+		@Override
+		public int compareTo(KibanaIndexPattern o) {
+			return String.CASE_INSENSITIVE_ORDER.compare(title, o.title);
+		}
 	}
 }

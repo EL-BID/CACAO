@@ -1,0 +1,116 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<div class="ui middle aligned center container">
+			<div th:if="${message!=null}" class="ui warning message" th:text="${message}">Warning</div>
+			<h2 class="ui header">
+				<i class="cogs icon"></i>
+				<div class="content" th:text="#{admin.shell}">System Operations</div>
+			</h2>
+			<div class="ui orange segment">
+			
+				<div class="ui fluid segment">
+					<form class="ui large form" action="#" th:action="@{/api/op}" method="post">
+					
+						<div class="ui form">
+							<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase; margin-top: 1em;">
+								<div class="content" th:text="#{admin.shell.command}">Command line</div>
+							</h4>
+							<textarea id="command" rows="2" cols="80" maxlength="256" class="form-control" placeholder="Command" th:placeholder="#{admin.shell.command}"></textarea>
+						</div>
+					
+						<div class="ui form">
+							<p />
+							<input type="button" class="ui button blue" th:value="#{admin.shell.run}" value="Run" id="run">
+							<input type="button" class="ui button" th:value="#{back}" value="Back" id="back">
+							<input type="button" class="ui button" th:value="#{clear}" value="Clear" id="clear">
+							<p />
+						</div>
+						
+						<div class="ui form">
+							<p />
+							<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase; margin-top: 1em;">
+								<div class="content" th:text="#{admin.shell.history}">Command history</div>
+							</h4>
+							<div class="ui message history" style="height:400px; overflow-y: scroll"></div>							
+						</div>
+						
+					</form>
+					<div class="ui dimmer middle aligned center aligned" id="dimmer">
+						<div class="ui massive text loader" th:text="#{wait}">Wait</div>
+					</div>
+				</div>
+			
+			</div>
+		</div>
+<script th:nonce="${cspNonce}" th:inline="javascript">
+  $('#back').click(function(){
+	  window.history.back(); 
+  })
+  $('#clear').click(function(){
+	  $('.history').empty();
+  })
+  $('#run').click(function(){
+	  var cmd = $('#command').val()
+	  if (!cmd) {
+		  return;
+	  }
+	  var d = new Date()
+	  var h = d.toLocaleDateString()+' '+d.toLocaleTimeString()+' ';
+	  $('.history').append($("<p />").css('color','blue').text(h+' '+cmd))
+	  $('.history').animate({ scrollTop: $('.history').prop('scrollHeight') }, 1000);
+	  $('#dimmer').dimmer('show');
+	  $.ajax({
+		    url: [[@{/api/op}]],
+		    type: 'POST',
+		    dataType: 'json',
+		    contentType: 'application/json',
+ 		    data: cmd,
+		    cache: false,    
+			success: function(result) {
+				  $('#dimmer').dimmer('hide');
+				  var d = new Date()
+				  var h = d.toLocaleDateString()+' '+d.toLocaleTimeString()+' ';
+				  if (typeof result==='string' || result instanceof String)
+				  	$('.history').append($("<p />").css('color','green').text(h+' ')).append($("<pre />").html(result))
+				  else if (Array.isArray(result) && (typeof result[0]==='string' || result[0] instanceof String) ) {
+					  var contents = result.join('\r\n')
+					  $('.history').append($("<p />").css('color','green').text(h+' ')).append($("<pre />").html(contents))
+				  }
+				  else
+					$('.history').append($("<p />").css('color','green').text(h+' ')).append($("<pre />").text(JSON.stringify(result)))
+				  $('.history').animate({ scrollTop: $('.history').prop('scrollHeight') }, 1000);
+			},
+			error: function(e) {
+				  $('#dimmer').dimmer('hide');
+				  var msg = (e.responseText) ? e.responseText : e.statusText
+				  var d = new Date()
+				  var h = d.toLocaleDateString()+' '+d.toLocaleTimeString()+' ';
+				  $('.history').append($("<p />").css('color','red').text(h+' '+msg))
+				  $('.history').animate({ scrollTop: $('.history').prop('scrollHeight') }, 1000);
+			}
+		});			 		  	  
+  })
+  $("textarea").keydown(function(e){
+  // Enter was pressed without shift key
+  if (e.keyCode == 13 && !e.shiftKey)
+  {
+    // prevent default behavior
+    e.preventDefault();
+    $("#run").trigger('click');
+  }
+  });
+</script>
+<script src="/js/textareas.js"></script>
+</body>
+</html>

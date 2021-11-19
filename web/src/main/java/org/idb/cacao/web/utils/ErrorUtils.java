@@ -64,6 +64,16 @@ public class ErrorUtils {
 	public static final Pattern pStreamClosed = Pattern.compile("Stream closed",Pattern.CASE_INSENSITIVE);
 
 	/**
+	 * Error of type 'Unique index or primary key violation'. E.g.: attempt to create two users with the same login
+	 */
+	public static final Pattern pUniqueConstraintViolation = Pattern.compile("Unique index or primary key violation",Pattern.CASE_INSENSITIVE);
+
+	/**
+	 * Error of type '404 Not Found'
+	 */
+	public static final Pattern pNotFound = Pattern.compile("Not.Found",Pattern.CASE_INSENSITIVE);
+
+	/**
 	 * Returns TRUE if the error is something like 'illegal_argument_exception ...'
 	 */
 	public static boolean isErrorStreamClosed(Throwable ex) {
@@ -271,5 +281,35 @@ public class ErrorUtils {
 			}
 		}
 		return null;						
+	}
+
+	/**
+	 * Returns if the ERROR is something like 'Unique index or primary key violation'. 
+	 */
+	public static boolean isErrorUniqueConstraintViolation(Throwable ex) {
+		if (ex==null)
+			return false;
+		String msg = ex.getMessage();
+		if (msg!=null && pUniqueConstraintViolation.matcher(msg).find())
+			return true;
+		if (ex.getCause()!=null && ex.getCause()!=ex)
+			return isErrorUniqueConstraintViolation(ex.getCause());
+		return false;
+	}
+	
+	/**
+	 * Returns if the ERROR is something like '404 Not Found'
+	 */
+	public static boolean isErrorNotFound(Throwable ex) {
+		if (ex==null)
+			return false;
+		String msg = ex.getMessage();
+		if (msg!=null && pNotFound.matcher(msg).find())
+			return true;
+		if (pNotFound.matcher(ex.getClass().getSimpleName()).find())
+			return true;
+		if (ex.getCause()!=null && ex.getCause()!=ex)
+			return isErrorNotFound(ex.getCause());
+		return false;
 	}
 }

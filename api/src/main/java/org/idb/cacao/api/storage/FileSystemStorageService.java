@@ -22,10 +22,14 @@ package org.idb.cacao.api.storage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,7 +46,7 @@ import org.springframework.stereotype.Service;
  * It's necessary to define "storage.incoming.files.original.dir" on application.properties file.
  * 
  * @author Luiz Kauer
- * @author Rivelino Patrício
+ * @author Rivelino Patrï¿½cio
  *
  */
 @Service
@@ -167,4 +171,53 @@ public class FileSystemStorageService implements IStorageService {
 			throw new StorageException("Could not initialize storage", e);
 		}
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.storage.IStorageService#deleteAll()
+	 */
+	@Override
+	public int deleteAll() {
+		if (rootLocation==null)
+			return 0;
+		final LongAdder count_files = new LongAdder();
+		try {
+			Files.walkFileTree(rootLocation, new FileVisitor<Path>() {
+
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				if (file.toFile().delete())
+					count_files.increment();
+				else
+					log.log(Level.WARNING, "Could not delete file "+file.toFile().getAbsolutePath());
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				if (!dir.toFile().delete())
+					log.log(Level.WARNING, "Could not remove directory "+dir.toFile().getAbsolutePath());
+				return FileVisitResult.CONTINUE;
+			}
+			// Called after a directory visit is complete.
+			});
+		}
+		catch (IOException ex) {
+			log.log(Level.SEVERE, "Error while deleting files in file storage", ex);
+		}
+		
+		return count_files.intValue();
+	}
+	
+	
 }
