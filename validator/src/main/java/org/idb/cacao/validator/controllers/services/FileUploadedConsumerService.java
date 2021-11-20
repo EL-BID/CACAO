@@ -265,7 +265,7 @@ public class FileUploadedConsumerService {
 				log.log(Level.SEVERE, "Not all domain values are compatible with domain tables on document "
 						+ documentId + ". " + "Please check document error messagens for details.");
 				saveValidationMessages(validationContext);
-				throw new ValidationException("There are erros on file " + doc.getFilename() + ". Please check.");
+				throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
 			}
 
 			// Check for domain-specific validations related to a built-in archetype
@@ -276,10 +276,15 @@ public class FileUploadedConsumerService {
 					boolean ok = archetype.get().validateDocumentUploaded(validationContext);
 					if (!ok) {
 
-						// TODO: should report the warnings back to the ElasticSearch, to be displayed
-						// to the user !!!!
-						// ...
-
+						if (validationContext.getAlerts().isEmpty()) {
+							// If the validation failed but we got no specific warning message, we will use a generic one
+							validationContext.addAlert("{error.invalid.file}");
+						}
+						setSituation(doc, DocumentSituation.INVALID);
+						log.log(Level.SEVERE, "The validation check of "
+								+ documentId + " does not conform to the archetype "+archetype.get().getName()+". Please check document error messagens for details.");
+						saveValidationMessages(validationContext);
+						throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
 					}
 
 				}
