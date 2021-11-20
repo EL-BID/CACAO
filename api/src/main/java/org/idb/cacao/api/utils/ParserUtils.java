@@ -440,6 +440,23 @@ public class ParserUtils {
 		return tlDecimalFormat.get().format(decimal);
 	}
 	
+    public static Integer parseInteger(String value) throws ParseException {
+    	if (value==null || value.trim().length()==0)
+    		return null;
+    	if ( isInteger(value) )    		
+    		return Integer.parseInt(value);
+    	return null;
+    }
+    
+    public static Integer parseIntegerNE(String value) {
+    	try {
+    		return parseInteger(value);
+    	}
+    	catch ( Exception e ) {    		
+    	}
+    	return null;
+    }
+	
     public static Number parseDecimal(String value) throws ParseException {
     	if (value==null || value.trim().length()==0)
     		return null;
