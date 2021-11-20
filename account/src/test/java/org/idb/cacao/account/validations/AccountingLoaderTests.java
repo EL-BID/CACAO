@@ -53,7 +53,9 @@ import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.junit.jupiter.api.Test;
 
@@ -82,6 +84,10 @@ public class AccountingLoaderTests {
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new ChartOfAccountsArchetype());
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new GeneralLedgerArchetype());
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new OpeningBalanceArchetype());
+		
+		InMemoryDomainTableRepository inMemoryDomainTableRepository = new InMemoryDomainTableRepository();
+		inMemoryDomainTableRepository.addBuiltIn();
+		etlContext.setDomainTableRepository(inMemoryDomainTableRepository);
 		
 		DocumentUploaded coa = inMemoryValidatedDataRepository.addUpload(/*templateName*/ChartOfAccountsArchetype.NAME,/*templateVersion*/"1.0", 
 				/*taxPayerId*/"1234", /*taxPeriodNumber*/2021, /*fileId*/UUID.randomUUID().toString());
@@ -185,7 +191,9 @@ public class AccountingLoaderTests {
 		assertEquals("Small business", record.get(IndexNamesUtils.formatFieldName("TaxPayerQualifier1")));
 		assertEquals("Cash and Cash Equivalents", record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())));
 		assertEquals(ASSET.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())));
+		assertEquals(ASSET.toString(), record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountCategoryName.name())));
 		assertEquals(ASSET_CASH.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())));
+		assertEquals(ASSET_CASH.toString(), record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountSubcategoryName.name())));
 		assertEquals(9900.0, record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name())));
 		assertEquals("D", record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.BalanceDebitCredit.name())));
 	}
@@ -307,6 +315,30 @@ public class AccountingLoaderTests {
 				}).findFirst();
 			}
 			throw new UnsupportedOperationException("Does not support "+query.getClass().getName());
+		}
+		
+	}
+	
+	/**
+	 * Simplified in-memory implementation of 'ETLContext.DomainTableRepository' for test cases
+	 * @author Gustavo Figueiredo
+	 *
+	 */
+	public static class InMemoryDomainTableRepository implements ETLContext.DomainTableRepository {
+		
+		private final List<DomainTable> tables;
+		
+		public InMemoryDomainTableRepository() {
+			tables = new LinkedList<>();
+		}
+		
+		public void addBuiltIn() {
+			tables.addAll(TemplateArchetypes.getBuiltInDomainTables());
+		}
+
+		@Override
+		public Optional<DomainTable> findByNameAndVersion(String name, String version) {
+			return tables.stream().filter(t->name.equalsIgnoreCase(t.getName()) && version.equalsIgnoreCase(t.getVersion())).findAny();
 		}
 		
 	}

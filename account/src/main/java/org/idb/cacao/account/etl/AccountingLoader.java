@@ -46,7 +46,10 @@ import org.idb.cacao.api.ETLContext.LoadDataStrategy;
 import org.idb.cacao.api.ETLContext.TaxpayerRepository;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.DomainEntry;
+import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 
 import com.google.common.cache.CacheBuilder;
@@ -76,7 +79,11 @@ public class AccountingLoader {
 		
 		Balance,
 		
-		BalanceDebitCredit
+		BalanceDebitCredit,
+		
+		AccountCategoryName,
+		
+		AccountSubcategoryName
 		
 	};
 	
@@ -127,7 +134,10 @@ public class AccountingLoader {
 	/**
 	 * Returns object used for retrieving information from Chart of Accounts, keeping a temporary cache in memory.
 	 */
-	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupChartOfAccounts(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded coa) {
+	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupChartOfAccounts(final ETLContext.ValidatedDataRepository repository, 
+			final Optional<DomainTable> category_domain_table,
+			final Optional<DomainTable> subcategory_domain_table,
+			final DocumentUploaded coa) {
 		return CacheBuilder.newBuilder()
 			.maximumSize(1000)
 			.expireAfterWrite(10, TimeUnit.MINUTES)
@@ -139,7 +149,27 @@ public class AccountingLoader {
 						return Optional.empty();
 					else {
 						try {
-							return repository.getValidatedData(coa.getTemplateName(), coa.getTemplateVersion(), coa.getFileId(), fieldName, accountCode).map(IndexNamesUtils::normalizeAllKeysForES);
+							Optional<Map<String,Object>> accountInfo = repository.getValidatedData(coa.getTemplateName(), coa.getTemplateVersion(), coa.getFileId(), fieldName, accountCode)
+									.map(IndexNamesUtils::normalizeAllKeysForES);
+							if (accountInfo.isPresent() && category_domain_table.isPresent()) {
+								String category = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())));
+								if (category!=null) {
+									DomainEntry entry = category_domain_table.get().getEntry(category);
+									if (entry!=null) {
+										accountInfo.get().put(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountCategoryName.name()), entry.getDescription());
+									}
+								}
+							}
+							if (accountInfo.isPresent() && subcategory_domain_table.isPresent()) {
+								String subcategory = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())));
+								if (subcategory!=null) {
+									DomainEntry entry = subcategory_domain_table.get().getEntry(subcategory);
+									if (entry!=null) {
+										accountInfo.get().put(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountSubcategoryName.name()), entry.getDescription());
+									}
+								}
+							}
+							return accountInfo;
 						}
 						catch (Throwable ex) {
 							return Optional.empty();
@@ -233,10 +263,18 @@ public class AccountingLoader {
 				return false;
 			
 			// If we got here, we have enough information for generating denormalized data
-
+			
+			DocumentTemplate coa_template =
+					templatesForCoA.stream().filter(t->coa.getTemplateName().equalsIgnoreCase(t.getName()) && coa.getTemplateVersion().equalsIgnoreCase(t.getVersion()))
+					.findFirst().orElse(null);
+			DocumentField category_field = (coa_template==null) ? null : coa_template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name());
+			DocumentField subcategory_field = (coa_template==null) ? null : coa_template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name());
+			Optional<DomainTable> category_domain_table = (category_field==null) ? Optional.empty() : context.getDomainTableRepository().findByNameAndVersion(category_field.getDomainTableName(), category_field.getDomainTableVersion());
+			Optional<DomainTable> subcategory_domain_table = (subcategory_field==null) ? Optional.empty() : context.getDomainTableRepository().findByNameAndVersion(subcategory_field.getDomainTableName(), subcategory_field.getDomainTableVersion());
 			
 			// Structure for loading and caching information from the provided Chart of Accounts
-			LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts = getLookupChartOfAccounts(context.getValidatedDataRepository(), coa);
+			LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts = getLookupChartOfAccounts(context.getValidatedDataRepository(), 
+					category_domain_table, subcategory_domain_table, coa);
 
 			// Structure for loading and caching information from the provided Opening Balance
 			LoadingCache<String, Optional<Map<String, Object>>> lookupOpeningBalance = getLookupOpeningBalance(context.getValidatedDataRepository(), ob);
