@@ -27,12 +27,24 @@ import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.metrics.KafkaMetric;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.ComponentSystemInformation;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.dto.MenuItem;
 import org.idb.cacao.web.utils.ESUtils;
@@ -74,7 +86,7 @@ public class SystemUIController {
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
-
+	
     private RestTemplate restTemplate;
 
 	@Autowired
@@ -103,6 +115,8 @@ public class SystemUIController {
 		collectInfoForValidatorComponent(info);
 		
 		collectInfoForElasticSearch(info);
+		
+		collectInfoForKafka(info);
 		
 		model.addAttribute("info", itens);
 		
@@ -306,6 +320,66 @@ public class SystemUIController {
 		}
 	}
 
+	/**
+	 * Collect information about Kafka
+	 * @param info
+	 */
+	public void collectInfoForKafka(MenuItem info) {
+		
+		MenuItem kafka_info = new MenuItem(text("sysinfo.kafka")).withActive(false);
+		info.addChild(kafka_info);
+
+		try {
+		
+			try (AdminClient kafkaAdminClient = getKafkaAdminClient();) {
+			
+				Map<String,String> metrics =
+				kafkaAdminClient.metrics().entrySet().stream().collect(Collectors.toMap(e->e.getKey().group()+"."+e.getKey().name(), e->getKafkaMetricDesc(e.getValue())));
+				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.version")).withActive(false).withChild(metrics.get("app-info.version")));
+				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.requests")).withActive(false).withChild(metrics.get("admin-client-node-metrics.request-total")));
+				
+				int number_nodes = kafkaAdminClient.describeCluster().nodes().get().size();
+				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.nodes")).withActive(false).withChild(formatValue(number_nodes)));
+		
+				MenuItem kafka_topics = new MenuItem(text("sysinfo.kafka.topics")).withActive(false);
+				kafka_info.addChild(kafka_topics);
+	
+				StringBuilder tabular_html = new StringBuilder();
+				tabular_html.append("<table class=\"ui orange small table\">");
+				tabular_html.append("<thead class=\"full-width\">");
+				tabular_html.append("<tr>");
+				tabular_html.append("<td>").append(text("sysinfo.kafka.topics.name")).append("</td>");
+				tabular_html.append("<td>").append(text("sysinfo.kafka.topics.parts")).append("</td>");
+				tabular_html.append("<td>").append(text("sysinfo.kafka.topics.replicas")).append("</td>");
+				tabular_html.append("</tr>");
+				tabular_html.append("</thead>");
+				tabular_html.append("<tbody>");
+				ListTopicsResult topics_info = kafkaAdminClient.listTopics();
+				DescribeTopicsResult topics_details = kafkaAdminClient.describeTopics(topics_info.names().get());
+				for (Map.Entry<String,KafkaFuture<TopicDescription> > topic_details: topics_details.values().entrySet()) {
+					String topic_name = topic_details.getKey();
+					TopicDescription topic_desc = topic_details.getValue().get();
+					int num_parts = topic_desc.partitions().size();
+					int num_replicas = topic_desc.partitions().stream().mapToInt(p->p.replicas().size()).max().orElse(0);
+					tabular_html.append("<tr>");
+					tabular_html.append("<td>").append(topic_name).append("</td>");
+					tabular_html.append("<td class=\"right aligned\">").append(num_parts).append("</td>");
+					tabular_html.append("<td class=\"right aligned\">").append(num_replicas).append("</td>");
+					tabular_html.append("</tr>");
+				}
+				tabular_html.append("</tbody>");
+				tabular_html.append("</table>");
+				kafka_topics.addChild(new MenuItem(tabular_html.toString()).chkForHTMLContents(true));
+
+			}
+		}
+		catch (Throwable ex) {
+			log.log(Level.WARNING, "Error while retrieving Kafka summary", ex);
+			kafka_info.addChild(new MenuItem(text("sysinfo.no.info")).withActive(false));			
+		}
+
+	}
+	
 	private String text(String key, Object... arguments) {
 		return StringUtils.text(messages, key, arguments);
 	}
@@ -315,5 +389,30 @@ public class SystemUIController {
 	 */
 	private String formatValue(Object value) {
 		return StringUtils.formatValue(messages, value);
+	}
+	
+	/**
+	 * Returns object for admin operations regarding Kafka Cluster
+	 */
+	public AdminClient getKafkaAdminClient() {
+		Properties properties = new Properties();
+		properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, env.getProperty("spring.cloud.stream.kafka.binder.brokers"));
+		AdminClient adminClient = AdminClient.create(properties);
+		return adminClient;
+	}
+
+	/**
+	 * Given a Kafka object wrapping a Kafka metric, returns the value stored in this metric formatted as String
+	 */
+	private static String getKafkaMetricDesc(Metric metric) {
+		if (metric==null)
+			return null;
+		if (metric instanceof KafkaMetric) {
+			KafkaMetric km = (KafkaMetric)metric;
+			if (km.metricValue()==null)
+				return null;
+			return ValidationContext.toString(km.metricValue());
+		}
+		return metric.toString();
 	}
 }
