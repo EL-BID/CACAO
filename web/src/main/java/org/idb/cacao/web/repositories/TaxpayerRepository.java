@@ -23,9 +23,9 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Set;
 
+import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
-import org.idb.cacao.web.entities.Taxpayer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;

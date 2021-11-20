@@ -28,10 +28,10 @@ import java.util.stream.IntStream;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.FieldsConventionsService;
 import org.idb.cacao.web.dto.MenuItem;
-import org.idb.cacao.web.entities.Taxpayer;
 import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
