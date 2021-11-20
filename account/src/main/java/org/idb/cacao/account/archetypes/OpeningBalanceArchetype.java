@@ -22,11 +22,17 @@ package org.idb.cacao.account.archetypes;
 import java.util.Arrays;
 import java.util.List;
 
+import org.idb.cacao.account.etl.AccountingLoader;
+import org.idb.cacao.account.validations.OpeningBalanceValidations;
+import org.idb.cacao.api.ETLContext;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.templates.TemplateArchetype;
+
+import static org.idb.cacao.account.archetypes.OpeningBalanceArchetype.FIELDS_NAMES.*;
 
 /**
  * This is the archetype for DocumentTemplate's related to OPENING BALANCE in ACCOUNTING
@@ -35,6 +41,8 @@ import org.idb.cacao.api.templates.TemplateArchetype;
  *
  */
 public class OpeningBalanceArchetype implements TemplateArchetype {
+	
+	public static final String NAME = "accounting.opening.balance";
 
 	/*
 	 * (non-Javadoc)
@@ -51,7 +59,7 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public String getName() {
-		return "accounting.opening.balance";
+		return NAME;
 	}
 
 	/*
@@ -72,6 +80,22 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 		return Arrays.asList( AccountBuiltInDomainTables.DEBIT_CREDIT );
 	}
 
+	public static enum FIELDS_NAMES {
+		
+		TaxPayerId,
+		
+		TaxYear,
+		
+		InitialDate,
+		
+		AccountCode,
+		
+		InitialBalance,
+		
+		DebitCredit;
+		
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRequiredFields()
@@ -80,36 +104,36 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 	public List<DocumentField> getRequiredFields() {
 		return Arrays.asList(
 			new DocumentField()
-				.withFieldName("TaxPayerId")
+				.withFieldName(TaxPayerId.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withFieldMapping(FieldMapping.TAXPAYER_ID)
 				.withDescription("Taxpayer Identification Number")
 				.withMaxLength(128)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("TaxYear")
+				.withFieldName(TaxYear.name())
 				.withFieldType(FieldType.INTEGER)
 				.withFieldMapping(FieldMapping.TAX_YEAR)
 				.withDescription("Fiscal year of this financial reporting")
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("InitialDate")
+				.withFieldName(InitialDate.name())
 				.withFieldType(FieldType.DATE)
 				.withDescription("Date for this initial balance and this particular account")
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("AccountCode")
+				.withFieldName(AccountCode.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withDescription("Account code (reference to Chart of Account)")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("InitialBalance")
+				.withFieldName(InitialBalance.name())
 				.withFieldType(FieldType.DECIMAL)
 				.withDescription("The monetary amount of this initial balance")
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName("DebitCredit")
+				.withFieldName(DebitCredit.name())
 				.withFieldType(FieldType.DOMAIN)
 				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
 				.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
@@ -117,6 +141,24 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 				.withMaxLength(32)
 				.withRequired(true)
 		);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#validateDocumentUploaded(org.idb.cacao.api.ValidationContext)
+	 */
+	@Override
+	public boolean validateDocumentUploaded(ValidationContext context) {
+		return OpeningBalanceValidations.validateDocumentUploaded(context, context.getParsedContents());
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#performETL(org.idb.cacao.api.ETLContext)
+	 */
+	@Override
+	public boolean performETL(ETLContext context) {
+		return AccountingLoader.performETL(context);
 	}
 
 }

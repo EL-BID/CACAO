@@ -22,7 +22,9 @@ package org.idb.cacao.account.archetypes;
 import java.util.Arrays;
 import java.util.List;
 
+import org.idb.cacao.account.etl.AccountingLoader;
 import org.idb.cacao.account.validations.ChartOfAccountsValidations;
+import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DomainTable;
@@ -39,6 +41,8 @@ import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_N
  *
  */
 public class ChartOfAccountsArchetype implements TemplateArchetype {
+	
+	public static final String NAME = "accounting.chart.accounts";
 
 	/*
 	 * (non-Javadoc)
@@ -55,7 +59,7 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public String getName() {
-		return "accounting.chart.accounts";
+		return NAME;
 	}
 	
 	/*
@@ -161,4 +165,14 @@ public class ChartOfAccountsArchetype implements TemplateArchetype {
 	public boolean validateDocumentUploaded(ValidationContext context) {
 		return ChartOfAccountsValidations.validateDocumentUploaded(context, context.getParsedContents());
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#performETL(org.idb.cacao.api.ETLContext)
+	 */
+	@Override
+	public boolean performETL(ETLContext context) {
+		return AccountingLoader.performETL(context);
+	}
+	
 }

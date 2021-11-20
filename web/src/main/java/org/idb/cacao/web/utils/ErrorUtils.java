@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.elasticsearch.ElasticsearchStatusException;
+import org.idb.cacao.api.errors.CommonErrors;
 
 /**
  * Utility methods for error management
@@ -97,20 +98,7 @@ public class ErrorUtils {
 	 * Returns TRUE if the error is something like 'The current thread was interrupted ...'
 	 */
 	public static boolean isErrorThreadInterrupted(Throwable ex) {
-		if (ex!=null && ex.getMessage()!=null && ex.getMessage().contains("current thread was interrupted"))
-			return true;
-		if (ex!=null && ex.getCause()!=null && ex.getCause()!=ex)
-			return isErrorThreadInterrupted(ex.getCause());
-		if (ex instanceof ElasticsearchStatusException) {
-			Throwable[] suppressed = ((ElasticsearchStatusException)ex).getSuppressed();
-			if (suppressed!=null && suppressed.length>0) {
-				for (Throwable sup:suppressed) {
-					if (isErrorThreadInterrupted(sup))
-						return true;
-				}
-			}
-		}
-		return false;
+		return CommonErrors.isErrorThreadInterrupted(ex);
 	}
 
 	/**
@@ -137,40 +125,14 @@ public class ErrorUtils {
 	 * Returns TRUE if the error is something like 'No mapping found for ...'
 	 */
 	public static boolean isErrorNoMappingFoundForColumn(Throwable ex) {
-		if (ex!=null && ex.getMessage()!=null && ex.getMessage().contains("No mapping found"))
-			return true;
-		if (ex!=null && ex.getCause()!=null && ex.getCause()!=ex)
-			return isErrorNoMappingFoundForColumn(ex.getCause());
-		if (ex instanceof ElasticsearchStatusException) {
-			Throwable[] suppressed = ((ElasticsearchStatusException)ex).getSuppressed();
-			if (suppressed!=null && suppressed.length>0) {
-				for (Throwable sup:suppressed) {
-					if (isErrorNoMappingFoundForColumn(sup))
-						return true;
-				}
-			}
-		}
-		return false;
+		return CommonErrors.isErrorNoMappingFoundForColumn(ex);
 	}
 
 	/**
 	 * Returns TRUE if the error is something like 'index_not_found_exception ...'
 	 */
 	public static boolean isErrorNoIndexFound(Throwable ex) {
-		if (ex!=null && ex.getMessage()!=null && ex.getMessage().contains("index_not_found_exception"))
-			return true;
-		if (ex!=null && ex.getCause()!=null && ex.getCause()!=ex)
-			return isErrorNoIndexFound(ex.getCause());
-		if (ex instanceof ElasticsearchStatusException) {
-			Throwable[] suppressed = ((ElasticsearchStatusException)ex).getSuppressed();
-			if (suppressed!=null && suppressed.length>0) {
-				for (Throwable sup:suppressed) {
-					if (isErrorNoIndexFound(sup))
-						return true;
-				}
-			}
-		}
-		return false;
+		return CommonErrors.isErrorNoIndexFound(ex);
 	}
 
 	/**

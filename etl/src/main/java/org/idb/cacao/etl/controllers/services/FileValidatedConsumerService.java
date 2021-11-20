@@ -4,19 +4,30 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.validation.ValidationException;
+
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.ETLContext;
+import org.idb.cacao.api.ETLContext.ValidatedDataRepository;
 import org.idb.cacao.api.errors.DocumentNotFoundException;
 import org.idb.cacao.api.errors.GeneralException;
+import org.idb.cacao.api.errors.TemplateNotFoundException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.etl.repositories.DocumentSituationHistoryRepository;
+import org.idb.cacao.etl.repositories.DocumentTemplateRepository;
 import org.idb.cacao.etl.repositories.DocumentValidatedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +51,18 @@ public class FileValidatedConsumerService {
 	@Autowired
 	private FileSystemStorageService fileSystemStorageService;
 	
+	/**
+	 * Object used to resolve errors according to a specific language
+	 */
+	@Autowired
+	private MessageSource messageSource;
 	
+	@Autowired
+	private ValidatedDataRepository validatedDataRepository;
+
+	@Autowired
+	private DocumentTemplateRepository documentTemplateRepository;
+
 	@Bean
 	public Consumer<String> receiveValidatedFile() {
 		return documentId -> {
@@ -61,12 +83,27 @@ public class FileValidatedConsumerService {
 		
 		List<Runnable> rollbackProcedures = new LinkedList<>(); // hold rollback procedures only to be used in case of error
 		
+		ETLContext etlContext = new ETLContext();
+		etlContext.setMessageSource(messageSource);
+		etlContext.setValidatedDataRepository(validatedDataRepository);
+		
 		try {
 		
 			DocumentUploaded doc = documentValidatedRepository.findById(documentId).orElse(null);
 			
 			if ( doc == null )
 				throw new DocumentNotFoundException("Document with id " + documentId + " wasn't found in database.");
+			
+			etlContext.setDocumentUploaded(doc);
+			
+			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
+					doc.getTemplateVersion());
+			if (template == null || !template.isPresent()) {
+				throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version "
+						+ doc.getTemplateVersion() + " wasn't found in database.");
+			}
+
+			etlContext.setDocumentTemplate(template.get());
 			
 			String fullPath = doc.getFileIdWithPath();
 			
@@ -90,6 +127,28 @@ public class FileValidatedConsumerService {
 			DocumentSituationHistory savedSituation = documentsSituationHistoryRepository.save(situation);
 			
 			rollbackProcedures.add(()->documentsSituationHistoryRepository.delete(savedSituation)); // in case of error delete the DocumentUploaded
+			
+			// Check for domain-specific validations related to a built-in archetype
+			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
+				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());
+				if (archetype != null && archetype.isPresent()) {
+					
+					boolean ok = archetype.get().performETL(etlContext);
+					if (!ok) {
+						
+						// TODO:
+
+						log.log(Level.SEVERE, "The ETL of "
+								+ documentId + " does not conform to the archetype "+archetype.get().getName()+". Please check document error messagens for details.");
+						//throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
+					}
+
+				}
+			}
+			
+			// TODO: should fall back to a default ETL behaviour in case there is no archetype for this job
+			// For example, should generated denormalized view of parsed contents, expanding all references
+			// to domain tables and expanding taxpayers records
 			
 			return documentId;
 		

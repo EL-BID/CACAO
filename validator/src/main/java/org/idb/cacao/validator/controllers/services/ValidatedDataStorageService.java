@@ -32,6 +32,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
@@ -83,8 +84,8 @@ public class ValidatedDataStorageService {
 			Map<String,Object> normalized_record = IndexNamesUtils.normalizeAllKeysForES(record);
 			
 			// Includes additional metadata
-			normalized_record.put("_file_id", fileId);
-			normalized_record.put("_timestamp", timestamp);
+			normalized_record.put(ValidatedDataFieldNames.FILE_ID.name(), fileId);
+			normalized_record.put(ValidatedDataFieldNames.TIMESTAMP.name(), timestamp);
 			
 			// Add this record to index
 			request.add(new IndexRequest(index_name)

@@ -21,6 +21,7 @@ package org.idb.cacao.api.templates;
 
 import java.util.List;
 
+import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
 
 /**
@@ -92,10 +93,15 @@ public interface TemplateArchetype {
 		return true;
 	}
 	
-	// TODO:
-	// There should be additional members implemented by plugins for doing cross-validations
-	// with different files related to different archetypes that are part of the same 'group'
-	// For example, for a group of template archetypes related to ACCOUNTING, there should
-	// be a cross validation checking if all the accounts informed in GENERAL LEDGER are also
-	// informed in CHART OF ACCOUNTS.
+	/**
+	 * Executes Extract/Transform/Load operations producing denormalized data at database.<BR>
+	 * Performs cross-validations with different files related to different archetypes that are part
+	 * of the same 'group' as this one.
+	 * @param context Object created by the ETL consumer with information regarding the incoming document and any other objects
+	 * necessary for retrieving related information
+	 * @return Returns TRUE if the operation completed successfully. Retorns FALSE otherwise.
+	 */
+	default public boolean performETL(ETLContext context) {
+		return true;
+	}
 }

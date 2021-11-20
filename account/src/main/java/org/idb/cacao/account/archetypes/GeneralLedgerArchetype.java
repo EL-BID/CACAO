@@ -22,7 +22,9 @@ package org.idb.cacao.account.archetypes;
 import java.util.Arrays;
 import java.util.List;
 
+import org.idb.cacao.account.etl.AccountingLoader;
 import org.idb.cacao.account.validations.GeneralLedgerValidations;
+import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DomainTable;
@@ -39,6 +41,8 @@ import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAM
  *
  */
 public class GeneralLedgerArchetype implements TemplateArchetype {
+	
+	public static final String NAME = "accounting.general.ledger";
 
 	/*
 	 * (non-Javadoc)
@@ -55,7 +59,7 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public String getName() {
-		return "accounting.general.ledger";
+		return NAME;
 	}
 
 	/*
@@ -162,6 +166,15 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	@Override
 	public boolean validateDocumentUploaded(ValidationContext context) {
 		return GeneralLedgerValidations.validateDocumentUploaded(context, context.getParsedContents());
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#performETL(org.idb.cacao.api.ETLContext)
+	 */
+	@Override
+	public boolean performETL(ETLContext context) {
+		return AccountingLoader.performETL(context);
 	}
 
 }
