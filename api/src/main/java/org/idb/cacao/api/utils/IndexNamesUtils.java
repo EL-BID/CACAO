@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.templates.DocumentTemplate;
 
 /**
@@ -42,7 +43,7 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 public class IndexNamesUtils {
 	
 	/**
-	 * Returns a proper index name for using in ElasticSearch for validated documents related to a DocumentTemplate
+	 * Returns a proper index name for using in ElasticSearch for validated documents related to a DocumentTemplate (output from validation)
 	 */
 	public static String formatIndexNameForValidatedData(DocumentTemplate template) {
 		String name = template.getName()==null || template.getName().trim().length()==0 ? "generic" : template.getName();
@@ -51,13 +52,21 @@ public class IndexNamesUtils {
 	}
 
 	/**
-	 * Returns a proper index name for using in ElasticSearch for validated documents related to a DocumentTemplate
+	 * Returns a proper index name for using in ElasticSearch for validated documents related to a DocumentTemplate (output from validation)
 	 */
 	public static String formatIndexNameForValidatedData(String templateName, String templateVersion) {
 		String name = templateName==null || templateName.trim().length()==0 ? "generic" : templateName;
 		String version = templateVersion==null || templateVersion.trim().length()==0 ? "0" : templateVersion;
 		return IndexNamesUtils.formatIndexName("cacao_doc_"+name+"_v_"+version);		
 	}
+	
+	/**
+	 * Returns a proper index name for using in ElasticSearch for published (denormalized) data (output from ETL)
+	 */
+	public static String formatIndexNameForPublishedData(String name) {
+		return IndexNamesUtils.formatIndexName("cacao_pub_"+name);		
+	}
+
 
 	/**
 	 * Get a proper index name for using in ElasticSearch.
@@ -91,6 +100,7 @@ public class IndexNamesUtils {
 		if (name==null || name.trim().length()==0)
 			return "";
 		name = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", ""); // removes all diacritics
+		name = String.join("_", StringUtils.splitByCharacterTypeCamelCase(name)); // split camel case style and change to underline-separated style
 		name = name.toLowerCase(); // make all lowercases
 		name = name.replaceAll("[^A-Za-z\\d ]", " "); // removes non letters, non numeric and non spaces
 		name = name.trim();	// removes heading and trailing spaces

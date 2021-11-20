@@ -20,7 +20,10 @@
 package org.idb.cacao.api;
 
 import java.nio.file.Path;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -68,6 +71,50 @@ public class ValidationContext {
 			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		}
     	
+    };
+
+    /**
+     * Number format using dot as decimal separator and no grouping separator
+     */
+    private static final ThreadLocal<DecimalFormat> tlDecimalFormat = new ThreadLocal<DecimalFormat>() {
+    	  
+		@Override
+		protected DecimalFormat initialValue() {
+			DecimalFormatSymbols sym = new DecimalFormatSymbols();
+			sym.setDecimalSeparator('.');
+			return new DecimalFormat("######.#############", sym);
+		}
+
+    };
+    
+    /**
+     * Number format using dot as decimal separator and comma as grouping separator
+     */
+    private static final ThreadLocal<DecimalFormat> tlDecimalGroupingFormat = new ThreadLocal<DecimalFormat>() {
+    	  
+		@Override
+		protected DecimalFormat initialValue() {
+			DecimalFormatSymbols sym = new DecimalFormatSymbols();
+			sym.setDecimalSeparator('.');
+			sym.setGroupingSeparator(',');
+			return new DecimalFormat("###,###.#############", sym);
+		}
+
+    };
+
+    /**
+     * Number format using comma as decimal separator and dot as grouping separator
+     */
+    private static final ThreadLocal<DecimalFormat> tlDecimalCommaFormat = new ThreadLocal<DecimalFormat>() {
+    	  
+		@Override
+		protected DecimalFormat initialValue() {
+			DecimalFormatSymbols sym = new DecimalFormatSymbols();
+			sym.setDecimalSeparator(',');
+			sym.setGroupingSeparator('.');
+			return new DecimalFormat("###,###.#############", sym);
+		}
+
     };
 
 	/**
@@ -418,6 +465,110 @@ public class ValidationContext {
 		}
 		else {
 			return value.toString();
+		}
+	}
+
+    public static Number parseDecimal(String value) throws ParseException {
+    	if (value==null || value.trim().length()==0)
+    		return null;
+    	return tlDecimalFormat.get().parse(value);
+    }
+
+    public static Number parseDecimalGrouping(String value) throws ParseException {
+    	if (value==null || value.trim().length()==0)
+    		return null;
+    	return tlDecimalGroupingFormat.get().parse(value);
+    }
+
+    public static Number parseDecimalWithComma(String value) throws ParseException {
+    	if (value==null || value.trim().length()==0)
+    		return null;
+    	return tlDecimalCommaFormat.get().parse(value);
+    }
+
+	/**
+	 * Convert a value of any type to Number in a conventional way.
+	 */
+	public static Number toNumber(Object value) {
+		if (value==null)
+			return null;
+		if (value instanceof Number) {
+			return (Number)value;
+		}
+		else if (value instanceof String) {
+			String txt = (String)value;
+	    	if (txt==null || txt.trim().length()==0)
+	    		return null;
+	    	txt = txt.trim();
+	    	int comma_position = txt.indexOf(",");
+	    	int dot_position = txt.indexOf(".");
+	    	try {
+		    	if (comma_position>=0 && dot_position>=0) {
+		    		if (comma_position<dot_position) {
+		    	    	try {
+		    	    		return parseDecimalGrouping(txt);
+		    	    	}
+		    	    	catch (Throwable ex) {
+		    	    		return parseDecimalWithComma(txt);
+		    	    	}  
+		    		}
+		    		else {
+		    	    	try {
+		    	    		return parseDecimalWithComma(txt);
+		    	    	}
+		    	    	catch (Throwable ex) {
+		    	    		return parseDecimal(txt);
+		    	    	}    			
+		    		}
+		    	}
+		    	else if (comma_position>=0) {
+			    	try {
+			    		return parseDecimalWithComma(txt);
+			    	}
+			    	catch (Throwable ex) {
+			    		return parseDecimal(txt);
+			    	}    			    		
+		    	}
+		    	else if (dot_position>=0) {
+		    		if (txt.indexOf('.', dot_position+1)>0) {
+		    			// If we have more dots, probably dots are grouping separators
+		    	    	try {
+		    	    		return parseDecimalWithComma(txt);
+		    	    	}
+		    	    	catch (Throwable ex) {
+		    	    		return parseDecimal(txt);
+		    	    	}    			    		
+		    		}
+		    		else if (Pattern.compile("\\d{4,}\\.").matcher(txt).find()
+		    			|| !Pattern.compile("\\d\\.\\d{3}").matcher(txt).find()) {
+		    			// If we have four or more digits before any dot, or if we don't have
+		    			// three digits after any dot, probably dots are decimal separators
+		    	    	try {
+		    	    		return parseDecimal(txt);
+		    	    	}
+		    	    	catch (Throwable ex) {
+		    	    		return parseDecimalWithComma(txt);
+		    	    	}    			    		    			
+		    		}
+			    	try {
+			    		// For other cases (e.g.: only one dot and three digits after the dot)
+			    		// we will assume it's a grouping separator
+			    		return parseDecimalWithComma(txt);
+			    	}
+			    	catch (Throwable ex) {
+			    		return parseDecimal(txt);
+			    	}    			    		
+		    	}
+		    	else {
+		    		return parseDecimalWithComma(txt);
+		    	}
+	    	}
+	    	catch (ParseException|NumberFormatException ex) {
+	    		return null;
+	    	}
+		}
+		else {
+			return null;
 		}
 	}
 

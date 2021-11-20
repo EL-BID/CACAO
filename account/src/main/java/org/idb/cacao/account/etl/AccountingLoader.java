@@ -22,19 +22,35 @@ package org.idb.cacao.account.etl;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ETLContext;
+import org.idb.cacao.api.ETLContext.LoadDataStrategy;
+import org.idb.cacao.api.ETLContext.TaxpayerRepository;
+import org.idb.cacao.api.PublishedDataFieldNames;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.IndexNamesUtils;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 /**
  * Projects accounting data into Database after validation phases. Performs denormalization
@@ -47,7 +63,21 @@ public class AccountingLoader {
 	
 	private static final Logger log = Logger.getLogger(AccountingLoader.class.getName());
 
-	public static final String ACCOUNT_GROUP = "Accounting";
+	/**
+	 * Index name for published (denormalized) data regarding General Ledger
+	 */
+	public static final String INDEX_PUBLISHED_GENERAL_LEDGER = IndexNamesUtils.formatIndexNameForPublishedData("General Ledger");
+	
+	/**
+	 * Fields names for published (denormalized) views
+	 */
+	public static enum AccountingFieldNames {
+		
+		Balance,
+		
+		BalanceDebitCredit
+		
+	};
 	
 	/**
 	 * Comparator of Document Templates that gives precedence to the most recent (according to date of creation)
@@ -92,7 +122,81 @@ public class AccountingLoader {
 		// TODO: should report missing upload (not an error, but a warning for the taxpayer)
 		return null;
 	}
+	
+	/**
+	 * Returns object used for retrieving information from Chart of Accounts, keeping a temporary cache in memory.
+	 */
+	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupChartOfAccounts(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded coa) {
+		return CacheBuilder.newBuilder()
+			.maximumSize(1000)
+			.expireAfterWrite(10, TimeUnit.MINUTES)
+			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
+				final String fieldName = IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name())+".keyword";
+				@Override
+				public Optional<Map<String,Object>> load(String accountCode) throws Exception {
+					if (accountCode==null)
+						return Optional.empty();
+					else {
+						try {
+							return repository.getValidatedData(coa.getTemplateName(), coa.getTemplateVersion(), coa.getFileId(), fieldName, accountCode);
+						}
+						catch (Throwable ex) {
+							return Optional.empty();
+						}
+					}
+				}
+			});
+	}
 
+	/**
+	 * Returns object used for retrieving information from Opening Balance, keeping a temporary cache in memory.
+	 */
+	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupOpeningBalance(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded ob) {
+		return CacheBuilder.newBuilder()
+			.maximumSize(1000)
+			.expireAfterWrite(10, TimeUnit.MINUTES)
+			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
+				final String fieldName = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name())+".keyword";
+				@Override
+				public Optional<Map<String,Object>> load(String accountCode) throws Exception {
+					if (accountCode==null)
+						return Optional.empty();
+					else {
+						try {
+							return repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), fieldName, accountCode);
+						}
+						catch (Throwable ex) {
+							return Optional.empty();
+						}
+					}
+				}
+			});
+	}
+	
+	/**
+	 * Returns object used for retrieving information from Taxpayers Registry, keeping a temporary cache in memory.
+	 */
+	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupTaxpayers(final TaxpayerRepository repository) {
+		return CacheBuilder.newBuilder()
+			.maximumSize(1000)
+			.expireAfterWrite(10, TimeUnit.MINUTES)
+			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
+				@Override
+				public Optional<Map<String,Object>> load(String taxPayerId) throws Exception {
+					if (taxPayerId==null || repository==null)
+						return Optional.empty();
+					else {
+						try {
+							return repository.getTaxPayerData(taxPayerId);
+						}
+						catch (Throwable ex) {
+							return Optional.empty();
+						}
+					}
+				}
+			});
+	}
+	
 	/**
 	 * Performs the Extract/Transform/Load operations with available data
 	 */
@@ -128,28 +232,117 @@ public class AccountingLoader {
 				return false;
 			
 			// If we got here, we have enough information for generating denormalized data
+
 			
-			Stream<Map<String, Object>> gl_data = context.getValidatedDataRepository().getValidatedData(gl.getTemplateName(), gl.getTemplateVersion(), gl.getFileId());
+			// Structure for loading and caching information from the provided Chart of Accounts
+			LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts = getLookupChartOfAccounts(context.getValidatedDataRepository(), coa);
+
+			// Structure for loading and caching information from the provided Opening Balance
+			LoadingCache<String, Optional<Map<String, Object>>> lookupOpeningBalance = getLookupOpeningBalance(context.getValidatedDataRepository(), ob);
+			
+			// Structure for loading and caching information from the provided Taxpayers registry
+			LoadingCache<String, Optional<Map<String, Object>>> lookupTaxpayers = getLookupTaxpayers(context.getTaxpayerRepository());
+			
+			Optional<Map<String,Object>> declarantInformation = lookupTaxpayers.getUnchecked(taxPayerId);
+
+			LoadDataStrategy loader = context.getLoadDataStrategy();
+			loader.start();
+			
+			final LongAdder countRecordsOverall = new LongAdder();
+			final AtomicLong countRecordsInGeneralLedger = new AtomicLong();
+			
+	        final OffsetDateTime timestamp = context.getDocumentUploaded().getTimestamp();
+
+			final String ledgerAccountCode = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name());
+			final String ledgerDate = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Date.name());
+			final String ledgerId = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name());
+			final String ledgerAmount = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name());
+			final String ledgerDebitCredit = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name());
+			
+			final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
+			final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
+			
+			// Computes balance sheets while iterating over General Ledger entries
+			final Map<String, BalanceSheet> mapBalanceSheets = new HashMap<>();
+
+			final double epsilon = 0.005; // ignores differences lesser than half of a cent		
+
+			// Search for the validated general ledger related to the matching template
+			// Reads the validated general ledger in chronological order. For each day order by ledger entry ID.
+			Stream<Map<String, Object>> gl_data = context.getValidatedDataRepository().getValidatedData(gl.getTemplateName(), gl.getTemplateVersion(), gl.getFileId(),
+					/*sortBy*/Optional.of(new String[] {ledgerDate, ledgerId }),
+					/*sortOrder*/Optional.of(SortOrder.ASC));
+			
+			boolean success = true;
 			try {
 				
 				gl_data.forEach(record->{
 					
-					// TODO:
+					String accountCode = ValidationContext.toString(record.get(ledgerAccountCode));
 					
-					// TODO: should write denormalized data (BULK LOAD) to other indices
-					// that are used with DASHBOARDS and REPORTS
+					Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(accountCode);
+					
+					Number amount = ValidationContext.toNumber(record.get(ledgerAmount));
+					String debitCredit = ValidationContext.toString(record.get(ledgerDebitCredit));
+					boolean is_debit = debitCredit.equalsIgnoreCase("D");
+					
+					BalanceSheet balanceSheet =
+					mapBalanceSheets.computeIfAbsent(accountCode, acc->{
+						BalanceSheet balance = new BalanceSheet();
+						Optional<Map<String, Object>> opening = lookupOpeningBalance.getUnchecked(acc);
+						if (opening.isPresent()) {
+							Number initialBalance = ValidationContext.toNumber(opening.get().get(openingBalanceInitial));
+							String balanceDebitCredit = ValidationContext.toString(opening.get().get(openingBalanceDC));
+							boolean initialIsDebit = balanceDebitCredit.equalsIgnoreCase("D");
+							if (initialBalance!=null && Math.abs(initialBalance.doubleValue())>epsilon) {
+								if (initialIsDebit)
+									balance.setInitialValue(Math.abs(initialBalance.doubleValue()));
+								else
+									balance.setInitialValue(-Math.abs(initialBalance.doubleValue()));
+							}
+						}
+						return balance;
+					});
+					
+					balanceSheet.computeEntry(amount, is_debit);
+
+					// Publish denormalized GENERAL LEDGER record
+					
+					String rowId_GL = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInGeneralLedger.incrementAndGet());
+					Map<String,Object> normalizedRecord_GL = new HashMap<>(record);
+					normalizedRecord_GL.put(PublishedDataFieldNames.TIMESTAMP.name(), timestamp);
+					normalizedRecord_GL.put(PublishedDataFieldNames.TAXPAYER_ID.name(), taxPayerId);
+					normalizedRecord_GL.put(PublishedDataFieldNames.TAXPERIOD_NUMBER.name(), taxPeriodNumber);
+					normalizedRecord_GL.put(PublishedDataFieldNames.TEMPLATE_NAME.name(), gl.getTemplateName());
+					normalizedRecord_GL.put(PublishedDataFieldNames.TEMPLATE_VERSION.name(), gl.getTemplateVersion());
+					normalizedRecord_GL.put(AccountingFieldNames.Balance.name(), balanceSheet.getFinalValue());
+					normalizedRecord_GL.put(AccountingFieldNames.BalanceDebitCredit.name(), balanceSheet.isFinalValueDebit() ? "D" : "C");
+					if (declarantInformation.isPresent())
+						normalizedRecord_GL.putAll(declarantInformation.get());
+					if (accountInformation.isPresent())
+						normalizedRecord_GL.putAll(accountInformation.get());
+
+					loader.add(new IndexRequest(INDEX_PUBLISHED_GENERAL_LEDGER)
+						.id(rowId_GL)
+						.source(normalizedRecord_GL));
+					countRecordsOverall.increment();
 
 				});
 				
 			}
 			finally {
 				gl_data.close();
+				try {
+					loader.commit();
+				}
+				catch (Throwable ex) {
+					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
+					success = false;
+				}
+				loader.close();
 			}
-			
-			// TODO:
-			
 
-			return false;
+			return success;
 			
 		}
 		catch (Throwable ex) {
@@ -159,4 +352,81 @@ public class AccountingLoader {
 		}
 	}
 	
+	/**
+	 * Wraps computed information about balance sheet while iterating over General Ledger entries
+	 * @author Gustavo Figueiredo
+	 */
+	public static class BalanceSheet {
+
+		/**
+		 * Positive = debit, Negative = credit
+		 */
+		private double initialValue;
+		
+		private double debits;
+		
+		private double credits;
+		
+		private int countEntries;
+
+		/**
+		 * Positive = debit, Negative = credit
+		 */
+		public double getInitialValue() {
+			return initialValue;
+		}
+
+		/**
+		 * Positive = debit, Negative = credit
+		 */
+		public void setInitialValue(double initialValue) {
+			this.initialValue = initialValue;
+		}
+
+		public double getDebits() {
+			return debits;
+		}
+
+		public void setDebits(double debits) {
+			this.debits = debits;
+		}
+
+		public double getCredits() {
+			return credits;
+		}
+
+		public void setCredits(double credits) {
+			this.credits = credits;
+		}
+		
+		public void computeEntry(Number amount, boolean isDebit) {
+			if (amount==null)
+				return;
+			if (isDebit)
+				debits += Math.abs(amount.doubleValue());
+			else
+				credits += Math.abs(amount.doubleValue());
+			countEntries++;
+		}
+		
+		/**
+		 * Positive = debit, Negative = credit
+		 */
+		public double getFinalValue() {
+			return initialValue + debits - credits;
+		}
+		
+		public boolean isFinalValueDebit() {
+			return  ( initialValue + debits - credits ) > 0;
+		}
+
+		public int getCountEntries() {
+			return countEntries;
+		}
+
+		public void setCountEntries(int countEntries) {
+			this.countEntries = countEntries;
+		}
+				
+	}
 }

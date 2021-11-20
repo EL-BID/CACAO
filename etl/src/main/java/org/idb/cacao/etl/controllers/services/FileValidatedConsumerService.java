@@ -9,8 +9,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.validation.ValidationException;
-
+import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
@@ -23,6 +22,7 @@ import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
+import org.idb.cacao.etl.loader.PublishedDataLoader;
 import org.idb.cacao.etl.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.etl.repositories.DocumentTemplateRepository;
 import org.idb.cacao.etl.repositories.DocumentValidatedRepository;
@@ -62,6 +62,9 @@ public class FileValidatedConsumerService {
 
 	@Autowired
 	private DocumentTemplateRepository documentTemplateRepository;
+	
+	@Autowired
+	private RestHighLevelClient elasticsearchClient;
 
 	@Bean
 	public Consumer<String> receiveValidatedFile() {
@@ -128,6 +131,9 @@ public class FileValidatedConsumerService {
 			
 			rollbackProcedures.add(()->documentsSituationHistoryRepository.delete(savedSituation)); // in case of error delete the DocumentUploaded
 			
+			final PublishedDataLoader publishedDataLoader = new PublishedDataLoader(elasticsearchClient);
+			etlContext.setLoadDataStrategy(publishedDataLoader);
+
 			// Check for domain-specific validations related to a built-in archetype
 			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
 				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());

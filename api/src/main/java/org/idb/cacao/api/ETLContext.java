@@ -19,11 +19,16 @@
  *******************************************************************************/
 package org.idb.cacao.api;
 
+import java.io.Closeable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.springframework.context.MessageSource;
 
@@ -73,9 +78,24 @@ public class ETLContext {
 		 * and the {@link DocumentUploaded#getFileId() fileId}, returns the corresponding
 		 * pre-validated data stored in database. Should return empty stream if there is no data. Should throw exception in
 		 * case of error while searching database.
+		 * @param sortBy Optional sort by criteria. Multiple field names may be informed.
 		 */
-		public Stream<Map<String,Object>> getValidatedData(String templateName, String templateVersion, String fileId) throws Exception;
+		public Stream<Map<String,Object>> getValidatedData(String templateName, String templateVersion, String fileId, Optional<String[]> sortBy,
+				final Optional<SortOrder> sortOrder) throws Exception;
 		
+		/**
+		 * Given the {@link DocumentUploaded#getTemplateName() templateName}, the {@link DocumentUploaded#getTemplateVersion() templateVersion},
+		 * the {@link DocumentUploaded#getFileId() fileId} and one arbitrary query filter, returns the first occurrence of a record that match
+		 * these criteria.
+		 */
+		public Optional<Map<String,Object>> getValidatedData(String templateName, String templateVersion, String fileId, QueryBuilder query) throws Exception;
+		
+		/**
+		 * Applies a term query filter to the search.
+		 */
+		default public Optional<Map<String,Object>> getValidatedData(String templateName, String templateVersion, String fileId, String queryTermName, String queryTermValue) throws Exception {
+			return getValidatedData(templateName, templateVersion, fileId, new TermQueryBuilder(queryTermName, queryTermValue));
+		}
 	}
 	
 	/**
@@ -91,6 +111,38 @@ public class ETLContext {
 		 * Given the taxpayer Id, should return additional data to be included in denormalized views
 		 */
 		public Optional<Map<String,Object>> getTaxPayerData(String taxPayerId);
+		
+	}
+	
+	/**
+	 * This generic interface will be used by the ETL implementation for loading data with denormalized views.<BR>
+	 * There should be one instance for each processing. There should not be a shared instance among different
+	 * processes.
+	 * 
+	 * @author Gustavo Figueiredo
+	 *
+	 */
+	public static interface LoadDataStrategy extends Closeable {
+		
+		/**
+		 * Start the process of storing data.
+		 */
+		default public void start() { }
+		
+		/**
+		 * Include data to be stored
+		 */
+		public void add(IndexRequest request);
+		
+		/**
+		 * Commits the data informed so far (save it into database)
+		 */
+		default public void commit() throws Exception { }
+		
+		/**
+		 * Finishes the process of storing data and release objects
+		 */
+		default public void close() { }
 		
 	}
 	
@@ -115,6 +167,12 @@ public class ETLContext {
 	 * domain specific ETL operations gathering information about taxpayers.
 	 */
 	private TaxpayerRepository taxpayerRepository;
+	
+	/**
+	 * The consumer of ETL service provides an implementation of this interface in order to allow
+	 * loading data after processing.
+	 */
+	private LoadDataStrategy loadDataStrategy;
 
 	/**
 	 * Object used to resolve errors according to a specific language
@@ -193,6 +251,22 @@ public class ETLContext {
 	 */
 	public void setMessageSource(MessageSource messageSource) {
 		this.messageSource = messageSource;
+	}
+
+	/**
+	 * The consumer of ETL service provides an implementation of this interface in order to allow
+	 * loading data after processing.
+	 */
+	public LoadDataStrategy getLoadDataStrategy() {
+		return loadDataStrategy;
+	}
+
+	/**
+	 * The consumer of ETL service provides an implementation of this interface in order to allow
+	 * loading data after processing.
+	 */
+	public void setLoadDataStrategy(LoadDataStrategy loadDataStrategy) {
+		this.loadDataStrategy = loadDataStrategy;
 	}
 		
 }

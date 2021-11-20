@@ -20,17 +20,22 @@
 package org.idb.cacao.etl.repositories;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ETLContext;
@@ -114,17 +119,56 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.idb.cacao.api.ETLContext.ValidatedDataRepository#getValidatedData(java.lang.String, java.lang.String, java.lang.String)
+	 * @see org.idb.cacao.api.ETLContext.ValidatedDataRepository#getValidatedData(java.lang.String, java.lang.String, java.lang.String, java.util.Optional, java.util.Optional)
 	 */
 	@Override
-	public Stream<Map<String, Object>> getValidatedData(String templateName, String templateVersion, String fileId) throws Exception {
+	public Stream<Map<String, Object>> getValidatedData(String templateName, String templateVersion, String fileId, Optional<String[]> sortBy,
+			final Optional<SortOrder> sortOrder) throws Exception {
 		final String indexName = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
 		
 		return ScrollUtils.findWithScroll(/*entity*/null, indexName, elasticsearchClient, 
 			/*customizeSearch*/searchSourceBuilder->{
 				searchSourceBuilder.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name(), fileId));
-		        searchSourceBuilder.sort(ValidatedDataFieldNames.TIMESTAMP.name(), SortOrder.DESC);
+				if (sortBy.isPresent()) {
+					searchSourceBuilder.sort(Arrays.stream(sortBy.get())
+						.map(field->SortBuilders.fieldSort(field).order(sortOrder.orElse(SortOrder.ASC)))
+						.collect(Collectors.toList()));
+				}
+				else {
+					searchSourceBuilder.sort(ValidatedDataFieldNames.TIMESTAMP.name(), SortOrder.DESC);
+				}
 			});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.ETLContext.ValidatedDataRepository#getValidatedData(java.lang.String, java.lang.String, java.lang.String, org.elasticsearch.index.query.QueryBuilder)
+	 */
+	@Override
+	public Optional<Map<String, Object>> getValidatedData(String templateName, String templateVersion, String fileId,
+			QueryBuilder query) throws Exception {
+		final String indexName = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
+    	SearchRequest searchRequest = new SearchRequest(indexName);
+    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+    			.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name(), fileId));
+        searchSourceBuilder.from(0);
+        searchSourceBuilder.size(1);
+        searchSourceBuilder.query(query);
+    	searchRequest.source(searchSourceBuilder);
+    	SearchResponse resp = null;
+		try {
+			resp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+			if (resp.getHits().getTotalHits().value>0) {
+				return Optional.of(resp.getHits().getHits()[0].getSourceAsMap());
+			}
+			else {
+				return Optional.empty();
+			}
+		} catch (IOException ex) {
+			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
+				return Optional.empty(); // no match
+			throw ex;
+		}
 	}
 	
 }
