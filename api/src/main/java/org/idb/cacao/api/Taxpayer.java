@@ -153,6 +153,11 @@ public class Taxpayer implements Serializable, Cloneable {
 	public void setTimestamp(OffsetDateTime timestamp) {
 		this.timestamp = timestamp;
 	}
+	
+	public Taxpayer withTimestamp(OffsetDateTime timestamp) {
+		setTimestamp(timestamp);
+		return this;
+	}
 
 	public String getTaxPayerId() {
 		return taxPayerId;
@@ -160,6 +165,11 @@ public class Taxpayer implements Serializable, Cloneable {
 
 	public void setTaxPayerId(String taxPayerId) {
 		this.taxPayerId = taxPayerId;
+	}
+	
+	public Taxpayer withTaxPayerId(String taxPayerId) {
+		setTaxPayerId(taxPayerId);
+		return this;
 	}
 
 	public String getName() {
@@ -169,6 +179,11 @@ public class Taxpayer implements Serializable, Cloneable {
 	public void setName(String name) {
 		this.name = name;
 	}
+	
+	public Taxpayer withName(String name) {
+		setName(name);
+		return this;
+	}
 
 	public String getAddress() {
 		return address;
@@ -176,6 +191,11 @@ public class Taxpayer implements Serializable, Cloneable {
 
 	public void setAddress(String address) {
 		this.address = address;
+	}
+	
+	public Taxpayer withAddress(String address) {
+		setAddress(address);
+		return this;
 	}
 
 	public String getZipCode() {
@@ -186,12 +206,22 @@ public class Taxpayer implements Serializable, Cloneable {
 		this.zipCode = zipCode;
 	}
 	
+	public Taxpayer withZipCode(String zipCode) {
+		setZipCode(zipCode);
+		return this;
+	}
+	
 	public OffsetDateTime getChangedTime() {
 		return changedTime;
 	}
 
 	public void setChangedTime(OffsetDateTime changedTime) {
 		this.changedTime = changedTime;
+	}
+	
+	public Taxpayer withChangedTime(OffsetDateTime changedTime) {
+		setChangedTime(changedTime);
+		return this;
 	}
 
 	public String getQualifier1() {
@@ -200,6 +230,11 @@ public class Taxpayer implements Serializable, Cloneable {
 
 	public void setQualifier1(String qualifier1) {
 		this.qualifier1 = qualifier1;
+	}
+	
+	public Taxpayer withQualifier1(String qualifier1) {
+		setQualifier1(qualifier1);
+		return this;
 	}
 
 	public String getQualifier2() {
@@ -210,12 +245,22 @@ public class Taxpayer implements Serializable, Cloneable {
 		this.qualifier2 = qualifier2;
 	}
 
+	public Taxpayer withQualifier2(String qualifier2) {
+		setQualifier2(qualifier2);
+		return this;
+	}
+
 	public String getQualifier3() {
 		return qualifier3;
 	}
 
 	public void setQualifier3(String qualifier3) {
 		this.qualifier3 = qualifier3;
+	}
+
+	public Taxpayer withQualifier3(String qualifier3) {
+		setQualifier3(qualifier3);
+		return this;
 	}
 
 	public String getQualifier4() {
@@ -226,12 +271,22 @@ public class Taxpayer implements Serializable, Cloneable {
 		this.qualifier4 = qualifier4;
 	}
 
+	public Taxpayer withQualifier4(String qualifier4) {
+		setQualifier4(qualifier4);
+		return this;
+	}
+
 	public String getQualifier5() {
 		return qualifier5;
 	}
 
 	public void setQualifier5(String qualifier5) {
 		this.qualifier5 = qualifier5;
+	}
+
+	public Taxpayer withQualifier5(String qualifier5) {
+		setQualifier5(qualifier5);
+		return this;
 	}
 
 	@Override

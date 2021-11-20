@@ -21,6 +21,7 @@ package org.idb.cacao.account.etl;
 
 import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -138,7 +139,7 @@ public class AccountingLoader {
 						return Optional.empty();
 					else {
 						try {
-							return repository.getValidatedData(coa.getTemplateName(), coa.getTemplateVersion(), coa.getFileId(), fieldName, accountCode);
+							return repository.getValidatedData(coa.getTemplateName(), coa.getTemplateVersion(), coa.getFileId(), fieldName, accountCode).map(IndexNamesUtils::normalizeAllKeysForES);
 						}
 						catch (Throwable ex) {
 							return Optional.empty();
@@ -163,7 +164,7 @@ public class AccountingLoader {
 						return Optional.empty();
 					else {
 						try {
-							return repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), fieldName, accountCode);
+							return repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), fieldName, accountCode).map(IndexNamesUtils::normalizeAllKeysForES);
 						}
 						catch (Throwable ex) {
 							return Optional.empty();
@@ -187,7 +188,7 @@ public class AccountingLoader {
 						return Optional.empty();
 					else {
 						try {
-							return repository.getTaxPayerData(taxPayerId);
+							return repository.getTaxPayerData(taxPayerId).map(IndexNamesUtils::normalizeAllKeysForES);
 						}
 						catch (Throwable ex) {
 							return Optional.empty();
@@ -243,7 +244,7 @@ public class AccountingLoader {
 			// Structure for loading and caching information from the provided Taxpayers registry
 			LoadingCache<String, Optional<Map<String, Object>>> lookupTaxpayers = getLookupTaxpayers(context.getTaxpayerRepository());
 			
-			Optional<Map<String,Object>> declarantInformation = lookupTaxpayers.getUnchecked(taxPayerId);
+			final Optional<Map<String,Object>> declarantInformation = lookupTaxpayers.getUnchecked(taxPayerId);
 
 			LoadDataStrategy loader = context.getLoadDataStrategy();
 			loader.start();
@@ -262,6 +263,14 @@ public class AccountingLoader {
 			final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
 			final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
 			
+			final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
+			final String publishedTaxpayerId = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPAYER_ID.name());
+			final String publishedtaxPeriodNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPERIOD_NUMBER.name());
+			final String publishedTemplateName = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_NAME.name());
+			final String publishedTemplateVersion = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_VERSION.name());
+			final String ledgerBalance = IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name());
+			final String ledgerBalanceDebitCredit = IndexNamesUtils.formatFieldName(AccountingFieldNames.BalanceDebitCredit.name());
+
 			// Computes balance sheets while iterating over General Ledger entries
 			final Map<String, BalanceSheet> mapBalanceSheets = new HashMap<>();
 
@@ -273,17 +282,24 @@ public class AccountingLoader {
 					/*sortBy*/Optional.of(new String[] {ledgerDate, ledgerId }),
 					/*sortOrder*/Optional.of(SortOrder.ASC));
 			
+			if (gl_data==null)
+				gl_data = Collections.<Map<String, Object>>emptySet().stream();
+			
 			boolean success = true;
 			try {
 				
 				gl_data.forEach(record->{
 					
 					String accountCode = ValidationContext.toString(record.get(ledgerAccountCode));
+					if (accountCode==null)
+						accountCode = "";
 					
 					Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(accountCode);
 					
 					Number amount = ValidationContext.toNumber(record.get(ledgerAmount));
 					String debitCredit = ValidationContext.toString(record.get(ledgerDebitCredit));
+					if (debitCredit==null)
+						debitCredit = "";
 					boolean is_debit = debitCredit.equalsIgnoreCase("D");
 					
 					BalanceSheet balanceSheet =
@@ -310,13 +326,13 @@ public class AccountingLoader {
 					
 					String rowId_GL = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInGeneralLedger.incrementAndGet());
 					Map<String,Object> normalizedRecord_GL = new HashMap<>(record);
-					normalizedRecord_GL.put(PublishedDataFieldNames.TIMESTAMP.name(), timestamp);
-					normalizedRecord_GL.put(PublishedDataFieldNames.TAXPAYER_ID.name(), taxPayerId);
-					normalizedRecord_GL.put(PublishedDataFieldNames.TAXPERIOD_NUMBER.name(), taxPeriodNumber);
-					normalizedRecord_GL.put(PublishedDataFieldNames.TEMPLATE_NAME.name(), gl.getTemplateName());
-					normalizedRecord_GL.put(PublishedDataFieldNames.TEMPLATE_VERSION.name(), gl.getTemplateVersion());
-					normalizedRecord_GL.put(AccountingFieldNames.Balance.name(), balanceSheet.getFinalValue());
-					normalizedRecord_GL.put(AccountingFieldNames.BalanceDebitCredit.name(), balanceSheet.isFinalValueDebit() ? "D" : "C");
+					normalizedRecord_GL.put(publishedTimestamp, timestamp);
+					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
+					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
+					normalizedRecord_GL.put(publishedTemplateName, gl.getTemplateName());
+					normalizedRecord_GL.put(publishedTemplateVersion, gl.getTemplateVersion());
+					normalizedRecord_GL.put(ledgerBalance, balanceSheet.getFinalValue());
+					normalizedRecord_GL.put(ledgerBalanceDebitCredit, balanceSheet.isFinalValueDebit() ? "D" : "C");
 					if (declarantInformation.isPresent())
 						normalizedRecord_GL.putAll(declarantInformation.get());
 					if (accountInformation.isPresent())
