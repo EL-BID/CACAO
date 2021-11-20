@@ -27,6 +27,7 @@ import org.idb.cacao.etl.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.etl.repositories.DocumentTemplateRepository;
 import org.idb.cacao.etl.repositories.DocumentValidatedRepository;
 import org.idb.cacao.etl.repositories.DomainTableRepository;
+import org.idb.cacao.etl.repositories.TaxpayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -69,6 +70,9 @@ public class FileValidatedConsumerService {
 	
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
+	
+	@Autowired
+	private TaxpayerRepository taxpayerRepository;
 
 	@Bean
 	public Consumer<String> receiveValidatedFile() {
@@ -94,6 +98,7 @@ public class FileValidatedConsumerService {
 		etlContext.setMessageSource(messageSource);
 		etlContext.setValidatedDataRepository(validatedDataRepository);
 		etlContext.setDomainTableRepository(domainTableRepository);
+		etlContext.setTaxpayerRepository(taxpayerRepository);
 		
 		try {
 		
