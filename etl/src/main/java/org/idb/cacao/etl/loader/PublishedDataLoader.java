@@ -24,7 +24,13 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.idb.cacao.api.ETLContext;
+import org.idb.cacao.api.PublishedDataFieldNames;
+import org.idb.cacao.api.errors.CommonErrors;
 
 /**
  * Implementation of a 'data loading strategy' used by the ETL process in order to store
@@ -41,6 +47,30 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 	
 	public PublishedDataLoader(RestHighLevelClient elasticsearchClient) {
 		this.elasticsearchClient = elasticsearchClient;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.ETLContext.LoadDataStrategy#delete(java.lang.String, java.lang.String, java.lang.Integer)
+	 */
+	@Override
+	public void delete(String indexName, String taxPayerId, Integer taxPeriodNumber) throws Exception {
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		if (taxPayerId!=null)
+			query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPAYER_ID.toString()+".keyword", taxPayerId));
+		if (taxPeriodNumber!=null)
+			query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPERIOD_NUMBER.toString(), taxPeriodNumber));
+		DeleteByQueryRequest request = new DeleteByQueryRequest(indexName)
+				.setQuery(query);
+		try {
+			elasticsearchClient.deleteByQuery(request, RequestOptions.DEFAULT);
+		}
+		catch (Exception ex) {
+			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
+				return; // ignore these errors
+			else
+				throw ex;
+		}
 	}
 
 	/*
@@ -67,9 +97,11 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 	 */
 	@Override
 	public void commit() throws Exception {
-		request.setRefreshPolicy(RefreshPolicy.NONE);
-		elasticsearchClient.bulk(request,
+		if (request.numberOfActions()>0) {
+			request.setRefreshPolicy(RefreshPolicy.NONE);
+			elasticsearchClient.bulk(request,
 				RequestOptions.DEFAULT);
+		}
 	}
 
 	/*

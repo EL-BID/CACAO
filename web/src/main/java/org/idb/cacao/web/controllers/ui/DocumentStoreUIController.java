@@ -36,38 +36,39 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 /**
- * Controller class for all endpoints related to 'document' object interacting by a user interface
+ * Controller class for all endpoints related to 'document' object interacting
+ * by a user interface
  * 
  * @author Luis Kauer
  *
  */
 @Controller
 public class DocumentStoreUIController {
-	
+
 	@Autowired
 	private DocumentTemplateService templateService;
-	
+
 	@Autowired
 	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
-	
+
 	@Autowired
 	private MessagesService messagesService;
-	
+
 	@Autowired
 	private MessageSource messageSource;
-	
+
 	@GetMapping("/docs")
-    public String getDocs(Model model) {
+	public String getDocs(Model model) {
 		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
-        return "docs/docs_main";
-    }
-	
+		return "docs/docs_main";
+	}
+
 	@GetMapping("/docs_search")
-    public String searchDocs(Model model) {
+	public String searchDocs(Model model) {
 		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
-        return "docs/docs_search";
-    }
-	
+		return "docs/docs_search";
+	}
+
 	@GetMapping("/docs/situations/{documentId}")
     public String getDocSituations(@PathVariable("documentId") String documentId, Model model) {
 		
@@ -77,23 +78,24 @@ public class DocumentStoreUIController {
 		}
 		List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
 		
-		model.addAttribute("situations", situations);
+		model.addAttribute("situations", situations);		
 		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
         return "docs/docs_situation";
-    }	
-	
+    }
+
 	@GetMapping("/docs/errors/{documentId}")
-    public String getDocErrors(@PathVariable("documentId") String documentId, Model model) {
-		
+	public String getDocErrors(@PathVariable("documentId") String documentId, Model model) {
+
 		// Parse the 'templateName' informed at request path
-		if (documentId==null || documentId.trim().length()==0) {
+		if (documentId == null || documentId.trim().length() == 0) {
 			throw new MissingParameter("documentId");
 		}
 		List<DocumentValidationErrorMessage> messages = messagesService.findByDocumentId(documentId);
-		
+
 		model.addAttribute("messages", messages);
-		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
-        return "docs/docs_errors";
-    }	
-	
+		model.addAttribute("dateTimeFormat",
+				messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
+		return "docs/docs_errors";
+	}
+
 }

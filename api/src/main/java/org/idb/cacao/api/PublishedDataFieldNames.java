@@ -21,7 +21,7 @@ package org.idb.cacao.api;
 
 /**
  * Enumerates constants for published (denormalized) data fields names. These fields are stored
- * in pos-validated data (output of 'ETL' phase).
+ * in pos-validated data (output of 'ETL' phase).<BR>
  * 
  * @author Gustavo Figueiredo
  *

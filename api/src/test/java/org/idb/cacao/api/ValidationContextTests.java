@@ -24,6 +24,13 @@ import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
+import org.idb.cacao.api.utils.ParserUtils;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -63,6 +70,72 @@ public class ValidationContextTests {
 		assertEquals(123, ValidationContext.toNumber(123));
 		assertEquals(123.0, ValidationContext.toNumber(123.0));
 		assertEquals(123.0f, ValidationContext.toNumber(123.0f));
+	}
+
+	/**
+	 * Test the outcome of 'toDate' function
+	 */
+	@Test
+	public void testToDate() throws Exception {
+		
+		assertNull(ValidationContext.toDate(null));
+		
+		java.util.Date d = ParserUtils.parseDMY("21-11-2021");
+		assertEquals(d, ValidationContext.toDate(d));
+
+		java.sql.Date d2 = new java.sql.Date(d.getTime());
+		assertEquals(d, ValidationContext.toDate(d2));
+
+		LocalDate ld = LocalDate.of(2021, 11, 21);
+		assertEquals(d, ValidationContext.toDate(ld));
+
+		ZoneOffset offset = ZoneId.systemDefault().getRules().getOffset(Instant.now());
+		OffsetDateTime odt = OffsetDateTime.of(2021, 11, 21, 0, 0, 0, 0, offset);
+		assertEquals(d, ValidationContext.toDate(odt));
+
+		assertEquals(d, ValidationContext.toDate("21-11-2021"));
+		assertEquals(d, ValidationContext.toDate("11-21-2021"));
+		assertEquals(d, ValidationContext.toDate("2021-11-21"));
+
+		assertEquals(d, ValidationContext.toDate("21/11/2021"));
+		assertEquals(d, ValidationContext.toDate("11/21/2021"));
+		assertEquals(d, ValidationContext.toDate("2021/11/21"));
+
+		assertEquals(d, ValidationContext.toDate("2021-11-21T00:00:00"));
+		assertEquals(d, ValidationContext.toDate("2021-11-21T00:00:00.000"+offset));
+	}
+
+	/**
+	 * Test the outcome of 'toOffsetDateTime' function
+	 */
+	@Test
+	public void testToOffsetDateTime() throws Exception {
+		
+		assertNull(ValidationContext.toOffsetDateTime(null));
+
+		ZoneOffset offset = ZoneId.systemDefault().getRules().getOffset(Instant.now());
+		OffsetDateTime odt = OffsetDateTime.of(2021, 11, 21, 0, 0, 0, 0, offset);
+		assertEquals(odt, ValidationContext.toOffsetDateTime(odt));
+
+		java.util.Date d = ParserUtils.parseDMY("21-11-2021");
+		assertEquals(odt, ValidationContext.toOffsetDateTime(d));
+
+		java.sql.Date d2 = new java.sql.Date(d.getTime());
+		assertEquals(odt, ValidationContext.toOffsetDateTime(d2));
+
+		LocalDate ld = LocalDate.of(2021, 11, 21);
+		assertEquals(odt, ValidationContext.toOffsetDateTime(ld));
+
+		assertEquals(odt, ValidationContext.toOffsetDateTime("21-11-2021"));
+		assertEquals(odt, ValidationContext.toOffsetDateTime("11-21-2021"));
+		assertEquals(odt, ValidationContext.toOffsetDateTime("2021-11-21"));
+
+		assertEquals(odt, ValidationContext.toOffsetDateTime("21/11/2021"));
+		assertEquals(odt, ValidationContext.toOffsetDateTime("11/21/2021"));
+		assertEquals(odt, ValidationContext.toOffsetDateTime("2021/11/21"));
+
+		assertEquals(odt, ValidationContext.toOffsetDateTime("2021-11-21T00:00:00"));
+		assertEquals(odt, ValidationContext.toOffsetDateTime("2021-11-21T00:00:00.000"+offset));
 	}
 
 }

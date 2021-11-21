@@ -159,6 +159,11 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	public void setSituation(DocumentSituation situation) {
 		this.situation = situation;
 	}
+	
+	public String getSituationDisplay() {
+		String s = getSituation().toString();		
+		return s;
+	}
 
 	public DocumentSituationHistory clone() {
 		try {

@@ -59,9 +59,9 @@ var app = new Vue({
 		    persistenceID:"doc_situation_history_persistence",				
     		data: tableData,    		
 			columns:[ //Define Table Columns
-				{title: /*{{#doc.situation.history.documentId}}} */ "Document Id", field:"documentId", headerFilter:this.headerFilter},
-				{title: /*{{#doc.situation.history.templateName}}} */ "Template", field:"templateName", headerFilter:this.headerFilter},
-				{title: /*[[#{doc.situation.history.situation}]]*/ "Situation", field:"situation", headerFilter:this.headerFilter},
+				{title: /*[[#{doc.situation.history.documentId}]] */ "Document Id", field:"documentId", headerFilter:this.headerFilter},
+				{title: /*[[#{doc.situation.history.templateName}]] */ "Template", field:"templateName", headerFilter:this.headerFilter},
+				{title: /*[[#{doc.situation.history.situation}]]*/ "Situation", field: "situation", headerFilter:this.headerFilter},
 				{title: /*[[#{doc.situation.history.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
 				{title: /*[[#{doc.situation.history.timestamp}]]*/ "Situation date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},								
 			]

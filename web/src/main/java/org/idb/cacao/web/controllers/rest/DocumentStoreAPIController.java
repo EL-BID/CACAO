@@ -800,6 +800,7 @@ public class DocumentStoreAPIController {
 			throw new MissingParameter("documentId");
 		}
 		List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
+		
 		if (situations.isEmpty()) {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}

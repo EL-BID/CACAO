@@ -148,6 +148,13 @@ public class ETLContext {
 		default public void start() { }
 		
 		/**
+		 * Deletes previous published (denormalized) data stored in the given index related to the given taxPayerId and taxPeriodNumber<BR>
+		 * The field name for taxPayerId is '_taxpayer_id' (according to method 'toString' of {@link PublishedDataFieldNames#TAXPAYER_ID TAXPAYER_ID}).<BR>
+		 * The field name for taxPeriodNumber is '_tax_period_number' (according to method 'toString' of {@link PublishedDataFieldNames#TAXPERIOD_NUMBER TAXPERIOD_NUMBER}).<BR>
+		 */
+		default public void delete(String indexName, String taxPayerId, Integer taxPeriodNumber) throws Exception { }
+		
+		/**
 		 * Include data to be stored
 		 */
 		public void add(IndexRequest request);

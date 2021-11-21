@@ -48,9 +48,12 @@ import org.apache.http.client.config.RequestConfig;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.ResizeRequest;
 import org.elasticsearch.client.indices.ResizeResponse;
 import org.elasticsearch.common.unit.TimeValue;
+import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
@@ -146,6 +149,7 @@ public class AdminService {
 				new Option("t","templates",false, "Deletes all templates and domain tables. Recreates domain tables automatically."),
 				new Option("u","uploads",false, "Deletes all upload records and uploaded files."),
 				new Option("v","validated",false, "Deletes all validated records."),
+				new Option("p","published",false, "Deletes all published (denormalized) views."),
 				new Option("a","all",false, "Deletes all the above options.")),
 		
 		KIBANA(AdminService::kibana,
@@ -739,6 +743,31 @@ public class AdminService {
 		
 		StringBuilder report = new StringBuilder();
 		
+		if (cmdLine.hasOption("p") || cmdLine.hasOption("a")) {
+			// Deletes all published (denormalized) views
+			int deleted_indices = 0;
+			long deleted_documents = 0;
+			try {
+				GetIndexRequest request = new GetIndexRequest(IndexNamesUtils.PUBLISHED_DATA_INDEX_PREFIX+"*");
+				GetIndexResponse response = service.elasticsearchClient.indices().get(request, RequestOptions.DEFAULT);
+				String[] indices = response.getIndices();
+				for (String indexName: indices) {
+					try {
+						deleted_documents = ESUtils.countDocs(service.elasticsearchClient, indexName);
+						ESUtils.deleteIndex(service.elasticsearchClient, indexName);
+						deleted_indices++;
+					}
+					catch (Throwable ex) { }
+				}
+			}
+			catch (Exception ex) {
+				if (!CommonErrors.isErrorNoIndexFound(ex) && !CommonErrors.isErrorNoMappingFoundForColumn(ex)) {
+					throw ex;
+				}
+			}
+			report.append("Deleted ").append(deleted_indices).append(" indices containing ").append(deleted_documents).append(" published (denormalized) data.\n");
+		}
+
 		if (cmdLine.hasOption("v") || cmdLine.hasOption("a")) {
 			// Deletes all validated records for all document templates
 			int deleted_indices = 0;
@@ -752,7 +781,7 @@ public class AdminService {
 				}
 				catch (Throwable ex) { }
 			}
-			report.append("Deleted ").append(deleted_indices).append(" indices containing ").append(deleted_documents).append(" validated data of uploaded files).\n");
+			report.append("Deleted ").append(deleted_indices).append(" indices containing ").append(deleted_documents).append(" validated data of uploaded files.\n");
 		}
 
 		if (cmdLine.hasOption("t") || cmdLine.hasOption("a")) {

@@ -19,12 +19,15 @@
  *******************************************************************************/
 package org.idb.cacao.api;
 
+import static org.idb.cacao.api.utils.ParserUtils.*;
+
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -382,16 +385,7 @@ public class ValidationContext {
 	 */
 	public static Date getParsedDateContent(Map<String,Object> record, String fieldName, String... nestedFieldNames) {
 		Object content = getParsedContent(record, fieldName, nestedFieldNames);
-		if (content==null)
-			return null;
-		if (content instanceof Date)
-			return (Date)content;
-		if (content instanceof OffsetDateTime)			
-			return new Date(((OffsetDateTime)content).toInstant().toEpochMilli());
-		if (content instanceof LocalDate)			
-			return new Date(((LocalDate)content).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
-		else
-			return (Date)content; // this will throw ClassCastException for incompatible object
+		return toDate(content);
 	}
 
 	/**
@@ -448,6 +442,68 @@ public class ValidationContext {
 
 	}
 	
+	/**
+	 * Convert a value of any type to Date in a conventional way
+	 */
+	public static Date toDate(Object content) {
+		if (content==null)
+			return null;
+		if (content instanceof Date)
+			return (Date)content;
+		if (content instanceof OffsetDateTime)			
+			return new Date(((OffsetDateTime)content).toInstant().toEpochMilli());
+		if (content instanceof LocalDate)			
+			return new Date(((LocalDate)content).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+		if (content instanceof String) {
+			String value = (String) content;
+			if (isMDY(value))
+				return parseMDY(value);
+			if (isDMY(value))
+				return parseDMY(value);
+			if (isYMD(value))
+				return parseYMD(value);
+			Date d = parseTimestamp(value);
+			if (d!=null)
+				return d;
+			d = parseTimestampES(value);
+			if (d!=null)
+				return d;
+		}
+		return (Date)content; // this will throw ClassCastException for incompatible object
+	}
+	
+	/**
+	 * Convert a value of any type to OffsetDateTime in a conventional way
+	 */
+	public static OffsetDateTime toOffsetDateTime(Object content) {
+		if (content==null)
+			return null;
+		if (content instanceof OffsetDateTime)
+			return (OffsetDateTime)content;
+		if (content instanceof java.sql.Date)			
+			return ((java.sql.Date)content).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
+		if (content instanceof Date)			
+			return ((Date)content).toInstant().atOffset(ZoneId.systemDefault().getRules().getOffset(Instant.now()));
+		if (content instanceof LocalDate)			
+			return ((LocalDate)content).atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
+		if (content instanceof String) {
+			String value = (String) content;
+			if (isMDY(value))
+				return toOffsetDateTime(parseMDY(value));
+			if (isDMY(value))
+				return toOffsetDateTime(parseDMY(value));
+			if (isYMD(value))
+				return toOffsetDateTime(parseYMD(value));			
+			Date d = parseTimestamp(value);
+			if (d!=null)
+				return toOffsetDateTime(d);	
+			d = parseTimestampES(value);
+			if (d!=null)
+				return toOffsetDateTime(d);	
+		}
+		return (OffsetDateTime)content; // this will throw ClassCastException for incompatible object
+	}
+
 	/**
 	 * Convert a value of any type to String in a conventional way.
 	 */

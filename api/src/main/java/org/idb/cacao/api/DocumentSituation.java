@@ -59,6 +59,11 @@ public enum DocumentSituation {
 	PENDING("doc.situation.pending"),
 	
 	/**
+	 * Document considered 'replaced' by another one
+	 */
+	REPLACED("doc.situation.replaced"),
+	
+	/**
 	 * Document considered PROCESSED, which means it was considered VALID by
 	 * the validation phase and has completed the ETL phase.
 	 */

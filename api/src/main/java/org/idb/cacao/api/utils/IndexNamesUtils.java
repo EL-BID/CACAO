@@ -43,6 +43,16 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 public class IndexNamesUtils {
 	
 	/**
+	 * Prefix for all indices related to validated data (output from validation phase)
+	 */
+	public static final String VALIDATED_DATA_INDEX_PREFIX = "cacao_doc_";
+
+	/**
+	 * Prefix for all indices related to published (denormalized) data (output from ETL phase)
+	 */
+	public static final String PUBLISHED_DATA_INDEX_PREFIX = "cacao_pub_";
+
+	/**
 	 * Returns a proper index name for using in ElasticSearch for validated documents related to a DocumentTemplate (output from validation)
 	 */
 	public static String formatIndexNameForValidatedData(DocumentTemplate template) {

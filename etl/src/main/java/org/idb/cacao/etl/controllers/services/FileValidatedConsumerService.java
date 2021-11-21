@@ -176,6 +176,8 @@ public class FileValidatedConsumerService {
 				// TODO: should fall back to a default ETL behaviour in case there is no archetype for this job
 				// For example, should generated denormalized view of parsed contents, expanding all references
 				// to domain tables and expanding taxpayers records
+				
+				// TODO: Should delete previous published GENERIC data
 	
 				setSituation(doc, DocumentSituation.PROCESSED);
 				
