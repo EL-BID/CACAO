@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -13,6 +14,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ETLContext.ValidatedDataRepository;
 import org.idb.cacao.api.errors.DocumentNotFoundException;
@@ -28,6 +30,7 @@ import org.idb.cacao.etl.repositories.DocumentTemplateRepository;
 import org.idb.cacao.etl.repositories.DocumentValidatedRepository;
 import org.idb.cacao.etl.repositories.DomainTableRepository;
 import org.idb.cacao.etl.repositories.TaxpayerRepository;
+import org.idb.cacao.etl.repositories.DocumentValidationErrorMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -73,6 +76,9 @@ public class FileValidatedConsumerService {
 	
 	@Autowired
 	private TaxpayerRepository taxpayerRepository;
+
+	@Autowired
+	private DocumentValidationErrorMessageRepository documentValidationErrorMessageRepository;
 
 	@Bean
 	public Consumer<String> receiveValidatedFile() {
@@ -125,46 +131,57 @@ public class FileValidatedConsumerService {
 			System.out.println("File: " + filePath.getFileName());
 			System.out.println("Original file: " + doc.getFilename());
 			System.out.println("Template: " + doc.getTemplateName());
-			
-			doc.setSituation(DocumentSituation.PROCESSED);
-			
-			//DocumentUploaded savedDoc = documentsUploadedRepository.saveWithTimestamp(doc);			
-			//rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); // in case of error delete the DocumentUploaded
-			
-			DocumentSituationHistory situation = new DocumentSituationHistory();
-			situation.setDocumentId(documentId);
-			situation.setSituation(DocumentSituation.PROCESSED);
-			situation.setTimestamp(doc.getChangedTime());
-			situation.setDocumentFilename(doc.getFilename());
-			situation.setTemplateName(doc.getTemplateName());
-			DocumentSituationHistory savedSituation = documentsSituationHistoryRepository.save(situation);
-			
-			rollbackProcedures.add(()->documentsSituationHistoryRepository.delete(savedSituation)); // in case of error delete the DocumentUploaded
-			
+						
 			final PublishedDataLoader publishedDataLoader = new PublishedDataLoader(elasticsearchClient);
 			etlContext.setLoadDataStrategy(publishedDataLoader);
 
+			// Unless we have a specific ETL procedure, we shall perform the 'general purpose' ETL
+			boolean should_perform_general_etl = true;
+			
 			// Check for domain-specific validations related to a built-in archetype
 			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
 				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());
 				if (archetype != null && archetype.isPresent()) {
 					
+					should_perform_general_etl = false; // prevents 'two ETL's over the same document
+					
 					boolean ok = archetype.get().performETL(etlContext);
 					if (!ok) {
 						
-						// TODO:
-
 						log.log(Level.SEVERE, "The ETL of "
 								+ documentId + " does not conform to the archetype "+archetype.get().getName()+". Please check document error messagens for details.");
-						//throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
 					}
 
+					if (ok && !etlContext.hasOutcomeSituations()) {
+						// If it was successful but there was no outcome situation produced by the 'performETL' method, then we will consider 'fulfilled'
+						setSituation(doc, DocumentSituation.PROCESSED);
+					}
+					else if (!ok && !etlContext.hasOutcomeSituations()) {
+						// If there was an error and there was no outcome situation produced by the 'performETL' method, then we will consider 'pending'
+						// For example, the system administration may have missed some required configuration. The file may be still valid, but it's impossible
+						// to proceed.
+						setSituation(doc, DocumentSituation.PENDING);
+					}
+					else {
+						// In case of error or in case of success, write the outcome status
+						for (Map.Entry<DocumentUploaded, DocumentSituation> entry: etlContext.getOutcomeSituations().entrySet()) {
+							setSituation(entry.getKey(), entry.getValue());
+						}
+					}
 				}
 			}
+
+			if (should_perform_general_etl) {
+				
+				// TODO: should fall back to a default ETL behaviour in case there is no archetype for this job
+				// For example, should generated denormalized view of parsed contents, expanding all references
+				// to domain tables and expanding taxpayers records
+	
+				setSituation(doc, DocumentSituation.PROCESSED);
+				
+			}
 			
-			// TODO: should fall back to a default ETL behaviour in case there is no archetype for this job
-			// For example, should generated denormalized view of parsed contents, expanding all references
-			// to domain tables and expanding taxpayers records
+			saveETLMessages(etlContext);
 			
 			return documentId;
 		
@@ -177,6 +194,65 @@ public class FileValidatedConsumerService {
 			//TODO Add logging
 		}
 		
+	}
+	
+	/**
+	 * Save ETL error/alert messages to database
+	 * 
+	 * @param etlContext The context on the ETL
+	 */
+	private void saveETLMessages(ETLContext etlContext) {
+
+		if (etlContext == null)
+			return;
+
+		Map<DocumentUploaded,List<String>> alerts = etlContext.getAlerts();
+
+		if (alerts == null || alerts.isEmpty())
+			return;
+
+		for (Map.Entry<DocumentUploaded,List<String>> entry: alerts.entrySet()) {
+			
+			DocumentUploaded doc = entry.getKey();
+			
+			DocumentValidationErrorMessage message = DocumentValidationErrorMessage.create()
+					.withTemplateName(doc.getTemplateName()).withDocumentId(doc.getId())
+					.withDocumentFilename(doc.getFilename());
+	
+			entry.getValue().parallelStream().forEach(alert -> {
+				DocumentValidationErrorMessage newMessage = message.clone();
+				newMessage.setErrorMessage(alert);
+				documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);
+			});
+
+		}
+	}
+
+	/**
+	 * Changes the situation for a given DocumentUploaded and saves new situation on
+	 * DocumentSituationHistory
+	 *
+	 * @param doc          Document to be updated
+	 * @param docSituation Document Situation to be saved
+	 */
+	private DocumentUploaded setSituation(DocumentUploaded doc, DocumentSituation docSituation) {
+
+		doc.setSituation(docSituation);
+
+		DocumentUploaded savedDoc = documentValidatedRepository.saveWithTimestamp(doc);
+		// rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); //
+		// in case of error delete the DocumentUploaded
+
+		DocumentSituationHistory situation = new DocumentSituationHistory();
+		situation.setDocumentId(savedDoc.getId());
+		situation.setSituation(docSituation);
+		situation.setTimestamp(doc.getChangedTime());
+		situation.setDocumentFilename(doc.getFilename());
+		situation.setTemplateName(doc.getTemplateName());
+		documentsSituationHistoryRepository.save(situation);
+
+		return savedDoc;
+
 	}
 	
 	/**

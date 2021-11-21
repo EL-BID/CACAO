@@ -368,4 +368,23 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	public String toString() {
 		return filename;
 	}
+	
+	public int hashCode() {
+		return 17 + 37 * (id==null ? 0 : id.hashCode());
+	}
+	
+	public boolean equals(Object o) {
+		if (this==o)
+			return true;
+		if (!(o instanceof DocumentUploaded))
+			return false;
+		DocumentUploaded ref = (DocumentUploaded)o;
+		if (id!=ref.id) {
+			if (id==null || ref.id==null)
+				return false;
+			if (!id.equals(ref.id))
+				return false;
+		}
+		return true;
+	}
 }

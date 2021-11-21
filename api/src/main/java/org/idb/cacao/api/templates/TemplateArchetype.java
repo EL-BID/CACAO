@@ -21,6 +21,7 @@ package org.idb.cacao.api.templates;
 
 import java.util.List;
 
+import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
 
@@ -96,10 +97,14 @@ public interface TemplateArchetype {
 	/**
 	 * Executes Extract/Transform/Load operations producing denormalized data at database.<BR>
 	 * Performs cross-validations with different files related to different archetypes that are part
-	 * of the same 'group' as this one.
+	 * of the same 'group' as this one.<BR>
+	 * This method should also write into {@link ETLContext#setOutcomeSituation(org.idb.cacao.api.DocumentUploaded, DocumentSituation) outcomeSituations} the resulting
+	 * situation for each processed {@link DocumentUploaded DocumentUploaded}. Some may be considered {@link DocumentSituation#PROCESSED PROCESSED}.<BR>
+	 * If no situation is written, then nothing will change regarding the documents situations.<BR>
+	 * This method may also write some alerts into {@link ETLContext#addAlert(String) alerts} for signaling some warnings about the processed files.
 	 * @param context Object created by the ETL consumer with information regarding the incoming document and any other objects
 	 * necessary for retrieving related information
-	 * @return Returns TRUE if the operation completed successfully. Retorns FALSE otherwise.
+	 * @return Returns TRUE if the operation completed successfully. Returns FALSE in case of error.
 	 */
 	default public boolean performETL(ETLContext context) {
 		return true;

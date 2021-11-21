@@ -113,7 +113,8 @@ public class AccountingLoader {
 			}
 			for (DocumentUploaded upload: uploads) {
 				if (!DocumentSituation.VALID.equals(upload.getSituation())
-					&& !DocumentSituation.PROCESSED.equals(upload.getSituation()))
+					&& !DocumentSituation.PROCESSED.equals(upload.getSituation())
+					&& !DocumentSituation.PENDING.equals(upload.getSituation()))
 					continue; // ignores invalid or not validated files
 				boolean has_data = context.getValidatedDataRepository().hasValidation(template.getName(), template.getVersion(), upload.getFileId());
 				if (!has_data) {
@@ -127,7 +128,6 @@ public class AccountingLoader {
 		}
 		if (foundUploadWithEmptyData!=null)
 			return foundUploadWithEmptyData;
-		// TODO: should report missing upload (not an error, but a warning for the taxpayer)
 		return null;
 	}
 	
@@ -238,29 +238,41 @@ public class AccountingLoader {
 			// Check for the presence of all required data
 			
 			Collection<DocumentTemplate> templatesForCoA = context.getValidatedDataRepository().getTemplates(ChartOfAccountsArchetype.NAME);
-			if (templatesForCoA.isEmpty())
+			if (templatesForCoA.isEmpty()) {
+				context.addAlert(context.getDocumentUploaded(), "{error.missingTemplate({accounting.chart.accounts})}");
 				return false;
+			}
 			
 			Collection<DocumentTemplate> templatesForLedger = context.getValidatedDataRepository().getTemplates(GeneralLedgerArchetype.NAME);
-			if (templatesForLedger.isEmpty())
+			if (templatesForLedger.isEmpty()) {
+				context.addAlert(context.getDocumentUploaded(), "{error.missingTemplate({accounting.general.ledger})}");
 				return false;
+			}
 			
 			Collection<DocumentTemplate> templatesForOpening = context.getValidatedDataRepository().getTemplates(OpeningBalanceArchetype.NAME);
-			if (templatesForOpening.isEmpty())
+			if (templatesForOpening.isEmpty()) {
+				context.addAlert(context.getDocumentUploaded(), "{error.missingTemplate({accounting.opening.balance})}");
 				return false;
+			}
 			
 			String taxPayerId = context.getDocumentUploaded().getTaxPayerId();
 			Integer taxPeriodNumber = context.getDocumentUploaded().getTaxPeriodNumber();
 			
-			DocumentUploaded coa = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForCoA, context);
-			if (coa==null)
+			final DocumentUploaded coa = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForCoA, context);
+			if (coa==null) {
+				context.addAlert(context.getDocumentUploaded(), "{error.missingFile({accounting.chart.accounts})}");
 				return false;
-			DocumentUploaded gl = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForLedger, context);
-			if (gl==null)
+			}
+			final DocumentUploaded gl = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForLedger, context);
+			if (gl==null) {
+				context.addAlert(context.getDocumentUploaded(), "{error.missingFile({accounting.general.ledger})}");
 				return false;
-			DocumentUploaded ob = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForOpening, context);
-			if (ob==null)
+			}
+			final DocumentUploaded ob = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForOpening, context);
+			if (ob==null) {
+				context.addAlert(context.getDocumentUploaded(), "{error.missingFile({accounting.opening.balance})}");
 				return false;
+			}
 			
 			// If we got here, we have enough information for generating denormalized data
 			
@@ -327,12 +339,25 @@ public class AccountingLoader {
 			try {
 				
 				gl_data.forEach(record->{
-					
+
+					String entryId = ValidationContext.toString(record.get(ledgerId));
+
 					String accountCode = ValidationContext.toString(record.get(ledgerAccountCode));
 					if (accountCode==null)
 						accountCode = "";
 					
-					Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(accountCode);
+					final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(accountCode);
+					if (!accountInformation.isPresent() && accountCode.length()>0) {
+						DocumentUploaded reporting_doc = (coa.equals(context.getDocumentUploaded())) ? coa : gl;
+						context.addAlert(reporting_doc, "{account.error.ledger.invalid.account("
+							+accountCode.replaceAll("[\\{\\}\\,\\(\\)\r\n\t]","")
+							+","
+							+entryId.replaceAll("[\\{\\}\\,\\(\\)]\r\n\t","")
+							+")}");
+						// Either CoA or GL should be replaced
+						context.setOutcomeSituation(coa, DocumentSituation.PENDING);
+						context.setOutcomeSituation(gl, DocumentSituation.PENDING);
+					}
 					
 					Number amount = ValidationContext.toNumber(record.get(ledgerAmount));
 					String debitCredit = ValidationContext.toString(record.get(ledgerDebitCredit));
@@ -354,6 +379,12 @@ public class AccountingLoader {
 								else
 									balance.setInitialValue(-Math.abs(initialBalance.doubleValue()));
 							}
+						}
+						else if (accountInformation.isPresent()) {
+							context.addAlert(ob, "{account.error.missing.opening.balance("
+									+acc.replaceAll("[\\{\\}\\,\\(\\)\r\n\t]","")
+									+")}");
+							context.setOutcomeSituation(ob, DocumentSituation.PENDING);
 						}
 						return balance;
 					});
@@ -395,6 +426,12 @@ public class AccountingLoader {
 				}
 				loader.close();
 			}
+			
+			if (success && !context.hasOutcomeSituations()) {
+				context.setOutcomeSituation(coa, DocumentSituation.PROCESSED);
+				context.setOutcomeSituation(gl, DocumentSituation.PROCESSED);
+				context.setOutcomeSituation(ob, DocumentSituation.PROCESSED);
+			}
 
 			return success;
 			
@@ -411,7 +448,7 @@ public class AccountingLoader {
 	 * @author Gustavo Figueiredo
 	 */
 	public static class BalanceSheet {
-
+		
 		/**
 		 * Positive = debit, Negative = credit
 		 */

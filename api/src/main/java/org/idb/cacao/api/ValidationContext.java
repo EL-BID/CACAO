@@ -262,9 +262,9 @@ public class ValidationContext {
 	public void addAlert(String alert) {
 		if (alert==null || alert.trim().length()==0)
 			return;
+		if (this.alerts==null)
+			this.alerts = new LinkedList<>();
 		synchronized (this.alerts) {
-			if (this.alerts==null)
-				this.alerts = new LinkedList<>();
 			this.alerts.add(alert);
 		}
 	}

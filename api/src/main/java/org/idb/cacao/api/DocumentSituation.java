@@ -35,9 +35,33 @@ import org.springframework.context.i18n.LocaleContextHolder;
 public enum DocumentSituation {
 
 	RECEIVED("document.situation.received"),
-	ACCEPTED("document.situation.accepted"),		
+	ACCEPTED("document.situation.accepted"),
+	
+	/**
+	 * Document considered VALID according to validation phase, but did not
+	 * complete the ETL yet
+	 */
 	VALID("document.situation.valid"),
+	
+	/**
+	 * Document considered INVALID according to validation phase. The document
+	 * should be replaced by another one in order to proceed
+	 */
 	INVALID("document.situation.invalid"),
+	
+	/**
+	 * Document considered temporarily INCONSISTENT according to the ETL phase.
+	 * It may be still VALID, but should be processed again by the ETL phase
+	 * in order to be considered PROCESSED. It usually means there are at least
+	 * two uploaded files that does not conform to each other, so at least one
+	 * of them should be replaced.
+	 */
+	PENDING("document.situation.pending"),
+	
+	/**
+	 * Document considered PROCESSED, which means it was considered VALID by
+	 * the validation phase and has completed the ETL phase.
+	 */
 	PROCESSED("document.situation.processed");	
 
 	private final String display;

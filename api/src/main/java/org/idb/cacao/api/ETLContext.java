@@ -22,6 +22,9 @@ package org.idb.cacao.api;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -199,6 +202,28 @@ public class ETLContext {
 	 * Object used to resolve errors according to a specific language
 	 */
 	private MessageSource messageSource;
+	
+	/**
+	 * Warnings produced by the validation phase. Texts informed in braces should be resolved with messages.properties.<BR>
+	 * E.g.: If the alert is "{some.message}", it will be resolved to another message according to messages.properties
+	 * and the user preference. Parameters for messages.properties entry may be provided in parentheses. For example,
+	 * {some.message(param1)} will be resolved with messages.properties using 'some.message' as key and 'param1' as
+	 * the first parameter to this message. Additional parameters may be separated by commas.  If the parameter is in braces,
+	 * it will also be resolved with messages.properties. For example, "{some.message({some.parameter})}" will first
+	 * resolve 'some.parameter' as key to messages.properties, than will use it as a parameter using 'some.message' as key. 
+	 */
+	private Map<DocumentUploaded, List<String>> alerts;
+
+	/**
+	 * The ETL process should write here the situation for each DocumentUploaded that was part of this
+	 * process. For example, some previous DocumentUploaded should be turned into PROCESSED.
+	 */
+	private final Map<DocumentUploaded, DocumentSituation> outcomeSituations;
+	
+	public ETLContext() {
+		outcomeSituations = new HashMap<>();
+		alerts = new HashMap<>();
+	}
 
 	/**
 	 * Reference to the incoming file that triggered this ETL operation
@@ -288,6 +313,98 @@ public class ETLContext {
 	 */
 	public void setMessageSource(MessageSource messageSource) {
 		this.messageSource = messageSource;
+	}
+
+	/**
+	 * Warnings produced by the validation phase. Texts informed in braces should be resolved with messages.properties.<BR>
+	 * E.g.: If the alert is "{some.message}", it will be resolved to another message according to messages.properties
+	 * and the user preference. Parameters for messages.properties entry may be provided in parentheses. For example,
+	 * {some.message(param1)} will be resolved with messages.properties using 'some.message' as key and 'param1' as
+	 * the first parameter to this message. Additional parameters may be separated by commas.  If the parameter is in braces,
+	 * it will also be resolved with messages.properties. For example, "{some.message({some.parameter})}" will first
+	 * resolve 'some.parameter' as key to messages.properties, than will use it as a parameter using 'some.message' as key. 
+	 */
+	public Map<DocumentUploaded, List<String>> getAlerts() {
+		return alerts;
+	}
+	
+	public boolean hasAlerts() {
+		return alerts!=null && !alerts.isEmpty();
+	}
+
+	/**
+	 * Warnings produced by the validation phase. Texts informed in braces should be resolved with messages.properties.<BR>
+	 * E.g.: If the alert is "{some.message}", it will be resolved to another message according to messages.properties
+	 * and the user preference. Parameters for messages.properties entry may be provided in parentheses. For example,
+	 * {some.message(param1)} will be resolved with messages.properties using 'some.message' as key and 'param1' as
+	 * the first parameter to this message. Additional parameters may be separated by commas.  If the parameter is in braces,
+	 * it will also be resolved with messages.properties. For example, "{some.message({some.parameter})}" will first
+	 * resolve 'some.parameter' as key to messages.properties, than will use it as a parameter using 'some.message' as key. 
+	 */
+	public void setAlerts(Map<DocumentUploaded, List<String>> alerts) {
+		this.alerts = alerts;
+	}
+	
+	/**
+	 * Warnings produced by the validation phase. Texts informed in braces should be resolved with messages.properties.<BR>
+	 * E.g.: If the alert is "{some.message}", it will be resolved to another message according to messages.properties
+	 * and the user preference. Parameters for messages.properties entry may be provided in parentheses. For example,
+	 * {some.message(param1)} will be resolved with messages.properties using 'some.message' as key and 'param1' as
+	 * the first parameter to this message. Additional parameters may be separated by commas.  If the parameter is in braces,
+	 * it will also be resolved with messages.properties. For example, "{some.message({some.parameter})}" will first
+	 * resolve 'some.parameter' as key to messages.properties, than will use it as a parameter using 'some.message' as key. 
+	 */
+	public void addAlert(DocumentUploaded document, String alert) {
+		if (document==null || alert==null || alert.trim().length()==0)
+			return;
+		if (alerts==null)
+			alerts = new HashMap<>();
+		synchronized (this.alerts) {
+			List<String> alerts_same_document = alerts.computeIfAbsent(document, d->new LinkedList<>());
+			alerts_same_document.add(alert);
+		}
+	}
+
+	/**
+	 * The ETL process should write here the situation for each DocumentUploaded that was part of this
+	 * process. For example, some previous DocumentUploaded should be turned into PROCESSED.
+	 */
+	public Map<DocumentUploaded, DocumentSituation> getOutcomeSituations() {
+		return outcomeSituations;
+	}
+
+	/**
+	 * The ETL process should write here the situation for each DocumentUploaded that was part of this
+	 * process. For example, some previous DocumentUploaded should be turned into PROCESSED.
+	 */
+	public void setOutcomeSituation(DocumentUploaded upload, DocumentSituation situation) {
+		if (upload==null)
+			return;
+		if (situation==null)
+			outcomeSituations.remove(upload);
+		else
+			outcomeSituations.put(upload, situation);
+	}
+	
+	/**
+	 * Same as {@link #setOutcomeSituation(DocumentUploaded, DocumentSituation) setOutcomeSituation}.
+	 */
+	public void setDocumentSituation(DocumentUploaded upload, DocumentSituation situation) {
+		setOutcomeSituation(upload, situation);
+	}
+	
+	/**
+	 * Returns the outcome situation regarding a particular upload
+	 */
+	public DocumentSituation getOutcomeSituation(DocumentUploaded upload) {
+		return outcomeSituations.get(upload);
+	}
+	
+	/**
+	 * Returns indication there is at least one outcome situation regarding any document
+	 */
+	public boolean hasOutcomeSituations() {
+		return !outcomeSituations.isEmpty();
 	}
 
 	/**
