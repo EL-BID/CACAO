@@ -29,7 +29,7 @@ import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_N
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
@@ -209,7 +209,7 @@ public class ValidationTests {
 		ValidationContext validationContext = new ValidationContext();
 		validationContext.setDocumentUploaded(doc);
 		validationContext.setDocumentTemplate(template);
-		validationContext.setDocumentPath(Path.of(sampleFile.getURI()));		
+		validationContext.setDocumentPath(Paths.get(sampleFile.getURI()));		
 		
 		try (CSVParser parser = new CSVParser();) {
 			
