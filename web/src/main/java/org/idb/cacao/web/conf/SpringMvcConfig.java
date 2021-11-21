@@ -19,13 +19,18 @@
  *******************************************************************************/
 package org.idb.cacao.web.conf;
 
+import java.io.IOException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.idb.cacao.api.DocumentSituation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.http.CacheControl;
@@ -39,6 +44,10 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.resource.EncodedResourceResolver;
 import org.springframework.web.servlet.resource.PathResourceResolver;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
  * Configuration for SpringBoot for using i18n (internationalization)<BR>
@@ -62,6 +71,9 @@ public class SpringMvcConfig implements WebMvcConfigurer {
 
 	@Autowired
 	private Environment env;
+	
+	@Autowired
+	private ApplicationContext app;
 	
 	/**
 	 * Provides a LocaleResolver BEAN for the application to determine which locale is currently being used
@@ -172,4 +184,35 @@ public class SpringMvcConfig implements WebMvcConfigurer {
       configurer.setDefaultTimeout(DEFAULT_ASYNC_TIMEOUT);
     }
 
+    /**
+     * Customize the object used by Spring for converting objects into JSON format<BR>
+     * We need to do this for representing some enumerations by their corresponding localized messages, not by their
+     * internal hardcoded constant names.
+     */
+    @Bean
+    public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
+        return builder -> {
+        	builder.serializerByType(DocumentSituation.class, new JsonSerializer<DocumentSituation>() {
+
+				@Override
+				public void serialize(DocumentSituation value, JsonGenerator gen, SerializerProvider serializers)
+						throws IOException {
+					if (value==null)
+						gen.writeNull();
+					else {
+						String key = value.toString();
+						try {
+							MessageSource messageSource = app.getBean(MessageSource.class);
+							String translated = messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
+							gen.writeString(translated);
+						}
+						catch (Throwable ex) {
+							gen.writeString(value.name());
+						}
+					}
+				}
+        		
+        	});
+        };
+    }
 }
