@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
@@ -43,4 +44,8 @@ public interface DomainTableRepository extends ElasticsearchRepository<DomainTab
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
 	public Optional<DomainTable> findByNameAndVersion(String name, String version);
 	
+	default public <S extends DomainTable> S saveWithTimestamp(S entity) {
+		entity.setChangedTime(DateTimeUtils.now());
+		return save(entity);
+	}
 }

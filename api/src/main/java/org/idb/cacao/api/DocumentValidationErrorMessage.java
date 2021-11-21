@@ -46,7 +46,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 1L;
-
+	
 	/**
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
@@ -163,8 +163,8 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 		this.timestamp = timestamp;
 	}
 
-	public String getErrorMessage() {
-		return errorMessage;
+	public String getErrorMessage() {		
+		return errorMessage;		
 	}
 
 	public void setErrorMessage(String errorMessage) {

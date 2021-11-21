@@ -1,4 +1,4 @@
-package org.idb.cacao.validator;
+package org.idb.cacao.validator.parsers;
 
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.validator.fileformats.FileFormatFactory;

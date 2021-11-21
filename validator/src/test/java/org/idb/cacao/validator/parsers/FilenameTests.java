@@ -17,7 +17,7 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.validator;
+package org.idb.cacao.validator.parsers;
 
 import org.idb.cacao.validator.controllers.services.FileUploadedConsumerService;
 import org.junit.jupiter.api.Test;
