@@ -83,7 +83,11 @@ public class AccountingLoader {
 		
 		AccountCategoryName,
 		
-		AccountSubcategoryName
+		AccountSubcategoryName,
+		
+		AmountDebits,
+		
+		AmountCredits
 		
 	};
 	
@@ -309,6 +313,8 @@ public class AccountingLoader {
 			final String ledgerId = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name());
 			final String ledgerAmount = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name());
 			final String ledgerDebitCredit = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name());
+			final String ledgerAmountDebits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountDebits.name());
+			final String ledgerAmountCredits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountCredits.name());
 			
 			final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
 			final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
@@ -402,6 +408,10 @@ public class AccountingLoader {
 					normalizedRecord_GL.put(publishedTemplateVersion, gl.getTemplateVersion());
 					normalizedRecord_GL.put(ledgerBalance, balanceSheet.getFinalValue());
 					normalizedRecord_GL.put(ledgerBalanceDebitCredit, balanceSheet.isFinalValueDebit() ? "D" : "C");
+					if (amount!=null && is_debit)
+						normalizedRecord_GL.put(ledgerAmountDebits, amount);
+					if (amount!=null && !is_debit)
+						normalizedRecord_GL.put(ledgerAmountCredits, amount);
 					if (declarantInformation.isPresent())
 						normalizedRecord_GL.putAll(declarantInformation.get());
 					if (accountInformation.isPresent())

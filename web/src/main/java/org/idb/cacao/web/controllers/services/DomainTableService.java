@@ -181,17 +181,19 @@ public class DomainTableService {
 	 * @param overwrite If FALSE, will not overwrite existing domain tables.
 	 */
 	public void assertDomainTable(DomainTable builtInDomainTable, boolean overwrite) {
+
+		// Locate domain table
+		Optional<DomainTable> matchingDomainTable = domainTableRepository.findByNameAndVersion(builtInDomainTable.getName(), builtInDomainTable.getVersion());
+		// If the table already exists, keep the existing one
+		if (!overwrite && matchingDomainTable.isPresent()) 
+			return;
 		
-		if (!overwrite) {
-			// Locate domain table
-			Optional<DomainTable> matchingDomainTable = domainTableRepository.findByNameAndVersion(builtInDomainTable.getName(), builtInDomainTable.getVersion());
-			// If the table already exists, keep the existing one
-			if (matchingDomainTable.isPresent()) 
-				return;
+		// If the table does not exists yet, or if we should overwrite, creates according to the domain table specification
+
+		if (overwrite && matchingDomainTable.isPresent()) {
+			domainTableRepository.delete(matchingDomainTable.get());
 		}
-		
-		// If the table does not exists yet, creates according to the domain table specification
-		
+
 		if (builtInDomainTable.getNumEntries(null)>0) {
 			// The built-in domain table has entries without a language specification, so let's resolve them to the provided messages.properties files
 			DomainTable resolvedDomainTable = resolveDomainTableForLanguages(builtInDomainTable);
