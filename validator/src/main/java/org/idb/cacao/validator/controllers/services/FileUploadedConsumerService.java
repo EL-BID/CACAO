@@ -327,8 +327,12 @@ public class FileUploadedConsumerService {
 			return;
 
 		DocumentValidationErrorMessage message = DocumentValidationErrorMessage.create()
-				.withTemplateName(doc.getTemplateName()).withDocumentId(doc.getId())
-				.withDocumentFilename(doc.getFilename());
+				.withTemplateName(doc.getTemplateName())
+				.withDocumentId(doc.getId())
+				.withDocumentFilename(doc.getFilename())
+				.withTimestamp(doc.getTimestamp())
+				.withTaxPayerId(doc.getTaxPayerId())
+				.withTaxYear(doc.getTaxYear());
 
 		alerts.parallelStream().forEach(alert -> {
 			DocumentValidationErrorMessage newMessage = message.clone();

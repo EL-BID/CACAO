@@ -20,6 +20,7 @@
 package org.idb.cacao.api;
 
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Integer;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
@@ -63,6 +64,20 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@AFieldDescriptor(externalName = "doc.timestamp")
     private OffsetDateTime timestamp;
+
+	@JsonView(Views.Declarant.class)
+	@MultiField(
+		mainField = @Field(type=Text, fielddata=true),
+		otherFields = {
+			@InnerField(suffix = "keyword", type=Keyword)
+		}
+	)
+	@AFieldDescriptor(externalName = "taxpayer.id")
+	private String taxPayerId;
+	
+	@Field(type=Integer)
+	@AFieldDescriptor(externalName = "tax.year")
+	private Integer taxYear;	
 	
 	@JsonView(Views.Declarant.class)
 	@MultiField(
@@ -128,6 +143,19 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 		this.templateName = templateName;
 		return this;
 	}
+	
+	public String getTaxPayerId() {
+		return taxPayerId;
+	}
+
+	public void setTaxPayerId(String taxPayerId) {
+		this.taxPayerId = taxPayerId;
+	}
+	
+	public DocumentValidationErrorMessage withTaxPayerId(String taxPayerId) {
+		this.taxPayerId = taxPayerId;
+		return this;
+	}
 
 	public String getDocumentId() {
 		return documentId;
@@ -154,6 +182,19 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 		this.documentFilename = documentFilename;
 		return this;
 	}	
+	
+	public Integer getTaxYear() {
+		return taxYear;
+	}
+
+	public void setTaxYear(Integer taxYear) {
+		this.taxYear = taxYear;
+	}	
+	
+	public DocumentValidationErrorMessage withTaxYear(Integer taxYear) {
+		this.taxYear = taxYear;
+		return this;
+	}	
 
 	public OffsetDateTime getTimestamp() {
 		return timestamp;
@@ -162,6 +203,11 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	public void setTimestamp(OffsetDateTime timestamp) {
 		this.timestamp = timestamp;
 	}
+	
+	public DocumentValidationErrorMessage withTimestamp(OffsetDateTime timestamp) {
+		this.timestamp = timestamp;
+		return this;
+	}	
 
 	public String getErrorMessage() {		
 		return errorMessage;		

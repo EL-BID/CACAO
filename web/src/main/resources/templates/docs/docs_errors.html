@@ -59,8 +59,9 @@ var app = new Vue({
 		    persistenceID:"doc_error_messages_persistence",				
     		data: tableData,    		
 			columns:[ //Define Table Columns
-				{title: /*{{#doc.error.documentId}}} */ "Document Id", field:"documentId", headerFilter:this.headerFilter},
-				{title: /*{{#doc.template}}} */ "Template", field:"templateName", headerFilter:this.headerFilter},
+				{title: /*{{#taxpayer.id}}} */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
+				{title: /*{{#tax.year}}} */ "Tax yer", field:"templateName", headerFilter:this.headerFilter},
+				{title: /*{{#doc.timestamp}}} */ "Transmisstion time", field:"timestamp", headerFilter:this.headerFilter},
 				{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
 				{title: /*[[#{doc.error.message}]]*/ "Error message", field:"errorMessage", formatter: dateFormatter, headerFilter:this.headerFilter},								
 			]

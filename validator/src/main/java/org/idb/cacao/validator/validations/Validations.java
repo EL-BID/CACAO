@@ -3,7 +3,6 @@
  */
 package org.idb.cacao.validator.validations;
 
-import static org.idb.cacao.api.utils.ParserUtils.formatTimestamp;
 import static org.idb.cacao.api.utils.ParserUtils.isBoolean;
 import static org.idb.cacao.api.utils.ParserUtils.isDMY;
 import static org.idb.cacao.api.utils.ParserUtils.isDecimal;
@@ -16,6 +15,8 @@ import static org.idb.cacao.api.utils.ParserUtils.parseDMY;
 import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
 import static org.idb.cacao.api.utils.ParserUtils.parseYMD;
 
+import java.time.OffsetDateTime;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -336,16 +337,21 @@ public class Validations {
 
 		if (fieldValue == null)
 			return null;
+		
+		if ( fieldValue instanceof Date || fieldValue instanceof OffsetDateTime )
+			return fieldValue;
+		
+		if ( fieldValue instanceof Number )
+			return new Date(((Number)(fieldValue)).longValue());
 
 		String value = ValidationContext.toString(fieldValue);
 
 		if (isMDY(value))
-			return formatTimestamp(parseMDY(value));
+			return parseMDY(value);
 		if (isDMY(value))
-			return formatTimestamp(parseDMY(value));
+			return parseDMY(value);
 		if (isYMD(value))
-			return formatTimestamp(parseYMD(value));
-
+			return parseYMD(value);
 		// TODO check other situations
 		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
 		return value;
