@@ -110,6 +110,7 @@ public class AccountingLoader {
 	 */
 	public static DocumentUploaded getValidatedDocument(String taxPayerId, Integer taxPeriodNumber, Collection<DocumentTemplate> templates, ETLContext context) throws Exception {
 		DocumentUploaded foundUploadWithEmptyData = null;
+		DocumentUploaded foundUploadMatchingCriteria = null;
 		for (DocumentTemplate template: templates.stream().sorted(DOCUMENT_TEMPLATE_COMPARATOR).collect(Collectors.toList())) {
 			Collection<DocumentUploaded> uploads = context.getValidatedDataRepository().getUploads(template.getName(), template.getVersion(), taxPayerId, taxPeriodNumber);
 			if (uploads.isEmpty()) {
@@ -126,10 +127,15 @@ public class AccountingLoader {
 						foundUploadWithEmptyData = upload; // keep this information in case we don't find any other valid data
 					continue;
 				}
-				// Found data for this template
-				return upload;
+				// Found data for this template, but maybe there is another one more recent
+				// So we will keep looking for more occurrences.
+				if (foundUploadMatchingCriteria==null 
+					|| foundUploadMatchingCriteria.getTimestamp().isBefore(upload.getTimestamp()))
+				foundUploadMatchingCriteria = upload;
 			}
 		}
+		if (foundUploadMatchingCriteria!=null)
+			return foundUploadMatchingCriteria;
 		if (foundUploadWithEmptyData!=null)
 			return foundUploadWithEmptyData;
 		return null;
