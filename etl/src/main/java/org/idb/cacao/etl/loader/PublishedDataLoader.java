@@ -67,9 +67,11 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 	 */
 	@Override
 	public void commit() throws Exception {
-		request.setRefreshPolicy(RefreshPolicy.NONE);
-		elasticsearchClient.bulk(request,
+		if (request.numberOfActions()>0) {
+			request.setRefreshPolicy(RefreshPolicy.NONE);
+			elasticsearchClient.bulk(request,
 				RequestOptions.DEFAULT);
+		}
 	}
 
 	/*

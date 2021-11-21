@@ -102,7 +102,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
     	SearchRequest searchRequest = new SearchRequest(index_name);
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-    			.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name(), fileId));
+    			.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name()+".keyword", fileId));
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
     	searchRequest.source(searchSourceBuilder);
@@ -128,7 +128,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 		
 		return ScrollUtils.findWithScroll(/*entity*/null, indexName, elasticsearchClient, 
 			/*customizeSearch*/searchSourceBuilder->{
-				searchSourceBuilder.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name(), fileId));
+				searchSourceBuilder.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name()+".keyword", fileId));
 				if (sortBy.isPresent()) {
 					searchSourceBuilder.sort(Arrays.stream(sortBy.get())
 						.map(field->SortBuilders.fieldSort(field).order(sortOrder.orElse(SortOrder.ASC)))
@@ -150,7 +150,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 		final String indexName = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
     	SearchRequest searchRequest = new SearchRequest(indexName);
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-    			.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name(), fileId));
+    			.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name()+".keyword", fileId));
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
         searchSourceBuilder.query(query);

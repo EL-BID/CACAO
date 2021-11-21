@@ -329,7 +329,7 @@ public class AccountingLoader {
 			// Search for the validated general ledger related to the matching template
 			// Reads the validated general ledger in chronological order. For each day order by ledger entry ID.
 			Stream<Map<String, Object>> gl_data = context.getValidatedDataRepository().getValidatedData(gl.getTemplateName(), gl.getTemplateVersion(), gl.getFileId(),
-					/*sortBy*/Optional.of(new String[] {ledgerDate, ledgerId }),
+					/*sortBy*/Optional.of(new String[] {ledgerDate, ledgerId+".keyword" }),
 					/*sortOrder*/Optional.of(SortOrder.ASC));
 			
 			if (gl_data==null)
