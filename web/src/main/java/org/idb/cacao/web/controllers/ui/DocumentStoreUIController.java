@@ -24,9 +24,9 @@ import java.util.List;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.controllers.services.MessagesService;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
-import org.idb.cacao.web.repositories.DocumentValidationErrorMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -51,7 +51,7 @@ public class DocumentStoreUIController {
 	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
 	
 	@Autowired
-	private DocumentValidationErrorMessageRepository documentValidationErrorMessageRepository;
+	private MessagesService messagesService;
 	
 	@Autowired
 	private MessageSource messageSource;
@@ -89,7 +89,7 @@ public class DocumentStoreUIController {
 		if (documentId==null || documentId.trim().length()==0) {
 			throw new MissingParameter("documentId");
 		}
-		List<DocumentValidationErrorMessage> messages = documentValidationErrorMessageRepository.findByDocumentId(documentId);
+		List<DocumentValidationErrorMessage> messages = messagesService.findByDocumentId(documentId);
 		
 		model.addAttribute("messages", messages);
 		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));

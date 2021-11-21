@@ -19,16 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.validator.fileformats;
 
-import static org.idb.cacao.validator.fileformats.FileFormat.*;
+import static org.idb.cacao.validator.fileformats.FileFormat.getFileExtension;
+
+import java.util.regex.Pattern;
 
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.validator.parsers.FileParser;
 import org.idb.cacao.validator.parsers.JSONParser;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.regex.Pattern;
 
 /**
  * FileFormat for files associated to JSON format.

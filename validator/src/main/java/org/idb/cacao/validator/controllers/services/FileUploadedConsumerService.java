@@ -156,10 +156,6 @@ public class FileUploadedConsumerService {
 			Path filePath = fileSystemStorageService.find(fullPath);
 			validationContext.setDocumentPath(filePath);
 
-//            System.out.println("File: " + filePath.getFileName());
-//            System.out.println("Original file: " + doc.getFilename());
-//            System.out.println("Template: " + doc.getTemplateName());
-
 			doc = setSituation(doc, DocumentSituation.ACCEPTED);
 			validationContext.setDocumentUploaded(doc);
 
@@ -240,8 +236,10 @@ public class FileUploadedConsumerService {
 			// Fetch information from file name according to the configuration
 			fetchInformationFromFileName(docInputExpected, validationContext);
 
+			//Configure object validations
+			validations.setValidationContext(validationContext);
 			// Add TaxPayerId and TaxPeriod to document on database
-			validations.addTaxPayerInformation(validationContext);
+			validations.addTaxPayerInformation();
 			// Update document on database
 			doc = documentsUploadedRepository.saveWithTimestamp(doc);
 			validationContext.setDocumentUploaded(doc);
@@ -251,18 +249,18 @@ public class FileUploadedConsumerService {
 
 			// Should perform generic validations:
 			// check for required fields
-			validations.checkForRequiredFields(validationContext);
+			validations.checkForRequiredFields();
 
 			// check for mismatch in field types (should try to automatically convert some
 			// field types, e.g. String -> Date)
-			validations.checkForFieldDataTypes(validationContext);
+			validations.checkForFieldDataTypes();
 
 			// check for domain table fields
-			validations.checkForDomainTableValues(validationContext);
+			validations.checkForDomainTableValues();
 
 			if (!validationContext.getAlerts().isEmpty()) {
 				setSituation(doc, DocumentSituation.INVALID);
-				log.log(Level.SEVERE, "Not all domain values are compatible with domain tables on document "
+				log.log(Level.SEVERE, "Not all field values are provided or compatible with specified field types on document "
 						+ documentId + ". " + "Please check document error messagens for details.");
 				saveValidationMessages(validationContext);
 				throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");

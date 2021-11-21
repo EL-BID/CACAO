@@ -10,6 +10,7 @@ import static org.idb.cacao.api.utils.ParserUtils.isDecimal;
 import static org.idb.cacao.api.utils.ParserUtils.isDecimalWithComma;
 import static org.idb.cacao.api.utils.ParserUtils.isInteger;
 import static org.idb.cacao.api.utils.ParserUtils.isMDY;
+import static org.idb.cacao.api.utils.ParserUtils.isOnlyNumbers;
 import static org.idb.cacao.api.utils.ParserUtils.isYMD;
 import static org.idb.cacao.api.utils.ParserUtils.parseDMY;
 import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
@@ -35,7 +36,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * A set of utilities for file content validation purpose.
+ * A set of utilities methods for file content validation purpose. <br>
+ * 
+ * An instance of {@link ValidationContext} must be provided before validations.
  * 
  * @author Rivelino Patrício
  * 
@@ -47,12 +50,6 @@ public class Validations {
 	
 	private static final Logger log = Logger.getLogger(Validations.class.getName());
 
-	private static final String FIELD_VALUE_NOT_FOUND = "Field value not found";
-
-	private static final String FIELD_DOMAIN_VALUE_NOT_FOUND = "Field domain value not found";
-
-	private static final String DOMAIN_TABLE_NOT_FOUND = "Domain table not found";
-
 	/**
 	 * Maximum length of field size saved to elasticsearch database
 	 */
@@ -60,17 +57,20 @@ public class Validations {
 
 	@Autowired
 	private DomainTableRepository domainTableRepository;
+	
+	private ValidationContext validationContext;
+
+	public void setValidationContext(ValidationContext validationContext) {
+		this.validationContext = validationContext;
+	}
 
 	/**
 	 * Check for required fields in document uploaded. <br>
 	 * 
-	 * All validations error will be inserted on
-	 * {@link ValidationContext#addAlert(String)}. <br>
-	 * 
-	 * @param validationContext
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
 	 * 
 	 */
-	public void checkForRequiredFields(ValidationContext validationContext) {
+	public void checkForRequiredFields() {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -94,25 +94,31 @@ public class Validations {
 
 			for (String fieldName : requiredFields) {
 				if (values.get(fieldName) == null)
-					addLogError(validationContext, fieldName, FIELD_VALUE_NOT_FOUND);
+					addLogError("{field.value.not.found(" + fieldName+ ")}");
 			}
 
 		});
 
 	}
 
-	private synchronized void addLogError(ValidationContext validationContext, String field, String message) {
-		validationContext.addAlert(message + ": " + field);
+	/**
+	 * Add alert/error message to application log and {@link ValidationContext} instance.
+	 * 
+	 * @param message	A message to be logged
+	 */
+	private synchronized void addLogError(String message) {
+		validationContext.addAlert(message);
+		log.log(Level.WARNING, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
+				message);
 	}
 
 	/**
-	 * Check for data types in all fields in document uploaded
+	 * Check for data types in all fields in document uploaded <br>
 	 * 
-	 * @param validationContext
-	 * @return Boolean.TRUE if all data are compatible with field types.
-	 *         Boolean.FALSE if not.
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
+	 * 
 	 */
-	public void checkForFieldDataTypes(ValidationContext validationContext) {
+	public void checkForFieldDataTypes() {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -143,31 +149,31 @@ public class Validations {
 						continue;
 
 					if (FieldType.BOOLEAN.equals(field.getFieldType()))
-						fieldValue = checkBooleanValue(fieldValue, validationContext);
+						fieldValue = checkBooleanValue(field.getFieldName(), fieldValue);
 
 					if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) )
-						fieldValue = checkCharacterValue(field, fieldValue, validationContext);
+						fieldValue = checkCharacterValue(field, fieldValue);
 
 					if (FieldType.DATE.equals(field.getFieldType()))
-						fieldValue = checkDateValue(fieldValue, validationContext);
+						fieldValue = checkDateValue(field.getFieldName(), fieldValue);
 
 					if (FieldType.DECIMAL.equals(field.getFieldType()))
-						fieldValue = checkDecimalValue(fieldValue, validationContext);
+						fieldValue = checkDecimalValue(field.getFieldName(), fieldValue);
 
 					if (FieldType.GENERIC.equals(field.getFieldType()))
-						fieldValue = checkGenericValue(field, fieldValue, validationContext);
+						fieldValue = checkGenericValue(field, fieldValue);
 
 					if (FieldType.INTEGER.equals(field.getFieldType()))
-						fieldValue = checkIntegerValue(fieldValue, validationContext);
+						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue);
 
 					if (FieldType.MONTH.equals(field.getFieldType()))
-						fieldValue = checkMonthValue(fieldValue, validationContext);
+						fieldValue = checkMonthValue(field.getFieldName(), fieldValue);
 
 					if (FieldType.TIMESTAMP.equals(field.getFieldType()))
-						fieldValue = checkTimestampValue(fieldValue, validationContext);
+						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue);
 
 					// Update field value to it's new representation
-					values.put(field.getFieldName(), fieldValue);
+					values.replace(field.getFieldName(), fieldValue);
 				} catch (Exception e) {
 					log.log(Level.SEVERE,"Error parsing record values.", e);
 					e.printStackTrace();
@@ -183,10 +189,9 @@ public class Validations {
 	 * 
 	 * @param field
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkGenericValue(DocumentField field, Object fieldValue, ValidationContext validationContext) {
+	private Object checkGenericValue(DocumentField field, Object fieldValue) {
 
 		if (fieldValue == null)
 			return null;
@@ -210,10 +215,9 @@ public class Validations {
 	 * 
 	 * @param field
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkCharacterValue(DocumentField field, Object fieldValue, ValidationContext validationContext) {
+	private Object checkCharacterValue(DocumentField field, Object fieldValue) {
 		if (fieldValue == null)
 			return null;
 
@@ -234,23 +238,36 @@ public class Validations {
 	/**
 	 * Validate and transform field value from {@link FieldType.TIMESTAMP}
 	 * 
+	 * @param fieldName
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkTimestampValue(Object fieldValue, ValidationContext validationContext) {
-		// TODO Auto-generated method stub
-		return fieldValue;
+	private Object checkTimestampValue(String fieldName, Object fieldValue) {
+		if (fieldValue == null)
+			return null;
+
+		if (fieldValue instanceof Number || fieldValue.getClass().isAssignableFrom(long.class) 
+				|| fieldValue.getClass().isAssignableFrom(long.class) )
+			return fieldValue;
+
+		String value = ValidationContext.toString(fieldValue);
+
+		if (isOnlyNumbers(value))
+			return Long.parseLong(value);
+
+		// TODO check other situations
+		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		return value;
 	}
 
 	/**
 	 * Validate and transform field value from {@link FieldType.MONTH}
 	 * 
+	 * @param fieldName
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkMonthValue(Object fieldValue, ValidationContext validationContext) {
+	private Object checkMonthValue(String fieldName, Object fieldValue) {
 		// TODO Auto-generated method stub
 		return fieldValue;
 	}
@@ -258,15 +275,15 @@ public class Validations {
 	/**
 	 * Validate and transform field value from {@link FieldType.INTEGER}
 	 * 
+	 * @param fieldName
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkIntegerValue(Object fieldValue, ValidationContext validationContext) {
+	private Object checkIntegerValue(String fieldName, Object fieldValue) {
 		if (fieldValue == null)
 			return null;
 
-		if (fieldValue instanceof Integer || fieldValue.getClass().isAssignableFrom(int.class))
+		if (fieldValue instanceof Number || fieldValue.getClass().isAssignableFrom(int.class))
 			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
@@ -275,21 +292,25 @@ public class Validations {
 			return Long.parseLong(value);
 
 		// TODO check other situations
-		return fieldValue;
+		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		return value;
 
 	}
 
 	/**
 	 * Validate and transform field value from {@link FieldType.DECIMAL}
 	 * 
+	 * @param fieldName
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkDecimalValue(Object fieldValue, ValidationContext validationContext) {
+	private Object checkDecimalValue(String fieldName, Object fieldValue) {
 
 		if (fieldValue == null)
 			return null;
+		
+		if (fieldValue instanceof Number || fieldValue.getClass().isAssignableFrom(double.class))
+			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
 
@@ -300,17 +321,18 @@ public class Validations {
 			return Double.parseDouble(value.replace(".", "").replace(",", "."));
 
 		// TODO check other situations
+		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
 		return fieldValue;
 	}
 
 	/**
 	 * Validate and transform field value from {@link FieldType.DATE}
-	 * 
+	 *
+	 * @param fieldName
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkDateValue(Object fieldValue, ValidationContext validationContext) {
+	private Object checkDateValue(String fieldName, Object fieldValue) {
 
 		if (fieldValue == null)
 			return null;
@@ -325,17 +347,18 @@ public class Validations {
 			return formatTimestamp(parseYMD(value));
 
 		// TODO check other situations
+		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
 		return value;
 	}
 
 	/**
 	 * Validate and transform field value from {@link FieldType.BOOLEAN}
 	 * 
+	 * @param fieldName
 	 * @param fieldValue
-	 * @param validationContext
 	 * @return Validated and transformed field value
 	 */
-	private Object checkBooleanValue(Object fieldValue, ValidationContext validationContext) {
+	private Object checkBooleanValue(String fieldName, Object fieldValue) {
 		if (fieldValue == null)
 			return null;
 
@@ -348,17 +371,18 @@ public class Validations {
 		if (isBoolean(value))
 			return Boolean.parseBoolean(value);
 
+		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
 		return fieldValue;
 
 	}
 
 	/**
 	 * Check if values provided on fields that points to a domain table are present
-	 * on domain tables entries.
+	 * on domain tables entries. <br>
 	 * 
-	 * @param validationContext
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
 	 */
-	public void checkForDomainTableValues(ValidationContext validationContext) {
+	public void checkForDomainTableValues() {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -401,8 +425,8 @@ public class Validations {
 
 				// If domain table wasn't not found, add an error message
 				if (table == null) {
-					addLogError(validationContext, field.getFieldName(), DOMAIN_TABLE_NOT_FOUND + ": "
-							+ field.getDomainTableName() + " version " + field.getDomainTableVersion());
+					addLogError("{domain.table.not.found(" + field.getDomainTableName() + ")(" + 
+							field.getDomainTableVersion() + ")}");
 					continue;
 				}
 
@@ -412,11 +436,10 @@ public class Validations {
 
 				// If value is not present at domain table entries, add error message
 				if (!result.getKey()) {
-					addLogError(validationContext, field.getFieldName(),
-							FIELD_DOMAIN_VALUE_NOT_FOUND + ": " + fieldValue);
+					addLogError("{field.domain.value.not.found(" + fieldValue + ")(" + field.getFieldName() + ")}");
 				} else {
 					String newValue = result.getValue();
-					// If value need to be updated, chave value in record
+					// If value need to be updated, change value in record
 					if (newValue != null)
 						values.replace(field.getFieldName(), newValue);
 				}
@@ -483,11 +506,12 @@ public class Validations {
 	}
 
 	/**
-	 * Try to find taxpayer and taxperiod information on parsed data
+	 * Try to find taxpayer and tax period information on parsed data. <br>
 	 * 
-	 * @param validationContext
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
+	 * 
 	 */
-	public void addTaxPayerInformation(ValidationContext validationContext) {
+	public void addTaxPayerInformation() {
 		
 		if ( validationContext == null )
 			return;
@@ -544,13 +568,13 @@ public class Validations {
 		
 		//If TaxPayerId wasn't found, add an error message
 		if ( doc.getTaxPayerId() == null ) {
-			addLogError(validationContext,"TaxPayerId","TaxPayerId wasn't found!");
+			addLogError("{taxpayerid.not.found}");
 		}
 		
 		//If TaxPeriod wasn't found, add an error message
 		if ( doc.getTaxYear() == null && doc.getTaxMonth() == null && doc.getTaxMonthNumber() == null &&
 				doc.getTaxPeriod() == null && doc.getTaxPeriodNumber() == null ) {
-			addLogError(validationContext,"TaxPeriod","TaxPeriod (year or month) wasn't found!");	
+			addLogError("{taxperiod.not.found}");	
 		}
 		
 	}
