@@ -19,19 +19,25 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.errors.InvalidFileException;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.validator.utils.JSONUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JSONParser implements FileParser {
 
@@ -40,6 +46,8 @@ public class JSONParser implements FileParser {
 	private DocumentInput documentInputSpec;
 
 	private Scanner scanner;
+	
+	private Iterator<Map<String, Object>> entries;
 
 	/*
 	 * (non-Javadoc)
@@ -91,8 +99,38 @@ public class JSONParser implements FileParser {
 		}
 
 		try {
-			scanner = new Scanner(path.toFile());
+			FileInputStream fis = new FileInputStream(path.toFile());
+			//Skips BOM if it exists
+			BOMInputStream bis = new BOMInputStream(fis);
+			String charset = bis.getBOMCharsetName();
+			scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);
+			
+			String jsonText = "";
+
+			while (scanner.hasNextLine()) {
+				jsonText += scanner.nextLine();
+			}
+			
+			scanner.close();
+
+			if (!JSONUtils.isJSONValid(jsonText)) {
+				throw new InvalidFileException("Invalid JSON file");
+			}
+
+			final Map<String,Object> result =
+					new ObjectMapper().readValue(jsonText, HashMap.class);
+		
+			System.out.println(result);
+
+			Object mainKey = result.keySet().toArray()[0];
+			
+			List<Map<String, Object>> records = (List<Map<String, Object>>) result.get(mainKey);
+			entries = records.iterator();
+			
 		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -104,64 +142,28 @@ public class JSONParser implements FileParser {
 			return null;
 		}
 
-		if ( scanner == null ) {
+		if ( entries == null ) {
 			start();
 		}
 
-		if ( scanner == null )
+		if ( entries == null )
 			return null;
 
-		String jsonText = "";
-
-		while (scanner.hasNextLine()) {
-			jsonText += scanner.nextLine();
-		}
-		scanner.close();
-
-		if (!JSONUtils.isJSONValid(jsonText)) {
-			throw new InvalidFileException("Invalid JSON file");
-		}
-
-		Map<String,Object> result =
-				null;
 
 		try {
-			result = new ObjectMapper().readValue(jsonText, HashMap.class);
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
-
-		System.out.println(result);
-
-		try {
-
+			
 			return new DataIterator() {
+				
 
 				@Override
 				public Map<String, Object> next() {
-					String line = scanner.nextLine();
-
-					if ( line != null ) {
-						String[] parts = line.split(";");
-
-						Map<String,Object> toRet = new LinkedHashMap<>();
-
-						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
-
-							String value = parts.length > fieldMapping.getColumnIndex() ? parts[fieldMapping.getColumnIndex()] : null;
-							toRet.put(fieldMapping.getFieldName(), value);
-
-						}
-
-						return toRet;
-
-					}
-					return null;
+					
+					return entries.next();
 				}
 
 				@Override
 				public boolean hasNext() {
-					return scanner.hasNextLine();
+					return entries.hasNext();
 				}
 
 				@Override
