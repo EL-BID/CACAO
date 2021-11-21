@@ -56,8 +56,10 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 	@Override
 	public void delete(String indexName, String taxPayerId, Integer taxPeriodNumber) throws Exception {
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPAYER_ID.toString(), taxPayerId));
-		query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPERIOD_NUMBER.toString(), taxPeriodNumber));
+		if (taxPayerId!=null)
+			query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPAYER_ID.toString()+".keyword", taxPayerId));
+		if (taxPeriodNumber!=null)
+			query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPERIOD_NUMBER.toString(), taxPeriodNumber));
 		DeleteByQueryRequest request = new DeleteByQueryRequest(indexName)
 				.setQuery(query);
 		try {

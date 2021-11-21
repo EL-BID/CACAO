@@ -48,6 +48,7 @@ import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ETLContext.LoadDataStrategy;
 import org.idb.cacao.api.ETLContext.TaxpayerRepository;
 import org.idb.cacao.api.PublishedDataFieldNames;
+import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
@@ -240,7 +241,8 @@ public class AccountingLoader {
 			for (DocumentUploaded upload: uploads) {
 				if (!DocumentSituation.VALID.equals(upload.getSituation())
 					&& !DocumentSituation.PROCESSED.equals(upload.getSituation())
-					&& !DocumentSituation.PENDING.equals(upload.getSituation()))
+					&& !DocumentSituation.PENDING.equals(upload.getSituation())
+					&& !DocumentSituation.REPLACED.equals(upload.getSituation()))
 					continue; // ignores invalid or not validated files
 				boolean has_data = context.getValidatedDataRepository().hasValidation(template.getName(), template.getVersion(), upload.getFileId());
 				if (!has_data) {
@@ -364,7 +366,7 @@ public class AccountingLoader {
 	 */
 	public static Set<String> getAccountsForOpeningBalances(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded ob) {
 		final Set<String> accounts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		final String obAccountCode = OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name();
+		final String obAccountCode = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name());
 		try (Stream<Map<String,Object>> stream = repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), /*sortBy*/Optional.empty(), /*sortOrder*/Optional.empty());) {
 			stream.forEach(entry->{
 				String accountCode = ValidationContext.toString(entry.get(obAccountCode));
@@ -377,6 +379,27 @@ public class AccountingLoader {
 			log.log(Level.SEVERE, "Error reading Opening Balances for template "+ob.getTemplateName()+" "+ob.getTemplateVersion()+" taxpayer "+ob.getTaxPayerId()+" period "+ob.getTaxPeriodNumber(), ex);
 		}
 		return accounts;
+	}
+	
+	/**
+	 * Given all other previous uploaded document regarding the same template, taxpayerId and period number of another document that was
+	 * processed in the ETL, change their situation from PROCESSED to REPLACED. In other words, avoid keeping multiple documents regarding the
+	 * same subject with the 'PROCESSED' situation. Only one of them will be considered PROCESSED.
+	 */
+	public static void markReplacedDocuments(DocumentUploaded prevailingDocument, ETLContext context) throws Exception {
+		Collection<DocumentUploaded> uploads = context.getValidatedDataRepository().getUploads(prevailingDocument.getTemplateName(), prevailingDocument.getTemplateVersion(), 
+				prevailingDocument.getTaxPayerId(), prevailingDocument.getTaxPeriodNumber());
+		if (uploads.isEmpty()) {
+			return;  
+		}
+		for (DocumentUploaded upload: uploads) {
+			if (upload.equals(prevailingDocument))
+				continue;
+			if (DocumentSituation.PROCESSED.equals(upload.getSituation())
+					|| DocumentSituation.VALID.equals(upload.getSituation())) {
+				context.setDocumentSituation(upload, DocumentSituation.REPLACED);
+			}
+		}
 	}
 	
 	/**
@@ -567,6 +590,13 @@ public class AccountingLoader {
 					
 					String rowId_GL = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInGeneralLedger.incrementAndGet());
 					Map<String,Object> normalizedRecord_GL = new HashMap<>(record);
+					for (ValidatedDataFieldNames vfieldName: ValidatedDataFieldNames.values()) {
+						// Published data has all fields in lower case
+						Object value = normalizedRecord_GL.remove(vfieldName.name());
+						if (value!=null) {
+							normalizedRecord_GL.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
+						}
+					}
 					normalizedRecord_GL.put(publishedTimestamp, timestamp);
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
@@ -611,10 +641,15 @@ public class AccountingLoader {
 			
 			if (success && !context.hasOutcomeSituations()) {
 				context.setOutcomeSituation(coa, DocumentSituation.PROCESSED);
+				markReplacedDocuments(coa, context);
+				
 				context.setOutcomeSituation(gl, DocumentSituation.PROCESSED);
+				markReplacedDocuments(gl, context);
+				
 				context.setOutcomeSituation(ob, DocumentSituation.PROCESSED);
+				markReplacedDocuments(ob, context);
 			}
-
+			
 			return success;
 			
 		}
