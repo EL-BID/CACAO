@@ -26,7 +26,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
@@ -68,29 +71,147 @@ public class AccountingLoader {
 	private static final Logger log = Logger.getLogger(AccountingLoader.class.getName());
 
 	/**
-	 * Index name for published (denormalized) data regarding General Ledger
+	 * Index name for published (denormalized) data regarding General Ledger.<BR>
+	 * There is one record for each record in General Ledger, including more fields regarding the denormalization process (e.g. taxpayers fields, account category names, etc.)
 	 */
 	public static final String INDEX_PUBLISHED_GENERAL_LEDGER = IndexNamesUtils.formatIndexNameForPublishedData("General Ledger");
-	
+
+	/**
+	 * Index name for published (denormalized) data regarding Balance Sheet.<BR>
+	 * There is one record for each month and each account.
+	 */
+	public static final String INDEX_PUBLISHED_BALANCE_SHEET = IndexNamesUtils.formatIndexNameForPublishedData("Balance Sheet Monthly");
+
 	/**
 	 * Fields names for published (denormalized) views
 	 */
 	public static enum AccountingFieldNames {
 		
+		/**
+		 * The final balance amount after a book entry in General Ledger
+		 */
 		Balance,
 		
+		/**
+		 * The debit/credit indication of the final balance amount after a book entry in General Ledger
+		 */
 		BalanceDebitCredit,
 		
+		/**
+		 * The name of the account category
+		 */
 		AccountCategoryName,
 		
+		/**
+		 * The name of the account sub-category
+		 */
 		AccountSubcategoryName,
 		
+		/**
+		 * The total amount of debits (does not sum the credits)
+		 */
 		AmountDebits,
 		
-		AmountCredits
+		/**
+		 * The total amount of credits (does not sum the debits)
+		 */
+		AmountCredits,
+		
+		/**
+		 * The number of book entries (for Monthly Balance Sheets)
+		 */
+		BookEntries,
+		
+		/**
+		 * Debit/Credit indication for initial balance (for Monthly Balance Sheets)
+		 */
+		InitialBalanceDebitCredit,
+		
+		/**
+		 * The final balance (for Monthly Balance Sheets)
+		 */
+		FinalBalance,
+		
+		/**
+		 * Debit/Credit indication for final balance (for Monthly Balance Sheets)
+		 */
+		FinalBalanceDebitCredit;
 		
 	};
 	
+	/**
+	 * The field name for published data regarding 'Account Code'
+	 */
+	private static final String ledgerAccountCode = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name());
+
+	/**
+	 * The field name for published data regarding 'Date'
+	 */
+	private static final String ledgerDate = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Date.name());
+
+	/**
+	 * The field name for validated data regarding 'Book Entry' in General Ledger
+	 */
+	private static final String ledgerId = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name());
+
+	/**
+	 * The field name for published data regarding 'Amount' (some value, may be debit or may be credit)
+	 */
+	private static final String ledgerAmount = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name());
+
+	/**
+	 * The field name for published data regarding 'D/C' indication of amount
+	 */
+	private static final String ledgerDebitCredit = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name());
+
+	/**
+	 * The field name for published data regarding amount of debit values
+	 */
+	private static final String ledgerAmountDebits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountDebits.name());
+
+	/**
+	 * The field name for published data regarding amount of credit values
+	 */
+	private static final String ledgerAmountCredits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountCredits.name());
+	
+	/**
+	 * The field name for published data regarding the initial balance amount for each Monthly Balance Sheet
+	 */
+	private static final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
+
+	/**
+	 * The field name for validated data regarding the 'D/C' indication of initial balance amount
+	 */
+	private static final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
+	
+	/**
+	 * The field name for published data regarding the 'D/C' indication of initial balance amount for each Monthly Balance Sheet
+	 */
+	private static final String openingBalanceMonthlyDC = IndexNamesUtils.formatFieldName(AccountingFieldNames.InitialBalanceDebitCredit.name());
+
+	/**
+	 * The field name for published data regarding the closing balance amount for each Monthly Balance Sheet
+	 */
+	private static final String closingBalanceMonthly = IndexNamesUtils.formatFieldName(AccountingFieldNames.FinalBalance.name());
+
+	/**
+	 * The field name for published data regarding the 'D/C' indication of closing balance amount for each Monthly Balance Sheet
+	 */
+	private static final String closingBalanceMonthlyDC = IndexNamesUtils.formatFieldName(AccountingFieldNames.FinalBalanceDebitCredit.name());
+	
+	/**
+	 * The number of book entries for each Monthly Balance Sheet
+	 */
+	private static final String bookEntries = IndexNamesUtils.formatFieldName(AccountingFieldNames.BookEntries.name());
+	
+	private static final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
+	private static final String publishedTaxpayerId = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPAYER_ID.name());
+	private static final String publishedtaxPeriodNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPERIOD_NUMBER.name());
+	private static final String publishedTemplateName = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_NAME.name());
+	private static final String publishedTemplateVersion = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_VERSION.name());
+	private static final String ledgerBalance = IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name());
+	private static final String ledgerBalanceDebitCredit = IndexNamesUtils.formatFieldName(AccountingFieldNames.BalanceDebitCredit.name());
+
 	/**
 	 * Comparator of Document Templates that gives precedence to the most recent (according to date of creation)
 	 */
@@ -239,6 +360,26 @@ public class AccountingLoader {
 	}
 	
 	/**
+	 * Returns the accounts codes that are referenced in Opening Balances
+	 */
+	public static Set<String> getAccountsForOpeningBalances(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded ob) {
+		final Set<String> accounts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		final String obAccountCode = OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name();
+		try (Stream<Map<String,Object>> stream = repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), /*sortBy*/Optional.empty(), /*sortOrder*/Optional.empty());) {
+			stream.forEach(entry->{
+				String accountCode = ValidationContext.toString(entry.get(obAccountCode));
+				if (accountCode!=null && accountCode.trim().length()>0) {
+					accounts.add(accountCode);
+				}
+			});
+		}			
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error reading Opening Balances for template "+ob.getTemplateName()+" "+ob.getTemplateVersion()+" taxpayer "+ob.getTaxPayerId()+" period "+ob.getTaxPeriodNumber(), ex);
+		}
+		return accounts;
+	}
+	
+	/**
 	 * Performs the Extract/Transform/Load operations with available data
 	 */
 	public static boolean performETL(ETLContext context) {
@@ -311,27 +452,9 @@ public class AccountingLoader {
 			
 			final LongAdder countRecordsOverall = new LongAdder();
 			final AtomicLong countRecordsInGeneralLedger = new AtomicLong();
+			final AtomicLong countRecordsInBalanceSheet = new AtomicLong();
 			
 	        final OffsetDateTime timestamp = context.getDocumentUploaded().getTimestamp();
-
-			final String ledgerAccountCode = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name());
-			final String ledgerDate = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Date.name());
-			final String ledgerId = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name());
-			final String ledgerAmount = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name());
-			final String ledgerDebitCredit = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name());
-			final String ledgerAmountDebits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountDebits.name());
-			final String ledgerAmountCredits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountCredits.name());
-			
-			final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
-			final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
-			
-			final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
-			final String publishedTaxpayerId = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPAYER_ID.name());
-			final String publishedtaxPeriodNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPERIOD_NUMBER.name());
-			final String publishedTemplateName = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_NAME.name());
-			final String publishedTemplateVersion = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_VERSION.name());
-			final String ledgerBalance = IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name());
-			final String ledgerBalanceDebitCredit = IndexNamesUtils.formatFieldName(AccountingFieldNames.BalanceDebitCredit.name());
 
 			// Computes balance sheets while iterating over General Ledger entries
 			final Map<String, BalanceSheet> mapBalanceSheets = new HashMap<>();
@@ -347,11 +470,39 @@ public class AccountingLoader {
 			if (gl_data==null)
 				gl_data = Collections.<Map<String, Object>>emptySet().stream();
 			
+			// Deletes previous published data
+			for (String index: new String[] {
+				INDEX_PUBLISHED_GENERAL_LEDGER,
+				INDEX_PUBLISHED_BALANCE_SHEET
+			}) {
+
+				try {
+					context.getLoadDataStrategy().delete(index, taxPayerId, taxPeriodNumber);
+				} catch (Throwable ex) {
+					log.log(Level.SEVERE, "Error while deleting previous published data at "+index+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
+				}
+
+			}
+			
+			// Start the denormalization process
+			
 			boolean success = true;
 			try {
 				
+				// Stores here the last month (a number in the format yyyy-mm) of the last parsed entry from the Journal
+				final AtomicInteger previousMonth = new AtomicInteger(0);
+				
+				final Set<String> accountsForBalanceSheets = getAccountsForOpeningBalances(context.getValidatedDataRepository(), ob);
+				
 				gl_data.forEach(record->{
-
+					
+					OffsetDateTime date = ValidationContext.toOffsetDateTime(record.get(ledgerDate));
+					final int year_month = (date==null) ? 0 : ( date.getYear() * 100 + date.getMonthValue() );
+					final boolean changed_month = year_month!=0 && previousMonth.get()!=0 && previousMonth.get()!=year_month;
+					if (date!=null && (changed_month || previousMonth.get()==0)) {
+						previousMonth.set(year_month);
+					}
+					
 					String entryId = ValidationContext.toString(record.get(ledgerId));
 
 					String accountCode = ValidationContext.toString(record.get(ledgerAccountCode));
@@ -371,6 +522,14 @@ public class AccountingLoader {
 						context.setOutcomeSituation(gl, DocumentSituation.PENDING);
 					}
 					
+					if (changed_month) {
+						// If the month has changed, let's fill the Monthly Balance Sheet for all accounts
+						addRecordToMonthlyBalanceSheet(gl, accountsForBalanceSheets, mapBalanceSheets, taxPayerId, taxPeriodNumber, timestamp,
+								countRecordsInBalanceSheet, countRecordsOverall, declarantInformation,
+								lookupChartOfAccounts,
+								loader);
+					}
+
 					Number amount = ValidationContext.toNumber(record.get(ledgerAmount));
 					String debitCredit = ValidationContext.toString(record.get(ledgerDebitCredit));
 					if (debitCredit==null)
@@ -397,6 +556,7 @@ public class AccountingLoader {
 									+acc.replaceAll("[\\{\\}\\,\\(\\)\r\n\t]","")
 									+")}");
 							context.setOutcomeSituation(ob, DocumentSituation.PENDING);
+							accountsForBalanceSheets.add(acc);
 						}
 						return balance;
 					});
@@ -428,7 +588,13 @@ public class AccountingLoader {
 						.source(normalizedRecord_GL));
 					countRecordsOverall.increment();
 
-				});
+				}); // LOOP over all entries in General Ledger
+				
+				// After processing all the General Ledger, let's fill the Monthly Balance Sheet for all accounts
+				addRecordToMonthlyBalanceSheet(gl, accountsForBalanceSheets, mapBalanceSheets, taxPayerId, taxPeriodNumber, timestamp,
+						countRecordsInBalanceSheet, countRecordsOverall, declarantInformation,
+						lookupChartOfAccounts,
+						loader);
 				
 			}
 			finally {
@@ -456,6 +622,65 @@ public class AccountingLoader {
 			String fileId = (context==null || context.getDocumentUploaded()==null) ? null : context.getDocumentUploaded().getFileId();
 			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, ex);
 			return false;
+		}
+	}
+	
+	/**
+	 * Feeds information about Monthly Balance Sheets
+	 * @param gl The Upload record regarding the General Ledger
+	 * @param accountsForBalanceSheets Collection of all account codes (according to the taxpayer's Chart of Accounts)
+	 * @param mapBalanceSheets For each account code keeps track of the computed balance sheet so far (presumably of the same month)
+	 * @param taxPayerId The Taxpayer ID
+	 * @param taxPeriodNumber The number of the period
+	 * @param timestamp Time date/time of ETL procedure
+	 * @param countRecordsInBalanceSheet The total number of 'Monthly Balance Sheets' records (incremented here)
+	 * @param countRecordsOverall The total number of records (incremented here)
+	 * @param declarantInformation Additional information about the declarant
+	 * @param lookupChartOfAccounts Object used for searching additional information about accounts
+	 * @param loader Object used for writing the results
+	 */
+	private static void addRecordToMonthlyBalanceSheet(
+			final DocumentUploaded gl,
+			final Set<String> accountsForBalanceSheets,
+			final Map<String, BalanceSheet> mapBalanceSheets,
+			final String taxPayerId,
+			final Integer taxPeriodNumber,
+			final OffsetDateTime timestamp,
+			final AtomicLong countRecordsInBalanceSheet,
+			final LongAdder countRecordsOverall,
+			final Optional<Map<String,Object>> declarantInformation,
+			final LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts,
+			final LoadDataStrategy loader) {
+		
+		for (String account: accountsForBalanceSheets) {
+			BalanceSheet computedBalanceSheet = mapBalanceSheets.get(account);
+			if (computedBalanceSheet!=null) {
+				final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(account);
+				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
+				Map<String,Object> normalizedRecord_BS = new HashMap<>();
+				normalizedRecord_BS.put(publishedTimestamp, timestamp);
+				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
+				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
+				normalizedRecord_BS.put(publishedTemplateName, gl.getTemplateName());
+				normalizedRecord_BS.put(publishedTemplateVersion, gl.getTemplateVersion());
+				normalizedRecord_BS.put(ledgerAccountCode, account);
+				normalizedRecord_BS.put(openingBalanceInitial, Math.abs(computedBalanceSheet.getInitialValue()));
+				normalizedRecord_BS.put(openingBalanceMonthlyDC, (computedBalanceSheet.isInitialValueDebit()) ? "D" : "C");
+				normalizedRecord_BS.put(ledgerAmountDebits, computedBalanceSheet.getDebits());
+				normalizedRecord_BS.put(ledgerAmountCredits, computedBalanceSheet.getCredits());
+				normalizedRecord_BS.put(closingBalanceMonthly, Math.abs(computedBalanceSheet.getFinalValue()));
+				normalizedRecord_BS.put(closingBalanceMonthlyDC, (computedBalanceSheet.isFinalValueDebit()) ? "D" : "C");
+				normalizedRecord_BS.put(bookEntries, computedBalanceSheet.getCountEntries());
+				if (declarantInformation.isPresent())
+					normalizedRecord_BS.putAll(declarantInformation.get());
+				if (accountInformation.isPresent())
+					normalizedRecord_BS.putAll(accountInformation.get());
+				loader.add(new IndexRequest(INDEX_PUBLISHED_BALANCE_SHEET)
+					.id(rowId_BS)
+					.source(normalizedRecord_BS));
+				countRecordsOverall.increment();	
+				computedBalanceSheet.flipBalance();
+			}
 		}
 	}
 	
@@ -488,6 +713,10 @@ public class AccountingLoader {
 		 */
 		public void setInitialValue(double initialValue) {
 			this.initialValue = initialValue;
+		}
+		
+		public boolean isInitialValueDebit() {
+			return initialValue >= 0;
 		}
 
 		public double getDebits() {
@@ -524,7 +753,7 @@ public class AccountingLoader {
 		}
 		
 		public boolean isFinalValueDebit() {
-			return  ( initialValue + debits - credits ) > 0;
+			return  ( initialValue + debits - credits ) >= 0;
 		}
 
 		public int getCountEntries() {
@@ -535,5 +764,15 @@ public class AccountingLoader {
 			this.countEntries = countEntries;
 		}
 				
+		/**
+		 * Overwrite the initial balance amount with the final balance amount and reset the total debits and credits.
+		 * Useful for making use of the same object for the 'next period' for monthly balance sheets.
+		 */
+		public void flipBalance() {
+			initialValue = getFinalValue();
+			debits = 0;
+			credits = 0;
+			countEntries = 0;
+		}
 	}
 }
