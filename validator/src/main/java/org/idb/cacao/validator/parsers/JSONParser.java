@@ -111,6 +111,7 @@ public class JSONParser implements FileParser {
 				jsonText += scanner.nextLine();
 			}
 			
+
 			scanner.close();
 
 			if (!JSONUtils.isJSONValid(jsonText)) {
