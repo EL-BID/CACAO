@@ -2,14 +2,26 @@ package org.idb.cacao.web.controllers.rest;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.validation.Valid;
 
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.Views;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.dto.PaginationData;
+import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
+import org.idb.cacao.web.utils.SearchUtils;
+import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -19,14 +31,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.annotation.JsonView;
+
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,6 +61,9 @@ public class DocumentTemplateAPIController {
 
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
+	
+	@Autowired
+	private RestHighLevelClient elasticsearchClient;
 	
 //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
     @PostMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -94,4 +116,38 @@ public class DocumentTemplateAPIController {
         return ResponseEntity.ok().body(template);
     }
 
+    /**
+	 * Search templates with pagination and filters
+	 * @return
+	 */
+	@GetMapping(value="/templates", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Method used for listing existing templates")
+	public PaginationData<DocumentTemplate> getTemplatesWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromJSON2(filter);
+		Page<DocumentTemplate> docs;
+		Optional<String> sortField = Optional.of(sortBy.orElse("name"));
+		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
+		try {
+			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentTemplate.class, elasticsearchClient, page, size, 
+					sortField, direction);
+
+		}
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error while searching for all documents", ex);
+			docs = Page.empty();
+		}		
+		PaginationData<DocumentTemplate> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
+		return result;
+	}
+	
+	
 }

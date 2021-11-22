@@ -199,6 +199,8 @@ public class UserAPIController {
         	}
         }
         
+        final boolean changed_user_profile = user_in_database.isPresent() && hasChanged(user_in_database.get().getProfile(), user.getProfile());
+
         // Keep previous password, token and telegram information
         if (user_in_database.isPresent()) {      
         	user.setPassword(user_in_database.get().getPassword());
@@ -209,6 +211,20 @@ public class UserAPIController {
 
         user.setId(id);
         userRepository.saveWithTimestamp(user);
+        
+        if (changed_user_profile
+        		&& user.getKibanaToken()!=null && user.getKibanaToken().trim().length()>0
+        		&& userService.hasUserControlForKibanaAccess()) {
+        	// If the user profile has changed and if there is a token granting access to this user,
+        	// it's necessary to update the user account at ElasticSearch as well.
+        	try {
+        		userService.updateUserForKibanaAccess(user);
+        	}
+        	catch (Throwable ex) {
+        		log.log(Level.SEVERE, "Error while updating user access at Kibana for user account "+user.getLogin(), ex);
+        	}
+        }
+
         return ResponseEntity.ok().body(user);
     }
     
@@ -235,4 +251,11 @@ public class UserAPIController {
         return ResponseEntity.ok().body(user);
     }
 
+	public static boolean hasChanged(UserProfile profile1, UserProfile profile2) {
+		if (profile1==profile2)
+			return false;
+		if (profile1==null || profile2==null)
+			return true;
+		return !profile1.equals(profile2);
+	}
 }
