@@ -175,10 +175,10 @@ public class AccountingLoaderTests {
 		boolean result = AccountingLoader.performETL(etlContext);
 		assertTrue(result);
 		
-		assertEquals(2, inMemoryLoadStrategy.getRecords().size());
+		assertEquals(2, inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER).size());
 		
 		// Check direct fields from original Ledger 'file'
-		Map<String,Object> record = inMemoryLoadStrategy.getRecords().get(0);
+		Map<String,Object> record = inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER).get(0);
 		assertEquals("1234", record.get(IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPAYER_ID.name())));
 		assertEquals(2021, record.get(IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPERIOD_NUMBER.name())));
 		assertEquals("1.00.00", record.get(IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name())));
@@ -376,19 +376,20 @@ public class AccountingLoaderTests {
 	 */
 	public static class InMemoryLoadDataStrategy implements ETLContext.LoadDataStrategy {
 		
-		private final List<Map<String,Object>> records;
+		private final Map<String,List<Map<String,Object>>> recordsPerIndex;
 		
 		public InMemoryLoadDataStrategy() {
-			records = new LinkedList<>();
+			recordsPerIndex = new HashMap<>();
 		}
 		
 		@Override
 		public void add(IndexRequest request) {
-			records.add(request.sourceAsMap());
+			recordsPerIndex.computeIfAbsent(request.index(), i->new LinkedList<>())
+				.add(request.sourceAsMap());
 		}
 		
-		public List<Map<String,Object>> getRecords() {
-			return records;
+		public List<Map<String,Object>> getRecords(String index) {
+			return recordsPerIndex.get(index);
 		}
 	}
 }
