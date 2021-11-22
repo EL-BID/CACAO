@@ -456,4 +456,25 @@ public class ETLContext {
 			map.put("TaxPayerQualifier5",taxpayer.getQualifier5().trim());
 		return map;
 	}
+
+	/**
+	 * Given all other previous uploaded document regarding the same template, taxpayerId and period number of another document that was
+	 * processed in the ETL, change their situation from PROCESSED to REPLACED. In other words, avoid keeping multiple documents regarding the
+	 * same subject with the 'PROCESSED' situation. Only one of them will be considered PROCESSED.
+	 */
+	public static void markReplacedDocuments(DocumentUploaded prevailingDocument, ETLContext context) throws Exception {
+		Collection<DocumentUploaded> uploads = context.getValidatedDataRepository().getUploads(prevailingDocument.getTemplateName(), prevailingDocument.getTemplateVersion(), 
+				prevailingDocument.getTaxPayerId(), prevailingDocument.getTaxPeriodNumber());
+		if (uploads.isEmpty()) {
+			return;  
+		}
+		for (DocumentUploaded upload: uploads) {
+			if (upload.equals(prevailingDocument))
+				continue;
+			if (DocumentSituation.PROCESSED.equals(upload.getSituation())
+					|| DocumentSituation.VALID.equals(upload.getSituation())) {
+				context.setDocumentSituation(upload, DocumentSituation.REPLACED);
+			}
+		}
+	}
 }

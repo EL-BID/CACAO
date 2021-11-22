@@ -27,8 +27,12 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -359,6 +363,52 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 			return null;
 		return entries.stream().filter(f->key.equalsIgnoreCase(f.getKey())).findAny().orElse(null);
 	}
+	
+	/**
+	 * Returns all the languages defined in this domain table
+	 */
+	@JsonIgnore
+	public Set<DomainLanguage> getLanguages() {
+		if (entries==null)
+			return Collections.emptySet();
+		return entries.stream().filter(e->e.getLanguage()!=null).map(DomainEntry::getLanguage).collect(Collectors.toSet());
+	}
+	
+	/**
+	 * Transforms this object into a Map for easier lookup of values according to a specific language.
+	 */
+	@JsonIgnore
+	public Map<String,DomainEntry> toMap(DomainLanguage language) {
+		if (entries==null || entries.isEmpty())
+			return Collections.emptyMap();
+		return entries.stream()
+			.filter(f->f.getKey()==null && ( language==null || language.equals(f.getLanguage())) )
+			.collect(Collectors.toMap(
+				/*keyMapper*/DomainEntry::getKey, 
+				/*valueMapper*/Function.identity(), 
+				/*mergeFunction*/(a,b)->a, 
+				/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+	}
+
+	/**
+	 * Transforms this object into a Map for easier lookup of values in every language.
+	 */
+	@JsonIgnore
+	public MultiLingualMap toMultiLingualMap() {
+		if (entries==null || entries.isEmpty())
+			return new MultiLingualMap();
+		MultiLingualMap map = new MultiLingualMap();
+		for (DomainEntry entry: entries) {
+			if (entry.getKey()==null)
+				continue;
+			Map<DomainLanguage,DomainEntry> entry_map = map.computeIfAbsent(entry.getKey(), k->new HashMap<>());
+			if (entry.getLanguage()==null)
+				entry_map.put(DomainLanguage.ENGLISH, entry);
+			else
+				entry_map.put(entry.getLanguage(), entry);
+		}
+		return map;
+	}
 
 	/**
 	 * Find entries with the given key, ignoring languages.
@@ -532,4 +582,15 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 		return 0;
 	}
 
+	/**
+	 * Auxiliary representation of the same domain table for easier lookup of values.
+	 */
+	public static class MultiLingualMap extends TreeMap<String, Map<DomainLanguage, DomainEntry>> {
+		
+		private static final long serialVersionUID = 1L;
+		
+		public MultiLingualMap() {
+			super(String.CASE_INSENSITIVE_ORDER);
+		}
+	}
 }
