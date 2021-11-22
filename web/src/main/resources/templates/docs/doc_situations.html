@@ -46,24 +46,36 @@ var app = new Vue({
 	
 	mounted() {
 		
-		var tableData = /*[[${situations}]]*/ null;
+		var documentId = /*[[${documentId}]]*/ null;
 		
 		this.table = new Tabulator('#table', {
 			index: "timestamp",
 			layout:"fitDataFill",		
+		    pagination: false,
+			ajaxURL: /*[[@{/api/doc/situations}]]*/ "/api/doc/situations", //set url for ajax request
+			ajaxURLGenerator: function(url, config, params ){
+				console.log(config)
+				console.log(params)
+				p = new URLSearchParams()
+				p.set('documentId', documentId)
+				console.log(url + '?' + p.toString())
+				return url + '?' + p.toString()
+			},
+			ajaxContentType: "json",
+			filterMode:"local",
+			sortMode: "local",
+			headerFilterLiveFilterDelay:700,			
 		    persistence:{
-				sort:true,
-				filter:true,
 				columns:true,
 			},
-		    persistenceID:"doc_situation_history_persistence",				
-    		data: tableData,    		
+		    persistenceID:"doc_situation_history_persistence",
 			columns:[ //Define Table Columns
-				{title: /*[[#{doc.situation.history.documentId}]] */ "Document Id", field:"documentId", headerFilter:this.headerFilter},
-				{title: /*[[#{doc.situation.history.templateName}]] */ "Template", field:"templateName", headerFilter:this.headerFilter},
+				{title: /*{{#taxpayer.id}}} */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
+				{title: /*[[#{doc.timestamp}]]*/ "Upload date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
+				{title: /*[[#{doc.situation.history.timestamp}]]*/ "Situation date/time", field:"changedTime", formatter: dateFormatter, headerFilter:this.headerFilter},
 				{title: /*[[#{doc.situation.history.situation}]]*/ "Situation", field: "situation", headerFilter:this.headerFilter},
+				{title: /*[[#{doc.situation.history.templateName}]] */ "Template", field:"templateName", headerFilter:this.headerFilter},								
 				{title: /*[[#{doc.situation.history.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
-				{title: /*[[#{doc.situation.history.timestamp}]]*/ "Situation date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},								
 			]
 		})
 	},

@@ -218,7 +218,11 @@ public class FileValidatedConsumerService {
 			DocumentUploaded doc = entry.getKey();
 			
 			DocumentValidationErrorMessage message = DocumentValidationErrorMessage.create()
-					.withTemplateName(doc.getTemplateName()).withDocumentId(doc.getId())
+					.withTemplateName(doc.getTemplateName())
+					.withDocumentId(doc.getId())
+					.withTimestamp(doc.getTimestamp())
+					.withTaxPayerId(doc.getTaxPayerId())
+					.withTaxPeriodNumber(doc.getTaxPeriodNumber())
 					.withDocumentFilename(doc.getFilename());
 	
 			entry.getValue().parallelStream().forEach(alert -> {
@@ -245,13 +249,15 @@ public class FileValidatedConsumerService {
 		// rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); //
 		// in case of error delete the DocumentUploaded
 
-		DocumentSituationHistory situation = new DocumentSituationHistory();
-		situation.setDocumentId(savedDoc.getId());
-		situation.setSituation(docSituation);
-		situation.setTimestamp(doc.getChangedTime());
-		situation.setDocumentFilename(doc.getFilename());
-		situation.setTemplateName(doc.getTemplateName());
-		documentsSituationHistoryRepository.save(situation);
+		DocumentSituationHistory situation = DocumentSituationHistory.create()
+		.withDocumentId(savedDoc.getId())
+		.withSituation(docSituation)
+		.withTimestamp(doc.getChangedTime())
+		.withDocumentFilename(doc.getFilename())
+		.withTaxPayerId(doc.getTaxPayerId())
+		.withTaxPeriodNumber(doc.getTaxPeriodNumber())
+		.withTemplateName(doc.getTemplateName());
+		documentsSituationHistoryRepository.saveWithTimestamp(situation);
 
 		return savedDoc;
 

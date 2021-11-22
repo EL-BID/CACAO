@@ -19,14 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
-import java.util.List;
-
-import org.idb.cacao.api.DocumentSituationHistory;
-import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
-import org.idb.cacao.web.controllers.services.MessagesService;
 import org.idb.cacao.web.errors.MissingParameter;
-import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -49,12 +43,6 @@ public class DocumentStoreUIController {
 	private DocumentTemplateService templateService;
 
 	@Autowired
-	private DocumentSituationHistoryRepository documentsSituationHistoryRepository;
-
-	@Autowired
-	private MessagesService messagesService;
-
-	@Autowired
 	private MessageSource messageSource;
 
 	@GetMapping("/docs")
@@ -69,33 +57,32 @@ public class DocumentStoreUIController {
 		return "docs/docs_search";
 	}
 
-	@GetMapping("/docs/situations/{documentId}")
+	@GetMapping("/doc/situations/{documentId}")
     public String getDocSituations(@PathVariable("documentId") String documentId, Model model) {
 		
 		// Parse the 'templateName' informed at request path
 		if (documentId==null || documentId.trim().length()==0) {
 			throw new MissingParameter("documentId");
 		}
-		List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
-		
-		model.addAttribute("situations", situations);		
+		//List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
+		model.addAttribute("documentId", documentId);		
 		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
-        return "docs/docs_situation";
+        return "docs/doc_situations";
     }
 
-	@GetMapping("/docs/errors/{documentId}")
+	@GetMapping("/doc/errors/{documentId}")
 	public String getDocErrors(@PathVariable("documentId") String documentId, Model model) {
 
 		// Parse the 'templateName' informed at request path
 		if (documentId == null || documentId.trim().length() == 0) {
 			throw new MissingParameter("documentId");
 		}
-		List<DocumentValidationErrorMessage> messages = messagesService.findByDocumentId(documentId);
+		//List<DocumentValidationErrorMessage> messages = messagesService.findByDocumentId(documentId);
 
-		model.addAttribute("messages", messages);
+		model.addAttribute("documentId", documentId);
 		model.addAttribute("dateTimeFormat",
 				messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
-		return "docs/docs_errors";
+		return "docs/doc_errors";
 	}
 
 }

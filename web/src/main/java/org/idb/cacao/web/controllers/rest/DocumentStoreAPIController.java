@@ -60,6 +60,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.api.Views;
 import org.idb.cacao.api.errors.DocumentNotFoundException;
 import org.idb.cacao.api.errors.GeneralException;
@@ -74,6 +75,7 @@ import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.FileUploadedProducer;
+import org.idb.cacao.web.controllers.services.MessagesService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
@@ -182,6 +184,9 @@ public class DocumentStoreAPIController {
 	
 	@Autowired
 	private FileUploadedProducer fileUploadedProducer;
+	
+	@Autowired
+	private MessagesService messagesService;
 
     /**
      * Endpoint for uploading a document to be parsed
@@ -789,24 +794,134 @@ public class DocumentStoreAPIController {
 		return ResponseEntity.ok().body(allDocs);
 	}
 
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
-	@GetMapping(value="/docs/situations/{documentId}",produces = MediaType.APPLICATION_JSON_VALUE)
+	@JsonView(Views.Declarant.class)
+	@GetMapping(value="/doc/situations",produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Return situation history via API for a given document. The document may be identified by the internal numerical ID.")
-	public ResponseEntity<Object> getDocsSituation(
-			@PathVariable("documentId") String documentId) {
+	public ResponseEntity<Object> getDocSituations(@RequestParam("documentId") String documentId) {
 	
 		// Parse the 'templateName' informed at request path
 		if (documentId==null || documentId.trim().length()==0) {
 			throw new MissingParameter("documentId");
 		}
-		List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
 		
-		if (situations.isEmpty()) {
-			return ResponseEntity.ok().body(Collections.emptyList());
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+
+    	// Only SYSADMIN users may see every documents. Other users are restricted to their relationships
+    	final Set<String> filterTaxpayersIds;
+    	try {
+    		filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+    	}
+    	catch (MissingParameter missing) {
+    		/*
+			model.addAttribute("message",messageSource.getMessage("user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
+			model.addAttribute("docs", Page.empty());
+			model.addAttribute("filter_options", new AdvancedSearch());
+			model.addAttribute("applied_filters", Optional.empty());
+			*/
+			return null;
+    	}		
+
+		Optional<AdvancedSearch> filters = Optional.of(new AdvancedSearch().clone().withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)));
+		
+		Page<DocumentSituationHistory> situations;
+		
+		try {
+			
+			if (filterTaxpayersIds!=null && filterTaxpayersIds.isEmpty())
+				situations = Page.empty();
+			else if (filterTaxpayersIds==null)
+				situations = SearchUtils.doSearch(filters.get(), 
+						DocumentSituationHistory.class, elasticsearchClient, 
+						Optional.ofNullable(null)/*page*/, Optional.ofNullable(null)/*size*/, 
+						Optional.ofNullable(null)/*sortField*/, Optional.ofNullable(null) /*direction*/);
+			else
+				situations = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
+						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds)), 
+						DocumentSituationHistory.class, elasticsearchClient, Optional.ofNullable(null)/*page*/, 
+						Optional.ofNullable(null)/*size*/, Optional.ofNullable(null)/*sortField*/, Optional.ofNullable(null) /*direction*/);			
+			
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
+			situations = Page.empty();
 		}
 		
-		return ResponseEntity.ok().body(situations);
+		return ResponseEntity.ok().body(situations.getContent());
 	
 	}
 
+	@JsonView(Views.Declarant.class)
+	@GetMapping(value="/doc/errors",produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Return validation error messages via API for a given document. The document may be identified by the internal numerical ID.")
+	public PaginationData<DocumentValidationErrorMessage> getDocErrorMessages(@RequestParam("documentId") String documentId, 
+			@RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, 
+			@RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy, 
+			@RequestParam("sortorder") Optional<String> sortOrder) {
+	
+		// Parse the 'templateName' informed at request path
+		if (documentId==null || documentId.trim().length()==0) {
+			throw new MissingParameter("documentId");
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+
+    	// Only SYSADMIN users may see every documents. Other users are restricted to their relationships
+    	final Set<String> filterTaxpayersIds;
+    	try {
+    		filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+    	}
+    	catch (MissingParameter missing) {
+    		/*
+			model.addAttribute("message",messageSource.getMessage("user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
+			model.addAttribute("docs", Page.empty());
+			model.addAttribute("filter_options", new AdvancedSearch());
+			model.addAttribute("applied_filters", Optional.empty());
+			*/
+			return null;
+    	}		
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromJSON2(filter);
+		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
+		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
+		
+		Page<DocumentValidationErrorMessage> messages;
+		
+		try {
+			
+			if (filterTaxpayersIds!=null && filterTaxpayersIds.isEmpty())
+				messages = Page.empty();
+			else if (filterTaxpayersIds==null)
+				messages = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
+						.withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)), 
+						DocumentValidationErrorMessage.class, elasticsearchClient, 
+						page, size, sortField, direction);
+			else
+				messages = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
+						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds))
+						.withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)), 
+						DocumentValidationErrorMessage.class, elasticsearchClient, page, size, sortField, direction);			
+			
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
+			messages = Page.empty();
+		}
+		
+		for ( DocumentValidationErrorMessage message : messages.getContent() ) {
+			message.setErrorMessage(messagesService.getMessage(message.getErrorMessage()));
+		}
+		
+		return new PaginationData<>(messages.getTotalPages(), messages.getContent());
+	
+	}
 }
