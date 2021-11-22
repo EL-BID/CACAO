@@ -16,7 +16,8 @@
 	<div class="ui container">
 		<h2 class="ui header">
 			<i class="file alternate outline icon"></i>
-			<div class="content" th:text="#{template.new}">New Declaration Template</div>
+			<div th:if="${template.id==null}" class="content" th:text="#{template.new}">New Declaration Template</div>
+            <div th:if="${template.id!=null}" class="content" th:text="#{template.edit}">Edit Declaration Template</div>
 		</h2>
 		<div id="app">
 		<div class="ui container">
@@ -150,16 +151,24 @@ var app = new Vue({
 	    field: null,
 	    field_old: null,
 	    fieldTypes: [[${fieldTypes}]],
-	    fieldMappings: [[${fieldMappings}]]
+		fieldMappings: [[${fieldMappings}]]
 	},
 	methods: {
 		cancel() {
 			window.location.replace([[@{/templates}]])
 		},
 		processForm() {
+			[# th:if="${template.id==null}"]
+			let url = [[@{/api/template}]]
+			let req_type = 'POST'
+			[/]
+			[# th:if="${template.id!=null}"]
+			let url = [[@{/api/template/{id}(id=${template.id})}]]
+			let req_type = 'PUT'
+			[/]
 			$.ajax({
-   			    url: [[@{/api/template/{id}(id=${template.id})}]],
-   			    type: 'PUT',
+   			    url: url,
+   			    type: req_type,
    			    dataType: 'json',
    			    contentType: 'application/json',
    			    data: JSON.stringify(this.template),

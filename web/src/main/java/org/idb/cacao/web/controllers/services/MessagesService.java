@@ -98,7 +98,7 @@ public class MessagesService {
 				Matcher m2 = pMessageParam.matcher(param);
 				
 				if ( m2.find() ) {
-					params.set(i, messages.getMessage(param, null, LocaleContextHolder.getLocale()));
+					params.set(i, messages.getMessage(param.replace("{", "").replace("}", ""), null, LocaleContextHolder.getLocale()));
 				}						
 				
 			}

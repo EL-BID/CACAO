@@ -301,7 +301,33 @@ public class FileUploadedConsumerService {
 			ex.printStackTrace();
 			throw ex;
 		} finally {
-			// TODO Add logging
+			
+			//After save document, check if threre is a situation with no Taxpayer Id information and, if found, update
+			
+			List<DocumentSituationHistory> situations = 
+					documentsSituationHistoryRepository.findByDocumentId(validationContext.getDocumentUploaded().getId());
+			
+			if ( situations != null && !situations.isEmpty() ) {
+				
+				for ( DocumentSituationHistory situation : situations ) {
+					
+					if ( situation.getTaxPayerId() == null ) {
+						
+						try {
+							situation.setTaxPayerId(validationContext.getDocumentUploaded().getTaxPayerId());
+							situation.setTaxPeriodNumber(validationContext.getDocumentUploaded().getTaxPeriodNumber());
+							documentsSituationHistoryRepository.save(situation);
+						} catch (Exception e) {
+							log.log(Level.WARNING, "Can't update document situation history for document id " + 
+									validationContext.getDocumentUploaded().getId(), e);
+						}
+						
+					}
+					
+				}
+				
+			}
+			
 		}
 
 	}
@@ -332,7 +358,8 @@ public class FileUploadedConsumerService {
 				.withDocumentFilename(doc.getFilename())
 				.withTimestamp(doc.getTimestamp())
 				.withTaxPayerId(doc.getTaxPayerId())
-				.withTaxYear(doc.getTaxYear());
+				.withTimestamp(doc.getTimestamp())
+				.withTaxPeriodNumber(doc.getTaxPeriodNumber());
 
 		alerts.parallelStream().forEach(alert -> {
 			DocumentValidationErrorMessage newMessage = message.clone();
@@ -357,13 +384,15 @@ public class FileUploadedConsumerService {
 		// rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); //
 		// in case of error delete the DocumentUploaded
 
-		DocumentSituationHistory situation = new DocumentSituationHistory();
-		situation.setDocumentId(savedDoc.getId());
-		situation.setSituation(docSituation);
-		situation.setTimestamp(doc.getChangedTime());
-		situation.setDocumentFilename(doc.getFilename());
-		situation.setTemplateName(doc.getTemplateName());
-		documentsSituationHistoryRepository.save(situation);
+		DocumentSituationHistory situation = DocumentSituationHistory.create()
+		.withDocumentId(savedDoc.getId())
+		.withSituation(docSituation)
+		.withTimestamp(doc.getChangedTime())
+		.withDocumentFilename(doc.getFilename())
+		.withTemplateName(doc.getTemplateName())
+		.withTaxPeriodNumber(doc.getTaxPeriodNumber())
+		.withTaxPayerId(doc.getTaxPayerId());
+		documentsSituationHistoryRepository.saveWithTimestamp(situation);
 
 		return savedDoc;
 

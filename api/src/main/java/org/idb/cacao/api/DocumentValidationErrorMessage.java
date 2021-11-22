@@ -76,8 +76,8 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	private String taxPayerId;
 	
 	@Field(type=Integer)
-	@AFieldDescriptor(externalName = "tax.year")
-	private Integer taxYear;	
+	@AFieldDescriptor(externalName = "tax.period.number")
+	private Integer taxPeriodNumber;	
 	
 	@JsonView(Views.Declarant.class)
 	@MultiField(
@@ -183,16 +183,16 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 		return this;
 	}	
 	
-	public Integer getTaxYear() {
-		return taxYear;
+	public Integer getTaxPeriodNumber() {
+		return taxPeriodNumber;
 	}
 
-	public void setTaxYear(Integer taxYear) {
-		this.taxYear = taxYear;
-	}	
+	public void setTaxPeriodNumber(Integer taxPeriodNumber) {
+		this.taxPeriodNumber = taxPeriodNumber;
+	}
 	
-	public DocumentValidationErrorMessage withTaxYear(Integer taxYear) {
-		this.taxYear = taxYear;
+	public DocumentValidationErrorMessage withTaxPeriodNumber(Integer taxPeriodNumber) {
+		this.taxPeriodNumber = taxPeriodNumber;
 		return this;
 	}	
 

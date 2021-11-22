@@ -20,6 +20,7 @@
 package org.idb.cacao.api;
 
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Integer;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
@@ -67,6 +68,20 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@AFieldDescriptor(externalName = "doc.timestamp")
     private OffsetDateTime timestamp;
+
+	@JsonView(Views.Declarant.class)
+	@MultiField(
+		mainField = @Field(type=Text, fielddata=true),
+		otherFields = {
+			@InnerField(suffix = "keyword", type=Keyword)
+		}
+	)
+	@AFieldDescriptor(externalName = "taxpayer.id")
+	private String taxPayerId;
+	
+	@Field(type=Integer)
+	@AFieldDescriptor(externalName = "tax.period.number")
+	private Integer taxPeriodNumber;		
 	
 	@JsonView(Views.Declarant.class)
 	@MultiField(
@@ -106,9 +121,14 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	/**
 	 * Date/time of last modification or creation of any part of this object
 	 */
+	@JsonView(Views.Public.class)	
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	@AFieldDescriptor(externalName = "changed.time")
 	private OffsetDateTime changedTime;	
+	
+	public static DocumentSituationHistory create() {
+		return new DocumentSituationHistory();
+	}
 
 	public String getId() {
 		return id;
@@ -118,6 +138,32 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 		this.id = id;
 	}
 	
+	public String getTaxPayerId() {
+		return taxPayerId;
+	}
+
+	public void setTaxPayerId(String taxPayerId) {
+		this.taxPayerId = taxPayerId;
+	}	
+	
+	public DocumentSituationHistory withTaxPayerId(String taxPayerId) {
+		this.taxPayerId = taxPayerId;
+		return this;
+	}	
+	
+	public Integer getTaxPeriodNumber() {
+		return taxPeriodNumber;
+	}
+
+	public void setTaxPeriodNumber(Integer taxPeriodNumber) {
+		this.taxPeriodNumber = taxPeriodNumber;
+	}
+	
+	public DocumentSituationHistory withTaxPeriodNumber(Integer taxPeriodNumber) {
+		this.taxPeriodNumber = taxPeriodNumber;
+		return this;
+	}		
+	
 	public String getTemplateName() {
 		return templateName;
 	}
@@ -125,6 +171,11 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	public void setTemplateName(String templateName) {
 		this.templateName = templateName;
 	}
+	
+	public DocumentSituationHistory withTemplateName(String templateName) {
+		this.templateName = templateName;
+		return this;
+	}	
 
 	public String getDocumentId() {
 		return documentId;
@@ -133,6 +184,11 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	public void setDocumentId(String documentId) {
 		this.documentId = documentId;
 	}
+	
+	public DocumentSituationHistory withDocumentId(String documentId) {
+		this.documentId = documentId;
+		return this;
+	}	
 
 	public String getDocumentFilename() {
 		return documentFilename;
@@ -141,6 +197,11 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	public void setDocumentFilename(String documentFilename) {
 		this.documentFilename = documentFilename;
 	}
+	
+	public DocumentSituationHistory withDocumentFilename(String documentFilename) {
+		this.documentFilename = documentFilename;
+		return this;
+	}		
 
 	public OffsetDateTime getTimestamp() {
 		return timestamp;
@@ -149,6 +210,11 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	public void setTimestamp(OffsetDateTime timestamp) {
 		this.timestamp = timestamp;
 	}
+	
+	public DocumentSituationHistory withTimestamp(OffsetDateTime timestamp) {
+		this.timestamp = timestamp;
+		return this;
+	}	
 
 	public DocumentSituation getSituation() {
 		if ( situation == null )
@@ -159,6 +225,11 @@ public class DocumentSituationHistory implements Serializable, Cloneable {
 	public void setSituation(DocumentSituation situation) {
 		this.situation = situation;
 	}
+	
+	public DocumentSituationHistory withSituation(DocumentSituation situation) {
+		this.situation = situation;
+		return this;
+	}		
 
 	public DocumentSituationHistory clone() {
 		try {

@@ -25,7 +25,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
- * Enumeration of different situations of documents receiveds from tax payers
+ * Enumeration of different situations of documents received from tax payers
  * 
  * @author Rivelino Patrício
  * 

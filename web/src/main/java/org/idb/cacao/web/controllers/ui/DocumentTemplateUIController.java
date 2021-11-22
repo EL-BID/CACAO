@@ -25,13 +25,19 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.hibernate.sql.Template;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
+import org.idb.cacao.web.controllers.dto.NameId;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -39,8 +45,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class DocumentTemplateUIController {
@@ -66,7 +74,13 @@ public class DocumentTemplateUIController {
 
 //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
 	@GetMapping("/addtemplate")
-    public String showAddTemplate(@ModelAttribute("template") DocumentTemplate template) {
+    public String showAddTemplate(Model model) {
+		model.addAttribute("archetypes", 
+				TemplateArchetypes.getNames()
+					.stream()
+					.map( name -> new NameId(messages.getMessage(name, null, LocaleContextHolder.getLocale()), name))
+					.collect(Collectors.toList())
+		);
 		return "templates/add_template";
 	}
     
@@ -83,4 +97,39 @@ public class DocumentTemplateUIController {
         model.addAttribute("fieldMappings", fieldMappings);
         return "templates/edit_template";
     }
+    
+    @PostMapping(value="/newtemplate")
+    public String showEditForm(Model model, @RequestParam("type") Optional<String> type_param, @RequestParam("id") Optional<String> id_param) {
+    	String type=type_param.orElse("empty");
+    	String id=id_param.orElse("");
+    	DocumentTemplate template = new DocumentTemplate();
+		switch(type) {
+			case "template":
+				DocumentTemplate referenceTemplate = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
+				template.setName(referenceTemplate.getName());
+				template.setArchetype(referenceTemplate.getArchetype());
+				template.setGroup(referenceTemplate.getGroup());
+				template.setFields(referenceTemplate.getFields());
+				template.setPeriodicity(referenceTemplate.getPeriodicity());
+				template.setRequired(referenceTemplate.getRequired());
+				break;
+			case "archetype":
+				TemplateArchetype archetype = TemplateArchetypes.getArchetype(id).orElseThrow(() -> new IllegalArgumentException("Invalid archetype Id:" + id));
+				template.setArchetype(id);
+				template.setGroup(archetype.getSuggestedGroup());
+				template.setFields(archetype.getRequiredFields());
+				template.setName(messages.getMessage(id, null, LocaleContextHolder.getLocale()));
+				break;
+		}
+		model.addAttribute("template", template);
+		Map<Object, Object> fieldTypes = Arrays.stream(FieldType.values())
+	        	.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
+        model.addAttribute("fieldTypes", fieldTypes);
+        Map<String, String> fieldMappings = Arrays.stream(FieldMapping.values())
+			.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
+        model.addAttribute("fieldMappings", fieldMappings);
+        return "templates/edit_template";
+    
+    }
+
 }

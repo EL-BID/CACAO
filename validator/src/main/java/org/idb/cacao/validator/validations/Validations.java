@@ -551,21 +551,26 @@ public class Validations {
 				}
 				else if ( "TaxYear".equals(field) ) {
 					Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(found.getValue()));
-					if ( value != null )
+					if ( value != null ) {
 						doc.setTaxYear(value);
+						doc.setTaxPeriodNumber(value);
+					}
 				}
 				else if ( "TaxMonth".equals(field) ) {
 					doc.setTaxMonth(ValidationContext.toString(found.getValue()));	
 				}
 				else if ( "TaxPeriodNumber".equals(field) ) {
 					Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(found.getValue()));
-					if ( value != null )
+					if ( value != null ) {
 						doc.setTaxPeriodNumber(value);	
+					}
 				}				
 				else if ( "TaxMonthNumber".equals(field) ) {
 					Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(found.getValue()));
-					if ( value != null )
+					if ( value != null ) {
 						doc.setTaxMonthNumber(value);
+						doc.setTaxPeriodNumber(value);
+					}
 				}				
 				
 			}
