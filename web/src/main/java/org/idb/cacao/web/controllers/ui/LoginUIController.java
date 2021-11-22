@@ -23,12 +23,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.MenuItem;
 import org.idb.cacao.web.entities.SystemPrivilege;
+import org.idb.cacao.web.entities.UserProfile;
+import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.utils.LoginUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -59,6 +65,9 @@ public class LoginUIController {
 
 	@Autowired
 	private Environment env;
+	
+	@Autowired
+	private UserService userService;
 
 	@GetMapping("/")
 	public String frontend(Model model){
@@ -142,6 +151,15 @@ public class LoginUIController {
 					"/sys_info"));
 		}
 		
+		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ_ALL)) {
+			
+			String uri = userService.getDashboardsURI();
+			if (uri!=null && uri.trim().length()>0) {
+				menu.add(
+					new MenuItem(messages.getMessage("dashboards.admin", null, LocaleContextHolder.getLocale()), uri));
+			}
+		}
+		
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			menu.add(
 				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin_shell"));
@@ -157,4 +175,21 @@ public class LoginUIController {
 		return roles.stream()
 				.anyMatch(a -> privilege.getRole().equalsIgnoreCase(a.getAuthority()));
 	}
+	
+	/**
+	 * Check if any of the provided roles (granted to authenticated user) corresponds to the provided ESStandardRoles
+	 * (some standard role regarding the use of Kibana interface).
+	 */
+	public static boolean hasStandardRole(Collection<? extends GrantedAuthority> roles, ESStandardRoles role) {
+		if (role==null || roles==null || roles.isEmpty())
+			return false;
+		Set<UserProfile> profiles_for_role = role.getUserProfiles();
+		if (profiles_for_role==null || profiles_for_role.isEmpty())
+			return false;
+		Set<String> roles_names = roles.stream()
+				.map(a->a.getAuthority())
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+		return profiles_for_role.stream().anyMatch(p->roles_names.contains(p.getRole()));
+	}
+
 }

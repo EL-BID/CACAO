@@ -22,12 +22,16 @@ package org.idb.cacao.web.controllers.services;
 import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,15 +42,21 @@ import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.repositories.InterpersonalRepository;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.security.user.privileges.Role;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.RelationshipType;
+import org.idb.cacao.web.entities.SystemPrivilege;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.utils.ESUtils;
+import org.idb.cacao.web.utils.ESUtils.KibanaSpace;
+import org.idb.cacao.web.utils.HttpUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
@@ -55,11 +65,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Service methods for user operations and queries
@@ -93,7 +105,29 @@ public class UserService {
     private InterpersonalRepository interpersonalRepository;
     
 	@Autowired
-	private RestHighLevelClient elasticsearchClient;    
+	private RestHighLevelClient elasticsearchClient;
+	
+	@Autowired
+	private ElasticSearchService elasticSearchService;
+
+	@Autowired
+	private KeyStoreService keystoreService;
+
+	@Autowired
+	private PrivilegeService privilegeService;
+
+	@Autowired
+	private RestHighLevelClient esClient;
+
+    private RestTemplate restTemplate;
+    
+    public UserService(RestTemplateBuilder builder) {
+		this.restTemplate = builder
+				.setConnectTimeout(Duration.ofMinutes(5))
+				.setReadTimeout(Duration.ofMinutes(5))
+				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.build();
+	}
 
     /**
 	 * Check if the system has a minimum of one user. If the database is fully empty, creates
@@ -375,6 +409,29 @@ public class UserService {
 	}
 	
 	/**
+	 * Returns indication that the user has any Kibana Access (read or write)
+	 */
+	public boolean hasKibanaAccess(User user) {
+		Set<ESStandardRoles> standard_roles = ESStandardRoles.getStandardRoles(user.getProfile());
+		return standard_roles!=null && !standard_roles.isEmpty();
+	}
+
+	/**
+	 * Check if the user is a super user at Kibana
+	 */
+	public boolean hasKibanaUserUserAccess(User user) {
+		String es_username = env.getProperty("es.user");
+		String es_password = env.getProperty("es.password");
+		String kibanaSuperUser = env.getProperty("kibana.superuser");
+
+		boolean is_kibana_super_user = (es_username!=null && es_username.trim().length()>0 
+				&& es_password!=null && es_password.trim().length()>0
+				&& kibanaSuperUser!=null && kibanaSuperUser.equalsIgnoreCase(user.getLogin()));
+		
+		return is_kibana_super_user;
+	}
+
+	/**
 	 * Check if the user may have a private space at Kibana for his dashboards
 	 */
 	public boolean mayHaveSpaceForPrivateDashboards(User user) {
@@ -411,7 +468,226 @@ public class UserService {
 	 * Returns indication that the user has Kibana Access with 'write' privilege to Dashboards
 	 */
 	public boolean hasDashboardWriteAccess(User user) {
+		
+		// Users with some profile mapped to a Kibana ROLE related to 'public area' with 'write access' may write dashboards
 		Set<ESStandardRoles> standard_roles = ESStandardRoles.getStandardRoles(user.getProfile());
-		return standard_roles!=null && !standard_roles.isEmpty() && standard_roles.contains(ESStandardRoles.DASHBOARDS_WRITE);
+		if (standard_roles!=null && !standard_roles.isEmpty() && standard_roles.contains(ESStandardRoles.DASHBOARDS_WRITE))
+			return true;
+		
+		// Users with 'TAX_DECLARATION_READ_ALL' privilege may write dashboards at his own private area
+		Set<SystemPrivilege> user_privileges = privilegeService.getPrivileges(user.getProfile());
+		return user_privileges!=null && user_privileges.contains(SystemPrivilege.TAX_DECLARATION_READ_ALL);
 	}
+	
+	/**
+	 * Returns the URI for access to Dashboards. If the user has a specific taxpayer ID, he will be redirected
+	 * to a private SPACE at Kibana that corresponds to his ID. Otherwise, returns the link to the 'default space'.
+	 */
+	public String getDashboardsURI() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		User user = (auth==null) ? null : getUser(auth);
+
+		String uri;
+		
+		if (user!=null && mayHaveSpaceForPrivateDashboards(user)) {
+			String txid = user.getTaxpayerId().replaceAll("\\D", "");
+			String personal_space_id = "user-"+txid;
+			uri = env.getProperty("kibana.menu.link")+"/s/"+personal_space_id+"/app/dashboards#";
+		}
+		else {
+			uri = env.getProperty("kibana.menu.link")+"/app/dashboards#";
+		}
+		
+		return uri;
+	}
+	
+	/**
+	 * Creates a SPACE at KIBANA for private user access. Also creates a ROLE giving access to this space as long as 'createCompanionRole' is TRUE.<BR>
+	 * The ID of the database will be formed with the user taxpayer ID, so that different user accounts related to the same taxpayer ID shares
+	 * the same Kibana space.
+	 */
+	public void createSpaceForPrivateDashboards(User user, boolean createCompanionRole) throws IOException {
+		
+		if (user.getTaxpayerId()==null || user.getTaxpayerId().trim().length()==0)
+			return;
+		
+		String txid = user.getTaxpayerId().replaceAll("\\D", ""); // removes all non-numeric digits
+		if (txid.length()==0)
+			return;
+		
+		String personal_space_id = "user-"+txid;
+		
+		if (!ESUtils.hasKibanaSpace(env, restTemplate, personal_space_id)) {
+		
+			KibanaSpace space = new KibanaSpace();
+			space.setId(personal_space_id);
+			space.setName(user.getName());
+			space.setDescription("Personal area for dashboards and other objects accessible by the user");
+			space.setDisabledFeatures(ElasticSearchService.getDisabledFeatures(/*keep features*/ "discover","visualize","dashboard"));
+			ESUtils.createKibanaSpace(env, restTemplate, space);
+			elasticSearchService.copyKibanaConfigFromSpaceToSpace("default", space.getId());
+		}
+		
+		if (createCompanionRole) {
+			
+			// Creates the 'companion role' to this particular 'space' if it does not exist yet
+			// The 'companion role' gives access to the space for dashboard and visualization features.
+			Role role = getOrCreateCompanionRoleForKibanaAccess(user);
+			
+			if (role!=null) {
+				String role_name = role.getName();
+				// If there is a user account, update it with the role we just created (also works for assigning existent role to existent user account)
+				org.elasticsearch.client.security.user.User user_at_es =
+						ESUtils.getUser(esClient, user.getLogin());
+				if (user_at_es!=null && (user_at_es.getRoles()==null || !user_at_es.getRoles().contains(role_name))) {
+					List<String> roles = new LinkedList<>();
+					roles.add(role_name);
+					if (user_at_es.getRoles()!=null)
+						roles.addAll(user_at_es.getRoles());
+					try {
+						ESUtils.updateUser(esClient, user.getLogin(), roles);
+					}
+					catch (Throwable ex) {
+						log.log(Level.SEVERE, "Error assigning role "+role_name+" to user "+user.getLogin()+" for access to Kibana personal space "+personal_space_id, ex);
+					}
+				}
+			}
+		}
+
+		// Updates this information at database so that we don't have to go through all this work again for this user
+		user.setKibanaSpace(personal_space_id);
+		userRepository.saveWithTimestamp(user);
+	}
+
+	/**
+	 * Returns an existent 'companion role' or creates a new one.<BR>
+	 * The 'companion role' is a role created for a particular user granting access to this particular Kibana Space.
+	 */
+	public Role getOrCreateCompanionRoleForKibanaAccess(User user) {
+		
+		if (user.getTaxpayerId()==null || user.getTaxpayerId().trim().length()==0)
+			return null;
+		
+		String txid = user.getTaxpayerId().replaceAll("\\D", ""); // removes all non-numeric digits
+		if (txid.length()==0)
+			return null;
+
+		String role_name = "roleUser"+txid;
+		String personal_space_id = "user-"+txid;
+
+		Role role;
+		try {
+			role =
+				ESUtils.getRole(esClient, role_name);
+		}
+		catch (Throwable ex) {
+			role = null;				
+		}
+		
+		if (role==null) {
+			try {
+				role = ESUtils.createRoleForSingleApplication(esClient, role_name, /*application*/"kibana-.kibana", 
+					/*privileges*/Arrays.asList("feature_dashboard.all","feature_discover.all","feature_visualize.all"), 
+					/*resources*/Arrays.asList("space:"+personal_space_id), 
+					/*allIndicesPrivileges*/Arrays.asList("read"));
+			}
+			catch (Throwable ex) {
+				log.log(Level.SEVERE, "Error creating role "+role_name+" for user "+user.getLogin()+" for access to Kibana personal space "+personal_space_id, ex);
+			}
+		}
+		
+		return role;
+	}
+
+	/**
+	 * Creates a new token for a user access to Kibana user interface
+	 * @para user User object (must be the actual persistent object in database, not an object stored in the servlet context)
+	 */
+	@Transactional
+	public void createUserForKibanaAccess(User user) throws IOException {
+		
+		Set<ESStandardRoles> standard_roles = ESStandardRoles.getStandardRoles(user.getProfile());
+		if (standard_roles==null || standard_roles.isEmpty()) {
+			
+			// no access
+			
+			return;
+		}
+		
+    	String kibana_token;
+    	kibana_token = UUID.randomUUID().toString();
+		String encrypted_kibana_token = keystoreService.encrypt(kibana_token);
+		user.setKibanaToken(encrypted_kibana_token);
+		userRepository.saveWithTimestamp(user);
+
+		List<String> roles = standard_roles.stream().map(ESStandardRoles::getName).collect(Collectors.toCollection(LinkedList::new));
+		
+		// If the user has 'write access' and also has a personal Kibana Space, creates or assigns an additional role
+		// granting access to this personal Kibana Space
+		if (hasDashboardWriteAccess(user) && user.getKibanaSpace()!=null && user.getKibanaSpace().trim().length()>0) {
+			// Creates the 'companion role' to this particular 'space' if it does not exist yet
+			// The 'companion role' gives access to the space for dashboard and visualization features.
+			Role role = getOrCreateCompanionRoleForKibanaAccess(user);
+			if (role!=null) {
+				String role_name = role.getName();
+				roles.add(role_name);
+			}
+		}
+
+		ESUtils.createUser(esClient, user.getLogin(), roles, kibana_token.toCharArray());		
+	}
+
+	/**
+	 * Update the user roles for a user access to Kibana user interface
+	 * @para user User object (must be the actual persistent object in database, not an object stored in the servlet context)
+	 */
+	@Transactional
+	public void updateUserForKibanaAccess(User user) throws IOException {
+		
+		Set<ESStandardRoles> standard_roles = ESStandardRoles.getStandardRoles(user.getProfile());
+		if (standard_roles==null || standard_roles.isEmpty()) {
+			
+			// no access, disable user if exists
+			if (!ESUtils.getUsers(esClient, user.getLogin()).isEmpty()) {
+				try {
+					ESUtils.disableUser(esClient, user.getLogin());
+				}
+				catch (Throwable ex) {
+					log.log(Level.SEVERE, "Error disabling user "+user.getLogin(), ex);
+				}
+			}
+			
+			return;
+		}
+
+		List<String> roles = standard_roles.stream().map(ESStandardRoles::getName).collect(Collectors.toCollection(LinkedList::new));
+
+		ESUtils.updateUser(esClient, user.getLogin(), roles);
+		
+		try {
+			ESUtils.enableUser(esClient, user.getLogin());
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error enabling user "+user.getLogin(), ex);
+		}
+	}
+
+	/**
+	 * Decrypts in memory the individual token used for Kibana access
+	 */
+	public String decryptKibanaToken(String encrypted_kibana_token) {
+		if (encrypted_kibana_token==null || encrypted_kibana_token.trim().length()==0)
+			return null;
+    	String kibana_token = keystoreService.decrypt(encrypted_kibana_token);
+    	return kibana_token;
+	}
+	
+	/**
+	 * Returns indication that security module is enabled at ElasticSearch and user access is required for Kibana access
+	 */
+	public boolean hasUserControlForKibanaAccess() {
+		String es_username = env.getProperty("es.user");
+		return (es_username!=null && es_username.trim().length()>0);
+	}
+
 }

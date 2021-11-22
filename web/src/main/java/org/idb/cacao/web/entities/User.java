@@ -136,6 +136,23 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@AFieldDescriptor(externalName = "user.token")
 	private String apiToken;
 	
+	/**
+	 * Token granting access to the Kibana User Interface. It's actually a randomly
+	 * generated password created at the Kibana user management internal space and
+	 * assigned automatically to this user.
+	 */
+	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "user.kibana.token")
+	private String kibanaToken;
+
+	/**
+	 * The name (id) of the internal Kibana Space created for this user (his private space
+	 * at Kibana interface)
+	 */
+	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "user.kibana.space")
+	private String kibanaSpace;
+
 	@Field(type=Keyword)
 	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxpayerId;
@@ -244,6 +261,40 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	 */
 	public void setApiToken(String apiToken) {
 		this.apiToken = apiToken;
+	}
+
+	/**
+	 * Token granting access to the Kibana User Interface. It's actually a randomly
+	 * generated password created at the Kibana user management internal space and
+	 * assigned automatically to this user.
+	 */
+	public String getKibanaToken() {
+		return kibanaToken;
+	}
+
+	/**
+	 * Token granting access to the Kibana User Interface. It's actually a randomly
+	 * generated password created at the Kibana user management internal space and
+	 * assigned automatically to this user.
+	 */
+	public void setKibanaToken(String kibanaToken) {
+		this.kibanaToken = kibanaToken;
+	}
+
+	/**
+	 * The name (id) of the internal Kibana Space created for this user (his private space
+	 * at Kibana interface)
+	 */
+	public String getKibanaSpace() {
+		return kibanaSpace;
+	}
+
+	/**
+	 * The name (id) of the internal Kibana Space created for this user (his private space
+	 * at Kibana interface)
+	 */
+	public void setKibanaSpace(String kibanaSpace) {
+		this.kibanaSpace = kibanaSpace;
 	}
 
 	public String getTaxpayerId() {

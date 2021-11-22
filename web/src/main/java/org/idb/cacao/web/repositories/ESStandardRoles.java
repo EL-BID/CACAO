@@ -78,6 +78,10 @@ public enum ESStandardRoles {
 		return privileges;
 	}
 	
+	public boolean hasDashboardPrivilege() {
+		return privileges!=null && privileges.stream().anyMatch(p->p.startsWith("feature_dashboard"));
+	}
+
 	public Collection<String> getAllIndicesPrivileges() {
 		return allIndicesPrivileges;
 	}
@@ -96,6 +100,15 @@ public enum ESStandardRoles {
 		return userProfiles.contains(profile);
 	}
 	
+	public boolean matchResource(String space) {
+		if (resources==null || resources.isEmpty())
+			return false;
+		String resource = (space==null || space.trim().length()==0) ? "space:default"
+				: (space.startsWith("space:")) ? space
+						: "space:"+space;
+		return resources.stream().anyMatch(r->String.CASE_INSENSITIVE_ORDER.compare(r,resource)==0);
+	}
+
 	public static Set<ESStandardRoles> getStandardRoles(UserProfile profile) {
 		if (profile==null)
 			return Collections.emptySet();
