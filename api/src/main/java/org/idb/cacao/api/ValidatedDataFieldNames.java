@@ -32,12 +32,12 @@ public enum ValidatedDataFieldNames {
 	 * Unique identification of the uploaded file. Must match the same information stored
 	 * in {@link DocumentUploaded#getFileId() fileId}.
 	 */
-	FILE_ID("_file_id"),
+	FILE_ID("FILE_ID"),
 	
 	/**
 	 * Date/time the validation phase finished
 	 */
-	TIMESTAMP("_timestamp");
+	TIMESTAMP("TIMESTAMP");
 	
 	/**
 	 * Internal field name to be stored in ElasticSearch

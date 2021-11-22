@@ -31,31 +31,31 @@ public enum PublishedDataFieldNames {
 	/**
 	 * Date/time the ETL phase started
 	 */
-	TIMESTAMP("_timestamp"),
+	TIMESTAMP("timestamp"),
 
 	/**
 	 * TaxPayer ID. Must match the same information stored
 	 * in {@link DocumentUploaded#getTaxPayerId() taxPayerId}.
 	 */
-	TAXPAYER_ID("_taxpayer_id"),
+	TAXPAYER_ID("taxpayer_id"),
 	
 	/**
 	 * Tax period number. Must match the same information stored
 	 * in {@link DocumentUploaded#getTaxPeriodNumber() taxPeriodNumber}.
 	 */
-	TAXPERIOD_NUMBER("_tax_period_number"),
+	TAXPERIOD_NUMBER("taxperiod_number"),
 	
 	/**
 	 * Template name. Must match the same information stored
 	 * in {@link DocumentUploaded#getTemplateName() templateName}.
 	 */
-	TEMPLATE_NAME("_template_name"),
+	TEMPLATE_NAME("template_name"),
 
 	/**
 	 * Template version. Must match the same information stored
 	 * in {@link DocumentUploaded#getTemplateVersion() templateVersion}.
 	 */
-	TEMPLATE_VERSION("_template_version");
+	TEMPLATE_VERSION("template_version");
 
 	/**
 	 * Internal field name to be stored in ElasticSearch
