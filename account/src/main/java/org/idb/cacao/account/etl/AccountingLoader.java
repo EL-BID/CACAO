@@ -19,9 +19,11 @@
  *******************************************************************************/
 package org.idb.cacao.account.etl;
 
+import java.time.LocalDate;
 import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.format.TextStyle;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -298,6 +300,20 @@ public class AccountingLoader {
 	 * The field name for the debited account code for Daily Accounting Flow
 	 */
 	private static final String debitedAccount = IndexNamesUtils.formatFieldName(AccountingFieldNames.DebitedAccount.name());
+	
+	/**
+	 * Fields names that are used for keeping track of source of data
+	 */
+	public static final Set<String> TRACKING_FIELDS = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+	static {
+		Arrays.stream(ValidatedDataFieldNames.values()).map(Object::toString).forEach(TRACKING_FIELDS::add);
+		Arrays.stream(ValidatedDataFieldNames.values()).map(Enum::name).forEach(TRACKING_FIELDS::add);
+		Arrays.stream(ValidatedDataFieldNames.values()).map(e->IndexNamesUtils.formatFieldName(e.name())).forEach(TRACKING_FIELDS::add);
+
+		Arrays.stream(PublishedDataFieldNames.values()).map(Object::toString).forEach(TRACKING_FIELDS::add);
+		Arrays.stream(PublishedDataFieldNames.values()).map(Enum::name).forEach(TRACKING_FIELDS::add);
+		Arrays.stream(PublishedDataFieldNames.values()).map(e->IndexNamesUtils.formatFieldName(e.name())).forEach(TRACKING_FIELDS::add);
+	}
 
 	/**
 	 * Comparator of Document Templates that gives precedence to the most recent (according to date of creation)
@@ -369,7 +385,8 @@ public class AccountingLoader {
 					else {
 						try {
 							Optional<Map<String,Object>> accountInfo = repository.getValidatedData(coa.getTemplateName(), coa.getTemplateVersion(), coa.getFileId(), fieldName, accountCode)
-									.map(IndexNamesUtils::normalizeAllKeysForES);
+									.map(IndexNamesUtils::normalizeAllKeysForES)
+									.map(AccountingLoader::removeControlFields);
 							if (accountInfo.isPresent() && category_domain_table.isPresent()) {
 								String category = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())));
 								if (category!=null) {
@@ -425,7 +442,9 @@ public class AccountingLoader {
 						return Optional.empty();
 					else {
 						try {
-							return repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), fieldName, accountCode).map(IndexNamesUtils::normalizeAllKeysForES);
+							return repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), fieldName, accountCode)
+									.map(IndexNamesUtils::normalizeAllKeysForES)
+									.map(AccountingLoader::removeControlFields);
 						}
 						catch (Throwable ex) {
 							return Optional.empty();
@@ -710,7 +729,7 @@ public class AccountingLoader {
 							normalizedRecord_GL.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
 						}
 					}
-					normalizedRecord_GL.put(publishedTimestamp, timestamp);
+					normalizedRecord_GL.put("doc_"+publishedTimestamp, timestamp);
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
 					normalizedRecord_GL.put(publishedTemplateName, gl.getTemplateName());
@@ -832,7 +851,8 @@ public class AccountingLoader {
 				final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(account);
 				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
-				normalizedRecord_BS.put(publishedTimestamp, timestamp);
+				normalizedRecord_BS.put("doc_"+publishedTimestamp, timestamp);
+				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, monthNumber, 1));
 				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
 				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
 				normalizedRecord_BS.put(publishedTemplateName, gl.getTemplateName());
@@ -968,7 +988,8 @@ public class AccountingLoader {
 				final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(account);
 				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
-				normalizedRecord_BS.put(publishedTimestamp, timestamp);
+				normalizedRecord_BS.put("doc_"+publishedTimestamp, timestamp);
+				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, month, 1));
 				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
 				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
 				normalizedRecord_BS.put(publishedTemplateName, gl.getTemplateName());
@@ -1033,7 +1054,7 @@ public class AccountingLoader {
 		final Optional<Map<String,Object>> accountCreditedInfo = (flow.hasCreditedManyAccountCodes()) ? Optional.empty() : lookupChartOfAccounts.getUnchecked(flow.getCreditedAccountCode());
 		String rowId_DAF = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInAccountingFlows.incrementAndGet());
 		Map<String,Object> normalizedRecord_DAF = new HashMap<>();
-		normalizedRecord_DAF.put(publishedTimestamp, timestamp);
+		normalizedRecord_DAF.put("doc_"+publishedTimestamp, timestamp);
 		normalizedRecord_DAF.put(publishedTaxpayerId, taxPayerId);
 		normalizedRecord_DAF.put(publishedtaxPeriodNumber, taxPeriodNumber);
 		normalizedRecord_DAF.put(publishedTemplateName, gl.getTemplateName());
@@ -1066,6 +1087,17 @@ public class AccountingLoader {
 			/*keyMapper*/e->prefix+e.getKey(), 
 			/*valueMapper*/Map.Entry::getValue, 
 			/*mergeFunction*/(a,b)->a));
+	}
+	
+	/**
+	 * Removes from the map any 'control fields' (e.g: 'timestamp', 'FILE_ID', etc.)
+	 */
+	public static Map<String, Object> removeControlFields(Map<String, Object> map) {
+		return map.entrySet().stream().filter(e->!TRACKING_FIELDS.contains(e.getKey()))
+			.collect(Collectors.toMap(
+				/*keyMapper*/Map.Entry::getKey, 
+				/*valueMapper*/Map.Entry::getValue, 
+				/*mergeFunction*/(a,b)->a));
 	}
 
 	/**
