@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -26,12 +27,17 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.DomainLanguage;
+import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
+import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.repositories.DomainTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -63,6 +69,9 @@ public class DomainTableService {
 	
 	@Autowired
 	private DomainTableRepository domainTableRepository;
+
+	@Autowired
+	private RestHighLevelClient elasticsearchClient;
 
 	/**
 	 * Returns all the 'provided languages' (i.e. languages defined in 'DomainLanguage' for which we
@@ -232,5 +241,37 @@ public class DomainTableService {
 		}
 		
 		return count;
+	}
+	
+	/**
+	 * Returns the names of all domain tables ignoring their versions
+	 */
+	public Set<String> getDomainTablesNames() {
+		
+		try (Stream<DomainTable> stream = ScrollUtils.findAll(domainTableRepository, elasticsearchClient, 1)) {
+			return stream.map(DomainTable::getName).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+		}
+		catch (Throwable ex) {
+			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
+				return Collections.emptySet();
+			else
+				throw ex;
+		}
+		
+	}
+	
+	/**
+	 * Returns the versions for a given domain table
+	 */
+	public Set<String> getDomainTablesVersions(String name) {
+		try {
+			return domainTableRepository.findByNameIgnoreCase(name).stream().map(DomainTable::getVersion).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+		}
+		catch (Throwable ex) {
+			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
+				return Collections.emptySet();
+			else
+				throw ex;			
+		}
 	}
 }
