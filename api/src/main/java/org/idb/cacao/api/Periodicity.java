@@ -121,6 +121,55 @@ public enum Periodicity {
 		}
 	}
 
+	/**
+	 * Given a periodicity and a period number, returns the minimum month number in this period. Returns 0 if unknown.
+	 */
+	public static int getMinMonthNumber(Number periodNumber, Periodicity periodicity) {
+		if (periodNumber==null)
+			return 0;
+		if (periodicity==null || Periodicity.UNKNOWN.equals(periodicity))
+			periodicity = getPeriodicity(periodNumber);
+		switch (periodicity) {
+		case MONTHLY: {
+			final int month = periodNumber.intValue()%100;
+			return month;
+		}
+		case SEMIANNUALLY: {
+			final int semester = periodNumber.intValue()%10;
+			return (semester==1) ? 1 : (semester==2) ? 7 : 0;
+		}
+		case YEARLY: {
+			return 1;
+		}
+		default:
+			return 0;
+		}
+	}
+
+	/**
+	 * Given a periodicity and a period number, returns the maximum month number in this period. Returns 0 if unknown.
+	 */
+	public static int getMaxMonthNumber(Number periodNumber, Periodicity periodicity) {
+		if (periodNumber==null)
+			return 0;
+		if (periodicity==null || Periodicity.UNKNOWN.equals(periodicity))
+			periodicity = getPeriodicity(periodNumber);
+		switch (periodicity) {
+		case MONTHLY: {
+			final int month = periodNumber.intValue()%100;
+			return month;
+		}
+		case SEMIANNUALLY: {
+			final int semester = periodNumber.intValue()%10;
+			return (semester==1) ? 6 : (semester==2) ? 12 : 0;
+		}
+		case YEARLY: {
+			return 12;
+		}
+		default:
+			return 0;
+		}
+	}
 
 	/**
 	 * Given a period number (usually in the form 'YYYYMM') return the periodicity enumeration constant (e.g. will return MONTHLY for

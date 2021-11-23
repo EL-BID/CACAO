@@ -24,6 +24,7 @@ import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
+import org.idb.cacao.etl.loader.GenericDataPublisher;
 import org.idb.cacao.etl.loader.PublishedDataLoader;
 import org.idb.cacao.etl.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.etl.repositories.DocumentTemplateRepository;
@@ -173,13 +174,33 @@ public class FileValidatedConsumerService {
 
 			if (should_perform_general_etl) {
 				
-				// TODO: should fall back to a default ETL behaviour in case there is no archetype for this job
+				// Fall back to a default ETL behavior in case there is no archetype for this job
 				// For example, should generated denormalized view of parsed contents, expanding all references
 				// to domain tables and expanding taxpayers records
 				
-				// TODO: Should delete previous published GENERIC data
-	
-				setSituation(doc, DocumentSituation.PROCESSED);
+				boolean ok = GenericDataPublisher.performETL(etlContext);
+				if (!ok) {
+					
+					log.log(Level.SEVERE, "The ETL of "
+							+ documentId + " failed to generate a denormalized view of the validated data. Please check document error messagens for details.");
+				}
+
+				if (ok && !etlContext.hasOutcomeSituations()) {
+					// If it was successful but there was no outcome situation produced by the 'performETL' method, then we will consider 'fulfilled'
+					setSituation(doc, DocumentSituation.PROCESSED);
+				}
+				else if (!ok && !etlContext.hasOutcomeSituations()) {
+					// If there was an error and there was no outcome situation produced by the 'performETL' method, then we will consider 'pending'
+					// For example, the system administration may have missed some required configuration. The file may be still valid, but it's impossible
+					// to proceed.
+					setSituation(doc, DocumentSituation.PENDING);
+				}
+				else {
+					// In case of error or in case of success, write the outcome status
+					for (Map.Entry<DocumentUploaded, DocumentSituation> entry: etlContext.getOutcomeSituations().entrySet()) {
+						setSituation(entry.getKey(), entry.getValue());
+					}
+				}
 				
 			}
 			

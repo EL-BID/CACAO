@@ -175,6 +175,8 @@ public class AccountingLoaderTests {
 		boolean result = AccountingLoader.performETL(etlContext);
 		assertTrue(result);
 		
+		// Verifies the published General Ledger
+		
 		assertEquals(2, inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER).size());
 		
 		// Check direct fields from original Ledger 'file'
@@ -196,6 +198,62 @@ public class AccountingLoaderTests {
 		assertEquals(ASSET_CASH.toString(), record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountSubcategoryName.name())));
 		assertEquals(9900.0, record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name())));
 		assertEquals("D", record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.BalanceDebitCredit.name())));
+
+		
+		// Verifies the published Monthly Balance Sheets
+
+		assertEquals(3 * 12, inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).size(), 
+				"There should be 12 monthly balance sheets for three accounts: 12 for each account referenced in General Ledger (two accounts) and 12 more for an additional account in Opening Balance that remained unchanged");
+		
+		List<Map<String,Object>> balance_sheets_cash =
+		inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).stream()
+			.filter(sheet->"1.00.00".equals(sheet.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name()))))
+			.collect(Collectors.toList());
+		assertEquals(12, balance_sheets_cash.size());
+		assertEquals(10_000.0, balance_sheets_cash.get(0).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
+		assertEquals(9_900.0, balance_sheets_cash.get(0).get(IndexNamesUtils.formatFieldName(AccountingLoader.AccountingFieldNames.FinalBalance.name())));
+		for (int i=1; i<12; i++) {
+			assertEquals(9_900.0, balance_sheets_cash.get(i).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
+			assertEquals(9_900.0, balance_sheets_cash.get(i).get(IndexNamesUtils.formatFieldName(AccountingLoader.AccountingFieldNames.FinalBalance.name())));			
+		}
+
+		List<Map<String,Object>> balance_sheets_inventory =
+		inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).stream()
+			.filter(sheet->"1.10.00".equals(sheet.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name()))))
+			.collect(Collectors.toList());
+		assertEquals(12, balance_sheets_inventory.size());
+		assertEquals(0.0, balance_sheets_inventory.get(0).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
+		assertEquals(100.0, balance_sheets_inventory.get(0).get(IndexNamesUtils.formatFieldName(AccountingLoader.AccountingFieldNames.FinalBalance.name())));
+		for (int i=1; i<12; i++) {
+			assertEquals(100.0, balance_sheets_inventory.get(i).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
+			assertEquals(100.0, balance_sheets_inventory.get(i).get(IndexNamesUtils.formatFieldName(AccountingLoader.AccountingFieldNames.FinalBalance.name())));			
+		}
+		
+		List<Map<String,Object>> balance_sheets_equity =
+		inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).stream()
+			.filter(sheet->"3.00.00".equals(sheet.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name()))))
+			.collect(Collectors.toList());
+		assertEquals(12, balance_sheets_equity.size());
+		for (int i=0; i<12; i++) {
+			assertEquals(10_000.0, balance_sheets_equity.get(i).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
+			assertEquals(10_000.0, balance_sheets_equity.get(i).get(IndexNamesUtils.formatFieldName(AccountingLoader.AccountingFieldNames.FinalBalance.name())));			
+		}
+
+		// Verifies the published Daily Accounting Flows
+
+		assertEquals(1, inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_ACCOUNTING_FLOW).size(), 
+				"There should be one accounting flow regarding the pair of bookeeping entries");
+
+		Map<String,Object> flow_record = inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_ACCOUNTING_FLOW).get(0);
+		assertEquals("1.10.00", flow_record.get("debited_account"));
+		assertEquals(ASSET.getIfrsNumber(), flow_record.get("debited_account_category"));
+		assertEquals("account.category.asset", flow_record.get("debited_account_category_name"));
+		assertEquals(ASSET_INVENTORY.getIfrsNumber(), flow_record.get("debited_account_subcategory"));
+		
+		assertEquals("1.00.00", flow_record.get("credited_account"));
+		assertEquals(ASSET.getIfrsNumber(), flow_record.get("credited_account_category"));
+		assertEquals("account.category.asset", flow_record.get("credited_account_category_name"));
+		assertEquals(ASSET_CASH.getIfrsNumber(), flow_record.get("credited_account_subcategory"));
 	}
 	
 	/**

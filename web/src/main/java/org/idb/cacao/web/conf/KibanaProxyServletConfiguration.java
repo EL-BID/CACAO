@@ -170,6 +170,10 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 			this.checkedUserStatusMap = new ConcurrentHashMap<>();
 			this.sslVerifyHost = !"false".equalsIgnoreCase(propertyResolver.getProperty("es.ssl.verifyhost"));
 			this.userService = app.getBean(UserService.class);
+			if (isJUnitTest()) {
+				log.log(Level.INFO, "Skipping KibanaProxy initialization because it's running in a JUnit test case");
+				return;
+			}
 			String es_username = propertyResolver.getProperty("es.user");
 			ElasticSearchService service = app.getBean(ElasticSearchService.class);
 			try {
@@ -361,5 +365,16 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 		}
 	}
 
-	
+	/**
+	 * Check if it's running inside JUnit test
+	 */
+	public static boolean isJUnitTest() {  
+	  for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+	    if (element.getClassName().startsWith("org.junit.")) {
+	      return true;
+	    }           
+	  }
+	  return false;
+	}
+
 }
