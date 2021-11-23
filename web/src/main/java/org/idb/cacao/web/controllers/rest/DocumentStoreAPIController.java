@@ -827,6 +827,8 @@ public class DocumentStoreAPIController {
     	}		
 
 		Optional<AdvancedSearch> filters = Optional.of(new AdvancedSearch().clone().withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)));
+		Optional<String> sortField = Optional.of("changedTime");
+		Optional<SortOrder> direction = Optional.of(SortOrder.DESC);
 		
 		Page<DocumentSituationHistory> situations;
 		
@@ -837,13 +839,12 @@ public class DocumentStoreAPIController {
 			else if (filterTaxpayersIds==null)
 				situations = SearchUtils.doSearch(filters.get(), 
 						DocumentSituationHistory.class, elasticsearchClient, 
-						Optional.ofNullable(null)/*page*/, Optional.ofNullable(null)/*size*/, 
-						Optional.ofNullable(null)/*sortField*/, Optional.ofNullable(null) /*direction*/);
+						Optional.ofNullable(null)/*page*/, Optional.ofNullable(null)/*size*/, sortField, direction);
 			else
 				situations = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()).clone()
 						.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds)), 
 						DocumentSituationHistory.class, elasticsearchClient, Optional.ofNullable(null)/*page*/, 
-						Optional.ofNullable(null)/*size*/, Optional.ofNullable(null)/*sortField*/, Optional.ofNullable(null) /*direction*/);			
+						Optional.ofNullable(null)/*size*/, sortField, direction);			
 			
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);

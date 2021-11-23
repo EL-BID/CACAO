@@ -49,7 +49,7 @@ var app = new Vue({
 		var documentId = /*[[${documentId}]]*/ null;
 		
 		this.table = new Tabulator('#table', {
-			index: "timestamp",
+			index: "id",
 			layout:"fitDataFill",		
 		    pagination: false,
 			ajaxURL: /*[[@{/api/doc/situations}]]*/ "/api/doc/situations", //set url for ajax request
