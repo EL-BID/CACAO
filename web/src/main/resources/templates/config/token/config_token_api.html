@@ -1,0 +1,148 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="code icon"></i>
+			<div class="content" th:text="#{config.token.api}">Configure Token API</div>
+		</h2>
+		<div class="ui middle aligned center aligned container">
+			<div class="ui middle aligned center aligned grid container">
+				<div class="ui orange fluid segment">
+					<form action="#" th:object="${user}" method="post">
+						<div class="ui positive message left aligned container" th:utext="#{config.token.api.help}">Some explanation about this token</div>
+						<div class="ui warning message warn_no_token" th:text="#{config.token.api.none}">No Token defined!</div>
+						<div class="row">
+							<div class="ui form">
+								<label for="apiToken" th:text="#{user.token.api}">User Token</label>
+								<!-- /* The 'apiToken' of 'User' is encrypted */ -->
+								<input type="text" th:value="${user.apiToken==null?'':'****************************'}" id="apiToken" readonly>
+							</div>
+						</div>
+						<br>
+						<div class="row">
+							<div class="ui green button" id="view_btn" th:text="#{config.token.api.view}">View</div>
+							<div class="ui blue submit button" id="generate_btn" th:text="#{config.token.api.generate}">Generate</div>
+							<div class="ui red button" id="delete_btn" th:text="#{config.token.api.delete}">Delete</div>
+							<div class="ui button" id="back_btn" th:text="#{back}">Back</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+if (!$('#apiToken').val()) {
+	$('.warn_no_token').show()
+}
+$('#view_btn').click(function(){
+	if (!$('#apiToken').val()) {
+		$('#modal_failed').find('.description').html([[#{config.token.api.nothing.to.show}]])
+		$('#modal_failed').modal('show')		
+	}
+	else {
+		 $.ajax({
+			    url: [[@{/api/token_api}]],
+			    type: 'GET',
+			    dataType: 'json',
+			    contentType: 'application/json',
+			    cache: false,    
+				success: function(result) {
+					if (result.token) {
+						$('#apiToken').val(result.token) // decrypted token (user must see in order to configure his own app)
+						$('.warn_no_token').hide();
+					}
+					else {
+						$('#apiToken').val('');
+						$('.warn_no_token').show();
+					}
+				},
+				error: function(e) {
+					var msg = e.responseText.replace(/\n/g, "<br />");
+					$('#modal_failed').find('.description').html(msg)
+					$('#modal_failed').modal('show')
+					console.log("ERROR : "+ msg);
+				}
+			});			 		
+	}
+})
+$('#generate_btn').click(function(){
+	  var dlg = $('#modal_confirm')
+	  dlg.find('.description').html([[#{config.token.api.confirm}]])
+	  dlg.modal({
+		  closable:false,
+		  onApprove: function(){			  
+			 $.ajax({
+				    url: [[@{/api/token_api}]],
+				    type: 'PUT',
+				    dataType: 'json',
+				    contentType: 'application/json',
+				    cache: false,    
+					success: function(result) {
+						$('#apiToken').val(result.token) // decrypted token (user must see in order to configure his own app)
+						$('.warn_no_token').hide();
+						$('#modal_successful').modal('show')
+						setTimeout(function(){
+							$('#modal_successful').modal('hide')
+						}, 2000);
+					},
+					error: function(e) {
+						var msg = e.responseText.replace(/\n/g, "<br />");
+						$('#modal_failed').find('.description').html(msg)
+						$('#modal_failed').modal('show')
+						console.log("ERROR : "+ msg);
+					}
+				});			 
+		  }
+	  });
+	  dlg.modal('show');
+})
+$('#delete_btn').click(function(){
+	  var dlg = $('#modal_confirm')
+	  dlg.find('.description').html([[#{config.token.api.confirm.delete}]])
+	  dlg.modal({
+		  closable:false,
+		  onApprove: function(){			  
+			 $.ajax({
+				    url: [[@{/api/token_api}]],
+				    type: 'DELETE',
+				    dataType: 'json',
+				    contentType: 'application/json',
+				    cache: false,    
+					success: function(result) {
+						$('#apiToken').val('') 
+						$('.warn_no_token').show();
+						$('#modal_successful').modal('show')
+						setTimeout(function(){
+							$('#modal_successful').modal('hide')
+						}, 2000);
+					},
+					error: function(e) {
+						var msg = e.responseText.replace(/\n/g, "<br />");
+						$('#modal_failed').find('.description').html(msg)
+						$('#modal_failed').modal('show')
+						console.log("ERROR : "+ msg);
+					}
+				});			 
+		  }
+	  });
+	  dlg.modal('show');	
+})
+$('#back_btn').click(function(){
+	window.history.back();
+})
+</script>
+</body>
+</html>
