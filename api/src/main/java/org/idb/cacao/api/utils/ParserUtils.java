@@ -19,17 +19,22 @@
  *******************************************************************************/
 package org.idb.cacao.api.utils;
 
+import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.idb.cacao.api.DomainLanguage;
 import org.idb.cacao.api.Periodicity;
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -55,6 +60,10 @@ public class ParserUtils {
     public static final Pattern pDMY = Pattern.compile("^(?>[0-2]\\d|30|31|\\d)[/\\-](?>0\\d|10|11|12|\\d)[/\\-]20\\d{2}$");
     public static final Pattern pMDY = Pattern.compile("^(?>0\\d|10|11|12|\\d)[/\\-](?>[0-2]\\d|30|31|\\d)[/\\-]20\\d{2}$");
     public static final Pattern pYMD = Pattern.compile("^(?>20\\d{2})[/\\-](?>0\\d|10|11|12|\\d)[/\\-](?>[0-2]\\d|30|31|\\d)$");
+    public static final Pattern pMY = Pattern.compile("^(?>0\\d|10|11|12|\\d)[/\\-]20\\d{2}$"); //E.g.: MM/yyyy OR MM-yyyy    
+    public static final Pattern pYM = Pattern.compile("^(?>20\\d{2})[/\\-](?>0\\d|10|11|12|\\d)$"); //E.g.: yyyy/MM OR yyyy-MM
+    public static final Pattern pMonthYear = Pattern.compile("^([A-Za-z.\\xA8-\\xFE]{3,12})[\\/-](20\\d{2})$"); //E.g.: MARCH/yyyy OR MAR-yyyy
+    public static final Pattern pYearMonth = Pattern.compile("^(20\\d{2})[\\\\/-]([A-Za-z.\\xA8-\\xFE]{3,12})$"); //E.g.: yyyy/MARCH OR yyyy-MAR
     
     /**
      * Maximum length for a field name to be considered as 'proper field name'
@@ -222,6 +231,22 @@ public class ParserUtils {
     public static boolean isYMD(String value) {
     	return value!=null && pYMD.matcher(value).find();
     }
+    
+    public static boolean isYM(String value) {
+    	return value!=null && pYM.matcher(value).find();
+    }
+    
+    public static boolean isMY(String value) {
+    	return value!=null && pMY.matcher(value).find();
+    }
+    
+    public static boolean isMonthYear(String value) {
+    	return value!=null && pMonthYear.matcher(value).find();
+    }    
+    
+    public static boolean isYearMonth(String value) {
+    	return value!=null && pYearMonth.matcher(value).find();
+    }    
 
     public static boolean isDecimalWithComma(String value) {
     	return value!=null && pDecimalWithComma.matcher(value).find();
@@ -432,6 +457,92 @@ public class ParserUtils {
 		catch (Throwable ex) {
 			return null;
 		}
+	}
+	
+	/**
+	 * Parse a month in format MONTH_NAME/YEAR OU YEAR/MONTH_NAME and returns
+	 * a month in format yyyy-MM
+	 * @param value	A month name and year
+	 * @return	A year/month value
+	 */
+	public static String getYearMonth(String value) {
+		
+		if ( value == null || value.isEmpty() )
+			return null;
+		
+		String year = null;
+		String monthName = null;
+		
+		if ( isMonthYear(value) ) {
+			Matcher m = pMonthYear.matcher(value);
+			if ( m.find() ) {
+				year = m.group(2);
+				monthName = m.group(1);
+			}
+		}
+		else if ( isYearMonth(value) ) {
+			Matcher m = pYearMonth.matcher(value);
+			if ( m.find() ) {
+				year = m.group(1);
+				monthName = m.group(2);
+			}
+		}
+			
+		if ( year == null || monthName == null )
+			return null;
+	
+		Integer monthValue = parseMonth(monthName);
+		
+		if ( monthValue == null )
+			return null;
+		
+		System.out.println("IN: " + value);
+		System.out.println("OUT: " + year + "-" + String.format("%02d", monthValue.intValue()) ); 
+		return year + "-" + String.format("%02d", monthValue.intValue()); 
+	}
+	
+	/**
+	 * Parse a month by month name
+	 * @param monthName	Month name to be parsed
+	 * @return	Number oy year month, like JANUAY = 1. Null if month name is not provided or if it's not a valid month name.
+	 */
+	public static Integer parseMonth(String monthName) {
+		
+		if ( monthName == null || monthName.isEmpty() )
+			return null;
+
+		//Transform month name to upper case
+		monthName = monthName.toUpperCase().replace(".", "");
+				
+		//Try all defined languages
+		for ( DomainLanguage domain : DomainLanguage.values() ) {
+		
+			//Default symbols for specific language
+			DateFormatSymbols dfs = new DateFormatSymbols(domain.getDefaultLocale());
+			
+			//Get a list of short month names
+			List<String> shortMonths = new ArrayList<>(12); 
+			Arrays.asList(dfs.getShortMonths()).forEach(m->shortMonths.add(m.toUpperCase().replace(".", "")));
+			//System.out.println(shortMonths);
+			
+			//Try against short month names
+			if ( shortMonths.contains(monthName) ) {
+				return shortMonths.indexOf(monthName) + 1;
+			}
+			
+			//Get a list of month full names
+	        List<String> months = new ArrayList<>(12);
+	        Arrays.asList(dfs.getMonths()).forEach(m->months.add(m.toUpperCase()));
+	        
+	        //Try against month ful names
+	        if ( months.contains(monthName) ) {
+				return months.indexOf(monthName) + 1;
+			}
+	        
+		}
+		
+		return null;
+		
 	}
 
 	public static String formatDecimal(double decimal) {

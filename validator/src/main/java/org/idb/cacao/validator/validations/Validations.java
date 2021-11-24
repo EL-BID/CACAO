@@ -9,11 +9,13 @@ import static org.idb.cacao.api.utils.ParserUtils.isDecimal;
 import static org.idb.cacao.api.utils.ParserUtils.isDecimalWithComma;
 import static org.idb.cacao.api.utils.ParserUtils.isInteger;
 import static org.idb.cacao.api.utils.ParserUtils.isMDY;
+import static org.idb.cacao.api.utils.ParserUtils.isMY;
+import static org.idb.cacao.api.utils.ParserUtils.isYM;
 import static org.idb.cacao.api.utils.ParserUtils.isOnlyNumbers;
 import static org.idb.cacao.api.utils.ParserUtils.isYMD;
 import static org.idb.cacao.api.utils.ParserUtils.parseDMY;
 import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
-import static org.idb.cacao.api.utils.ParserUtils.parseYMD;
+import static org.idb.cacao.api.utils.ParserUtils.*;
 
 import java.time.OffsetDateTime;
 import java.util.Date;
@@ -32,6 +34,7 @@ import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.utils.ParserUtils;
+import org.idb.cacao.api.utils.StringUtils;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -247,14 +250,16 @@ public class Validations {
 		if (fieldValue == null)
 			return null;
 
-		if (fieldValue instanceof Number || fieldValue.getClass().isAssignableFrom(long.class) 
-				|| fieldValue.getClass().isAssignableFrom(long.class) )
+		if ( fieldValue instanceof Date || fieldValue instanceof OffsetDateTime )
 			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
 
 		if (isOnlyNumbers(value))
-			return Long.parseLong(value);
+			return new Date(Long.parseLong(value));
+		
+		if ( isTimestamp(value) )
+			return parseTimestamp(value);
 
 		// TODO check other situations
 		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
@@ -269,8 +274,38 @@ public class Validations {
 	 * @return Validated and transformed field value
 	 */
 	private Object checkMonthValue(String fieldName, Object fieldValue) {
-		// TODO Auto-generated method stub
-		return fieldValue;
+
+		if (fieldValue == null)
+			return null;		
+		
+		if ( fieldValue instanceof Date ) {
+			return StringUtils.formatMonth((Date)fieldValue);
+		}
+		
+		if ( fieldValue instanceof OffsetDateTime ) {
+			return StringUtils.formatMonth((OffsetDateTime)fieldValue);
+		}
+		
+		String value = ValidationContext.toString(fieldValue);
+		
+		if ( isMY(value) ) {			
+			return value.substring(3) + "-" + value.substring(0,2);
+		}
+		
+		if ( isYM(value) ) {
+			return value.replace('/', '-').replace('\\', '-');
+		}
+		
+		if ( isMonthYear(value) || isYearMonth(value) ) {
+			
+			String toRet = getYearMonth(value);
+			if ( toRet != null )
+				return toRet;
+		}		
+		
+		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		return value;		
+		
 	}
 
 	/**

@@ -17,19 +17,20 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.utils;
+package org.idb.cacao.api.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.idb.cacao.api.utils.ParserUtils;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -69,6 +70,30 @@ public class StringUtils {
 		}
     	
     };
+    
+    /**
+     * Month format as in yyyy/MM
+     */
+    private static final ThreadLocal<SimpleDateFormat> tlDateFormatMonth = new ThreadLocal<SimpleDateFormat>() {
+
+		@Override
+		protected SimpleDateFormat initialValue() {
+			return new SimpleDateFormat("yyyy-MM");
+		}
+    	
+    };    
+    
+    /**
+     * Month format as in yyyy/MM
+     */
+    private static final ThreadLocal<DateTimeFormatter> tlDateTimeFormatMonth = new ThreadLocal<DateTimeFormatter>() {
+
+		@Override
+		protected DateTimeFormatter initialValue() {		
+			return DateTimeFormatter.ofPattern("yyyy-MM");
+		}
+    	
+    };    
 
 	/**
 	 * Format dates
@@ -119,7 +144,7 @@ public class StringUtils {
 		protected Pattern initialValue() {
 			return Pattern.compile("^(\\d{4})[/\\\\\\-\\.](\\d{1,2})[/\\\\\\-\\.](\\d{1,2})$");
 		}
-	};
+	};	
 
     /**
      * Return timestamp in a format that conforms to ISO 8601
@@ -128,6 +153,24 @@ public class StringUtils {
 		if (timestamp==null)
 			return null;
 		return tlDateFormat.get().format(timestamp);
+	}
+	
+    /**
+     * Return a month in a format yyyy-MM
+     */	
+	public static String formatMonth(Date date) {
+		if (date==null)
+			return null;
+		return tlDateFormatMonth.get().format(date);	
+	}
+	
+    /**
+     * Return a month in a format yyyy-MM
+     */	
+	public static String formatMonth(OffsetDateTime date) {
+		if (date==null)
+			return null;
+		return date.format(tlDateTimeFormatMonth.get());	
 	}
 
 	/**

@@ -19,6 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
+import static org.idb.cacao.api.utils.StringUtils.*;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
@@ -45,11 +47,11 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.ComponentSystemInformation;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.utils.StringUtils;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.dto.MenuItem;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.HttpUtils;
-import org.idb.cacao.web.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.MessageSource;
@@ -61,8 +63,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import static org.idb.cacao.web.utils.StringUtils.*;
 
 /**
  * Controller class for all endpoints related to user interface regarding 'system information'.

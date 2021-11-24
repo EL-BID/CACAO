@@ -287,6 +287,6 @@ public class ValidationTests {
 			domain.addBuiltInEntry(key, messagePropertyRef);
 		}
 		return domain;
-	}
+	}	
 
 }
