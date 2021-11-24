@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -33,10 +32,8 @@ import java.util.Scanner;
 import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.errors.InvalidFileException;
 import org.idb.cacao.api.templates.DocumentInput;
-import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.validator.utils.JSONUtils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JSONParser implements FileParser {
@@ -85,6 +82,7 @@ public class JSONParser implements FileParser {
 		this.documentInputSpec = inputSpec;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void start() {
 		if ( path == null || !path.toFile().exists() ) {

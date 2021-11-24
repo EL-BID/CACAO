@@ -22,7 +22,6 @@ package org.idb.cacao.etl;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.idb.cacao.etl.controllers.services.FileValidatedConsumerService;
 import org.idb.cacao.etl.controllers.services.ResourceMonitorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -49,9 +48,6 @@ public class Application {
 	@Autowired
 	private ResourceMonitorService resourceMonitorService;
 	
-	@Autowired
-	private FileValidatedConsumerService fileValidatedProcessorService;
-
 	@Autowired
 	private Environment env;
 
