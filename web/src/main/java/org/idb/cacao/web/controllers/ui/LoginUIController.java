@@ -160,6 +160,12 @@ public class LoginUIController {
 			}
 		}
 		
+		if (hasPrivilege(roles, SystemPrivilege.CONFIG_API_TOKEN)) {
+			submenu.withChild(
+					new MenuItem(messages.getMessage("config_token_api", null, LocaleContextHolder.getLocale()),
+							"/config_token_api"));
+		}
+
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			menu.add(
 				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin_shell"));

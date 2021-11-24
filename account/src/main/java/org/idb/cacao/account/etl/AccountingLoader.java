@@ -48,6 +48,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
+import org.idb.cacao.account.elements.BalanceSheet;
 import org.idb.cacao.account.elements.DailyAccountingFlow;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentUploaded;
@@ -1098,97 +1099,5 @@ public class AccountingLoader {
 				/*keyMapper*/Map.Entry::getKey, 
 				/*valueMapper*/Map.Entry::getValue, 
 				/*mergeFunction*/(a,b)->a));
-	}
-
-	/**
-	 * Wraps computed information about balance sheet while iterating over General Ledger entries
-	 * @author Gustavo Figueiredo
-	 */
-	public static class BalanceSheet {
-		
-		/**
-		 * Positive = debit, Negative = credit
-		 */
-		private double initialValue;
-		
-		private double debits;
-		
-		private double credits;
-		
-		private int countEntries;
-
-		/**
-		 * Positive = debit, Negative = credit
-		 */
-		public double getInitialValue() {
-			return initialValue;
-		}
-
-		/**
-		 * Positive = debit, Negative = credit
-		 */
-		public void setInitialValue(double initialValue) {
-			this.initialValue = initialValue;
-		}
-		
-		public boolean isInitialValueDebit() {
-			return initialValue >= 0;
-		}
-
-		public double getDebits() {
-			return debits;
-		}
-
-		public void setDebits(double debits) {
-			this.debits = debits;
-		}
-
-		public double getCredits() {
-			return credits;
-		}
-
-		public void setCredits(double credits) {
-			this.credits = credits;
-		}
-		
-		public void computeEntry(Number amount, boolean isDebit) {
-			if (amount==null)
-				return;
-			if (isDebit)
-				debits += Math.abs(amount.doubleValue());
-			else
-				credits += Math.abs(amount.doubleValue());
-			countEntries++;
-		}
-		
-		/**
-		 * Positive = debit, Negative = credit
-		 */
-		public double getFinalValue() {
-			return initialValue + debits - credits;
-		}
-		
-		public boolean isFinalValueDebit() {
-			return  ( initialValue + debits - credits ) >= 0;
-		}
-
-		public int getCountEntries() {
-			return countEntries;
-		}
-
-		public void setCountEntries(int countEntries) {
-			this.countEntries = countEntries;
-		}
-				
-		/**
-		 * Overwrite the initial balance amount with the final balance amount and reset the total debits and credits.
-		 * Useful for making use of the same object for the 'next period' for monthly balance sheets.
-		 */
-		public void flipBalance() {
-			initialValue = getFinalValue();
-			debits = 0;
-			credits = 0;
-			countEntries = 0;
-		}
 	}
 }

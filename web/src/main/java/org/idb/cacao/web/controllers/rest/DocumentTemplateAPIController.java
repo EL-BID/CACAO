@@ -1,14 +1,18 @@
 package org.idb.cacao.web.controllers.rest;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import javax.validation.Valid;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.entities.User;
@@ -20,8 +24,6 @@ import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -36,6 +38,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -55,6 +60,26 @@ public class DocumentTemplateAPIController {
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 	
+    @GetMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Returns the list of all document templates",response=DocumentTemplate[].class)
+	public ResponseEntity<DocumentTemplate[]> getTemplates() {
+		List<DocumentTemplate> allTemplates = new LinkedList<>();
+		try (Stream<DocumentTemplate> stream = ScrollUtils.findAll(templateRepository, elasticsearchClient, 1);) {
+			stream.forEach(allTemplates::add);
+		}
+		return ResponseEntity.ok(allTemplates.toArray(new DocumentTemplate[0]));
+	}
+
+    @GetMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Returns the template configuration given its internal identification",response=DocumentTemplate.class)
+	public ResponseEntity<Object> getTemplate(@PathVariable("id") String id) {
+		Optional<DocumentTemplate> match = templateRepository.findById(id);
+		if (!match.isPresent())
+        	return ResponseEntity.notFound().build();
+
+		return ResponseEntity.ok(match.get());
+	}
+
 //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
     @PostMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new document template",response=DocumentTemplate.class)
