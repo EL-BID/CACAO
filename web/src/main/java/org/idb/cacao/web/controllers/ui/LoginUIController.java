@@ -162,7 +162,7 @@ public class LoginUIController {
 		
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_API_TOKEN)) {
 			submenu.withChild(
-					new MenuItem(messages.getMessage("config_token_api", null, LocaleContextHolder.getLocale()),
+					new MenuItem(messages.getMessage("config.token.api", null, LocaleContextHolder.getLocale()),
 							"/config_token_api"));
 		}
 
