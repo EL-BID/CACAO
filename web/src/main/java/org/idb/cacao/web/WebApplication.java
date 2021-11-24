@@ -26,6 +26,7 @@ import javax.annotation.PostConstruct;
 
 import org.idb.cacao.web.controllers.services.DomainTableService;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
+import org.idb.cacao.web.controllers.services.KibanaSpacesService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,9 @@ public class WebApplication {
 	
 	@Autowired
 	private DomainTableService domainTableService;	
+	
+	@Autowired
+	private KibanaSpacesService kibanaSpacesService;
 
 	@Autowired
 	private Environment env;
@@ -128,6 +132,15 @@ public class WebApplication {
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
+		
+		try {
+			if (kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0)
+				kibanaSpacesService.syncKibanaIndexPatterns();
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during synchronization of Kibana spaces with ElasticSearch indices", ex);
+		}
+
 	}
 	
 	/**

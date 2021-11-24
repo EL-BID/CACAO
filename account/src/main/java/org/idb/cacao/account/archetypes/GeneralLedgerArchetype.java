@@ -177,4 +177,14 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 		return AccountingLoader.performETL(context);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRelatedPublishedDataIndices()
+	 */
+	@Override
+	public List<String> getRelatedPublishedDataIndices() {
+		return Arrays.asList(AccountingLoader.INDEX_PUBLISHED_ACCOUNTING_FLOW,
+				AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET,
+				AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER);
+	}
 }

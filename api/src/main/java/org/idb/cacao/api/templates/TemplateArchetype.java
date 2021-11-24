@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.api.templates;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.idb.cacao.api.DocumentSituation;
@@ -108,5 +109,12 @@ public interface TemplateArchetype {
 	 */
 	default public boolean performETL(ETLContext context) {
 		return true;
+	}
+	
+	/**
+	 * Returns all the indices related to published (denormalized) data that are derived from this archetype
+	 */
+	default public List<String> getRelatedPublishedDataIndices() {
+		return Collections.emptyList();
 	}
 }

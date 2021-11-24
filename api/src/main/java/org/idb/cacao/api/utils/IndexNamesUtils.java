@@ -22,6 +22,7 @@ package org.idb.cacao.api.utils;
 import java.lang.reflect.Array;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.templates.DocumentTemplate;
@@ -58,7 +60,7 @@ public class IndexNamesUtils {
 	public static String formatIndexNameForValidatedData(DocumentTemplate template) {
 		String name = template.getName()==null || template.getName().trim().length()==0 ? "generic" : template.getName();
 		String version = template.getVersion()==null || template.getVersion().trim().length()==0 ? "0" : template.getVersion();
-		return IndexNamesUtils.formatIndexName("cacao_doc_"+name+"_v_"+version);		
+		return IndexNamesUtils.formatIndexName(VALIDATED_DATA_INDEX_PREFIX+name+"_v_"+version);		
 	}
 
 	/**
@@ -67,16 +69,28 @@ public class IndexNamesUtils {
 	public static String formatIndexNameForValidatedData(String templateName, String templateVersion) {
 		String name = templateName==null || templateName.trim().length()==0 ? "generic" : templateName;
 		String version = templateVersion==null || templateVersion.trim().length()==0 ? "0" : templateVersion;
-		return IndexNamesUtils.formatIndexName("cacao_doc_"+name+"_v_"+version);		
+		return IndexNamesUtils.formatIndexName(VALIDATED_DATA_INDEX_PREFIX+name+"_v_"+version);		
 	}
 	
 	/**
 	 * Returns a proper index name for using in ElasticSearch for published (denormalized) data (output from ETL)
 	 */
 	public static String formatIndexNameForPublishedData(String name) {
-		return IndexNamesUtils.formatIndexName("cacao_pub_"+name);		
+		return IndexNamesUtils.formatIndexName(PUBLISHED_DATA_INDEX_PREFIX+name);		
 	}
 
+	/**
+	 * Given a standard index name of either validated data or published data, returns the name transformed
+	 * in such a way each separate word is capitalized, and the standard index prefix is removed.
+	 */
+	public static String getCapitalizedNameForPublishedData(String indexName) {
+		if (indexName.startsWith("cacao_"))
+			indexName = indexName.substring(6); // removes the prefix 'cacao_'
+		if (indexName.startsWith("doc_")
+			|| indexName.startsWith("pub_"))
+			indexName = indexName.substring(4); // removes the infix 'doc_' or 'pub_'
+		return Arrays.stream(indexName.split("_")).map(StringUtils::capitalize).collect(Collectors.joining(" "));
+	}
 
 	/**
 	 * Get a proper index name for using in ElasticSearch.

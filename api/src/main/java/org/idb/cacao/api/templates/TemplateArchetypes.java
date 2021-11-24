@@ -19,12 +19,14 @@
  *******************************************************************************/
 package org.idb.cacao.api.templates;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -114,5 +116,30 @@ public class TemplateArchetypes {
 		.map(TemplateArchetype::getPluginName)
 		.filter(name->name!=null)
 		.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+	}
+	
+	/**
+	 * Returns the list of all indices names related to published (denormalized data) generated
+	 * by the archetypes.
+	 */
+	public static Set<String> getRelatedPublishedDataIndices(TemplateArchetype... archetypes) {
+		if (archetypes==null)
+			return Collections.emptySet();
+		return Arrays.stream(archetypes)
+			.flatMap(t->t.getRelatedPublishedDataIndices().stream())
+			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+	}
+
+	/**
+	 * Returns the list of all indices names related to published (denormalized data) generated
+	 * by the archetypes.
+	 */
+	public static Set<String> getRelatedPublishedDataIndices(Predicate<String> filter, TemplateArchetype... archetypes) {
+		if (archetypes==null)
+			return Collections.emptySet();
+		return Arrays.stream(archetypes)
+			.flatMap(t->t.getRelatedPublishedDataIndices().stream())
+			.filter(filter)
+			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 	}
 }
