@@ -41,12 +41,9 @@ import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.Metric;
-import org.apache.kafka.common.metrics.KafkaMetric;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.ComponentSystemInformation;
-import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.utils.StringUtils;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.dto.MenuItem;
@@ -334,9 +331,15 @@ public class SystemUIController {
 			try (AdminClient kafkaAdminClient = getKafkaAdminClient();) {
 			
 				Map<String,String> metrics =
-				kafkaAdminClient.metrics().entrySet().stream().collect(Collectors.toMap(e->e.getKey().group()+"."+e.getKey().name(), e->getKafkaMetricDesc(e.getValue())));
+				kafkaAdminClient.metrics().entrySet().stream().collect(Collectors.toMap(e->e.getKey().group()+"."+e.getKey().name(), e->ResourceMonitorService.getKafkaMetricDesc(e.getValue())));
 				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.version")).withActive(false).withChild(metrics.get("app-info.version")));
-				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.requests")).withActive(false).withChild(metrics.get("admin-client-node-metrics.request-total")));
+				
+				String count = metrics.get("admin-client-metrics.request-total");
+				if (count==null)
+					count = metrics.get("admin-client-node-metrics.request-total");
+				if (count==null)
+					count = "";
+				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.requests")).withActive(false).withChild(count));
 				
 				int number_nodes = kafkaAdminClient.describeCluster().nodes().get().size();
 				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.nodes")).withActive(false).withChild(formatValue(number_nodes)));
@@ -401,18 +404,4 @@ public class SystemUIController {
 		return adminClient;
 	}
 
-	/**
-	 * Given a Kafka object wrapping a Kafka metric, returns the value stored in this metric formatted as String
-	 */
-	private static String getKafkaMetricDesc(Metric metric) {
-		if (metric==null)
-			return null;
-		if (metric instanceof KafkaMetric) {
-			KafkaMetric km = (KafkaMetric)metric;
-			if (km.metricValue()==null)
-				return null;
-			return ValidationContext.toString(km.metricValue());
-		}
-		return metric.toString();
-	}
 }

@@ -28,9 +28,12 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -45,6 +48,15 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.TopicPartitionInfo;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -108,6 +120,9 @@ public class AdminService {
 	
 	@Autowired
 	private FileSystemStorageService fileSystemStorageService;
+	
+    @Autowired
+    private ResourceMonitorService sysInfoService;
 
     private RestTemplate restTemplate;
 
@@ -151,6 +166,12 @@ public class AdminService {
 				new Option("v","validated",false, "Deletes all validated records."),
 				new Option("p","published",false, "Deletes all published (denormalized) views."),
 				new Option("a","all",false, "Deletes all the above options.")),
+
+		KAFKA(AdminService::kafka,
+				"Returns information about KAFKA",
+				new Option("m","metrics",false, "Collects metrics about KAFKA"),
+				new Option("c","consumers",false, "Returns information about consumers of KAFKA (groups, topics, partitions and offsets)"),
+				new Option("t","topics",false, "Returns information about topics of KAFKA (topics, partitions and offsets)")),
 		
 		KIBANA(AdminService::kibana,
 			"Performs some operations on KIBANA",
@@ -734,6 +755,75 @@ public class AdminService {
 				log.log(Level.SEVERE, "Error while updating index pattern "+patternId+" of space "+spaceId, ex);
 			}
 		}
+	}
+	
+	/**
+	 * Operations on KAFKA
+	 */
+	public static Object kafka(AdminService service, CommandLine cmdLine) throws Exception {
+		
+		StringBuilder report = new StringBuilder();
+		
+		if (cmdLine.hasOption("m")) {
+			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
+				
+				Map<String,String> metrics =
+				kafkaAdminClient.metrics().entrySet().stream().collect(
+					Collectors.toMap(
+						e->e.getKey().group()+"."+e.getKey().name(), 
+						e->ResourceMonitorService.getKafkaMetricDesc(e.getValue()),
+						(a,b)->a,
+						()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+				for (Map.Entry<String, String> entry: metrics.entrySet()) {
+					report.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+				}
+				
+			}
+		}
+		
+		if (cmdLine.hasOption("c")) {
+			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
+			
+				report.append(String.format("%-10s\t%-20s\t%s\t%s\n","group","topic","part","offset"));
+				for (ConsumerGroupListing l:kafkaAdminClient.listConsumerGroups().all().get()) {
+					String groupId = l.groupId();
+					for (Map.Entry<TopicPartition,OffsetAndMetadata> entry:kafkaAdminClient.listConsumerGroupOffsets(groupId).partitionsToOffsetAndMetadata().get().entrySet()) {
+						String topic = entry.getKey().topic();
+						int part = entry.getKey().partition();
+						long offset = entry.getValue().offset();
+						report.append(String.format("%-10s\t%-20s\t%d\t%d\n", groupId, topic, part, offset));
+					}
+				}
+
+			}
+		}
+
+		if (cmdLine.hasOption("t")) {
+			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
+			
+				report.append(String.format("%-20s\t%s\t%s\n","topic","part","offset"));
+				ListTopicsResult topics_info = kafkaAdminClient.listTopics();
+				for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topics_info.names().get()).all().get().entrySet()) {
+					String topic = tp_entry.getKey();
+					Map<TopicPartition,OffsetSpec> requestInfo = 
+						tp_entry.getValue().partitions().stream()
+						.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+						.collect(Collectors.toMap(Function.identity(), 
+								(e)->OffsetSpec.latest()));
+					Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
+					for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
+						int part = tp_info.partition();
+						ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
+						long offset = (offset_info==null) ? 0 : offset_info.offset();
+						report.append(String.format("%-20s\t%d\t%d\n",topic, part, offset));
+						
+					} // LOOP over each partition of a topic
+				} // LOOP over each topic
+
+			}
+		}
+
+		return report.toString();
 	}
 	
 	/**

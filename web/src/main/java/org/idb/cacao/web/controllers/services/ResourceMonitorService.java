@@ -26,6 +26,7 @@ import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -39,12 +40,18 @@ import java.util.logging.Logger;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.metrics.KafkaMetric;
 import org.idb.cacao.api.ComponentSystemInformation;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.web.entities.SystemMetrics;
 import org.idb.cacao.web.repositories.SystemMetricsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -65,6 +72,9 @@ public class ResourceMonitorService implements Runnable {
 
 	@Autowired
 	private ApplicationContext app;
+
+	@Autowired
+	private Environment env;
 
 	private final ScheduledExecutorService service;
 	
@@ -188,6 +198,31 @@ public class ResourceMonitorService implements Runnable {
 		info.setInstalledPlugins(new ArrayList<>(TemplateArchetypes.getInstalledPackages()));
 
 		return info;
+	}
+
+	/**
+	 * Returns object for admin operations regarding Kafka Cluster
+	 */
+	public AdminClient getKafkaAdminClient() {
+		Properties properties = new Properties();
+		properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, env.getProperty("spring.cloud.stream.kafka.binder.brokers"));
+		AdminClient adminClient = AdminClient.create(properties);
+		return adminClient;
+	}
+
+	/**
+	 * Given a Kafka object wrapping a Kafka metric, returns the value stored in this metric formatted as String
+	 */
+	public static String getKafkaMetricDesc(Metric metric) {
+		if (metric==null)
+			return null;
+		if (metric instanceof KafkaMetric) {
+			KafkaMetric km = (KafkaMetric)metric;
+			if (km.metricValue()==null)
+				return null;
+			return ValidationContext.toString(km.metricValue());
+		}
+		return metric.toString();
 	}
 
 }
