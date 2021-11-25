@@ -33,6 +33,7 @@ import org.idb.cacao.etl.repositories.DomainTableRepository;
 import org.idb.cacao.etl.repositories.TaxpayerRepository;
 import org.idb.cacao.etl.repositories.DocumentValidationErrorMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -81,10 +82,23 @@ public class FileValidatedConsumerService {
 	@Autowired
 	private DocumentValidationErrorMessageRepository documentValidationErrorMessageRepository;
 
+	@Autowired
+	private final StreamBridge streamBridge;
+
+	public FileValidatedConsumerService(StreamBridge streamBridge) {
+		this.streamBridge = streamBridge;
+	}
+	
 	@Bean
 	public Consumer<String> receiveValidatedFile() {
 		return documentId -> {
-			processDocument(documentId);			
+			Boolean result = processDocument(documentId);
+			
+			if (result) {
+				log.log(Level.INFO, "Sending a message to WEB with documentId " + documentId);
+
+				streamBridge.send("receiveValidatedFile-out-0", documentId);
+			}
 		};
 	}
 	
@@ -95,7 +109,7 @@ public class FileValidatedConsumerService {
 	 * @param documentId	The ID of {@link DocumentUploaded} that needs to be validated
 	 * @return	DocumentId if the document has been validated. NULL if it doesn't.
 	 */
-	private String processDocument(String documentId) throws GeneralException, DocumentNotFoundException {
+	private Boolean processDocument(String documentId) throws GeneralException, DocumentNotFoundException {
 		
 		log.log(Level.INFO, "Received a message with documentId " + documentId);
 		
@@ -206,7 +220,7 @@ public class FileValidatedConsumerService {
 			
 			saveETLMessages(etlContext);
 			
-			return documentId;
+			return true;
 		
 		}
 		catch (GeneralException ex) {
