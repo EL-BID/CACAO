@@ -72,32 +72,53 @@
           <div class="scrolling content">
           <div class="ui container">
           <form class="ui form" id="form_edit_field">
-            <div class="field">
-              <label th:text="#{field.name}">Field Name <i class="blue info circle icon"></i></label>
-              <input type="text" v-model="field.fieldName" placeholder="Field Name">
+            <div class="fields">
+              <div class="eight wide field">
+                <label th:text="#{field.name}">Field Name <i class="blue info circle icon"></i></label>
+                <input type="text" v-model="field.fieldName" placeholder="Field Name">
+              </div>
+              <div class="four wide field">
+                <label th:text="#{field.type}">Field Type</label>
+                <select class="ui selection dropdown" v-model="field.fieldType">
+                  <option value="">Select</option>
+                  <option v-for="(name, value) in fieldTypes" :value="value">{{ name }}</option>
+                </select>
+              </div>
+              <div class="four wide field">
+                <label th:text="#{field.mapping}">Field Mapping</label>
+                <select class="ui selection dropdown" v-model="field.fieldMapping" id="selectFieldMapping">
+                  <option value="">Select</option>
+                  <option v-for="(name, value) in fieldMappings" v-if="value" :value="value">{{ name }}</option>
+                </select>
+              </div>
             </div>
             <div class="field">
               <label th:text="#{field.description}">Description</label>
               <textarea rows="2" v-model="field.description"></textarea>
             </div>
-            <div class="field">
-              <label th:text="#{field.type}">Field Type</label>
-              <select class="ui selection dropdown" v-model="field.fieldType">
-                <option value="">Select</option>
-                <option v-for="(name, value) in fieldTypes" :value="value">{{ name }}</option>
-              </select>
-            </div>
-            <div class="field">
-              <label th:text="#{field.mapping}">Field Mapping</label>
-              <select class="ui selection dropdown" v-model="field.fieldMapping" id="selectFieldMapping">
-                <option value="">Select</option>
-                <option v-for="(name, value) in fieldMappings" v-if="value" :value="value">{{ name }}</option>
-              </select>
-            </div>
             <div class="field" v-show="isText">
               <label th:text="#{field.length.max}">Max Length</label>
               <div class="ui input">
               <input type="number" v-model.number="field.maxLength" max="9999">
+              </div>
+            </div>
+            <div class="two fields" v-show="field.fieldType=='DOMAIN'">
+              <div class="field">
+                 <label th:text="#{field.domain.name}">Domain Table Name</label>
+                 <div class="ui search selection dropdown" id="select_domain_table">
+                   <input type="hidden" class="noselection">
+                   <i class="dropdown icon"></i>
+                   <input type="text" class="search" tabindex="0">
+                 </div>
+              </div>
+              <div class="field">
+                 <label th:text="#{field.domain.version}">Domain Table Version</label>
+                 <div class="ui search" id="select_domain_version">
+                   <div class="ui icon input">
+                     <input type="text" class="search" value="">
+                     <i class="search icon"></i>
+                   </div>
+                 </div>
               </div>
             </div>
             <div class="field">
@@ -188,8 +209,45 @@ var app = new Vue({
    			});			 
 		},
 		showEditor: function() {
-	      $('.ui.dropdown').dropdown({clearable: true})
-	      $('.ui.checkbox').checkbox()
+          $('.ui.dropdown').dropdown({clearable: true})
+
+	      $('#select_domain_version')
+          .search({
+              apiSettings: {
+                url: '/api/domaintable_search?term={query}',
+                dataType: 'text',
+                onResponse: function(items) {
+                    let r = { results: [] }
+                    $.each(JSON.parse(items), function(index, item) {
+                        r.results.push({ title: item})
+                    })
+                    return r
+                },
+                onSelect: function(result){
+                    this.field.domainTableName=result;
+               }
+              },
+              minCharacters : 1,
+              showNoResults: false
+            })
+         $('#select_domain_table')
+           .dropdown({
+        	   apiSettings: {
+                url: '/api/domaintable_search?term={query}',
+                method: 'GET',
+                dataType: 'text',
+                cache: false,
+                onResponse: function(items) {
+                    let r = { success: true, results: [] }
+                    $.each(JSON.parse(items), function(index, item) {
+                        r.results.push({ name: item, value:item })
+                    })
+                    return r
+                }
+        	   },
+        	   action: 'activate'
+           })
+          $('.ui.checkbox').checkbox()
 	      $("#modal_edit_field").modal({ closable: false, onApprove: this.addField }).modal('show')
 	    },
 	    editField: function(e, cell) {
@@ -264,8 +322,24 @@ var app = new Vue({
 			],
 		    data: this.template.fields
 		})
+		$('.ui.search')
+		  .search({
+		        apiSettings: {
+		          url: '/api/domaintable_search?term={query}',
+		          dataType: 'text',
+		          onResponse: function(items) {
+		              let r = { results: [] }
+		              $.each(JSON.parse(items), function(index, item) {
+		                  r.results.push({ title: item})
+		              })
+		              return r
+		          }
+		        },
+		        minCharacters : 1
+		      })
 	}
 })
+
 
 </script>
 </body>

@@ -105,6 +105,11 @@ public enum SystemPrivilege {
 	 */
 	TAX_TEMPLATE_WRITE,
 	
+	/** 
+	 * Privilege for changing tax domain tables
+	 */
+	TAX_DOMAIN_TABLE_WRITE,
+	
 	/**
 	 * Privilege for reading or listing taxpayers registry
 	 */

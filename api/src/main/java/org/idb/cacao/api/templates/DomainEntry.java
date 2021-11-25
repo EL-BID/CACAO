@@ -175,7 +175,6 @@ public class DomainEntry implements Serializable, Cloneable, Comparable<DomainEn
 		return locked;
 	}
 	
-	@JsonIgnore
 	public boolean isLocked() {
 		return java.lang.Boolean.TRUE.equals(locked);
 	}

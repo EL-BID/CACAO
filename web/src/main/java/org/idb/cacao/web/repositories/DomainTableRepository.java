@@ -25,6 +25,8 @@ import java.util.Optional;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
@@ -41,6 +43,10 @@ public interface DomainTableRepository extends ElasticsearchRepository<DomainTab
 	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
 	public Optional<DomainTable> findByNameAndVersion(String name, String version);
+	
+	Page<DomainTable> findByNameStartsWith(String name, Pageable pageable);
+	
+	Page<DomainTable> findByNameContaining(String name, Pageable pageable);
 	
 	default public <S extends DomainTable> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());

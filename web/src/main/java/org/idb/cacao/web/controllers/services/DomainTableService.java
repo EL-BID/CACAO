@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.DomainLanguage;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.templates.DomainEntry;
@@ -38,14 +40,18 @@ import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.ScrollUtils;
+import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.repositories.DomainTableRepository;
+import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service methods for domain tables related to the WEB component
@@ -273,5 +279,20 @@ public class DomainTableService {
 			else
 				throw ex;			
 		}
+	}
+	
+	/**
+     * Search user objects using AdvancedSearch filters
+     */
+	@Transactional(readOnly=true)
+	public Page<DomainTable> searchDomainTables(Optional<AdvancedSearch> filters,
+			Optional<Integer> page, 
+			Optional<Integer> size) {
+		try {
+			return SearchUtils.doSearch(filters.get().wiredTo(messages), DomainTable.class, elasticsearchClient, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
 	}
 }

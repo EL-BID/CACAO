@@ -30,6 +30,11 @@ package org.idb.cacao.api;
 public class Views {
 	
 	/**
+	 * View representing basic fields for selection purposes
+	 */
+	public class Selection {}
+	
+	/**
 	 * View representing 'any context'
 	 */
 	public class Public {}

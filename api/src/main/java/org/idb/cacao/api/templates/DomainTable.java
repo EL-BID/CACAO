@@ -42,6 +42,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.idb.cacao.api.DomainLanguage;
+import org.idb.cacao.api.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -50,6 +51,7 @@ import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonView;
 
 /**
  * This entity represents any generic structure modeled inside CACAO by the tax administration.<BR>
@@ -129,6 +131,7 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Selection.class)
 	@NotBlank
 	@NotNull
 	@NotEmpty
@@ -161,6 +164,7 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 	@NotNull
 	@NotEmpty
 	@Size(min=1, max=20)
+	@JsonView(Views.Selection.class)
 	private String version;
 	
 	/**

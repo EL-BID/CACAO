@@ -139,6 +139,11 @@ public class LoginUIController {
 					"/templates"));
 		}
 
+		if (hasPrivilege(roles, SystemPrivilege.TAX_DOMAIN_TABLE_WRITE)) {
+			menu.add(new MenuItem(messages.getMessage("domain.tables.title", null, LocaleContextHolder.getLocale()),
+					"/domaintables"));
+		}
+
 		MenuItem submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
 		menu.add(submenu);
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_SYSTEM_MAIL)) {

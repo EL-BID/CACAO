@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+	
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="users icon"></i>
+			<div class="content" th:text="#{domain.tables.title}">Domain Tables</div>
+		</h2>
+		<div id="table" class="ui orange table"></div>
+		<div class="ui column right floated">
+			<div class="ui right floated primary labeled icon">
+				<a th:href="@{/add-domain-table}" class="ui button"><i class="plus icon"></i><span th:text="#{domain.table.new}">New Domain Table</span></a>
+			</div>
+		</div>
+	</div>
+ 
+<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
+   
+<script th:nonce="${cspNonce}" th:inline="javascript">
+
+var editRow = function(e, cell) {
+    window.location.replace([[@{/editdomaintable/}]] +  cell.getRow().getIndex());
+}
+
+var sendDelete = function(id) {
+    $.ajax({
+        url: [[@{/api/domaintable/}]] + id,
+        type: 'DELETE',
+        dataType: 'json',
+        contentType: 'application/json',
+        cache: false,  
+        success: onDeleteSuccess,
+        error: onDeleteError
+    })
+}
+var onDeleteSuccess = function(result) {
+    $('#modal_successful').modal('show')
+    setTimeout(function(){
+        window.location.replace([[@{/domaintables}]])
+    }, 2000);
+}
+var onDeleteError = function(e) {
+    var msg = e.responseText.replace(/\n/g, "<br />");
+    $('#modal_failed').find('.description').html(msg)
+    $('#modal_failed').modal('show')
+    console.log("ERROR : "+ msg);
+}
+var deleteRow = function(e, cell) {
+    console.log('delete ' + cell.getRow().getIndex())
+    var dlg = $('#modal_confirm')
+    dlg.find('.description').html([[#{domain.table.delete.confirm}]])
+    dlg.modal({
+      closable:false,
+      onApprove: function() { sendDelete(cell.getRow().getIndex()) }
+    })
+    dlg.modal('show');
+}
+
+// Setup Tabulator
+var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+this.table = new Tabulator('#table', {
+    index: 'id',
+    layout: "fitColumns", //fit columns to width of table (optional)
+    pagination: true,
+    paginationMode: "remote", //enable remote pagination
+    ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request
+    paginationSize: 5,
+    ajaxContentType: "json",
+    
+    columns:[ //Define Table Columns
+        {title: /*{{#domain.table.name}}*/ "Name", field:"name"},
+        {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left" },
+        {title: /*{{#domain.table.group}}*/ "Group", field:"group", width: 150 },
+        {formatter:editIcon, width:50, cellClick: editRow},
+        {formatter:trashIcon, width:50, cellClick: deleteRow}
+    ]
+})
+</script>
+</body>
+</html>
+    

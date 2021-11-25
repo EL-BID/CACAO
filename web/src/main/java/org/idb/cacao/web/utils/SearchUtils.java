@@ -49,13 +49,24 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchPhrasePrefixQueryBuilder;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.WildcardQueryBuilder;
+import org.elasticsearch.index.search.MatchQueryParser.ZeroTermsQuery;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.ValueCountAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.hibernate.jpa.QueryHints;
@@ -213,6 +224,42 @@ public class SearchUtils {
 		}
 		
 		return new PageImpl<>(results, PageRequest.of(pageNumber-1, pageSize), totalCount);
+	}
+
+	/**
+	 * Performs advanced search at ElasticSearch filtering by searchText on a
+	 * specific field and returns the top distinct values from distinctField.
+	 * Returns a list of string values, useful in autocomplete.
+	 */
+	public static List<String> doSearchTopDistinctWithFilter(
+			final RestHighLevelClient elasticsearchClient, 
+			final Class<?> entity,
+			final String distinctField,
+			final String searchField,
+			String searchText) throws IOException {
+		Document doc = entity.getAnnotation(Document.class);
+		final String indexName = doc.indexName();
+		final TermsAggregationBuilder aggregation = AggregationBuilders.terms("top_items")
+	            .field(distinctField);
+		final SearchSourceBuilder builder = new SearchSourceBuilder().aggregation(aggregation);
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		query.should(new MatchQueryBuilder(searchField, searchText));
+		query.should(new MatchPhrasePrefixQueryBuilder(searchField, searchText));
+		
+		builder.query(query);
+		SearchRequest searchRequest = new SearchRequest(indexName).source(builder);
+		final SearchResponse response = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+
+        final Map<String, Aggregation> results = response.getAggregations()
+            .asMap();
+        final ParsedStringTerms topTags = (ParsedStringTerms) results.get("top_items");
+
+        final List<String> keys = topTags.getBuckets()
+            .stream()
+            .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+            .sorted()
+            .collect(Collectors.toList());
+        return keys;
 	}
 	
 	/**

@@ -1,0 +1,214 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="user icon"></i>
+			<div class="content" th:text="#{domain.table.update.title}">Update Domain Table</div>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form id="form" class="ui form" action="#" th:object="${table}" method="post" th:action="@{/api/domaintable}">
+                    <input type="hidden" name="id" th:value="${table.id}">
+					<div class="fields">
+                      <div class="seven wide field">
+                        <label th:text="#{domain.table.name}" style="margin-bottom: 0px; text-transform: uppercase;">Domain Table Name</label>
+                        <input type="text" th:value="${table.name}" class="form-control" id="name" name="name" placeholder="Name" th:placeholder="#{domain.table.name}">
+                        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
+                      </div>
+                      <div class="two wide field">
+                          <label th:text="#{domain.table.version}" style="margin-bottom: 0px; text-transform: uppercase;">Domain Table Version</label>
+                          <input type="text" th:value="${table.version}" class="form-control" id="version" name="version" placeholder="Version" th:placeholder="#{domain.table.version}">
+                          <span th:if="${#fields.hasErrors('version')}" th:errors="*{version}" class="ui warning message"></span>
+                      </div>
+                      <div class="seven wide field">
+                          <label th:text="#{domain.table.group}" style="margin-bottom: 0px; text-transform: uppercase;">Domain Table Group</label>
+                          <input type="text" th:value="${table.group}" class="form-control" id="group" name="group" placeholder="Group" th:placeholder="#{domain.table.group}">
+                          <span th:if="${#fields.hasErrors('group')}" th:errors="*{groiup}" class="ui warning message"></span>
+                      </div>
+                    </div>
+					<div class="row">
+						<input type="submit" class="ui blue button" th:value="#{save}" value="Save">
+						<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" >
+					</div>
+				</form>
+			</div>
+		</div>
+        <h4 class="ui centered dividing header" th:text="#{domain.entries.title}">Domain Entries</h4>
+        <div id="table" class="ui table"></div>
+        <h4 class="ui centered dividing header" th:text="#{domain.entry.new}">New Entry</h4>
+        <div class="ui container">
+            <div class="ui orange segment">
+                <form class="ui form" id="form_add" action="#">
+                    <div class="fields">
+                      <div class="five wide field">
+                        <label th:text="#{domain.entry.key}" style="margin-bottom: 0px; text-transform: uppercase;">Key</label>
+                        <input type="text" value="" class="form-control" id="entry_key" name="key" placeholder="Key" th:placeholder="#{domain.entry.key}">
+                      </div>
+                      <div class="four wide field">
+                        <label th:text="#{domain.entry.language}" style="margin-bottom: 0px; text-transform: uppercase;">Key</label>
+                        <select name="language" id="entry_language" class="ui fluid dropdown">
+                            <option value="" th:text="#{domain.entry.language.select}">Select the Language</option>
+                            <option th:each="l : ${languages}" th:text="${l.id}" th:value="${l.name}"></option>
+                        </select>
+                      </div>
+                      <div class="seven wide field">
+                        <label th:text="#{domain.entry.description}" style="margin-bottom: 0px; text-transform: uppercase;">Description</label>
+                        <input type="text" value="" class="form-control" id="entry_description" name="description" placeholder="Description" th:placeholder="#{domain.entry.description}">
+                      </div>
+                    </div>
+                  <button id="add_entry" type="submit" class="ui primary button" th:text="#{add}"></button>
+                </form>
+            </div>
+        </div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+var domain_table = [[${table}]]
+domain_table.entries = domain_table.entries.map( (entry, i) => {
+    entry.id = i
+    return entry
+})
+var next_id = domain_table.entries.length
+$('#cancel').click(function(){
+    go_to_location_keeping_state([[@{/domaintables}]]) 
+})
+var add_entry = function(event, fields) {
+	event.preventDefault()
+	var entry = {key: fields.key, language: fields.language, description: fields.description, locked: false, id: next_id++ }
+	table.addRow(entry, false)
+    table.redraw(true)
+    event.target.reset()
+}
+var processForm = function(event, fields) {
+	event.preventDefault()
+	form_obj = $('#form').serializeArray()
+    domain_table = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), domain_table)
+    domain_table.entries = table.getData()
+    console.log(domain_table)
+	$.ajax({
+	    url: [[@{/api/domaintable/{id}(id=${table.id})}]],
+	    type: 'PUT',
+	    dataType: 'json',
+	    contentType: 'application/json',
+	    data: JSON.stringify(domain_table),
+	    cache: false,    
+		success: function(result) {
+			$('#modal_successful').modal('show')
+			setTimeout(function(){
+				window.location = [[@{/domaintables}]]
+			}, 2000);
+		},
+		error: function(e) {
+			var msg = e.responseText.replace(/\n/g, "<br />");
+			$('#modal_failed').find('.description').html(msg)
+			$('#modal_failed').modal('show')
+			console.log("ERROR : "+msg);
+		}
+	});			 
+}
+var deleteIcon = function(cell, formatterParams) { 
+	if(!cell.getRow().getData().locked)
+	    return "<i class='trash icon'></i>"
+};  
+var deleteEntry = function(e, cell) {
+    var dlg = $('#modal_confirm')
+    dlg.find('.description').html([[#{domain.entry.delete.confirm}]])
+    dlg.modal({
+      closable:false,
+      onApprove: function() { 
+    	  cell.getRow().delete()
+    	  table.redraw(true)
+      }
+    })
+    dlg.modal('show');
+}
+var table = new Tabulator('#table', {
+    index: 'id',
+    layout: "fitColumns", //fit columns to width of table (optional)
+    responsiveLayout: "collapse",
+    pagination: true,
+    paginationSize: 5,
+    columns:[ //Define Table Columns
+        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200"},
+        {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
+        	formatterParams: {
+        		[# th:each="l : ${languages}"]
+        		[[${l.name}]] : [[${l.id}]],
+        		[/]
+        	}}, 
+        {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true },
+        {formatter:deleteIcon, width:50, tooltip: /*{{#{delete}}} */ "Delete", cellClick: deleteEntry, headerSort: false }
+    ],
+    data: domain_table.entries
+})
+
+$(document)
+.ready(function() {
+  $('#form')
+    .form({
+      fields: {
+        name: {
+            identifier  : 'name',
+            rules: [
+              {
+                type   : 'empty',
+                prompt : "Name is missing!"
+              }
+            ]
+          },
+        version: {
+          identifier  : 'version',
+          rules: [
+            {
+              type   : 'empty',
+              prompt : "Version is missing!"
+            }
+          ]
+        }
+      },
+      onSuccess: (processForm)
+    })
+  $('#form_add')
+  .form({
+	  fields: {
+		 key : {
+			  identifier: 'key',
+			  rules: [
+				  { type: "empty", prompt: "Key is empty"}
+			  ]
+		  },
+		  language : {
+              identifier: 'language',
+              rules: [
+                  { type: "empty", prompt: "Language is empty"}
+              ]
+          },
+         description : {
+              identifier: 'description',
+              rules: [
+                  { type: "empty", prompt: "Description is empty"}
+              ]
+          },
+	  },
+	  onSuccess: add_entry
+  })
+})
+
+</script>
+</body>
+</html>
