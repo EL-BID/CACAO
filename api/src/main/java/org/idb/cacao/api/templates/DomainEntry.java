@@ -37,8 +37,6 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 /**
  * Entry (value) of a Domain Table. This is related to a 'DomainTable'
  * (one DomainTable refers to multiple DomainEntry's).<BR>
