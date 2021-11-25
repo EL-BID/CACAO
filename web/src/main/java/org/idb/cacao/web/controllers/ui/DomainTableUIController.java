@@ -19,10 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
-import org.idb.cacao.api.DomainLanguage;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.web.controllers.dto.NameId;
 import org.idb.cacao.web.controllers.services.DomainTableService;

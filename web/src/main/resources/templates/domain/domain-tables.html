@@ -87,8 +87,8 @@ this.table = new Tabulator('#table', {
         {title: /*{{#domain.table.name}}*/ "Name", field:"name"},
         {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left" },
         {title: /*{{#domain.table.group}}*/ "Group", field:"group", width: 150 },
-        {formatter:editIcon, width:50, cellClick: editRow},
-        {formatter:trashIcon, width:50, cellClick: deleteRow}
+        {formatter:editIcon, width:50, cellClick: editRow, headerSort:false},
+        {formatter:trashIcon, width:50, cellClick: deleteRow, headerSort:false}
     ]
 })
 </script>

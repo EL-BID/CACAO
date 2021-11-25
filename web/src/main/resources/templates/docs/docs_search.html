@@ -52,10 +52,15 @@ var app = new Vue({
 			console.log('edit  ' + cell.getRow().getIndex() )
 			window.location.replace([[@{/doc/errors/}]] + cell.getRow().getIndex());			
 		},	
+		downloadFile(e, cell) {
+			console.log('downloading  ' + cell.getRow().getIndex() )
+			window.location.replace([[@{/doc/download/}]] + cell.getRow().getIndex());			
+		},
 	},	
 	mounted() {
 		var situationsIcon = function(cell, formatterParams){ return "<i class='file alternate outline icon'></i>"};
 		var errorsIcon = function(cell, formatterParams){ return "<i class='warning sign icon'></i>"};
+		var downloadIcon = function(cell, formatterParams){ return "<i class='save icon'></i>"};
 		this.table = new Tabulator('#table', {
 			index: 'id',
 			layout: "fitColumns", //fit columns to width of table (optional)
@@ -93,8 +98,9 @@ var app = new Vue({
 				{title: /*[[#{doc.timestamp}]]*/ "Date/time uploaded", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
 				{title: /*[[#{doc.situation}]]*/ "Situation", field:"situation", headerFilter:this.headerFilter},
 				//{title: /*{{#doc.id}}} */ "Document Id", field:"id", headerFilter:this.headerFilter},
-				{formatter:situationsIcon, width:50, cellClick: this.showSituationHistory, tooltip : /*[[#{doc.situation.history}]]*/},
-				{formatter:errorsIcon, width:50, cellClick: this.showErrorMessages, tooltip : /*[[#{doc.error.message}]]*/}
+				{formatter:situationsIcon, width:50, cellClick: this.showSituationHistory, tooltip : /*[[#{doc.situation.history}]]*/, headerSort:false},
+				{formatter:errorsIcon, width:50, cellClick: this.showErrorMessages, tooltip : /*[[#{doc.error.message}]]*/, headerSort:false},
+				{formatter:downloadIcon, width:50, cellClick: this.downloadFile, tooltip : /*[[#{doc.download}]]*/, headerSort:false}
 			]
 		})
 	}

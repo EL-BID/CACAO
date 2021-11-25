@@ -73,13 +73,14 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
-		<!-- Redefines dependecy from parent POM in order to change the 'scope'. Parent POM declares it as 'test' scope,
-		so it's supposed to be used only at test use cases. Here we are changing to the 'provided' scope, so that it can be
-		used at runtime, what can be the case for development environment -->
+		<!-- Redefines dependecy from parent POM in order to change the 'scope'. 
+			Parent POM declares it as 'test' scope, so it's supposed to be used only 
+			at test use cases. Here we are changing to the 'provided' scope, so that 
+			it can be used at runtime, what can be the case for development environment -->
 		<dependency>
-		    <groupId>org.springframework.kafka</groupId>
-		    <artifactId>spring-kafka-test</artifactId>
-		    <scope>provided</scope>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka-test</artifactId>
+			<scope>provided</scope>
 		</dependency>
 
 		<!-- <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream</artifactId> 
@@ -129,14 +130,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 		</dependency>
-		
+
 		<!-- https://mvnrepository.com/artifact/org.mitre.dsmiley.httpproxy/smiley-http-proxy-servlet -->
 		<dependency>
-	    	<groupId>org.mitre.dsmiley.httpproxy</groupId>
-	    	<artifactId>smiley-http-proxy-servlet</artifactId>
-	    	<version>1.12</version>
+			<groupId>org.mitre.dsmiley.httpproxy</groupId>
+			<artifactId>smiley-http-proxy-servlet</artifactId>
+			<version>1.12</version>
 		</dependency>
-		
+
 	</dependencies>
 
 	<build>
@@ -157,15 +158,54 @@
 					<layout>ZIP</layout>
 				</configuration>
 			</plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
-        </plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>8</source>
+					<target>8</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.7</version>
+				<executions>
+					<execution>
+						<id>default-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-report</id>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>COMPLEXITY</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.60</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 	<profiles>
 		<profile>

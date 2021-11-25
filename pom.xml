@@ -173,29 +173,7 @@
 						<source>1.8</source>
 						<target>1.8</target>
 					</configuration>
-				</plugin>
-				<!-- JaCoCo Java Code Coverage Library -->
-				<plugin>
-					<!-- Example page: https://mkyong.com/maven/maven-jacoco-code-coverage-example/ -->
-					<groupId>org.jacoco</groupId>
-					<artifactId>jacoco-maven-plugin</artifactId>
-					<version>0.8.7</version> <!-- Latest version -->
-					<executions>
-						<execution>
-							<goals>
-								<goal>prepare-agent</goal>
-							</goals>
-						</execution>
-						<!-- Attached to Maven test phase -->
-						<execution>
-							<id>report</id>
-							<phase>test</phase>
-							<goals>
-								<goal>report</goal>
-							</goals>
-						</execution>
-					</executions>
-				</plugin>
+				</plugin>				
 			</plugins>
 		</pluginManagement>
 	</build>

@@ -19,6 +19,12 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +44,8 @@ import org.springframework.web.bind.annotation.PathVariable;
  */
 @Controller
 public class DocumentStoreUIController {
+	
+	private static final Logger log = Logger.getLogger(DocumentStoreUIController.class.getName());
 
 	@Autowired
 	private DocumentTemplateService templateService;
@@ -84,5 +92,18 @@ public class DocumentStoreUIController {
 				messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
 		return "docs/doc_errors";
 	}
-
+	
+	@GetMapping("/doc/download/{documentId}")
+    public void downloadDocument(HttpServletResponse response, @PathVariable("documentId") String documentId) {
+		
+		// Parse the 'templateName' informed at request path
+		if (documentId==null || documentId.trim().length()==0) {
+			throw new MissingParameter("documentId");
+		}
+		try {
+			response.sendRedirect("/api/doc/download?documentId=" + documentId);
+		} catch (IOException e) {
+			log.log(Level.SEVERE, "Error while redirecting for download document " + documentId, e);
+		}
+    }
 }

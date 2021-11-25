@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
@@ -11,22 +12,22 @@
 	<name>CACAO ETL</name>
 	<description>MVP for an accounting data system</description>
 	<properties>
-    	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    	<java.version>1.8</java.version>        
-    	<jaxb.api.version>2.3.0</jaxb.api.version>
-    	<maven.compiler.source>1.8</maven.compiler.source>
-    	<maven.compiler.target>1.8</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.8</java.version>
+		<jaxb.api.version>2.3.0</jaxb.api.version>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
-	
+
 	<dependencies>
-	
+
 		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
 		<dependency>
-    		<groupId>com.google.guava</groupId>
-    		<artifactId>guava</artifactId>
-    		<version>30.0-jre</version>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>30.0-jre</version>
 		</dependency>
-	
+
 		<dependency>
 			<groupId>org.idb.cacao.api</groupId>
 			<artifactId>CACAO_API</artifactId>
@@ -34,7 +35,7 @@
 			<type>jar</type>
 			<scope>provided</scope>
 		</dependency>
-				
+
 		<dependency>
 			<groupId>org.idb.cacao</groupId>
 			<artifactId>CACAO_ACCOUNT</artifactId>
@@ -42,7 +43,7 @@
 			<type>jar</type>
 			<scope>provided</scope>
 		</dependency>
-				
+
 		<dependency>
 			<groupId>org.idb.cacao</groupId>
 			<artifactId>CACAO_MOCK_ES</artifactId>
@@ -50,71 +51,110 @@
 			<type>jar</type>
 			<scope>test</scope>
 		</dependency>
-				
+
 	</dependencies>
 
 	<build>
-    	<finalName>cacao_etl</finalName>
+		<finalName>cacao_etl</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-          		<executions>
-	                <execution>
-                    	<goals>
-	                        <goal>repackage</goal>
-                    	</goals>
-                	</execution>
-          		</executions>
-    	  		<configuration>
-	        		<mainClass>org.idb.cacao.etl.Application</mainClass>
-        			<layout>ZIP</layout>
-    	  		</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<mainClass>org.idb.cacao.etl.Application</mainClass>
+					<layout>ZIP</layout>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.7</version>
+				<executions>
+					<execution>
+						<id>default-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-report</id>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>default-check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>COMPLEXITY</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.60</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
-  	<profiles>
-    <profile>
-      <id>qa</id>
-      <build>
-        <plugins>
-    	<plugin>    
-        	<artifactId>maven-compiler-plugin</artifactId>
-        	<configuration>
-            	<source>1.8</source>
-            	<target>1.8</target>
-        	</configuration>
-    	</plugin>
-          <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>install</phase>
-                <goals>
-                  <goal>copy-dependencies</goal>
-                </goals>
-                <configuration>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                </configuration>
-              </execution>
-        	  <execution>
-            	<id>sources</id>
-	            <phase>post-clean</phase>
-	            <goals>
-	                <goal>copy-dependencies</goal>
-	            </goals>
-	            <configuration>
-	                <classifier>sources</classifier>
-	                <outputDirectory>${project.build.directory}/sources</outputDirectory>
-	                <overWriteReleases>false</overWriteReleases>
-	                <overWriteSnapshots>false</overWriteSnapshots>
-	                <overWriteIfNewer>true</overWriteIfNewer>
-	            </configuration>
-	           </execution>
-		    </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+	<profiles>
+		<profile>
+			<id>qa</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<source>1.8</source>
+							<target>1.8</target>
+						</configuration>
+					</plugin>
+					<plugin>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<executions>
+							<execution>
+								<phase>install</phase>
+								<goals>
+									<goal>copy-dependencies</goal>
+								</goals>
+								<configuration>
+									<outputDirectory>${project.build.directory}/lib</outputDirectory>
+								</configuration>
+							</execution>
+							<execution>
+								<id>sources</id>
+								<phase>post-clean</phase>
+								<goals>
+									<goal>copy-dependencies</goal>
+								</goals>
+								<configuration>
+									<classifier>sources</classifier>
+									<outputDirectory>${project.build.directory}/sources</outputDirectory>
+									<overWriteReleases>false</overWriteReleases>
+									<overWriteSnapshots>false</overWriteSnapshots>
+									<overWriteIfNewer>true</overWriteIfNewer>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

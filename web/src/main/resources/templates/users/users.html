@@ -96,8 +96,8 @@ var app = new Vue({
 				{title: /*{{#user.name}}*/ "Name", field:"name"},
 				{title: /*{{#user.login}}*/ "Login", field:"login", hozAlign:"left" },
 				{title: /*{{#user.profile}}*/ "Profile", field:"profile", width: 150 },
-				{formatter:editIcon, width:50, cellClick: this.editRow},
-				{formatter:trashIcon, width:50, cellClick: this.deleteRow}
+				{formatter:editIcon, width:50, cellClick: this.editRow, headerSort:false},
+				{formatter:trashIcon, width:50, cellClick: this.deleteRow, headerSort:false}
 			]
 		})
 	}
