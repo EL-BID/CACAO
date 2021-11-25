@@ -297,25 +297,7 @@ public class AdminService {
 	public static Object getHelp(AdminService service, CommandLine cmdLine) throws Exception {
 		if (cmdLine.hasOption("c")) {
 			String command_name = cmdLine.getOptionValue("c").toUpperCase();
-			AdminOperations op;
-			try {
-				op = AdminOperations.valueOf(command_name);
-			}
-			catch (Throwable ex) {
-				throw new UnsupportedOperationException("Unknown operation: "+command_name);
-			}
-			if (op==null) {
-				throw new UnsupportedOperationException("Unknown operation: "+command_name);
-			}
-			HelpFormatter formatter = new HelpFormatter();
-			StringWriter buffer = new StringWriter();
-			PrintWriter output = new PrintWriter(buffer);
-			formatter.printHelp(output, /*width*/80, /*cmdLineSyntax*/command_name, 
-				/*header*/null, op.getCommandLineOptions(), 
-				formatter.getLeftPadding(), 
-				formatter.getDescPadding(), 
-				/*footer*/null);
-			return buffer.toString();
+			return getHelp(command_name);
 		}
 		else if (cmdLine.getArgs().length==2) {
 			String command_name = cmdLine.getArgs()[1].toUpperCase();
@@ -374,6 +356,32 @@ public class AdminService {
 			//response.append(buffer.toString());
 			return buffer.toString();
 		}
+	}
+	
+	public static String getHelp(String commandName) {
+		AdminOperations op;
+		try {
+			op = AdminOperations.valueOf(commandName);
+		}
+		catch (Throwable ex) {
+			throw new UnsupportedOperationException("Unknown operation: "+commandName);
+		}
+		if (op==null) {
+			throw new UnsupportedOperationException("Unknown operation: "+commandName);
+		}
+		return getHelp(op);
+	}
+	
+	public static String getHelp(AdminOperations op) {
+		HelpFormatter formatter = new HelpFormatter();
+		StringWriter buffer = new StringWriter();
+		PrintWriter output = new PrintWriter(buffer);
+		formatter.printHelp(output, /*width*/80, /*cmdLineSyntax*/op.name(), 
+			/*header*/null, op.getCommandLineOptions(), 
+			formatter.getLeftPadding(), 
+			formatter.getDescPadding(), 
+			/*footer*/null);
+		return buffer.toString();
 	}
 	
 	/**
@@ -500,6 +508,11 @@ public class AdminService {
 	 */
 	public static Object kibana(AdminService service, CommandLine cmdLine) throws Exception {
 
+		Option[] options = cmdLine.getOptions();
+		if (options==null || options.length==0) {		
+			return getHelp(AdminOperations.KIBANA);
+		}
+
 		if (cmdLine.hasOption("g")) {
 			
 			String objType = cmdLine.getOptionValue("g").trim().toLowerCase();
@@ -613,6 +626,11 @@ public class AdminService {
 	 * Add sample data and sample configurations to the database
 	 */
 	public static Object samples(AdminService service, CommandLine cmdLine) throws Exception {
+
+		Option[] options = cmdLine.getOptions();
+		if (options==null || options.length==0) {		
+			return getHelp(AdminOperations.SAMPLES);
+		}
 
 		StringBuilder report = new StringBuilder();
 		
@@ -762,6 +780,11 @@ public class AdminService {
 	 */
 	public static Object kafka(AdminService service, CommandLine cmdLine) throws Exception {
 		
+		Option[] options = cmdLine.getOptions();
+		if (options==null || options.length==0) {		
+			return getHelp(AdminOperations.KAFKA);
+		}
+
 		StringBuilder report = new StringBuilder();
 		
 		if (cmdLine.hasOption("m")) {
@@ -831,8 +854,13 @@ public class AdminService {
 	 */
 	public static Object delete(AdminService service, CommandLine cmdLine) throws Exception {
 		
+		Option[] options = cmdLine.getOptions();
+		if (options==null || options.length==0) {		
+			return getHelp(AdminOperations.DELETE);
+		}
+
 		StringBuilder report = new StringBuilder();
-		
+
 		if (cmdLine.hasOption("p") || cmdLine.hasOption("a")) {
 			// Deletes all published (denormalized) views
 			int deleted_indices = 0;
