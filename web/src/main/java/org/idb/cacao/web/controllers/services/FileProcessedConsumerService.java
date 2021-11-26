@@ -95,7 +95,8 @@ public class FileProcessedConsumerService {
 				try {
 					// Check if the index-patterns related to the archetype published data indices have already been created
 					// If not created yet, creates automatically and synchronizes with other Kibana Spaces
-					kibanaSpacesService.syncKibanaIndexPatterns(/*avoidRedundantChecks*/true, archetype);
+					if (kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0)
+						kibanaSpacesService.syncKibanaIndexPatterns(/*avoidRedundantChecks*/true, archetype);
 				}
 				catch (Throwable ex) {
 					log.log(Level.SEVERE, "Failed to synchronize KIBANA spaces with index patterns related to the archetype "+archetype+" (may be ignored if there is no Kibana service online)", ex);
