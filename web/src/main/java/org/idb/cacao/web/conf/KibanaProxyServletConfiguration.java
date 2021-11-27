@@ -110,7 +110,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 				new KibanaProxy(propertyResolver, applicationContext), 
 				"/kibana/*");
 		servletRegistrationBean.addInitParameter("targetUri", (isSSL()?"https":"http")+"://"+getKibanaHost()+":"+getKibanaPort()+getKibanaEndpoint());
-		servletRegistrationBean.addInitParameter("log", "true");
+		servletRegistrationBean.addInitParameter("log", "false");
 		return servletRegistrationBean;
 	}
 
