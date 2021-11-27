@@ -123,7 +123,7 @@ public class FileUploadedConsumerService {
 	 *                   validated
 	 * @return DocumentId if the document has been validated. NULL if it doesn't.
 	 */
-	private Boolean validateDocument(String documentId) throws GeneralException, DocumentNotFoundException {
+	public Boolean validateDocument(String documentId) throws GeneralException, DocumentNotFoundException {
 
 		log.log(Level.INFO, "Received a message with documentId " + documentId);
 

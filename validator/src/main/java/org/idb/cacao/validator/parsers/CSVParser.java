@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.ValidationContext;
@@ -49,6 +51,8 @@ import com.univocity.parsers.csv.CsvParserSettings;
  *
  */
 public class CSVParser implements FileParser {
+	
+	private static final Logger log = Logger.getLogger(CSVParser.class.getName());
 	
 	/**
 	 * Path for file in system storage
@@ -164,8 +168,7 @@ public class CSVParser implements FileParser {
 			}
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 		}	
 		
 	}
@@ -230,8 +233,7 @@ public class CSVParser implements FileParser {
 			}; 
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();			
+			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
 		}
 		
 		return null;
