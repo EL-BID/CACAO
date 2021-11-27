@@ -26,6 +26,9 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -136,6 +139,11 @@ public class AuditTrail implements Serializable, Cloneable {
 	@AFieldDescriptor(externalName = "audit.log.controller.method")
 	private String controllerMethod;
 
+	@Enumerated(EnumType.STRING)
+	@Field(type=Text)
+	@AFieldDescriptor(externalName = "audit.log.auth.method")
+	private AuthenticationMethod authMethod;
+
 	/**
 	 * Parameters of the user request
 	 */
@@ -212,6 +220,14 @@ public class AuditTrail implements Serializable, Cloneable {
 
 	public void setControllerMethod(String controllerMethod) {
 		this.controllerMethod = controllerMethod;
+	}
+
+	public AuthenticationMethod getAuthMethod() {
+		return authMethod;
+	}
+
+	public void setAuthMethod(AuthenticationMethod authMethod) {
+		this.authMethod = authMethod;
 	}
 
 	public Map<String, String> getParam() {

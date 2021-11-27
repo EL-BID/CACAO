@@ -36,15 +36,19 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.CodeSignature;
 import org.idb.cacao.api.AFieldDescriptor;
 import org.idb.cacao.api.AuditTrail;
+import org.idb.cacao.api.AuthenticationMethod;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.AuditTrailRepository;
+import org.idb.cacao.web.sec.ApiKeyAuthenticationToken;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -162,6 +166,22 @@ public class AuditLogAspect {
 			
 			try {
 				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+				
+				AuthenticationMethod authMethod = null;
+				if (auth!=null) {
+					if (auth.getPrincipal() instanceof OAuth2User) {
+						authMethod = AuthenticationMethod.OAUTH2;
+					}
+					else if (auth instanceof UsernamePasswordAuthenticationToken) {
+						authMethod = AuthenticationMethod.PASSWORD;
+					}
+					else if (auth instanceof ApiKeyAuthenticationToken) {
+						authMethod = AuthenticationMethod.TOKEN;
+					}
+				}
+
+				entry.setAuthMethod(authMethod);
+				
 				User user = UserUtils.getUser(auth);
 				if (user!=null) {
 					entry.setUserLogin(user.getLogin());
