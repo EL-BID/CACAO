@@ -93,7 +93,7 @@ public class AdminUIController {
 		if (log_dir!=null && log_dir.trim().length()>0)
 			return new File(log_dir);
 		File user_home = new File(System.getProperty("user.home"));
-		File default_log_dir = new File(user_home, "gnbmvp_log");
+		File default_log_dir = new File(user_home, "cacao_log");
 		return default_log_dir;
 	}
 

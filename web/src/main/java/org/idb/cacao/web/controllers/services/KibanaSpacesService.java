@@ -127,8 +127,12 @@ public class KibanaSpacesService {
 			indices = publishedDataService.getIndicesForPublishedData();
 		}
 		catch (Throwable ex) {
-			log.log(Level.WARNING, "Failed to get ElasticSearch indices", ex);
-			return;			
+			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
+				indices = Collections.emptyList();
+			else {
+				log.log(Level.WARNING, "Failed to get ElasticSearch indices", ex);
+				return;
+			}
 		}
 		
 		for (String index: indices) {

@@ -188,6 +188,9 @@ public class AdminService {
 			new Option("v","vicinity",true, "Includes a number of rows in the vicinity of the rows that matches that query and pattern regex informed in other options."),
 			new Option("raw","raw_line",false, "Indicate that should output the LOG lines 'as is' (without previous treatment or cap length). If not informed, apply some treatments and cap lengths.")),
 		
+		LOGDIR(AdminService::logdir,
+				"Return information about the directory for LOG files"),
+		
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications.")),
@@ -503,6 +506,33 @@ public class AdminService {
 		return log;
 	}
 		
+	/**
+	 * Return information about the directory for LOG files
+	 */
+	public static Object logdir(AdminService service, CommandLine cmdLine) throws Exception {
+		
+		File log_dir = AdminUIController.getLogDir();
+		
+		StringBuilder report = new StringBuilder();
+		if (log_dir==null) {
+			report.append("LOG directory was not defined!");
+		}
+		else {
+			report.append("LOG directory: ").append(log_dir.getAbsolutePath()).append("\n");
+			if (!log_dir.exists()) {
+				report.append("Directory does not exists!\n");
+			}
+			else {
+				long total_space = log_dir.getTotalSpace();
+				long free_space = log_dir.getFreeSpace();
+				report.append("Total space at LOG disk: ").append(total_space).append("\n");
+				report.append("Free space at LOG disk: ").append(free_space).append("\n");
+			}
+		}
+		
+		return report.toString();
+	}
+	
 	/**
 	 * Performs some operation on KIBANA
 	 */
