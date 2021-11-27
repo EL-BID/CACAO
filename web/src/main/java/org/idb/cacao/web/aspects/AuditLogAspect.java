@@ -99,6 +99,11 @@ public class AuditLogAspect {
 	 */
 	@Before("pointCutForControllerMethods()")
 	public void adviceLogControllerMethods(JoinPoint joinPoint) throws Throwable {
+
+		// Ignores auditing while running inside JUnit test cases
+		if (isJUnitTest()) {
+			return;
+		}
 		
 		AuditTrail auditTrailEntry = getAuditTrail(joinPoint);
 		if (auditTrailEntry==null)
@@ -343,4 +348,15 @@ public class AuditLogAspect {
 		return new AuditTrailParameterCollectorCollection(feedAuditField);
 	}
 	
+	/**
+	 * Check if it's running inside JUnit test
+	 */
+	public static boolean isJUnitTest() {  
+	  for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+	    if (element.getClassName().startsWith("org.junit.")) {
+	      return true;
+	    }           
+	  }
+	  return false;
+	}
 }
