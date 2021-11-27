@@ -69,5 +69,10 @@ public @interface AFieldDescriptor {
 	 */
 	String tooltip() default "";
 	
+	/**
+	 * If true, this field will be collected as additional 'parameter' at {@link AuditTrail} objects
+	 */
+	boolean audit() default false;
+	
 }
 

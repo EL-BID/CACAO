@@ -70,7 +70,7 @@ public class Taxpayer implements Serializable, Cloneable {
 	@NotNull
 	@NotEmpty
 	@Size(min=9, max=9)
-	@AFieldDescriptor(externalName = "taxpayer.id")
+	@AFieldDescriptor(externalName = "taxpayer.id", audit=true)
 	private String taxPayerId;
 
 	@Field(type=Text)
@@ -78,7 +78,7 @@ public class Taxpayer implements Serializable, Cloneable {
 	@NotNull
 	@NotEmpty
 	@Size(min=2, max=300)
-	@AFieldDescriptor(externalName = "taxpayer.name")
+	@AFieldDescriptor(externalName = "taxpayer.name", audit=true)
 	private String name;
 
 	@Field(type=Text)

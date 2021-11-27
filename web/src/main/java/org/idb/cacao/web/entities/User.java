@@ -90,7 +90,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@NotEmpty
 	@Size(max=60)
 	@Email
-	@AFieldDescriptor(externalName = "user.login")
+	@AFieldDescriptor(externalName = "user.login", audit=true)
 	private String login;
 
 	/**
@@ -107,7 +107,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@NotNull
 	@NotEmpty
 	@Size(min=4, max=120)
-	@AFieldDescriptor(externalName = "user.name")
+	@AFieldDescriptor(externalName = "user.name", audit=true)
 	private String name;
 	
 	@JsonView(Views.Public.class)
