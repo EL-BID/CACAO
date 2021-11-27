@@ -616,7 +616,7 @@ public class UserService {
 		
     	String kibana_token;
     	kibana_token = UUID.randomUUID().toString();
-		String encrypted_kibana_token = keystoreService.encrypt(kibana_token);
+		String encrypted_kibana_token = keystoreService.encrypt(KeyStoreService.PREFIX_MAIL, kibana_token);
 		user.setKibanaToken(encrypted_kibana_token);
 		userRepository.saveWithTimestamp(user);
 
@@ -678,7 +678,7 @@ public class UserService {
 	public String decryptKibanaToken(String encrypted_kibana_token) {
 		if (encrypted_kibana_token==null || encrypted_kibana_token.trim().length()==0)
 			return null;
-    	String kibana_token = keystoreService.decrypt(encrypted_kibana_token);
+    	String kibana_token = keystoreService.decrypt(KeyStoreService.PREFIX_MAIL, encrypted_kibana_token);
     	return kibana_token;
 	}
 	

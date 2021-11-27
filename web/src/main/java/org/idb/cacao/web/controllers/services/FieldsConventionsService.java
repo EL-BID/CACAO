@@ -295,8 +295,8 @@ public class FieldsConventionsService {
 	public Locale getDocsLocale() {
 		if (docsLocale!=null)
 			return docsLocale;
-		String language = env.getProperty("docs.lang.default");
-		String country = env.getProperty("docs.country.default");
+		String language = env.getProperty("cacao.user.language");
+		String country = env.getProperty("cacao.user.country");
 		docsLocale = new Locale(language, country);
 		return docsLocale;
 	}
@@ -535,8 +535,8 @@ public class FieldsConventionsService {
 
 	public FieldsConventionsService forTesting() {
 		
-		System.setProperty("docs.lang.default", "pt");
-		System.setProperty("docs.country.default", "PT");
+		System.setProperty("cacao.user.language", "pt");
+		System.setProperty("cacao.user.country", "PT");
 		env = new StandardServletEnvironment();
 		
 		messageSource = new ResourceBundleMessageSource();

@@ -73,14 +73,24 @@ public class KeyStoreService {
 
 	@Autowired
 	private Environment env;
+	
+	/**
+	 * Prefix for SSL configuration properties related to e-mail and other features
+	 */
+	public static final String PREFIX_MAIL = "mail";
+	
+	/**
+	 * Prefix for SSL configuration properties related to server HTTPS
+	 */
+	public static final String PREFIX_SERVER = "server";
 
-	public KeyStore getKeyStore() {
+	public KeyStore getKeyStore(String prefix) {
 		if (keystore!=null)
 			return keystore;
-		String keystore_file = env.getProperty("mail.ssl.key-store");
+		String keystore_file = env.getProperty(prefix+".ssl.key-store");
 		if (keystore_file==null || keystore_file.trim().length()==0)
 			return null;
-		String keystore_password = env.getProperty("mail.ssl.key-store-password");
+		String keystore_password = env.getProperty(prefix+".ssl.key-store-password");
 		if (keystore_password==null)
 			keystore_password = "";
 		if (keystore_file.startsWith("classpath:")) {
@@ -89,7 +99,7 @@ public class KeyStoreService {
 				keystore_resource_name = "/"+keystore_resource_name;
 			URL url = KeyStoreService.class.getResource(keystore_resource_name);
 			if (url==null) {
-				log.log(Level.SEVERE, "Could not find resource informed in 'server.ssl.key-store' application property: "+keystore_file);
+				log.log(Level.SEVERE, "Could not find resource informed in '"+prefix+".ssl.key-store' application property: "+keystore_file);
 				return null;
 			}
 			try {
@@ -99,7 +109,7 @@ public class KeyStoreService {
 				return keystore;
 			}
 			catch (CertificateException | KeyStoreException | NoSuchProviderException | NoSuchAlgorithmException | IOException ex) {
-				log.log(Level.SEVERE, "Could not load resource informed in 'server.ssl.key-store' application property: "+keystore_file, ex);
+				log.log(Level.SEVERE, "Could not load resource informed in '"+prefix+".ssl.key-store' application property: "+keystore_file, ex);
 				return null;				
 			}
 		}
@@ -113,22 +123,22 @@ public class KeyStoreService {
 				return keystore;
 			}
 			catch (CertificateException | KeyStoreException | NoSuchProviderException | NoSuchAlgorithmException | IOException ex) {
-				log.log(Level.SEVERE, "Could not load resource informed in 'server.ssl.key-store' application property: "+keystore_file, ex);
+				log.log(Level.SEVERE, "Could not load resource informed in '"+prefix+".ssl.key-store' application property: "+keystore_file, ex);
 				return null;				
 			}
 		}
 		else {
-			log.log(Level.SEVERE, "Unparseable value for 'server.ssl.key-store' application property: "+keystore_file);
+			log.log(Level.SEVERE, "Unparseable value for '"+prefix+".ssl.key-store' application property: "+keystore_file);
 			return null;
 		}
 	}
 	
-	public X509Certificate getCertificate() {
-		KeyStore ks = getKeyStore();
+	public X509Certificate getCertificate(String prefix) {
+		KeyStore ks = getKeyStore(prefix);
 		if (ks==null)
 			return null;
 		try {
-			String keystore_password = env.getProperty("mail.ssl.key-store-password");
+			String keystore_password = env.getProperty(prefix+".ssl.key-store-password");
 			if (keystore_password==null)
 				keystore_password = "";
 			for (String alias:Collections.list(ks.aliases())) {
@@ -142,12 +152,12 @@ public class KeyStoreService {
 		return null;
 	}
 
-	public PublicKey getPublicKey() {
-		KeyStore ks = getKeyStore();
+	public PublicKey getPublicKey(String prefix) {
+		KeyStore ks = getKeyStore(prefix);
 		if (ks==null)
 			return null;
 		try {
-			String keystore_password = env.getProperty("mail.ssl.key-store-password");
+			String keystore_password = env.getProperty(prefix+".ssl.key-store-password");
 			if (keystore_password==null)
 				keystore_password = "";
 			for (String alias:Collections.list(ks.aliases())) {
@@ -161,12 +171,12 @@ public class KeyStoreService {
 		return null;
 	}
 	
-	PrivateKey getPrivateKey() {
-		KeyStore ks = getKeyStore();
+	PrivateKey getPrivateKey(String prefix) {
+		KeyStore ks = getKeyStore(prefix);
 		if (ks==null)
 			return null;
 		try {
-			String keystore_password = env.getProperty("server.ssl.key-store-password");
+			String keystore_password = env.getProperty(prefix+".ssl.key-store-password");
 			if (keystore_password==null)
 				keystore_password = "";
 			for (String alias:Collections.list(ks.aliases())) {
@@ -180,10 +190,10 @@ public class KeyStoreService {
 		return null;
 	}
 
-	public String decrypt(String token) {
+	public String decrypt(String prefix,String token) {
 		if (token==null || token.length()==0)
 			return token;
-		PrivateKey key = getPrivateKey();
+		PrivateKey key = getPrivateKey(prefix);
 		if (key==null)
 			return token;
 		try {
@@ -193,14 +203,14 @@ public class KeyStoreService {
 		}
 	}
 	
-	public String encrypt(String token) {
+	public String encrypt(String prefix,String token) {
 		if (token==null || token.length()==0)
 			return token;
-		PrivateKey key = getPrivateKey();
+		PrivateKey key = getPrivateKey(prefix);
 		if (key==null)
 			return token;
 		try {
-			return CryptoUtils.encrypt(token, key, getCertificate());
+			return CryptoUtils.encrypt(token, key, getCertificate(prefix));
 		} catch (Exception e) {
 			return token;
 		}
@@ -210,13 +220,13 @@ public class KeyStoreService {
 	 * Verifies existence of the KeyStore to be used for SSL. Creates a self-signed
 	 * certificate if the provided filename does not exist.
 	 */
-	public void assertKeyStoreForSSL() {
+	public void assertKeyStoreForSSL(String prefix) {
 		try {
 			
-			if (!"true".equalsIgnoreCase(env.getProperty("server.ssl.enabled")))
+			if (!"true".equalsIgnoreCase(env.getProperty(prefix+".ssl.enabled")))
 				return;
 
-			String keystore_prop = env.getProperty("server.ssl.key-store");
+			String keystore_prop = env.getProperty(prefix+".ssl.key-store");
 			if (keystore_prop==null || keystore_prop.trim().length()==0)
 				return;
 			
@@ -227,8 +237,8 @@ public class KeyStoreService {
 			File file = FileUtils.toFile(url).getCanonicalFile();
 			if (!file.exists()) {
 				log.log(Level.WARNING, "Did not find keystore file "+file.getAbsolutePath()+", so will generate a self-signed!");
-				String alias = env.getProperty("server.ssl.key-alias", "cacao");
-				String password = env.getProperty("server.ssl.key-store-password");
+				String alias = env.getProperty(prefix+".ssl.key-alias", "cacao");
+				String password = env.getProperty(prefix+".ssl.key-store-password");
 				genSelfSigned(file, alias, password);
 			}
 		}

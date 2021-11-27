@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web;
 
+import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,6 +30,7 @@ import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.KibanaSpacesService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.controllers.services.UserService;
+import org.idb.cacao.web.controllers.ui.AdminUIController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -75,6 +77,12 @@ public class WebApplication {
 	 */
 	public static void main(String[] args) {
 		
+		File log_dir = AdminUIController.getLogDir();
+		if (log_dir!=null && !log_dir.exists()) {
+			System.out.println("Creating LOG directory at "+log_dir.getAbsolutePath());
+			log_dir.mkdirs();
+		}
+
 		SpringApplication.run(WebApplication.class, args);
 	}
 
@@ -84,8 +92,8 @@ public class WebApplication {
 	@PostConstruct
 	public void doSomethingBeforeStartup() {
 
-		keyStoreService.assertKeyStoreForSSL();
-		// fileProducerService.sendBookkeepingFile();
+		keyStoreService.assertKeyStoreForSSL(KeyStoreService.PREFIX_SERVER);
+		keyStoreService.assertKeyStoreForSSL(KeyStoreService.PREFIX_MAIL);
 		
 		if ("true".equalsIgnoreCase(env.getProperty("use.kafka.embedded", "false"))) {
 			startKafkaEmbedded();

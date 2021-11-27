@@ -109,6 +109,7 @@ public class ElasticSearchService {
 				: existing_spaces.stream().map(KibanaSpace::getId).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 		
 		if (!existing_spaces_ids.contains("declarant-public")) {
+			log.log(Level.INFO, "Creating Kibana space 'declarant-public'");
 			// Public space for declarant's dashboards
 			KibanaSpace space = new KibanaSpace();
 			space.setId("declarant-public");
@@ -121,6 +122,7 @@ public class ElasticSearchService {
 		}
 
 		if (!existing_spaces_ids.contains("tax-public")) {
+			log.log(Level.INFO, "Creating Kibana space 'tax-public'");
 			// Public space for tax administration dashboards
 			KibanaSpace space = new KibanaSpace();
 			space.setId("tax-public");
@@ -133,6 +135,7 @@ public class ElasticSearchService {
 		}
 
 		if (!existing_spaces_ids.contains("tax-master")) {
+			log.log(Level.INFO, "Creating Kibana space 'tax-master'");
 			// Public space for tax master manager dashboards
 			KibanaSpace space = new KibanaSpace();
 			space.setId("tax-master");

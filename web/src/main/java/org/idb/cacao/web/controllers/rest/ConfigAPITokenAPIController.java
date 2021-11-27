@@ -82,7 +82,7 @@ public class ConfigAPITokenAPIController {
     	String encrypted_api_token = user.getApiToken();
     	if (encrypted_api_token==null || encrypted_api_token.trim().length()==0)    		
     		return ResponseEntity.ok().body(Collections.singletonMap("token",""));
-    	String api_token = keystoreService.decrypt(encrypted_api_token);
+    	String api_token = keystoreService.decrypt(KeyStoreService.PREFIX_MAIL, encrypted_api_token);
     	return ResponseEntity.ok().body(Collections.singletonMap("token",api_token));
 	}
 
@@ -125,7 +125,7 @@ public class ConfigAPITokenAPIController {
     	
     	String api_token;
 		api_token = UUID.randomUUID().toString();
-		String encrypted_api_token = keystoreService.encrypt(api_token);
+		String encrypted_api_token = keystoreService.encrypt(KeyStoreService.PREFIX_MAIL, api_token);
 		user.setApiToken(encrypted_api_token);
 		userRepository.saveWithTimestamp(user);
     	

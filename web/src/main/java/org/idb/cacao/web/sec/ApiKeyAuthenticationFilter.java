@@ -118,7 +118,7 @@ public class ApiKeyAuthenticationFilter implements Filter {
     	for (User user:userRepository.findAll()) {
     		if (user.getApiToken()==null || user.getApiToken().trim().length()==0)
     			continue;
-    		String decrypted = ksRepository.decrypt(user.getApiToken());
+    		String decrypted = ksRepository.decrypt(KeyStoreService.PREFIX_MAIL, user.getApiToken());
     		if (decrypted.equals(apiKey)) {
     			return Optional.of(user);
     		}

@@ -64,14 +64,14 @@ public class ConfigSyncService implements IConfigSyncService {
 	public String decryptToken(String token) {
 		if (token==null || token.length()==0)
 			return token;
-		return keystoreService.decrypt(token);
+		return keystoreService.decrypt(KeyStoreService.PREFIX_MAIL, token);
 	}
 	
 	@Override
 	public String encryptToken(String token) {
 		if (token==null || token.length()==0)
 			return token;
-		return keystoreService.encrypt(token);
+		return keystoreService.encrypt(KeyStoreService.PREFIX_MAIL, token);
 	}
 
 }

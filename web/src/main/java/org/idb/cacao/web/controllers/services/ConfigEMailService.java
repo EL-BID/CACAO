@@ -63,14 +63,14 @@ public class ConfigEMailService implements IConfigEMailService {
 	public String decryptPassword(String password) {
 		if (password==null || password.length()==0)
 			return password;
-		return keystoreService.decrypt(password);
+		return keystoreService.decrypt(KeyStoreService.PREFIX_MAIL, password);
 	}
 	
 	@Override
 	public String encryptPassword(String password) {
 		if (password==null || password.length()==0)
 			return password;
-		return keystoreService.encrypt(password);
+		return keystoreService.encrypt(KeyStoreService.PREFIX_MAIL, password);
 	}
 	
 }
