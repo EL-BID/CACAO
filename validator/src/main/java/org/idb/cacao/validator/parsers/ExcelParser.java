@@ -28,6 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -44,6 +46,8 @@ import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 
 public class ExcelParser implements FileParser {
+	
+	private static final Logger log = Logger.getLogger(ExcelParser.class.getName());
 	
 	/**
 	 * Maximum number of successive empty rows (for columnar data) or successive empty columns (for row data) for determining the
@@ -242,8 +246,7 @@ public class ExcelParser implements FileParser {
 			}
 			
 		} catch (IOException | EncryptedDocumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error trying to read Excel file " + path.getFileName(), e);
 		}
 
 	}
@@ -360,8 +363,7 @@ public class ExcelParser implements FileParser {
 			};
 
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error trying to iterate data from Excel file " + path.getFileName(), e);
 		}
 
 		return null;

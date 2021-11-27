@@ -32,10 +32,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.idb.cacao.account.elements.AccountCategory;
 import org.idb.cacao.account.elements.AccountSubcategory;
+import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
@@ -47,8 +49,10 @@ import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
+import org.idb.cacao.validator.controllers.services.FileUploadedConsumerService;
 import org.idb.cacao.validator.parsers.CSVParser;
 import org.idb.cacao.validator.parsers.DataIterator;
+import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 import org.idb.cacao.validator.validations.Validations;
 import org.junit.jupiter.api.AfterAll;
@@ -80,7 +84,13 @@ public class ValidationTests {
 	private Validations validations;
 	
 	@Autowired
-	private DomainTableRepository domainTableRepository;	
+	private DomainTableRepository domainTableRepository;
+	
+	@Autowired
+	private DocumentUploadedRepository documentUploadedRepository;
+	
+	@Autowired
+	private FileUploadedConsumerService fileUploadedConsumerService;
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -203,8 +213,15 @@ public class ValidationTests {
 		Resource sampleFile = new ClassPathResource("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts_validations.csv");
 		assertTrue(sampleFile.exists());
 		
-		DocumentUploaded doc = new DocumentUploaded();
+		DocumentUploaded doc = new DocumentUploaded();		
 		doc.setTemplateName(template.getName());
+		doc.setFilename("20211411 - Pauls Guitar Shop - Chart of Accounts_validations.csv");
+		doc.setFileId(UUID.randomUUID().toString());
+		doc.setSituation(DocumentSituation.RECEIVED);
+		doc.setTemplateVersion("1.0");
+		doc = documentUploadedRepository.saveWithTimestamp(doc);
+		
+		fileUploadedConsumerService.validateDocument(doc.getId());
 		
 		ValidationContext validationContext = new ValidationContext();
 		validationContext.setDocumentUploaded(doc);

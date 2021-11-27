@@ -997,10 +997,13 @@ public class DocumentStoreAPIController {
 		}
 		
 		//If user is not authorized to get documents from this taxpayer, returr error
-		if ( filterTaxpayersIds != null && !filterTaxpayersIds.isEmpty() ) {
-			if ( !filterTaxpayersIds.contains(doc.getTaxPayerId()) )
+		if ( filterTaxpayersIds != null ) {
+		
+			if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(doc.getTaxPayerId())) {
 				throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-						messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
+						messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
+			}			
+				
 		}
 
 		try {
