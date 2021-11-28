@@ -56,13 +56,17 @@ public class DomainTableUIController {
 	@GetMapping("/domaintables")
 	@Transactional
 	public String getDomainTables(Model model) {
-		
 		return "domain/domain-tables";
 	}
 
 	@GetMapping("/adddomaintable")
 	public String showAddDomainTable(DomainTable table, Model model) {
-		return "domain/add-domain-table";
+		model.addAttribute("table", new DomainTable());
+		model.addAttribute("languages", domainTableService.getProvidedLanguages().stream()
+				.map(l -> new NameId(l.name(), messageSource.getMessage(l.toString(), null, LocaleContextHolder.getLocale())))
+				.collect(Collectors.toList()));
+
+		return "domain/add-domain-tables";
 	}
 
 	@GetMapping("/editdomaintable/{id}")

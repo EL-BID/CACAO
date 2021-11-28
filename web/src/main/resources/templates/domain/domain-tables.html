@@ -22,7 +22,7 @@
 		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/add-domain-table}" class="ui button"><i class="plus icon"></i><span th:text="#{domain.table.new}">New Domain Table</span></a>
+				<a th:href="@{/adddomaintable}" class="ui blue button"><i class="plus icon"></i><span th:text="#{domain.table.new}">New Domain Table</span></a>
 			</div>
 		</div>
 	</div>
@@ -76,19 +76,19 @@ var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i
 var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
 this.table = new Tabulator('#table', {
     index: 'id',
-    layout: "fitColumns", //fit columns to width of table (optional)
+    layout: "fitDataFill", //fit columns to width of table (optional)
     pagination: true,
     paginationMode: "remote", //enable remote pagination
     ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request
     paginationSize: 5,
     ajaxContentType: "json",
-    
+    responsiveLayout: "collapse",
     columns:[ //Define Table Columns
-        {title: /*{{#domain.table.name}}*/ "Name", field:"name"},
-        {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left" },
-        {title: /*{{#domain.table.group}}*/ "Group", field:"group", width: 150 },
-        {formatter:editIcon, width:50, cellClick: editRow, headerSort:false},
-        {formatter:trashIcon, width:50, cellClick: deleteRow, headerSort:false}
+        {title: /*{{#domain.table.name}}*/ "Name", field:"name", responsive:0},
+        {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left", responsive:1 },
+        {title: /*{{#domain.table.group}}*/ "Group", field:"group", responsive:2},
+        {formatter:editIcon, width:50, cellClick: editRow, headerSort:false, responsive:0},
+        {formatter:trashIcon, width:50, cellClick: deleteRow, headerSort:false, responsive:0}
     ]
 })
 </script>

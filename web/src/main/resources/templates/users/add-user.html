@@ -16,9 +16,10 @@
 			<div class="content" th:text="#{user.new}">New User</div>
 		</h2>
 		<div id="app">
-		<div class="ui center aligned container">
+		<div class="ui container">
 			<div class="ui orange segment">
-				<form class="ui large form" :class="{ error: msg }" action="#" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
+				<form class="ui form" :class="{ error: msg }" action="#" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
+                    <div class="field">
 						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
 							<div class="content" th:text="#{user.name}">User Name</div>
 						</h4>
