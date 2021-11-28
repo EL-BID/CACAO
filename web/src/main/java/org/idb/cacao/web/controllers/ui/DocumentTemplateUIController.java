@@ -84,12 +84,8 @@ public class DocumentTemplateUIController {
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
         model.addAttribute("template", template);
-        Map<Object, Object> fieldTypes = Arrays.stream(FieldType.values())
-        	.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
-        model.addAttribute("fieldTypes", fieldTypes);
-        Map<String, String> fieldMappings = Arrays.stream(FieldMapping.values())
-			.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
-        model.addAttribute("fieldMappings", fieldMappings);
+        model.addAttribute("fieldTypes", FieldType.values());
+        model.addAttribute("fieldMappings", FieldMapping.values());
         return "templates/edit_template";
     }
     
@@ -117,12 +113,9 @@ public class DocumentTemplateUIController {
 				break;
 		}
 		model.addAttribute("template", template);
-		Map<Object, Object> fieldTypes = Arrays.stream(FieldType.values())
-	        	.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
-        model.addAttribute("fieldTypes", fieldTypes);
-        Map<String, String> fieldMappings = Arrays.stream(FieldMapping.values())
-			.collect(Collectors.toMap(t -> t.name(), t -> messages.getMessage(t.toString(), null, LocaleContextHolder.getLocale())));
-        model.addAttribute("fieldMappings", fieldMappings);
+        model.addAttribute("template", template);
+        model.addAttribute("fieldTypes", FieldType.values());
+        model.addAttribute("fieldMappings", FieldMapping.values());
         return "templates/edit_template";
     
     }

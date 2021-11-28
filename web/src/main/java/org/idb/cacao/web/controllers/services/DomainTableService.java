@@ -282,7 +282,7 @@ public class DomainTableService {
 	}
 	
 	/**
-     * Search user objects using AdvancedSearch filters
+     * Search Domain Table objects using AdvancedSearch filters
      */
 	@Transactional(readOnly=true)
 	public Page<DomainTable> searchDomainTables(Optional<AdvancedSearch> filters,

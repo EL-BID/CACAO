@@ -238,11 +238,13 @@ public class SearchUtils {
 		final TermsAggregationBuilder aggregation = AggregationBuilders.terms("top_items")
 	            .field(distinctField);
 		final SearchSourceBuilder builder = new SearchSourceBuilder().aggregation(aggregation);
-		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query.should(new MatchQueryBuilder(searchField, searchText));
-		query.should(new MatchPhrasePrefixQueryBuilder(searchField, searchText));
-		
-		builder.query(query);
+		if(searchText!=null && !searchText.isEmpty()) {
+			BoolQueryBuilder query = QueryBuilders.boolQuery();
+			query.should(new MatchQueryBuilder(searchField, searchText));
+			query.should(new MatchPhrasePrefixQueryBuilder(searchField, searchText));
+			
+			builder.query(query);
+		}
 		SearchRequest searchRequest = new SearchRequest(indexName).source(builder);
 		final SearchResponse response = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 

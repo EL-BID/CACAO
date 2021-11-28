@@ -4,8 +4,10 @@ import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,6 +31,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -89,16 +92,26 @@ public class DomainTableAPIController {
 					DomainTable.class, 
 					"name.keyword",
 					"name",
-					term.orElse(null));
+					term.orElse(""));
 		} catch(IOException e) {
 			result = new ArrayList<>();
 		}
 		return ResponseEntity.ok().body(result);
 	}
 	
+	/**
+	 * Method used for returning domain tables versions for a domain table name. 
+	 */
+	@GetMapping("/domaintable/versions")
+	@ApiOperation(value="Method used for returning domain table that match a given term. Useful for 'auto complete' fields")
+	public ResponseEntity<Set<String>> getDomainTableVersons(
+			@ApiParam(required=true) @RequestParam("name") String name) {
+		Set<String> result=domainTableService.getDomainTablesVersions(name);
+		return ResponseEntity.ok().body(result);
+	}
 
 	@GetMapping("/domaintables")
-	@ApiOperation(value="Method used for listing users using pagination")
+	@ApiOperation(value="Method used for listing domain tables using pagination")
 	public PaginationData<DomainTable> getDomainTables(
 			Model model, @RequestParam("page") Optional<Integer> page,
 			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
@@ -119,7 +132,7 @@ public class DomainTableAPIController {
 	
 //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
     @DeleteMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deletes an existing user",response=DomainTable.class)
+	@ApiOperation(value="Deletes an existing domain table",response=DomainTable.class)
     public ResponseEntity<Object> deleteUser(@PathVariable("id") String id) {
         DomainTable table = domainTableRepository.findById(id).orElse(null);
         if (table==null)
@@ -127,20 +140,20 @@ public class DomainTableAPIController {
         
         log.log(Level.INFO, "Deleting domain table #"+id+" "+ table.getId() +" " + table.getName());
         
-        // Removes User object itself
+        // Removes Domain Table object itself
 
         domainTableRepository.delete(table);
         return ResponseEntity.ok().body(table);
     }
 
     @PutMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Updates an existing user",response=DomainTable.class)
+	@ApiOperation(value="Updates an existing domain table",response=DomainTable.class)
     public ResponseEntity<Object> updateDomainTable(@PathVariable("id") String id, @Valid @RequestBody DomainTable table, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        Optional<DomainTable> table_in_database = domainTableRepository.findById(id);
+//        Optional<DomainTable> table_in_database = domainTableRepository.findById(id);
         
         log.log(Level.INFO, "Changing domain table #"+id+" "+table.getId() +" "+ table.getName());
 
@@ -149,4 +162,19 @@ public class DomainTableAPIController {
         
         return ResponseEntity.ok().body(table);
     }
+    
+    @PostMapping(value="/domaintable", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Adds a new domain table",response=DomainTable.class)
+    public ResponseEntity<Object> addDomainTable(@Valid @RequestBody DomainTable table, BindingResult result) {
+        if (result.hasErrors()) {
+        	return ControllerUtils.returnErrors(result, messageSource);
+        }
+        
+        log.log(Level.INFO, "Adding domain table "+ table.getName());
+
+        domainTableRepository.saveWithTimestamp(table);
+        
+        return ResponseEntity.ok().body(table);
+    }
+
 }

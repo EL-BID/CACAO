@@ -41,7 +41,7 @@
                     </div>
 					<div class="row">
 						<input type="submit" class="ui blue button" th:value="#{save}" value="Save">
-						<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" >
+						<input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel" >
 					</div>
 				</form>
 			</div>
@@ -85,7 +85,7 @@ domain_table.entries = domain_table.entries.map( (entry, i) => {
 })
 var next_id = domain_table.entries.length
 $('#cancel').click(function(){
-    go_to_location_keeping_state([[@{/domaintables}]]) 
+    window.location.replace([[@{/domaintables}]]) 
 })
 var add_entry = function(event, fields) {
 	event.preventDefault()

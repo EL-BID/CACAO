@@ -24,7 +24,7 @@
 			</div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/adduser}" class="ui button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
+				<a th:href="@{/adduser}" class="ui blue button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
 			</div>
 		</div>
 	</div>
@@ -34,74 +34,86 @@
 <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
-var app = new Vue({
-	el: '#app',
-	data: {
-		table: null
-	},
-	methods: {
-		editRow(e, cell) {
-			console.log('edit  ' + cell.getRow().getIndex() )
-			window.location.replace([[@{/edituser/}]] +  cell.getRow().getIndex());
-			
-		},
-		sendDelete(userId) {
-			$.ajax({
-			    url: [[@{/api/user/}]] + userId,
-			    type: 'DELETE',
-			    dataType: 'json',
-			    contentType: 'application/json',
-			    cache: false,  
-			    success: this.onDeleteSuccess,
-			    error: this.onDeleteError
-			})
-		},
-		onDeleteSuccess(result) {
-			$('#modal_successful').modal('show')
-			setTimeout(function(){
-				window.location.replace([[@{/users}]])
-			}, 2000);
-		},
-		onDeleteError(e) {
-			var msg = e.responseText.replace(/\n/g, "<br />");
-			$('#modal_failed').find('.description').html(msg)
-			$('#modal_failed').modal('show')
-			console.log("ERROR : "+ msg);
-		},
-		deleteRow(e, cell) {
-			console.log('delete ' + cell.getRow().getIndex())
-			var dlg = $('#modal_confirm')
-			dlg.find('.description').html([[#{user.delete.confirm}]])
-			var self=this
-			dlg.modal({
-			  closable:false,
-			  onApprove: function() { self.sendDelete(cell.getRow().getIndex()) }
-	        })
-			dlg.modal('show');
-		}
-	},
-	mounted() {
-		var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
-		var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
-		this.table = new Tabulator('#table', {
-			index: 'id',
-			layout: "fitColumns", //fit columns to width of table (optional)
-		    pagination: true,
-			paginationMode: "remote", //enable remote pagination
-    		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
-			paginationSize: 5,
-			ajaxContentType: "json",
-			
-			columns:[ //Define Table Columns
-				{title: /*{{#user.name}}*/ "Name", field:"name"},
-				{title: /*{{#user.login}}*/ "Login", field:"login", hozAlign:"left" },
-				{title: /*{{#user.profile}}*/ "Profile", field:"profile", width: 150 },
-				{formatter:editIcon, width:50, cellClick: this.editRow, headerSort:false},
-				{formatter:trashIcon, width:50, cellClick: this.deleteRow, headerSort:false}
-			]
-		})
-	}
+let editRow = function(e, cell) {
+  window.location.replace([[@{/edituser/}]] +  cell.getRow().getIndex());
+}
+
+let sendDelete = function(userId) {
+	$.ajax({
+	    url: [[@{/api/user/}]] + userId,
+	    type: 'DELETE',
+	    dataType: 'json',
+	    contentType: 'application/json',
+	    cache: false,  
+	    success: onDeleteSuccess,
+	    error: onDeleteError
+	})
+}
+
+let onDeleteSuccess = function(result) {
+	$('#modal_successful').modal('show')
+	setTimeout(function(){
+		window.location.replace([[@{/users}]])
+	}, 2000);
+}
+		
+let onDeleteError = function(e) {
+	var msg = e.responseText.replace(/\n/g, "<br />");
+	$('#modal_failed').find('.description').html(msg)
+	$('#modal_failed').modal('show')
+	console.log("ERROR : "+ msg);
+}
+
+let deleteRow = function(e, cell) {
+    var dlg = $('#modal_confirm')
+	dlg.find('.description').html([[#{user.delete.confirm}]])
+	dlg.modal({
+	    closable:false,
+	    onApprove: function() { 
+		  sendDelete(cell.getRow().getIndex()) 
+	    }
+    })
+	dlg.modal('show');
+}
+
+let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+let trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+let table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitData", //fit columns to width of table (optional)
+    pagination: true,
+	paginationMode: "remote", //enable remote pagination
+		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
+	paginationSize: 5,
+	ajaxContentType: "json",
+	paginationSizeSelector:[10, 25, 50],
+	locale:'xx',
+	langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
+	columns:[ //Define Table Columns
+		{title: /*[[#{user.name}}*/ "Name", field:"name"},
+		{title: /*[[#{user.login}}*/ "Login", field:"login", hozAlign:"left" },
+		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", width: 150 },
+		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
+		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
+	]
 })
+
 </script>
 </body>
 </html>

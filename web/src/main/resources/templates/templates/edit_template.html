@@ -1,345 +1,365 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
-<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<html xmlns:th="http://www.thymeleaf.org"
+  th:with="lang=${#locale.language}" th:lang="${lang}">
+<head
+  th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
 <!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+<link rel="stylesheet" type="text/css" class="ui"
+  href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"><</script>
 </head>
 <body>
-	<!-- Fix to avoid overlap from the Menu -->
-	<div>
-		<br>
-	</div>
-	<div class="ui container">
-		<h2 class="ui header">
-			<i class="file alternate outline icon"></i>
-			<div th:if="${template.id==null}" class="content" th:text="#{template.new}">New Declaration Template</div>
-            <div th:if="${template.id!=null}" class="content" th:text="#{template.edit}">Edit Declaration Template</div>
-		</h2>
-		<div id="app">
-		<div class="ui container">
-			<div class="ui orange segment">
-				<form action="#" class="ui large form" :class="{ error: msg }" th:object="${template}" method="post" @submit.prevent="processForm">
-				  <div class="fields">
-					<div class="ten wide field">
-						<label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label>
-						<input type="text" v-model="template.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
-						<span v-if="msg.name" class="ui error message">{{ msg.name }}</span>
-					</div>
-					<div class="six wide field">
-						<label th:text="#{template.version}" style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
-						<input type="text" v-model="template.version" class="form-control" id="version" placeholder="version" th:placeholder="#{template.version}">
-						<span v-if="msg.version" class="ui error message">{{ msg.version }}</span>
-					</div>
-				  </div>
-				  <div class="fields">
-					<div class="five wide field">
-						<label th:text="#{template.periodicity}" style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
-						<select v-model="template.periodicity" class="ui fluid dropdown">
-							<option disabled value="">Select the periodicity</option>
-							<option th:each="i : ${T(org.idb.cacao.api.Periodicity).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
-						</select>
-						<span v-if="msg.periodicity" class="ui error message">{{ msg.periodicity }}</span>
-					</div>
-					<div class="eleven wide field"> 
-						<label th:text="#{template.group}" style="margin-bottom: 0px; text-transform: uppercase;">"Group</label>
-						<input type="text" v-model="template.group" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
-						<span v-if="msg.grouip" class="ui error message">{{ msg.group }}</span>
-					</div>
-				  </div>
-					<div class="field">
-    					<div class="ui checkbox">
-	      					<input type="checkbox" tabindex="0" class="hidden" v-model="template.required">
-	      					<label th:text="#{template.required}">Required</label>
-    					</div>
-  					</div>
-					<div class="row">
-						<input type="submit" class="ui blue button" th:value="#{save}" value="Save" @click.prevent="processForm">
-						<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" @click.prevent="cancel">
-					</div>
-				</form>
-			</div>
-			<h4 class="ui dividing header" th:text="#{template.fields.title}">Template Fields</h4>
-            <div id="table" class="ui table"></div>
-            <button class="ui primary button" @click="newField" th:text="#{field.new}"></button>
+  <!-- Fix to avoid overlap from the Menu -->
+  <div>
+    <br>
+  </div>
+  <div class="ui container">
+    <h2 class="ui header">
+      <i class="file alternate outline icon"></i>
+      <div th:if="${template.id==null}" class="content" th:text="#{template.new}">New Declaration Template</div>
+      <div th:if="${template.id!=null}" class="content" th:text="#{template.edit}">Edit Declaration Template</div>
+    </h2>
+    <div class="ui container">
+      <div class="ui orange segment">
+        <form action="#" name="form" id="form" class="ui form" th:object="${template}" method="post">
+          <div class="fields">
+            <div class="ten wide field">
+              <label th:text="#{template.name}"
+                style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label> 
+                <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
+                <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-		<div class="ui container">
-          <div class="ui overlay modal" id='modal_edit_field' v-if="field">
-          <div class="header" th:text="#{template.field}"></div>
-          <div class="scrolling content">
-          <div class="ui container">
-          <form class="ui form" id="form_edit_field">
-            <div class="fields">
-              <div class="eight wide field">
-                <label th:text="#{field.name}">Field Name <i class="blue info circle icon"></i></label>
-                <input type="text" v-model="field.fieldName" placeholder="Field Name">
-              </div>
-              <div class="four wide field">
-                <label th:text="#{field.type}">Field Type</label>
-                <select class="ui selection dropdown" v-model="field.fieldType">
-                  <option value="">Select</option>
-                  <option v-for="(name, value) in fieldTypes" :value="value">{{ name }}</option>
-                </select>
-              </div>
-              <div class="four wide field">
-                <label th:text="#{field.mapping}">Field Mapping</label>
-                <select class="ui selection dropdown" v-model="field.fieldMapping" id="selectFieldMapping">
-                  <option value="">Select</option>
-                  <option v-for="(name, value) in fieldMappings" v-if="value" :value="value">{{ name }}</option>
-                </select>
-              </div>
+            <div class="six wide field">
+              <label th:text="#{template.version}" style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
+              <input type="text" th:field="*{version}" th:value="*{version}" class="form-control" id="version" placeholder="version" th:placeholder="#{template.version}"> 
+              <span th:if="${#fields.hasErrors('version')}" th:errors="*{version}" class="ui warning message"></span>
             </div>
-            <div class="field">
-              <label th:text="#{field.description}">Description</label>
-              <textarea rows="2" v-model="field.description"></textarea>
+          </div>
+          <div class="fields">
+            <div class="five wide field">
+              <label th:text="#{template.periodicity}" style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
+              <select th:field="*{periodicity}" class="ui fluid dropdown local" id="selectPeriodicity">
+                <option disabled value="">Select the periodicity</option>
+                <option
+                  th:each="i : ${T(org.idb.cacao.api.Periodicity).values()}"
+                  th:value="${i.name()}" th:text="#{${i}}"
+                  th:selected="${i==template.periodicity}">></option>
+              </select> 
+              <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-            <div class="field" v-show="isText">
-              <label th:text="#{field.length.max}">Max Length</label>
-              <div class="ui input">
-              <input type="number" v-model.number="field.maxLength" max="9999">
-              </div>
+            <div class="eleven wide field">
+              <label th:text="#{template.group}"
+                style="margin-bottom: 0px; text-transform: uppercase;">"Group</label>
+              <input type="text" th:field="*{group}" th:value="*{group}" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
+              <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-            <div class="two fields" v-show="field.fieldType=='DOMAIN'">
-              <div class="field">
-                 <label th:text="#{field.domain.name}">Domain Table Name</label>
-                 <div class="ui search selection dropdown" id="select_domain_table">
-                   <input type="hidden" class="noselection">
-                   <i class="dropdown icon"></i>
-                   <input type="text" class="search" tabindex="0">
-                 </div>
+          </div>
+          <div class="field">
+            <div class="ui checkbox">
+              <input type="checkbox" tabindex="0" class="hidden"
+                th:field="*{required}" th:checked="*{required}">
+              <label th:text="#{template.required}">Required</label>
+            </div>
+          </div>
+          <div class="row">
+            <input type="submit" class="ui blue button"  th:value="#{save}" value="Save"> 
+            <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
+          </div>
+        </form>
+      </div>
+      <h4 class="ui centered dividing header" th:text="#{template.fields.title}">Template Fields</h4>
+      <div id="table" class="ui table"></div>
+      <button class="ui primary button" id="newField" th:text="#{field.new}"></button>
+    </div>
+    <div class="ui container">
+      <div class="ui long overlay scrolling modal" id='modal_edit_field'>
+        <div class="header" th:text="#{template.field}"></div>
+        <div class="content">
+            <form class="ui form" id="form_edit_field">
+              <div class="fields">
+                <div class="eight wide field">
+                  <label th:text="#{field.name}">Field Name</i></label> 
+                  <input id="fieldName" type="text" name="fieldName" value="" placeholder="Field Name">
+                </div>
+                <div class="four wide field">
+                  <label th:text="#{field.type}">Field Type</label> 
+                  <select id="fieldType" class="ui selection dropdown" name="fieldType">
+                    <option value="">Select</option>
+                    <option th:each="i : ${fieldTypes}" th:value="${i.name()}"
+                      th:text="#{${i.toString()}}"></option>
+                  </select>
+                </div>
+                <div class="four wide field">
+                  <label th:text="#{field.mapping}">Field Mapping</label> 
+                  <select id="fieldMapping" class="ui selection dropdown local"
+                    name="fieldMapping">
+                    <option value="">Select</option>
+                    <option th:each="i : ${fieldMappings}"
+                      th:value="${i.name()}" th:text="#{${i.toString()}}"></option>
+                  </select>
+                </div>
               </div>
               <div class="field">
-                 <label th:text="#{field.domain.version}">Domain Table Version</label>
-                 <div class="ui search" id="select_domain_version">
-                   <div class="ui icon input">
-                     <input type="text" class="search" value="">
-                     <i class="search icon"></i>
-                   </div>
-                 </div>
+                <label th:text="#{field.description}">Description</label>
+                <textarea id="field_description" rows="2" name="description" value=""></textarea>
               </div>
-            </div>
-            <div class="field">
-              <div class="ui checkbox">
-                <input type="checkbox" v-model="field.required" class="hidden">
-                <label th:text="#{field.required}">Required</label>
+              <div class="field" id="maxLength">
+                <label th:text="#{field.length.max}">Max Length</label>
+                <div class="ui input">
+                  <input id="fieldMaxLength" type="number" name="maxLength" value="" max="9999">
+                </div>
               </div>
-            </div>
-            <div class="field">
-              <div class="ui checkbox">
-                <input type="checkbox" v-model="field.personalData" class="hidden">
-                <label th:text="#{field.personal.data}">Personal Data</label>
+              <div class="two fields" id="domainTable">
+                <div class="field">
+                  <label th:text="#{field.domain.name}">Domain Table Name</label>
+                  <div class="ui search selection dropdown" id="select_domain_table">
+                    <input id="fieldDomainTableName" type="hidden" name="domainTableName">
+                    <div class="default text" id="fieldDomainTableNameText">Select Domain Table</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label th:text="#{field.domain.version}">Domain Table Version</label>
+                  <div class="ui selection dropdown" id="select_domain_version">
+                    <input id="fieldDomainTableVersion" type="hidden" name="domainTableVersion">
+                    <div class="default text" id="fieldDomainTableVersionText">Select Domain Version</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="inline field">
-              <div class="ui checkbox">
-                <input type="checkbox" v-model="field.fileUniqueness" class="hidden">
-                <label th:text="#{field.file.uniqueness}">File Uniqueness</label>
+              <div class="field">
+                <div class="ui checkbox">
+                  <input id="fieldRequired" type="checkbox" name="required" value="" class="hidden"> 
+                  <label th:text="#{field.required}">Required</label>
+                </div>
               </div>
-            </div>
-          </form>
+              <div class="field">
+                <div class="ui checkbox">
+                  <input id="fieldPersonalData" type="checkbox" name="personalData" value="" class="hidden"> 
+                  <label th:text="#{field.personal.data}">Personal Data</label>
+                </div>
+              </div>
+              <div class="inline field">
+                <div class="ui checkbox">
+                  <input id="fieldFileUniqueness" type="checkbox" name="fileUniqueness" value="" class="hidden"> 
+                  <label th:text="#{field.file.uniqueness}">File Uniqueness</label>
+                </div>
+              </div>
+            </form>
+        </div>
+        <div class="actions">
+          <div class="ui approve blue button" th:text="#{continue}">Continue</div>
+          <div class="ui cancel button" th:text="#{cancel}">Cancel</div>
         </div>
       </div>
-      <div class="actions">
-        <div class="ui approve button" th:text="#{continue}">Continue</div>
-        <div class="ui cancel button" th:text="#{cancel}">Cancel</div>
-      </div>
+
     </div>
-			
-	</div>
-	</div>
-	</div>
-	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
-	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
-	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
-	<script th:nonce="${cspNonce}" th:inline="javascript">
-var app = new Vue({
-	el: '#app',
-	data: {
-		template: {
-			id: [[${template.id}]],
-			name: [[${template.name}]],
-			version: [[${template.version}]],
-			group: [[${template.group}]],
-			periodicity: [[${template.periodicity}]],
-			required: [[${template.required}]],
-			fields: [[${template.fields}]]
-		},
-		msg: [],
-		table: null,
-	    field: null,
-	    field_old: null,
-	    fieldTypes: [[${fieldTypes}]],
-		fieldMappings: [[${fieldMappings}]]
-	},
-	methods: {
-		cancel() {
-			window.location.replace([[@{/templates}]])
-		},
-		processForm() {
-			[# th:if="${template.id==null}"]
-			let url = [[@{/api/template}]]
-			let req_type = 'POST'
-			[/]
-			[# th:if="${template.id!=null}"]
-			let url = [[@{/api/template/{id}(id=${template.id})}]]
-			let req_type = 'PUT'
-			[/]
-			$.ajax({
-   			    url: url,
-   			    type: req_type,
-   			    dataType: 'json',
-   			    contentType: 'application/json',
-   			    data: JSON.stringify(this.template),
-   			    cache: false,    
-   				success: function(result) {
-   					$('#modal_successful').modal('show')
-   					setTimeout(function(){
-   						window.location = [[@{/templates}]]
-   					}, 2000);
-   				},
-   				error: function(e) {
-   					var msg = e.responseText.replace(/\n/g, "<br />");
-   					$('#modal_failed').find('.description').html(msg)
-   					$('#modal_failed').modal('show')
-   					console.log("ERROR : "+msg);
-   				}
-   			});			 
-		},
-		showEditor: function() {
-          $('.ui.dropdown').dropdown({clearable: true})
+  </div>
+  <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+  <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+  <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+<script th:nonce="${cspNonce}" th:inline="javascript">
+let template = {
+  id: [[${template.id}]],
+  name: [[${template.name}]],
+  version: [[${template.version}]],
+  group: [[${template.group}]],
+  periodicity: [[${template.periodicity}]],
+  required: [[${template.required}]],
+  fields: [[${template.fields}]]
+}
+let fields = template.fields || []
+let field = {}
+$('#cancel').click(function(){
+  window.location.replace([[@{/templates}]])
+})
 
-	      $('#select_domain_version')
-          .search({
-              apiSettings: {
-                url: '/api/domaintable_search?term={query}',
-                dataType: 'text',
-                onResponse: function(items) {
-                    let r = { results: [] }
-                    $.each(JSON.parse(items), function(index, item) {
-                        r.results.push({ title: item})
-                    })
-                    return r
-                },
-                onSelect: function(result){
-                    this.field.domainTableName=result;
-               }
-              },
-              minCharacters : 1,
-              showNoResults: false
-            })
-         $('#select_domain_table')
-           .dropdown({
-        	   apiSettings: {
-                url: '/api/domaintable_search?term={query}',
-                method: 'GET',
-                dataType: 'text',
-                cache: false,
-                onResponse: function(items) {
-                    let r = { success: true, results: [] }
-                    $.each(JSON.parse(items), function(index, item) {
-                        r.results.push({ name: item, value:item })
-                    })
-                    return r
-                }
-        	   },
-        	   action: 'activate'
-           })
-          $('.ui.checkbox').checkbox()
-	      $("#modal_edit_field").modal({ closable: false, onApprove: this.addField }).modal('show')
-	    },
-	    editField: function(e, cell) {
-	      this.field_old = cell.getRow().getData()
-	      this.field = Object.assign({}, this.field_old)
-	      Vue.nextTick( this.showEditor )
-	    },
-	    newField: function() {
-		  $('#form_edit_field').form('clear')
-	      this.field = Object.assign({}, {
-	          id: null,
-	          fieldName: null,
-	          description: null,
-	          fieldType: null,
-	          fieldMapping: null,
-	          personalData: null,
-	          required: null,
-	          fileUniqueness: null,
-	          maxLength: null,
-	          domainTableName: null,
-	          domainTableVersion: null,
-	          nestedTemplateName: null
-	        })
-	      Vue.nextTick( this.showEditor )
-	    },
-	    addField: function() {
-	      if(this.field.id==null) {
-	        this.field.id=Math.max(...this.table.getData().map(o => o.id),0)+1
-	        this.template.fields.push(this.field)
-	      }
-	      else {
-			Object.assign(this.field_old, this.field)
-	      }
-         this.table.replaceData(this.template.fields)
-	    }
-	},
-	watch: {
-		'template.name': function(value, old) {
-			delete this.msg['name']
-			var len=value.length 
-			if(len<2) {
-				this.msg['name']='Minimum 2 characters'
-			}
-			else if(len>120) {
-				this.msg['name']='Maximum 120 characters'
-			}
-			console.log(this.msg.name)
-		}
-	},
-	computed: {
-	    isText: function() {
-	        return this.field.fieldType=='CHARACTER'
-	    }
+let showConditionalFields = function(fieldType) {
+  $('#maxLength').toggle(fieldType=='CHARACTER')
+  $('#domainTable').toggle(fieldType=='DOMAIN')
+}
 
-	},
-	mounted() {
-		$('.ui.checkbox').checkbox()
-		var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
-		this.table = new Tabulator('#table', {
-			index: 'id',
-			layout: "fitColumns", //fit columns to width of table (optional)
-      		responsiveLayout: "collapse",
-			columns:[ //Define Table Columns
-				{title: /*[[#{field.name}]]*/ "Name", field:"fieldName", width: "200"},
-				{title: /*[[#{field.type}]]*/ "Type", field:"fieldType", width: "150", formatter: "lookup", formatterParams: this.fieldTypes, responsive: 3 },
-				{title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", width: "150", formatter: "lookup", formatterParams: this.fieldMappings, responsive: 3 },
-				{title: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: "50", headerSort: false, responsive: 5},
-		        {title: /*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: "30", headerSort: false, responsive: 5},
-		        {title: /*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: "30", headerSort: false, responsive: 5 },
-				{title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, responsive: 10},
-        		{formatter:editIcon, width:50, tooltip: /*{{#{edit}}} */ "Edit", cellClick: this.editField, headerSort: false }
-			],
-		    data: this.template.fields
-		})
-		$('.ui.search')
-		  .search({
-		        apiSettings: {
-		          url: '/api/domaintable_search?term={query}',
-		          dataType: 'text',
-		          onResponse: function(items) {
-		              let r = { results: [] }
-		              $.each(JSON.parse(items), function(index, item) {
-		                  r.results.push({ title: item})
-		              })
-		              return r
-		          }
-		        },
-		        minCharacters : 1
-		      })
+$('#fieldType').dropdown({
+	onChange(value, text) {
+		showConditionalFields(value)
 	}
 })
 
+let processForm = function(event, fields) {
+  event.preventDefault()
+  form_obj = $('#form').serializeArray()
+  template = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), template)
+  template.fields = table.getData()
+  console.log(template)
+  [# th:if="${template.id==null}"]
+  let url = [[@{/api/template}]]
+  let req_type = 'POST'
+  [/]
+  [# th:if="${template.id!=null}"]
+  let url = [[@{/api/template/{id}(id=${template.id})}]]
+  let req_type = 'PUT'
+  [/]
+  $.ajax({
+    url: url,
+    type: req_type,
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(template),
+    cache: false,    
+    success: function(result) {
+        $('#modal_successful').modal('show')
+        setTimeout(function(){
+            window.location = [[@{/templates}]]
+        }, 2000);
+    },
+    error: function(e) {
+        var msg = e.responseText.replace(/\n/g, "<br />");
+        $('#modal_failed').find('.description').html(msg)
+        $('#modal_failed').modal('show')
+        console.log("ERROR : "+msg);
+    }
+  })
+}            
+
+let setDomainTableVersions = function(tableName, tableVersion) {
+	if(tableName!=null) {
+      $.get( [[@{/api/domaintable/versions}]],
+            { name: tableName },
+            function(data) {
+                let values=[]
+                $.each(data, function(index, item) {
+                  values.push({ name: item, value:item })
+                })
+                $('#select_domain_version').dropdown('change values', values)
+                $('#select_domain_version').dropdown('set text', tableVersion)
+            },
+            "json"
+      )
+	}
+	else {
+		$('#select_domain_version').dropdown('change values', [])
+	}
+} 
+$(document).ready(function() {
+    $('#select_domain_version').dropdown({
+       clearable: true
+    })
+    $('#select_domain_table').dropdown({
+       apiSettings: {
+          url: '/api/domaintable_search?term={query}',
+          method: 'GET',
+          dataType: 'text',
+          cache: false,
+          onResponse: function(items) {
+              let r = { success: true, results: [] }
+              $.each(JSON.parse(items), function(index, item) {
+                  r.results.push({ name: item, value:item })
+              })
+              return r
+          }
+       },
+       onChange: function(value) {
+          setDomainTableVersions(value)
+      },
+      action: 'activate',
+      clearable: true
+  })
+  $('.ui.checkbox').checkbox()
+  $('#selectPeriodicity').dropdown({clearable: true})
+  $('#form').form({
+    fields: {
+      name: {
+          identifier  : 'name',
+          rules: [
+            {
+              type   : 'empty',
+              prompt : "Name is missing!"
+            }
+          ]
+        }
+    },
+    onSuccess: (processForm)
+  })
+  $('.ui.dropdown.local').dropdown()
+  $('#newField').click(function() {
+    $('#form_edit_field').form('clear')
+    field={}
+    showConditionalFields(null)
+    $("#modal_edit_field").modal({ closable: false, onApprove: addField }).modal('show')
+  })
+})
+
+let editField = function(e, cell) {
+  field = Object.assign(cell.getRow().getData(), {})
+  //$('#fieldId').val(field.id)
+  $('#fieldName').val(field.fieldName)
+  $('#fieldType').val(field.fieldType).change()
+  $('#fieldMapping').val(field.fieldMapping).change()
+  $('#fieldDescription').val(field.description)
+  $('#fieldDomainTableName').val(field.domainTableName)
+  $('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
+  setDomainTableVersions(field.domainTableName, field.domainTableVersion)
+  $('#fieldDomainTableVersion').val(field.domainTableVersion)
+  //$('#fieldDomainTableVersionText').text(field.domainTableVersion).removeClass('default')
+  $('#fieldRequired').val(field.required)
+  $('#fieldPersonalData').val(field.personalData)
+  $('#fieldFileUniqueness').val(field.fileUniqueness)
+  $('#fieldMaxLength').val(field.maxLength)
+  showConditionalFields(field.fieldType)
+  $("#modal_edit_field").modal({ closable: false, onApprove: addField }).modal('show')
+}
+
+let addField = function() {
+  let form_obj=$('#form_edit_field').serializeArray()
+  field = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value == '' ? null : kv.value}), field)
+  if( field.id == null) {
+    field.id = Math.max(...table.getData().map(o => o.id),0)+1
+    table.addRow(field, false)
+    table.redraw(true)
+  }
+  else {
+	
+    table.updateRow(field.id, field)
+    table.redraw(true)
+  }
+}
+
+let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+
+let typeLookup = { 
+  [# th:each="i : ${fieldTypes}"] 
+  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+  [/]
+}
+
+let mappingLookup = {
+  [# th:each="i : ${fieldMappings}"] 
+  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+  [/]
+}
+
+let table = new Tabulator('#table', {
+    index: 'id',
+    layout: "fitDataStretch", //fit columns to width of table (optional)
+    responsiveLayout: "collapse",
+    //placeholder: "Empty",
+    columns:[ //Define Table Columns
+        {formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editField, width:45, headerSort: false, responsive:0},
+        {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0},
+        {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3 },
+        {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3 },
+        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
+        {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5},
+        {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5 },
+        {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6}
+    ],
+    data: fields
+})
 
 </script>
 </body>
