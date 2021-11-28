@@ -66,9 +66,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller class for all endpoints related to 'user' object interacting by a REST interface
@@ -78,7 +78,7 @@ import io.swagger.annotations.ApiParam;
  */
 @RestController
 @RequestMapping("/api")
-@Api(description="Controller class for all endpoints related to 'user' object interacting by a REST interface.")
+@Tag(name="user-api-controller", description="Controller class for all endpoints related to 'user' object interacting by a REST interface.")
 public class UserAPIController {
 
 	private static final Logger log = Logger.getLogger(UserAPIController.class.getName());

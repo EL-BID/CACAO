@@ -42,12 +42,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api")
-@Api(description="Controller class for all endpoints related to 'template' object interacting by a REST interface")
+@Tag(name="document-template-api-controller", description="Controller class for all endpoints related to 'template' object interacting by a REST interface")
 public class DocumentTemplateAPIController {
 	private static final Logger log = Logger.getLogger(DocumentTemplateAPIController.class.getName());
 	

@@ -49,8 +49,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import springfox.documentation.annotations.ApiIgnore;
 
 /**
  * Controller class for all endpoints related to 'administrative operations' interacting by a REST interface
@@ -60,7 +61,8 @@ import io.swagger.annotations.ApiOperation;
  */
 @RestController
 @RequestMapping("/api")
-@Api(description="Controller class for all endpoints related to 'administrative operations' interacting by a REST interface")
+@Tag(name="admin-api-controller", description="Controller class for all endpoints related to 'administrative operations' interacting by a REST interface")
+@ApiIgnore
 public class AdminAPIController {
 
 	public static final String LOG_PREFIX_FOR_SHELL_COMMANDS = "Incoming SHELL COMMAND from IP address";

@@ -121,9 +121,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller class for all RESTful endpoints related to 'synchronization' with other Kontaktu servers.
@@ -133,7 +133,7 @@ import io.swagger.annotations.ApiParam;
  */
 @RestController
 @RequestMapping("/api")
-@Api(description="Controller class for all RESTful endpoints related to 'synchronization' with other Kontaktu servers.")
+@Tag(name="sync-api-controller", description="Controller class for all RESTful endpoints related to 'synchronization' with other Kontaktu servers.")
 public class SyncAPIController {
 
 	private static final Logger log = Logger.getLogger(SyncAPIController.class.getName());

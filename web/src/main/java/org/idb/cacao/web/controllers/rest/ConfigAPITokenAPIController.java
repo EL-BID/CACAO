@@ -55,6 +55,7 @@ import springfox.documentation.annotations.ApiIgnore;
  */
 @RestController
 @RequestMapping("/api")
+@ApiIgnore
 public class ConfigAPITokenAPIController {
 
 	@Autowired

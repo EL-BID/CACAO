@@ -125,9 +125,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import springfox.documentation.annotations.ApiIgnore;
 
 /**
  * Controller class for all endpoints related to 'document' object interacting
@@ -140,7 +141,7 @@ import io.swagger.annotations.ApiParam;
  */
 @RestController
 @RequestMapping("/api")
-@Api(description = "Controller class for all endpoints related to 'document' object interacting by a REST interface")
+@Tag(name="document-store-api-controller", description="Controller class for all endpoints related to 'document' object interacting by a REST interface")
 public class DocumentStoreAPIController {
 
 	private static final Logger log = Logger.getLogger(DocumentStoreAPIController.class.getName());
@@ -443,6 +444,7 @@ public class DocumentStoreAPIController {
 	 * Upload a file
 	 */
 	@Transactional
+	@ApiIgnore
 	private Map<String, String> uploadFile(final String originalFilename, final InputStream fileStream,
 			final boolean closeInputStream, final String template, final String templateVersion,
 			final String remoteIpAddr, final User user) throws IOException, GeneralException {

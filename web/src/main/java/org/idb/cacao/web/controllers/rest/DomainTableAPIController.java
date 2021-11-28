@@ -42,13 +42,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api")
-@Api(description="Controller class for all endpoints related to 'domain tables' object interacting by a REST interface")
+@Tag(name="domain-table-api-controller", description="Controller class for all endpoints related to 'domain tables' object interacting by a REST interface")
 public class DomainTableAPIController {
 	private static final Logger log = Logger.getLogger(DomainTableAPIController.class.getName());
 	

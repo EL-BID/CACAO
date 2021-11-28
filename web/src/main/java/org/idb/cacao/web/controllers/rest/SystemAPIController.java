@@ -41,7 +41,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  */
 @RestController
 @RequestMapping("/api")
-@Tag(name="system information service", description="The API for retrieving system information")
+@Tag(name="system-api-controller", description="The API for retrieving system information")
 public class SystemAPIController {
 
 	static final Logger log = Logger.getLogger(SystemAPIController.class.getName());

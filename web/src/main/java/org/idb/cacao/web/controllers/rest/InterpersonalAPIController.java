@@ -57,8 +57,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller class for all endpoints related to 'interpersonal relationship' object interacting by a REST interface
@@ -68,7 +68,7 @@ import io.swagger.annotations.ApiOperation;
  */
 @RestController
 @RequestMapping("/api")
-@Api(description="Controller class for all endpoints related to 'interpersonal relationship' object interacting by a REST interface")
+@Tag(name="interpersonal-api-controller", description="Controller class for all endpoints related to 'interpersonal relationship' object interacting by a REST interface")
 public class InterpersonalAPIController {
 
 	private static final Logger log = Logger.getLogger(InterpersonalAPIController.class.getName());
