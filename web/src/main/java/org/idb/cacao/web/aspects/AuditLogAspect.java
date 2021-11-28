@@ -289,14 +289,16 @@ public class AuditLogAspect {
 	public static class AuditTrailParameterCollectorFromAnnotatedField implements AuditTrailParameterCollector {
 
 		private final String fieldName;
+		private final String _fieldName;
 		private final Field field;
 		
 		public AuditTrailParameterCollectorFromAnnotatedField(Field field) {
 			AFieldDescriptor anno = field.getAnnotation(AFieldDescriptor.class);
 			if (anno==null)
-				fieldName = "_"+IndexNamesUtils.formatFieldName(field.getName());
+				fieldName = IndexNamesUtils.formatFieldName(field.getName());
 			else
-				fieldName = "_"+IndexNamesUtils.formatFieldName(anno.externalName());	
+				fieldName = IndexNamesUtils.formatFieldName(anno.externalName());
+			_fieldName = "_"+fieldName;
 			field.setAccessible(true);
 			this.field = field;
 		}
@@ -314,7 +316,10 @@ public class AuditLogAspect {
 			String text_value = ValidationContext.toString(value);
 			if (text_value==null)
 				return;
-			entry.addParam(parameterName+fieldName, text_value);
+			if (fieldName.startsWith(parameterName))
+				entry.addParam(fieldName, text_value);
+			else
+				entry.addParam(parameterName+_fieldName, text_value);
 		}
 		
 	}
