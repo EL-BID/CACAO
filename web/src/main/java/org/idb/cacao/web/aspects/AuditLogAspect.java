@@ -44,6 +44,8 @@ import org.idb.cacao.web.repositories.AuditTrailRepository;
 import org.idb.cacao.web.sec.ApiKeyAuthenticationToken;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.annotation.Id;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -80,6 +82,10 @@ public class AuditLogAspect {
 	 */
 	@Autowired
 	private AuditTrailRepository auditRepo;
+	
+	@Autowired
+	@Qualifier("AuditTrailTaskExecutor")
+	private TaskExecutor taskExecutor;
 
 	//@Pointcut("execution(* org.idb.cacao.web.controllers.rest.*.*(..))")
 	//public void pointCutForRestControllerMethods() {};
@@ -113,12 +119,14 @@ public class AuditLogAspect {
 		if (auditTrailEntry==null)
 			return;
 		
-		try {
-			auditRepo.saveWithTimestamp(auditTrailEntry);
-		}
-		catch (Throwable ex) {
-			// Ignores errors storing this information
-		}
+		taskExecutor.execute(()->{
+			try {
+				auditRepo.saveWithTimestamp(auditTrailEntry);
+			}
+			catch (Throwable ex) {
+				// Ignores errors storing this information
+			}
+		});
 		
 		//Object returnValue = joinPoint.proceed();
 		//return returnValue;
