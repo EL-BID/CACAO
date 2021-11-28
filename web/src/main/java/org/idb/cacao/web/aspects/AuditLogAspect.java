@@ -146,12 +146,12 @@ public class AuditLogAspect {
 
 				
 				try {
-					entry.setHttpMethod(request.getRequest().getRequestURL().toString());
+					entry.setUrl(request.getRequest().getRequestURL().toString());
 				} catch (Throwable ex) { } // ignores NullPointerException
 
 				
 				try {
-					entry.setUrl(request.getRequest().getMethod());
+					entry.setHttpMethod(request.getRequest().getMethod());
 				} catch (Throwable ex) { } // ignores NullPointerException
 
 			} catch (Throwable ex) { }
