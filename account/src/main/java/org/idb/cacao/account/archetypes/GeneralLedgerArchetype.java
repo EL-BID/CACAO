@@ -77,7 +77,8 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public List<DomainTable> getBuiltInDomainTables() {
-		return Arrays.asList( AccountBuiltInDomainTables.DEBIT_CREDIT );
+		return Arrays.asList( AccountBuiltInDomainTables.DEBIT_CREDIT,
+				AccountBuiltInDomainTables.ACCOUNT_SCI );
 	}
 	
 	public static enum FIELDS_NAMES {

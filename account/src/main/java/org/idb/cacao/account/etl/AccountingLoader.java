@@ -19,7 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.account.etl;
 
-import java.time.LocalDate;
 import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.format.TextStyle;
@@ -35,7 +34,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
@@ -65,7 +63,6 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.utils.IndexNamesUtils;
-import org.springframework.data.util.Pair;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -216,36 +213,6 @@ public class AccountingLoader {
 	 * The field name for published data regarding amount of credit values
 	 */
 	private static final String ledgerAmountCredits = IndexNamesUtils.formatFieldName(AccountingFieldNames.AmountCredits.name());
-	
-	/**
-	 * The field name for published data regarding the initial balance amount for each Monthly Balance Sheet
-	 */
-	private static final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
-
-	/**
-	 * The field name for validated data regarding the 'D/C' indication of initial balance amount
-	 */
-	private static final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
-	
-	/**
-	 * The field name for published data regarding the 'D/C' indication of initial balance amount for each Monthly Balance Sheet
-	 */
-	private static final String openingBalanceMonthlyDC = IndexNamesUtils.formatFieldName(AccountingFieldNames.InitialBalanceDebitCredit.name());
-
-	/**
-	 * The field name for published data regarding the closing balance amount for each Monthly Balance Sheet
-	 */
-	private static final String closingBalanceMonthly = IndexNamesUtils.formatFieldName(AccountingFieldNames.FinalBalance.name());
-
-	/**
-	 * The field name for published data regarding the 'D/C' indication of closing balance amount for each Monthly Balance Sheet
-	 */
-	private static final String closingBalanceMonthlyDC = IndexNamesUtils.formatFieldName(AccountingFieldNames.FinalBalanceDebitCredit.name());
-	
-	/**
-	 * The number of book entries for each Monthly Balance Sheet
-	 */
-	private static final String bookEntries = IndexNamesUtils.formatFieldName(AccountingFieldNames.BookEntries.name());
 	
 	/**
 	 * The field name for date/time of published data
@@ -427,33 +394,6 @@ public class AccountingLoader {
 				}
 			});
 	}
-
-	/**
-	 * Returns object used for retrieving information from Opening Balance, keeping a temporary cache in memory.
-	 */
-	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupOpeningBalance(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded ob) {
-		return CacheBuilder.newBuilder()
-			.maximumSize(1000)
-			.expireAfterWrite(10, TimeUnit.MINUTES)
-			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
-				final String fieldName = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name())+".keyword";
-				@Override
-				public Optional<Map<String,Object>> load(String accountCode) throws Exception {
-					if (accountCode==null)
-						return Optional.empty();
-					else {
-						try {
-							return repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), fieldName, accountCode)
-									.map(IndexNamesUtils::normalizeAllKeysForES)
-									.map(AccountingLoader::removeControlFields);
-						}
-						catch (Throwable ex) {
-							return Optional.empty();
-						}
-					}
-				}
-			});
-	}
 	
 	/**
 	 * Returns object used for retrieving information from Taxpayers Registry, keeping a temporary cache in memory.
@@ -478,27 +418,7 @@ public class AccountingLoader {
 				}
 			});
 	}
-	
-	/**
-	 * Returns the accounts codes that are referenced in Opening Balances
-	 */
-	public static Set<String> getAccountsForOpeningBalances(final ETLContext.ValidatedDataRepository repository, final DocumentUploaded ob) {
-		final Set<String> accounts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-		final String obAccountCode = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name());
-		try (Stream<Map<String,Object>> stream = repository.getValidatedData(ob.getTemplateName(), ob.getTemplateVersion(), ob.getFileId(), /*sortBy*/Optional.empty(), /*sortOrder*/Optional.empty());) {
-			stream.forEach(entry->{
-				String accountCode = ValidationContext.toString(entry.get(obAccountCode));
-				if (accountCode!=null && accountCode.trim().length()>0) {
-					accounts.add(accountCode);
-				}
-			});
-		}			
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error reading Opening Balances for template "+ob.getTemplateName()+" "+ob.getTemplateVersion()+" taxpayer "+ob.getTaxPayerId()+" period "+ob.getTaxPeriodNumber(), ex);
-		}
-		return accounts;
-	}
-		
+			
 	/**
 	 * Performs the Extract/Transform/Load operations with available data
 	 */
@@ -558,33 +478,32 @@ public class AccountingLoader {
 			DocumentTemplate gl_template =
 					templatesForLedger.stream().filter(t->gl.getTemplateName().equalsIgnoreCase(t.getName()) && gl.getTemplateVersion().equalsIgnoreCase(t.getVersion()))
 					.findFirst().orElse(null);
-			Periodicity periodicity = gl_template.getPeriodicity();
+			final Periodicity periodicity = gl_template.getPeriodicity();
 
 			// Structure for loading and caching information from the provided Chart of Accounts
 			LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts = getLookupChartOfAccounts(context.getValidatedDataRepository(), 
 					category_domain_table, subcategory_domain_table, coa);
-
-			// Structure for loading and caching information from the provided Opening Balance
-			LoadingCache<String, Optional<Map<String, Object>>> lookupOpeningBalance = getLookupOpeningBalance(context.getValidatedDataRepository(), ob);
 			
 			// Structure for loading and caching information from the provided Taxpayers registry
 			LoadingCache<String, Optional<Map<String, Object>>> lookupTaxpayers = getLookupTaxpayers(context.getTaxpayerRepository());
 			
 			final Optional<Map<String,Object>> declarantInformation = lookupTaxpayers.getUnchecked(taxPayerId);
+			
+			// Additional domain table included in customized General Ledger template
+			final Map<String,DomainTable.MultiLingualMap> customDomainTables = ETLContext.getDomainTablesInTemplate(gl_template, context.getDomainTableRepository());
+			// Removes from 'customDomainTables' the standard fields (otherwise we will be including them in redundancy)
+			customDomainTables.remove(ledgerDebitCredit);
+ 
 
 			LoadDataStrategy loader = context.getLoadDataStrategy();
 			loader.start();
 			
 			final LongAdder countRecordsOverall = new LongAdder();
 			final AtomicLong countRecordsInGeneralLedger = new AtomicLong();
-			final AtomicLong countRecordsInBalanceSheet = new AtomicLong();
 			final AtomicLong countRecordsInAccountingFlows = new AtomicLong();
 			
 	        final OffsetDateTime timestamp = context.getDocumentUploaded().getTimestamp();
 
-			// Computes balance sheets while iterating over General Ledger entries
-			final Map<String, BalanceSheet> mapBalanceSheets = new HashMap<>();
-			
 			// Computes accounting flows
 			final AccountingFlowProcessor accountingFlowProc = new AccountingFlowProcessor();
 			accountingFlowProc.setCollectWarnings(alert->context.addAlert(gl, alert));
@@ -601,6 +520,14 @@ public class AccountingLoader {
 						lookupChartOfAccounts,
 						loader);
 			});
+			
+			// Computes monthly balance sheets
+			final MonthlyBalanceSheetProcessor balanceSheetProc = new MonthlyBalanceSheetProcessor(context, ob, timestamp);
+			balanceSheetProc.setDocumentUploadedForGeneralLedger(gl);
+			balanceSheetProc.setCountRecordsOverall(countRecordsOverall);
+			balanceSheetProc.setDeclarantInformation(declarantInformation);
+			balanceSheetProc.setLookupChartOfAccounts(lookupChartOfAccounts);
+			balanceSheetProc.setPeriodicity(periodicity);
 
 			// Search for the validated general ledger related to the matching template
 			// Reads the validated general ledger in chronological order. For each day order by ledger entry ID.
@@ -630,25 +557,9 @@ public class AccountingLoader {
 			boolean success = true;
 			try {
 				
-				// Stores here the last month (a number in the format yyyy-mm) of the last parsed entry from the Journal
-				final AtomicInteger previousMonth = new AtomicInteger(0);
-				
-				// Keep track of all known account codes for reporting balance sheets. This list may grow as we proceed.
-				final Set<String> accountsForBalanceSheets = getAccountsForOpeningBalances(context.getValidatedDataRepository(), ob);
-				
-				// Keep track of informed balance sheets for accounts (first in key pair) and months (second in key pair) and their corresponding
-				// final balance. This will be used for completing balance sheets for absent months after we have processed all the data.
-				final Map<Pair<String, Integer>, Double> informedBalancedSheetsAccountsAndMonths = new HashMap<>();
-				
 				gl_data.forEach(record->{
 					
-					OffsetDateTime date = ValidationContext.toOffsetDateTime(record.get(ledgerDate));
-					final int year_month = (date==null) ? 0 : ( date.getYear() * 100 + date.getMonthValue() );
-					final boolean changed_month = year_month!=0 && previousMonth.get()!=0 && previousMonth.get()!=year_month;
-					final int previous_year_month = previousMonth.get();
-					if (date!=null && (changed_month || previousMonth.get()==0)) {
-						previousMonth.set(year_month);
-					}
+					final OffsetDateTime date = ValidationContext.toOffsetDateTime(record.get(ledgerDate));
 					
 					String entryId = ValidationContext.toString(record.get(ledgerId));
 
@@ -669,16 +580,6 @@ public class AccountingLoader {
 						context.setOutcomeSituation(gl, DocumentSituation.PENDING);
 					}
 					
-					if (changed_month) {
-						// If the month has changed, let's fill the Monthly Balance Sheet for all accounts
-						addRecordToMonthlyBalanceSheet(gl, accountsForBalanceSheets, previous_year_month,
-								mapBalanceSheets, taxPayerId, taxPeriodNumber, timestamp,
-								countRecordsInBalanceSheet, countRecordsOverall, declarantInformation,
-								lookupChartOfAccounts,
-								informedBalancedSheetsAccountsAndMonths,
-								loader);
-					}
-
 					Number amount = ValidationContext.toNumber(record.get(ledgerAmount));
 					String debitCredit = ValidationContext.toString(record.get(ledgerDebitCredit));
 					if (debitCredit==null)
@@ -687,32 +588,7 @@ public class AccountingLoader {
 					
 					// Computes Monthly Balance Sheet
 					
-					BalanceSheet balanceSheet =
-					mapBalanceSheets.computeIfAbsent(accountCode, acc->{
-						BalanceSheet balance = new BalanceSheet();
-						Optional<Map<String, Object>> opening = lookupOpeningBalance.getUnchecked(acc);
-						if (opening.isPresent()) {
-							Number initialBalance = ValidationContext.toNumber(opening.get().get(openingBalanceInitial));
-							String balanceDebitCredit = ValidationContext.toString(opening.get().get(openingBalanceDC));
-							boolean initialIsDebit = balanceDebitCredit.equalsIgnoreCase("D");
-							if (initialBalance!=null && Math.abs(initialBalance.doubleValue())>EPSILON) {
-								if (initialIsDebit)
-									balance.setInitialValue(Math.abs(initialBalance.doubleValue()));
-								else
-									balance.setInitialValue(-Math.abs(initialBalance.doubleValue()));
-							}
-						}
-						else if (accountInformation.isPresent()) {
-							context.addAlert(ob, "{account.error.missing.opening.balance("
-									+acc.replaceAll("[\\{\\}\\,\\(\\)\r\n\t]","")
-									+")}");
-							context.setOutcomeSituation(ob, DocumentSituation.PENDING);
-							accountsForBalanceSheets.add(acc);
-						}
-						return balance;
-					});
-					
-					balanceSheet.computeEntry(amount, is_debit);
+					BalanceSheet balanceSheet = balanceSheetProc.computeEntry(entryId, date, accountCode, amount, is_debit);
 					
 					// Computes Accounting Flow
 					
@@ -746,6 +622,9 @@ public class AccountingLoader {
 					if (accountInformation.isPresent())
 						normalizedRecord_GL.putAll(accountInformation.get());
 
+					// Includes data about custom domain tables (possibly in multiple languages)
+					ETLContext.denormalizeDomainTables(record, normalizedRecord_GL, customDomainTables);
+
 					loader.add(new IndexRequest(INDEX_PUBLISHED_GENERAL_LEDGER)
 						.id(rowId_GL)
 						.source(normalizedRecord_GL));
@@ -754,22 +633,7 @@ public class AccountingLoader {
 				}); // LOOP over all entries in General Ledger
 				
 				// After processing all the General Ledger, let's fill the Monthly Balance Sheet for all accounts
-				final int previous_year_month = previousMonth.get();
-				if (previous_year_month!=0) {
-					addRecordToMonthlyBalanceSheet(gl, accountsForBalanceSheets, previous_year_month,
-						mapBalanceSheets, taxPayerId, taxPeriodNumber, timestamp,
-						countRecordsInBalanceSheet, countRecordsOverall, declarantInformation,
-						lookupChartOfAccounts,
-						informedBalancedSheetsAccountsAndMonths,
-						loader);
-					fillMissingMonthlyBalanceSheet(gl, accountsForBalanceSheets,
-						taxPayerId, taxPeriodNumber, timestamp,
-						countRecordsInBalanceSheet, countRecordsOverall, declarantInformation,
-						lookupChartOfAccounts,
-						lookupOpeningBalance,
-						informedBalancedSheetsAccountsAndMonths, periodicity,
-						loader);
-				}
+				balanceSheetProc.finish();
 				
 				// After processing all the General Ledger, let's finish computing the Daily Accounting Flows
 				accountingFlowProc.finish();
@@ -806,217 +670,6 @@ public class AccountingLoader {
 			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, ex);
 			return false;
 		}
-	}
-	
-	/**
-	 * Feeds information about Monthly Balance Sheets
-	 * @param gl The Upload record regarding the General Ledger
-	 * @param accountsForBalanceSheets Collection of all account codes (according to the taxpayer's Chart of Accounts)
-	 * @param yearMonth Year+Month of balance sheet
-	 * @param mapBalanceSheets For each account code keeps track of the computed balance sheet so far (presumably of the same month)
-	 * @param taxPayerId The Taxpayer ID
-	 * @param taxPeriodNumber The number of the period
-	 * @param timestamp Time date/time of ETL procedure
-	 * @param countRecordsInBalanceSheet The total number of 'Monthly Balance Sheets' records (incremented here)
-	 * @param countRecordsOverall The total number of records (incremented here)
-	 * @param declarantInformation Additional information about the declarant
-	 * @param lookupChartOfAccounts Object used for searching additional information about accounts
-	 * @param informedBalancedSheetsAccountsAndMonths Keeps track of all informed balance sheets
-	 * @param loader Object used for writing the results
-	 */
-	private static void addRecordToMonthlyBalanceSheet(
-			final DocumentUploaded gl,
-			final Set<String> accountsForBalanceSheets,
-			final int yearMonth,
-			final Map<String, BalanceSheet> mapBalanceSheets,
-			final String taxPayerId,
-			final Integer taxPeriodNumber,
-			final OffsetDateTime timestamp,
-			final AtomicLong countRecordsInBalanceSheet,
-			final LongAdder countRecordsOverall,
-			final Optional<Map<String,Object>> declarantInformation,
-			final LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts,
-			final Map<Pair<String, Integer>, Double> informedBalancedSheetsAccountsAndMonths,
-			final LoadDataStrategy loader) {
-		
-		final int year = yearMonth/100;
-		final int monthNumber = yearMonth%100;
-		final String month = Month.of(monthNumber).getDisplayName(
-	        TextStyle.SHORT, 
-	        Locale.getDefault()
-	    );
-		
-		for (String account: accountsForBalanceSheets) {
-			BalanceSheet computedBalanceSheet = mapBalanceSheets.get(account);
-			if (computedBalanceSheet!=null) {
-				final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(account);
-				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
-				Map<String,Object> normalizedRecord_BS = new HashMap<>();
-				normalizedRecord_BS.put("doc_"+publishedTimestamp, timestamp);
-				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, monthNumber, 1));
-				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
-				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
-				normalizedRecord_BS.put(publishedTemplateName, gl.getTemplateName());
-				normalizedRecord_BS.put(publishedTemplateVersion, gl.getTemplateVersion());
-				normalizedRecord_BS.put(publishedYear, year);
-				normalizedRecord_BS.put(publishedMonth, month);
-				normalizedRecord_BS.put(ledgerAccountCode, account);
-				normalizedRecord_BS.put(openingBalanceInitial, Math.abs(computedBalanceSheet.getInitialValue()));
-				normalizedRecord_BS.put(openingBalanceMonthlyDC, (computedBalanceSheet.isInitialValueDebit()) ? "D" : "C");
-				normalizedRecord_BS.put(ledgerAmountDebits, computedBalanceSheet.getDebits());
-				normalizedRecord_BS.put(ledgerAmountCredits, computedBalanceSheet.getCredits());
-				normalizedRecord_BS.put(closingBalanceMonthly, Math.abs(computedBalanceSheet.getFinalValue()));
-				normalizedRecord_BS.put(closingBalanceMonthlyDC, (computedBalanceSheet.isFinalValueDebit()) ? "D" : "C");
-				normalizedRecord_BS.put(bookEntries, computedBalanceSheet.getCountEntries());
-				if (declarantInformation.isPresent())
-					normalizedRecord_BS.putAll(declarantInformation.get());
-				if (accountInformation.isPresent())
-					normalizedRecord_BS.putAll(accountInformation.get());
-				loader.add(new IndexRequest(INDEX_PUBLISHED_BALANCE_SHEET)
-					.id(rowId_BS)
-					.source(normalizedRecord_BS));
-				informedBalancedSheetsAccountsAndMonths.put(Pair.of(account, yearMonth), computedBalanceSheet.getFinalValue());
-				countRecordsOverall.increment();	
-				computedBalanceSheet.flipBalance();
-			}
-		}
-	}
-	
-	/**
-	 * Feed information about missing periods or missing accounts in Monthly Balance Sheets.
-	 */
-	private static void fillMissingMonthlyBalanceSheet(
-			final DocumentUploaded gl,
-			final Set<String> accountsForBalanceSheets,
-			final String taxPayerId,
-			final Integer taxPeriodNumber,
-			final OffsetDateTime timestamp,
-			final AtomicLong countRecordsInBalanceSheet,
-			final LongAdder countRecordsOverall,
-			final Optional<Map<String,Object>> declarantInformation,
-			final LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts,
-			final LoadingCache<String, Optional<Map<String, Object>>> lookupOpeningBalance,
-			final Map<Pair<String, Integer>, Double> informedBalancedSheetsAccountsAndMonths,
-			final Periodicity periodicity,
-			final LoadDataStrategy loader) {
-		
-		if (accountsForBalanceSheets==null || accountsForBalanceSheets.isEmpty())
-			return;
-		
-		// Minimum year+month according to published Monthly Balance Sheets, or 0 if none
-		int min_year_month_filled = informedBalancedSheetsAccountsAndMonths.isEmpty() ? 0
-				: informedBalancedSheetsAccountsAndMonths.keySet().stream().mapToInt(Pair::getSecond).min().orElse(0);
-
-		// Maximum year+month according to published Monthly Balance Sheets, or 0 if none
-		int max_year_month_filled = informedBalancedSheetsAccountsAndMonths.isEmpty() ? 0
-				: informedBalancedSheetsAccountsAndMonths.keySet().stream().mapToInt(Pair::getSecond).max().orElse(0);
-		
-		// The informed year, minimum month and maximum month according to published Monthly Balance Sheet, or 0 if none
-		int actual_year = min_year_month_filled/100;
-		int actual_min_month = min_year_month_filled%100;
-		int actual_max_month = max_year_month_filled%100;
-		
-		// Get the expected minimum month+year and expected maximum month+year according to General Ledger and the template periodicity
-		int year = Periodicity.getYear(taxPeriodNumber);
-		int first_month = Periodicity.getMinMonthNumber(taxPeriodNumber, periodicity);
-		int last_month = Periodicity.getMaxMonthNumber(taxPeriodNumber, periodicity);
-		
-		// If the expected year does not correspond to the information that was read from General Ledger, consider the information we got from General Ledger 
-		if (actual_year!=0 && year!=actual_year)
-			year = actual_year;
-		
-		// If we don't have a clue of what year it is, let's abort
-		if (year==0)
-			return;
-		
-		// If the data started some months later than expected, let's consider this
-		if (actual_min_month!=0 && first_month<actual_min_month)
-			first_month = actual_min_month;
-		
-		// If we don't have a clue of what month to start with, let's abort
-		if (first_month==0)
-			return;
-		
-		if (last_month==0)
-			last_month = actual_max_month;
-		
-		if (last_month==0)
-			last_month = first_month;
-		
-		// Now that we know what is the 'full period', let's start looking for missing data
-		
-		Map<String, Double> previousBalanceSheets = new HashMap<>();
-		
-		for (int month=first_month; month<=last_month; month++) {
-			
-			Integer expected_year_month = year * 100 + month;
-			for (String account: accountsForBalanceSheets) {
-				
-				Pair<String,Integer> expected_account_and_period = Pair.of(account, expected_year_month);
-				Double reported_balance = informedBalancedSheetsAccountsAndMonths.get(expected_account_and_period);
-				if (reported_balance!=null) {
-					// if we have reported a Balance Sheet for this account and period, we are done with it
-					previousBalanceSheets.put(account, reported_balance);
-					continue;
-				}
-				
-				// we need to report a missing BalanceSheet
-				
-				// look for the previous BalanceSheet we have for this account
-				Double previous_final_balance = previousBalanceSheets.get(account);
-				if (previous_final_balance==null) {
-					if (month==first_month) {
-						Optional<Map<String, Object>> opening = lookupOpeningBalance.getUnchecked(account);
-						if (opening.isPresent()) {
-							Number initialBalance = ValidationContext.toNumber(opening.get().get(openingBalanceInitial));
-							String balanceDebitCredit = ValidationContext.toString(opening.get().get(openingBalanceDC));
-							boolean initialIsDebit = balanceDebitCredit.equalsIgnoreCase("D");
-							if (initialBalance!=null && Math.abs(initialBalance.doubleValue())>EPSILON) {
-								if (initialIsDebit)
-									previous_final_balance = Math.abs(initialBalance.doubleValue());
-								else
-									previous_final_balance = -Math.abs(initialBalance.doubleValue());
-								previousBalanceSheets.put(account, previous_final_balance);
-							}
-						}
-					}
-					if (previous_final_balance==null) {
-						previous_final_balance = 0.0;
-						previousBalanceSheets.put(account, previous_final_balance);
-					}
-				}
-				
-				final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(account);
-				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
-				Map<String,Object> normalizedRecord_BS = new HashMap<>();
-				normalizedRecord_BS.put("doc_"+publishedTimestamp, timestamp);
-				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, month, 1));
-				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
-				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
-				normalizedRecord_BS.put(publishedTemplateName, gl.getTemplateName());
-				normalizedRecord_BS.put(publishedTemplateVersion, gl.getTemplateVersion());
-				normalizedRecord_BS.put(publishedYear, year);
-				normalizedRecord_BS.put(publishedMonth, month);
-				normalizedRecord_BS.put(ledgerAccountCode, account);
-				normalizedRecord_BS.put(openingBalanceInitial, Math.abs(previous_final_balance.doubleValue()));
-				normalizedRecord_BS.put(openingBalanceMonthlyDC, (previous_final_balance.doubleValue()>=0) ? "D" : "C");
-				normalizedRecord_BS.put(ledgerAmountDebits, 0.0);
-				normalizedRecord_BS.put(ledgerAmountCredits, 0.0);
-				normalizedRecord_BS.put(closingBalanceMonthly, Math.abs(previous_final_balance.doubleValue()));
-				normalizedRecord_BS.put(closingBalanceMonthlyDC, (previous_final_balance.doubleValue()>=0) ? "D" : "C");
-				normalizedRecord_BS.put(bookEntries, 0);
-				if (declarantInformation.isPresent())
-					normalizedRecord_BS.putAll(declarantInformation.get());
-				if (accountInformation.isPresent())
-					normalizedRecord_BS.putAll(accountInformation.get());
-				loader.add(new IndexRequest(INDEX_PUBLISHED_BALANCE_SHEET)
-					.id(rowId_BS)
-					.source(normalizedRecord_BS));
-				countRecordsOverall.increment();	
-				
-			} // LOOP over account codes
-			
-		} // LOOP over expected months
 	}
 	
 	/**

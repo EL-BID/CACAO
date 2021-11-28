@@ -74,8 +74,13 @@ public class SwaggerModelPropertiesConfig implements ModelPropertyBuilderPlugin 
 					if (fd!=null) {
 						String externalName = fd.externalName();
 						if (externalName!=null) {
-							String description = messageSource.getMessage(externalName, null, LocaleContextHolder.getLocale());
-							context.getSpecificationBuilder().description(description);
+							try {
+								String description = messageSource.getMessage(externalName, null, LocaleContextHolder.getLocale());
+								context.getSpecificationBuilder().description(description);
+							}
+							catch (Throwable ex) {
+								// Ignores errors if the decription could not be found at message properties
+							}
 						}
 					}
 				}

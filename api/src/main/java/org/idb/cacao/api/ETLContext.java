@@ -28,15 +28,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.templates.FieldType;
+import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.springframework.context.MessageSource;
+import org.springframework.data.util.Pair;
 
 /**
  * This objects wraps up information collected during the ETL phase. Includes
@@ -476,5 +482,82 @@ public class ETLContext {
 				context.setDocumentSituation(upload, DocumentSituation.REPLACED);
 			}
 		}
+	}
+
+	/**
+	 * Returns the list of domain tables that are referenced by the fields declared in the DocumentTemplate. The map returned by this method
+	 * contains fields names as keys and the corresponding DomainTable's as values.
+	 */
+	public static Map<String,DomainTable.MultiLingualMap> getDomainTablesInTemplate(DocumentTemplate template, ETLContext.DomainTableRepository repository) {
+		// Get the list of fields that are making use of any domain table
+		List<DocumentField> fields_with_domain_tables_references =
+			template.getFields().stream()
+			.filter(field->FieldType.DOMAIN.equals(field.getFieldType()) 
+				&& field.getDomainTableName()!=null 
+				&& field.getDomainTableName().trim().length()>0)
+			.collect(Collectors.toList());
+		if (fields_with_domain_tables_references.isEmpty())
+			return Collections.emptyMap();
+		
+		// Get the references to domain tables considering the DocumentTemplate fields
+		List<Pair<String,String>> domain_tables_references =
+			fields_with_domain_tables_references.stream()
+			.map(field->Pair.of(field.getDomainTableName(), field.getDomainTableVersion()))
+			.distinct()
+			.collect(Collectors.toList());
+		if (domain_tables_references.isEmpty())
+			return Collections.emptyMap();
+		
+		// Resolve the names and versions into objects
+		Map<Pair<String,String>, DomainTable> resolved_references = 
+			domain_tables_references.stream()
+			.map(ref->repository.findByNameAndVersion(ref.getFirst(), ref.getSecond()))
+			.filter(Optional::isPresent)
+			.collect(Collectors.toMap(
+				/*keyMapper*/t->Pair.of(t.get().getName(),t.get().getVersion()), 
+				/*valueMapper*/Optional::get, 
+				/*mergeFunction*/(a,b)->a));
+		if (resolved_references.isEmpty())
+			return Collections.emptyMap();
+		
+		// Make the final map with fields names and corresponding DomainTable objects
+		return fields_with_domain_tables_references.stream()
+			.filter(field->resolved_references.containsKey(Pair.of(field.getDomainTableName(), field.getDomainTableVersion())))
+			.collect(Collectors.toMap(
+				/*keyMapper*/f->IndexNamesUtils.formatFieldName(f.getFieldName()), 
+				/*valueMapper*/field->resolved_references.get(Pair.of(field.getDomainTableName(), field.getDomainTableVersion())).toMultiLingualMap(), 
+				/*mergeFunction*/(a,b)->a));
+	}
+	
+	/**
+	 * Includes data about domain tables (possibly in multiple languages) into the generic denormalized record
+	 * @param record Generic record with input data (contains references to domain tables)
+	 * @param denormalizedRecord Generic record (where this method will write denormalized data)
+	 * @param domainTables Output of {@link ETLContext#getDomainTablesInTemplate(DocumentTemplate, DomainTableRepository) getDomainTablesInTemplate}
+	 */
+	public static void denormalizeDomainTables(
+			final Map<String, Object> record,
+			final Map<String,Object> denormalizedRecord,
+			final Map<String,DomainTable.MultiLingualMap> domainTables) {
+		// Includes data about domain tables (possibly in multiple languages)
+		if (!domainTables.isEmpty()) {
+			for (Map.Entry<String, DomainTable.MultiLingualMap> domainRef: domainTables.entrySet()) {
+				String fieldName = domainRef.getKey();
+				Object domainValue = record.get(fieldName);
+				if (domainValue==null)
+					continue;
+				Map<DomainLanguage, DomainEntry> multiLingualDesc = domainRef.getValue().get(ValidationContext.toString(domainValue));
+				if (multiLingualDesc==null)
+					continue;
+				for (Map.Entry<DomainLanguage, DomainEntry> domainEntry: multiLingualDesc.entrySet()) {
+					String derivedFieldName = fieldName + "_name";
+					if (!DomainLanguage.ENGLISH.equals(domainEntry.getKey())) {
+						derivedFieldName += "_" + domainEntry.getKey().getDefaultLocale().getLanguage();
+					}
+					denormalizedRecord.put(derivedFieldName, domainEntry.getValue());
+				}
+			}
+		}
+
 	}
 }

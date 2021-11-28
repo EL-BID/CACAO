@@ -21,6 +21,7 @@ package org.idb.cacao.account.archetypes;
 
 import org.idb.cacao.account.elements.AccountCategory;
 import org.idb.cacao.account.elements.AccountSubcategory;
+import org.idb.cacao.account.elements.StatementComprehensiveIncome;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainEntry;
@@ -200,4 +201,10 @@ public class AccountBuiltInDomainTables {
 	public static DomainTable ACCOUNT_SUBCATEGORY_IFRS = DomainTable.fromEnum("Account Sub-Category IFRS", /*version*/"1.0", 
 			/*enumeration with values*/AccountSubcategory.class, 
 			/*getKey*/AccountSubcategory::getIfrsNumber);
+	
+	/**
+	 * Domain table for the Statement of Comprehensive Income
+	 */
+	public static DomainTable ACCOUNT_SCI = DomainTable.fromEnum("Statement of Comprehensive Income", /*version*/"1.0", 
+			/*enumeration with values*/StatementComprehensiveIncome.class);
 }
