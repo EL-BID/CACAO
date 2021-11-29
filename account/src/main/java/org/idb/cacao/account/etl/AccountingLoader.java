@@ -23,6 +23,7 @@ import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_N
 
 import java.time.Month;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.Arrays;
 import java.util.Collection;
@@ -632,6 +633,7 @@ public class AccountingLoader {
 						}
 					}
 					normalizedRecord_GL.put("doc_"+publishedTimestamp, timestamp);
+					normalizedRecord_GL.put(publishedTimestamp, date);
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
 					normalizedRecord_GL.put(publishedTemplateName, gl.getTemplateName());
@@ -737,6 +739,7 @@ public class AccountingLoader {
 		String rowId_DAF = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInAccountingFlows.incrementAndGet());
 		Map<String,Object> normalizedRecord_DAF = new HashMap<>();
 		normalizedRecord_DAF.put("doc_"+publishedTimestamp, timestamp);
+		normalizedRecord_DAF.put(publishedTimestamp, flow.getDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
 		normalizedRecord_DAF.put(publishedTaxpayerId, taxPayerId);
 		normalizedRecord_DAF.put(publishedtaxPeriodNumber, taxPeriodNumber);
 		normalizedRecord_DAF.put(publishedTemplateName, gl.getTemplateName());
