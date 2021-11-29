@@ -70,6 +70,19 @@ public enum AccountCategory {
 	public String getIfrsNumber() {
 		return ifrsNumber;
 	}
+	
+	public String getNumber(AccountStandard standard) {
+		if (standard==null)
+			return null;
+		switch (standard) {
+		case IFRS:
+			return ifrsNumber;
+		case GAAP:
+			return gaapNumber;
+		default:
+			return null;
+		}
+	}
 
 	public static AccountCategory parse(String s) {
 		if (s==null || s.trim().length()==0)

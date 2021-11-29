@@ -246,14 +246,13 @@ public class MonthlyBalanceSheetProcessor {
 
 	/**
 	 * Computes a bookeeping entry. It's expected to receive all the entries in the following order: the Date (1st criteria) and the Entry Id (2nd criteria)
-	 * @param entryId The entry ID. 
 	 * @param date Date of this record
 	 * @param accountCode Account code
 	 * @param amount Amount
 	 * @param isDebit Indication whether the account was debited (otherwise it was credited)
 	 * @return Returns the resulting BalanceSheet (still open for further inputs)
 	 */
-	public BalanceSheet computeEntry(String entryId, OffsetDateTime date, String accountCode, Number amount, boolean isDebit) {
+	public BalanceSheet computeEntry(OffsetDateTime date, String accountCode, Number amount, boolean isDebit) {
 		
 		final int year_month = (date==null) ? 0 : ( date.getYear() * 100 + date.getMonthValue() );
 		final boolean changed_month = year_month!=0 && previousMonth.get()!=0 && previousMonth.get()!=year_month;

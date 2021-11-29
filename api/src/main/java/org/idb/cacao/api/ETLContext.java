@@ -136,6 +136,7 @@ public class ETLContext {
 		
 		public Optional<DomainTable> findByNameAndVersion(String name, String version);
 		
+		public List<DomainTable> findByName(String name);
 	}
 	
 	/**
@@ -547,17 +548,33 @@ public class ETLContext {
 				if (domainValue==null)
 					continue;
 				Map<DomainLanguage, DomainEntry> multiLingualDesc = domainRef.getValue().get(ValidationContext.toString(domainValue));
-				if (multiLingualDesc==null)
-					continue;
-				for (Map.Entry<DomainLanguage, DomainEntry> domainEntry: multiLingualDesc.entrySet()) {
-					String derivedFieldName = fieldName + "_name";
-					if (!DomainLanguage.ENGLISH.equals(domainEntry.getKey())) {
-						derivedFieldName += "_" + domainEntry.getKey().getDefaultLocale().getLanguage();
-					}
-					denormalizedRecord.put(derivedFieldName, domainEntry.getValue());
-				}
+				denormalizeDomainEntryNames(multiLingualDesc, fieldName, denormalizedRecord);
 			}
 		}
 
+	}
+	
+	/**
+	 * Includes the multilanguage names according to the domain table entry to the denormalized record
+	 * @param multiLingualDesc Names according to different languages
+	 * @param fieldName Some prefix for field names
+	 * @param denormalizedRecord Generic record (where this method will write denormalized data)
+	 */
+	public static void denormalizeDomainEntryNames(Map<DomainLanguage, DomainEntry> multiLingualDesc, String fieldName,
+			final Map<String,Object> denormalizedRecord) {
+		if (multiLingualDesc==null)
+			return;
+		for (Map.Entry<DomainLanguage, DomainEntry> domainEntry: multiLingualDesc.entrySet()) {
+			String derivedFieldName = fieldName + "_name";
+			if (!DomainLanguage.ENGLISH.equals(domainEntry.getKey())) {
+				derivedFieldName += "_" + domainEntry.getKey().getDefaultLocale().getLanguage();
+			}
+			Object value = domainEntry.getValue();
+			if (value instanceof DomainEntry) {
+				value = ((DomainEntry)value).getDescription();
+			}
+			denormalizedRecord.put(derivedFieldName, value);
+		}
+		
 	}
 }

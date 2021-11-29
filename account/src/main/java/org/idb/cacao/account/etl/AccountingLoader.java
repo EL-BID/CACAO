@@ -19,6 +19,8 @@
  *******************************************************************************/
 package org.idb.cacao.account.etl;
 
+import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory;
+
 import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.format.TextStyle;
@@ -43,9 +45,11 @@ import java.util.stream.Stream;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
+import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.BalanceSheet;
 import org.idb.cacao.account.elements.DailyAccountingFlow;
 import org.idb.cacao.api.DocumentSituation;
@@ -96,6 +100,12 @@ public class AccountingLoader {
 	 * There is one record for each day and each pair of accounts (credited and debited).
 	 */
 	public static final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Flow Daily");
+
+	/**
+	 * Index name for published (denormalized) data regarding the computed Statement of Incomes.<BR>
+	 * There is one record for each year and each Statement of Income entry (according to domain table).
+	 */
+	public static final String INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Computed Statement Income");
 
 	/**
 	 * Ignores differences lesser than half of a cent	
@@ -480,6 +490,10 @@ public class AccountingLoader {
 					.findFirst().orElse(null);
 			final Periodicity periodicity = gl_template.getPeriodicity();
 
+			DocumentField account_category_field_map = coa_template.getField(AccountCategory.name());
+			String account_category_domain_table_name = (account_category_field_map==null) ? null : account_category_field_map.getDomainTableName();
+			final AccountStandard account_standard = AccountBuiltInDomainTables.getAccountStandardRelatedToDomainTable(account_category_domain_table_name);
+
 			// Structure for loading and caching information from the provided Chart of Accounts
 			LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts = getLookupChartOfAccounts(context.getValidatedDataRepository(), 
 					category_domain_table, subcategory_domain_table, coa);
@@ -528,6 +542,13 @@ public class AccountingLoader {
 			balanceSheetProc.setDeclarantInformation(declarantInformation);
 			balanceSheetProc.setLookupChartOfAccounts(lookupChartOfAccounts);
 			balanceSheetProc.setPeriodicity(periodicity);
+			
+			// Computes statement of comprehensive income
+			final ComputedStatementIncomeProcessor computedStatementIncome = new ComputedStatementIncomeProcessor(context, account_standard, timestamp);
+			computedStatementIncome.setLookupChartOfAccounts(lookupChartOfAccounts);
+			computedStatementIncome.setCountRecordsOverall(countRecordsOverall);
+			computedStatementIncome.setDocumentUploadedForGeneralLedger(gl);
+			computedStatementIncome.setDeclarantInformation(declarantInformation);
 
 			// Search for the validated general ledger related to the matching template
 			// Reads the validated general ledger in chronological order. For each day order by ledger entry ID.
@@ -588,12 +609,16 @@ public class AccountingLoader {
 					
 					// Computes Monthly Balance Sheet
 					
-					BalanceSheet balanceSheet = balanceSheetProc.computeEntry(entryId, date, accountCode, amount, is_debit);
+					BalanceSheet balanceSheet = balanceSheetProc.computeEntry(date, accountCode, amount, is_debit);
 					
 					// Computes Accounting Flow
 					
 					if (amount!=null && Math.abs(amount.doubleValue())>EPSILON)
-						accountingFlowProc.computeEntry(entryId, date, accountCode, amount, is_debit);
+						accountingFlowProc.computeEntry(date, accountCode, amount, is_debit);
+					
+					// Computes Statement of Incomes
+					
+					computedStatementIncome.computeEntry(date, accountCode, amount, is_debit);
 
 					// Publish denormalized GENERAL LEDGER record
 					
@@ -637,6 +662,9 @@ public class AccountingLoader {
 				
 				// After processing all the General Ledger, let's finish computing the Daily Accounting Flows
 				accountingFlowProc.finish();
+				
+				// After processing all the General Ledger, let's finish computing the Statement of Income
+				computedStatementIncome.finish();
 				
 			}
 			finally {

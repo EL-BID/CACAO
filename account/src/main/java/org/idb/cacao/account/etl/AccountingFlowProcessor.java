@@ -24,6 +24,7 @@ import static org.idb.cacao.api.ValidationContext.ISO_8601_DATE;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -132,13 +133,12 @@ public class AccountingFlowProcessor {
 
 	/**
 	 * Computes a bookeeping entry. It's expected to receive all the entries in the following order: the Date (1st criteria) and the Entry Id (2nd criteria)
-	 * @param entryId The entry ID. 
 	 * @param date Date of this record
 	 * @param accountCode Account code
 	 * @param amount Amount
 	 * @param isDebit Indication whether the account was debited (otherwise it was credited)
 	 */
-	public void computeEntry(String entryId, OffsetDateTime date, String accountCode, Number amount, boolean isDebit) {
+	public void computeEntry(OffsetDateTime date, String accountCode, Number amount, boolean isDebit) {
 		
 		if (accountCode==null || accountCode.trim().length()==0 || amount==null || date==null || Math.abs(amount.doubleValue())<EPSILON)
 			return;
@@ -254,8 +254,10 @@ public class AccountingFlowProcessor {
 			}
 			
 			// If we got here, we have multiple credited accounts and multiple debited accounts
-			
-			// TODO: ....
+			// Let's try to organize the set of entries in multiple sets of matching values			
+			tryCombinations();
+			if (creditEntries.isEmpty() && debitEntries.isEmpty())
+				return;
 			
 			// Let's report the values that could not be represented by AccountingFlows due to lack of specific accounts
 			// We will represent them as generic '*' accounts
@@ -277,6 +279,158 @@ public class AccountingFlowProcessor {
 		}
 	}
 	
+	/**
+	 * Tries different combinations of creditEntries and debitEntries in order to find 'accounting flows'
+	 */
+	private void tryCombinations() {
+		
+		// Let's order each set according to their values descending
+		debitEntries.sort(Comparator.comparing(PartialEntry::getAmount).reversed());
+		creditEntries.sort(Comparator.comparing(PartialEntry::getAmount).reversed());
+		
+		// Move along trying to match values from one to another
+		
+		// Try one debit to 1 or more credits
+		
+		int startingCreditNotBiggerThanDebit = 0;
+		lookingForDebits:
+		for (int debit=0; debit<debitEntries.size(); debit++) {
+			double debitAmount = debitEntries.get(debit).getAmount();
+			boolean updateStartingCreditNotBiggerThanDebit = true;
+			for (int credit=startingCreditNotBiggerThanDebit; credit<creditEntries.size(); credit++) {
+				double creditAmount = creditEntries.get(credit).getAmount();
+				if (creditAmount>debitAmount)
+					continue;
+				if (updateStartingCreditNotBiggerThanDebit) {
+					updateStartingCreditNotBiggerThanDebit = false;
+					startingCreditNotBiggerThanDebit = credit; // in the next 'debit loop' we know for sure that any credit before this position is bigger
+				}
+				// Check if we have a 1:1 match
+				if (Math.abs(debitAmount - creditAmount) < EPSILON) {
+					// We have a 1:1 match, form an accounting flow
+					commitFlow1D1C(debit, credit);
+					// Fix the debit index because we've removed one debit part when we built the flow
+					debit--;
+					// Let's move to the next debit
+					continue lookingForDebits;
+				}
+				// If we got here, we know for sure that the 'debitAmount' is bigger than the 'creditAmount',
+				// Check if we have a 1:2 match, starting with the extremes (upper and lower) boundaries in credits values
+				for (int credit2=creditEntries.size()-1;credit2>credit;credit2--) {
+					double credit2Amount = creditEntries.get(credit2).getAmount();
+					double credits = creditAmount + credit2Amount;
+					if (Math.abs(debitAmount - credits) < EPSILON) {
+						// We have a 1:2 match, form an accounting flow
+						commitFlow1D2C(debit, credit, credit2);
+						// Fix the debit index because we've removed one debit part when we built the flow
+						debit--;
+						// Let's move to the next debit
+						continue lookingForDebits;
+					}
+				}
+			}
+		}
+		
+		// Try one credit to 2 or more debits (we've already tested all the 1:1 possibilities in the previous loop)
+		
+		int startingDebitNotBiggerThanCredit = 0;
+		lookingForCredits:
+		for (int credit=0; credit<creditEntries.size(); credit++) {
+			double creditAmount = creditEntries.get(credit).getAmount();
+			boolean updateStartingDebitNotBiggerThanCredit  = true;
+			for (int debit=startingDebitNotBiggerThanCredit; debit<debitEntries.size(); debit++) {
+				double debitAmount = debitEntries.get(debit).getAmount();
+				if (debitAmount>creditAmount)
+					continue;
+				if (updateStartingDebitNotBiggerThanCredit) {
+					updateStartingDebitNotBiggerThanCredit = false;
+					startingDebitNotBiggerThanCredit = debit; // in the next 'credit loop' we know for sure that any debit before this position is bigger
+				}
+				// If we got here, we know for sure that the 'creditAmount' is bigger than the 'debitAmount',
+				// Check if we have a 1:2 match, starting with the extremes (upper and lower) boundaries in debit values
+				for (int debit2=debitEntries.size()-1;debit2>debit;debit2--) {
+					double debit2Amount = debitEntries.get(debit2).getAmount();
+					double debits = debitAmount + debit2Amount;
+					if (Math.abs(creditAmount - debits) < EPSILON) {
+						// We have a 1:2 match, form an accounting flow
+						commitFlow2D1C(debit, debit2, credit);
+						// Fix the credit index because we've removed one credit part when we built the flow
+						credit--;
+						// Let's move to the next credit
+						continue lookingForCredits;
+					}
+				}
+			}
+		}
+		
+		// Don't try any other combinations because with multiple debits and multiple credits
+		// we don't have a 'good' accounting flow (it would be written as 'many to many')
+	}
+	
+	/**
+	 * Create an accounting flow with one debit and one credit taken from the set of debits and credits
+	 */
+	private void commitFlow1D1C(int debitIndex, int creditIndex) {
+		PartialEntry debitEntry = debitEntries.remove(debitIndex);
+		PartialEntry creditEntry = creditEntries.remove(creditIndex);
+		DailyAccountingFlow flow = new DailyAccountingFlow();
+		flow.setDate(currentDate);
+		flow.setDebitedAccountCode(debitEntry.getAccount());
+		flow.setCreditedAccountCode(creditEntry.getAccount());
+		flow.setAmount(debitEntry.getAmount());
+		addFlow(flow);					
+	}
+
+	/**
+	 * Create two accounting flows with one debit and two credits taken from the set of debits and credits
+	 */
+	private void commitFlow1D2C(int debitIndex, int creditIndex1, int creditIndex2) {
+		PartialEntry debitEntry = debitEntries.remove(debitIndex);
+		PartialEntry creditEntry1 = creditEntries.remove(creditIndex1);
+		DailyAccountingFlow flow1 = new DailyAccountingFlow();
+		flow1.setDate(currentDate);
+		flow1.setDebitedAccountCode(debitEntry.getAccount());
+		flow1.setCreditedAccountCode(creditEntry1.getAccount());
+		flow1.setAmount(creditEntry1.getAmount());
+		addFlow(flow1);					
+		
+		if (creditIndex1<creditIndex2)
+			creditIndex2--;
+		PartialEntry creditEntry2 = creditEntries.remove(creditIndex2);
+		DailyAccountingFlow flow2 = new DailyAccountingFlow();
+		flow2.setDate(currentDate);
+		flow2.setDebitedAccountCode(debitEntry.getAccount());
+		flow2.setCreditedAccountCode(creditEntry2.getAccount());
+		flow2.setAmount(creditEntry2.getAmount());
+		addFlow(flow2);					
+
+	}
+
+	/**
+	 * Create two accounting flows with two debits and one credit taken from the set of debits and credits
+	 */
+	private void commitFlow2D1C(int debitIndex1, int debitIndex2, int creditIndex) {
+		PartialEntry creditEntry = creditEntries.remove(creditIndex);
+		PartialEntry debitEntry1 = debitEntries.remove(debitIndex1);
+		DailyAccountingFlow flow1 = new DailyAccountingFlow();
+		flow1.setDate(currentDate);
+		flow1.setDebitedAccountCode(debitEntry1.getAccount());
+		flow1.setCreditedAccountCode(creditEntry.getAccount());
+		flow1.setAmount(debitEntry1.getAmount());
+		addFlow(flow1);					
+		
+		if (debitIndex1<debitIndex2)
+			debitIndex2--;
+		PartialEntry debitEntry2 = debitEntries.remove(debitIndex2);
+		DailyAccountingFlow flow2 = new DailyAccountingFlow();
+		flow2.setDate(currentDate);
+		flow2.setDebitedAccountCode(debitEntry2.getAccount());
+		flow2.setCreditedAccountCode(creditEntry.getAccount());
+		flow2.setAmount(debitEntry2.getAmount());
+		addFlow(flow2);					
+
+	}
+
 	/**
 	 * Writes the committed partial entries after a day have been completed.
 	 */

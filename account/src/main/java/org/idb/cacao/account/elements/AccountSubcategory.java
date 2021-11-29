@@ -125,6 +125,19 @@ public enum AccountSubcategory {
 		return ifrsNumber;
 	}
 
+	public String getNumber(AccountStandard standard) {
+		if (standard==null)
+			return null;
+		switch (standard) {
+		case IFRS:
+			return ifrsNumber;
+		case GAAP:
+			return gaapNumber;
+		default:
+			return null;
+		}
+	}
+
 	public static AccountSubcategory parse(String s) {
 		if (s==null || s.trim().length()==0)
 			return null;

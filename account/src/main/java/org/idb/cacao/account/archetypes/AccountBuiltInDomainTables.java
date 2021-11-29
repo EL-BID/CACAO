@@ -20,11 +20,12 @@
 package org.idb.cacao.account.archetypes;
 
 import org.idb.cacao.account.elements.AccountCategory;
+import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.AccountSubcategory;
+import org.idb.cacao.account.elements.DebitCredit;
 import org.idb.cacao.account.elements.StatementComprehensiveIncome;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
-import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldType;
 
@@ -49,10 +50,19 @@ public class AccountBuiltInDomainTables {
 	/**
 	 * Domain table for nature of account (i.e. DEBIT or CREDIT)
 	 */
-	public static DomainTable DEBIT_CREDIT = new DomainTable("Debit/Credit", /*version*/"1.0")
-			.withEntries(
-					new DomainEntry("D", "account.debit"),
-					new DomainEntry("C", "account.credit"));
+	public static DomainTable DEBIT_CREDIT = DomainTable.fromEnum("Debit/Credit", /*version*/"1.0", 
+			/*enumeration with values*/DebitCredit.class); 
+	
+	/**
+	 * Return the account standard related to the chosen domain table name
+	 */
+	public static AccountStandard getAccountStandardRelatedToDomainTable(String domainTableName) {
+		if (isRelatedToGAAP(domainTableName))
+			return AccountStandard.GAAP;
+		if (isRelatedToIFRS(domainTableName))
+			return AccountStandard.IFRS;
+		return null;
+	}
 	
 	/**
 	 * Returns TRUE if the domain table is related to GAAP built-in domain tables
@@ -173,6 +183,22 @@ public class AccountBuiltInDomainTables {
 		}
 		return Collections.emptyMap();		
 	}
+	
+	/**
+	 * Domain table for the category of accounts according to a supported standard
+	 */
+	public static DomainTable getDomainTableAccountCategory(AccountStandard standard) {
+		if (standard==null)
+			return null;
+		switch (standard) {
+		case IFRS:
+			return ACCOUNT_CATEGORY_IFRS;
+		case GAAP:
+			return ACCOUNT_CATEGORY_GAAP;
+		default:
+			return null;
+		}
+	}
 
 	/**
 	 * Domain table for the category of accounts according to GAAP
@@ -187,6 +213,22 @@ public class AccountBuiltInDomainTables {
 	public static DomainTable ACCOUNT_CATEGORY_IFRS = DomainTable.fromEnum("Account Category IFRS", /*version*/"1.0", 
 			/*enumeration with values*/AccountCategory.class, 
 			/*getKey*/AccountCategory::getIfrsNumber);
+
+	/**
+	 * Domain table for the sub-category of accounts according to a supported standard
+	 */
+	public static DomainTable getDomainTableAccountSubcategory(AccountStandard standard) {
+		if (standard==null)
+			return null;
+		switch (standard) {
+		case IFRS:
+			return ACCOUNT_SUBCATEGORY_IFRS;
+		case GAAP:
+			return ACCOUNT_SUBCATEGORY_GAAP;
+		default:
+			return null;
+		}
+	}
 
 	/**
 	 * Domain table for the category of accounts according to GAAP
