@@ -197,67 +197,25 @@ public class AccountingFlowProcessor {
 		
 			if (creditEntries.isEmpty() || debitEntries.isEmpty())
 				return; // can't create DailyAccountingFlow without debited accounts or without credited accounts
-			
-			if (creditEntries.size()==1 && debitEntries.size()==1) {
-				// If we have exactly one credit and one debit, turn it into one AccountingFlow
-				DailyAccountingFlow flow = new DailyAccountingFlow();
-				flow.setDate(currentDate);
-				flow.setDebitedAccountCode(debitEntries.get(0).getAccount());
-				flow.setCreditedAccountCode(creditEntries.get(0).getAccount());
-				flow.setAmount(Math.min(debitEntries.get(0).getAmount(),creditEntries.get(0).getAmount()));
-				addFlow(flow);
-				return;
-			}
-			
-			Set<String> accounts_credited = creditEntries.stream().map(PartialEntry::getAccount).collect(Collectors.toSet());
-			Set<String> accounts_debited = debitEntries.stream().map(PartialEntry::getAccount).collect(Collectors.toSet());
 
-			if (accounts_credited.size()==1 && accounts_debited.size()==1) {
-				// If we have multiple entries related to the same account being credited and account being debited, turn into one AccountingFlow
-				DailyAccountingFlow flow = new DailyAccountingFlow();
-				flow.setDate(currentDate);
-				flow.setDebitedAccountCode(accounts_debited.iterator().next());
-				flow.setCreditedAccountCode(accounts_credited.iterator().next());
-				double sum_amounts_credited = creditEntries.stream().mapToDouble(PartialEntry::getAmount).sum();
-				double sum_amounts_debited = debitEntries.stream().mapToDouble(PartialEntry::getAmount).sum();
-				flow.setAmount(Math.min(sum_amounts_debited,sum_amounts_credited));
-				addFlow(flow);
+			// Try combinations if we have only one account being debited or only one account being credited
+			boolean found_all_matches = tryCombinationsOneToMany();
+			if (found_all_matches)
 				return;
-			}
-
-			if (accounts_credited.size()==1) {
-				// If we have multiple entries of multiple debited account crediting the same account, turn into multiple AccountingFlows (one for each debited account)
-				final String creditAccount = accounts_credited.iterator().next();
-				for (PartialEntry debit: debitEntries) {
-					DailyAccountingFlow flow = new DailyAccountingFlow();
-					flow.setDate(currentDate);
-					flow.setDebitedAccountCode(debit.getAccount());
-					flow.setCreditedAccountCode(creditAccount);
-					flow.setAmount(debit.getAmount());
-					addFlow(flow);					
-				}
-				return;
-			}
-			
-			if (accounts_debited.size()==1) {
-				// If we have multiple entries of multiple credited account debiting the same account, turn into multiple AccountingFlows (one for each credited account)
-				final String debitAccount = accounts_debited.iterator().next();
-				for (PartialEntry credit: creditEntries) {
-					DailyAccountingFlow flow = new DailyAccountingFlow();
-					flow.setDate(currentDate);
-					flow.setDebitedAccountCode(debitAccount);
-					flow.setCreditedAccountCode(credit.getAccount());
-					flow.setAmount(credit.getAmount());
-					addFlow(flow);
-				}
-				return;
-			}
 			
 			// If we got here, we have multiple credited accounts and multiple debited accounts
 			// Let's try to organize the set of entries in multiple sets of matching values			
-			tryCombinations();
+			boolean found_any = tryCombinationsManyToMany();
 			if (creditEntries.isEmpty() && debitEntries.isEmpty())
 				return;
+			
+			if (found_any) {
+				// If we found any match in 'tryCombinationsManyToMany' but there are still some entries, let's
+				// try once more with 'tryCombinationsOneToMany' considering only the remaining entries
+				found_all_matches = tryCombinationsOneToMany();
+				if (found_all_matches)
+					return;
+			}
 			
 			// Let's report the values that could not be represented by AccountingFlows due to lack of specific accounts
 			// We will represent them as generic '*' accounts
@@ -280,9 +238,75 @@ public class AccountingFlowProcessor {
 	}
 	
 	/**
-	 * Tries different combinations of creditEntries and debitEntries in order to find 'accounting flows'
+	 * Try combinations if we have only one account being debited or only one account being credited<BR>
+	 * The matches found are NOT removed from 'debitEntries' and 'creditEntries' (they remain unchanged).
+	 * @return Returns TRUE if finished (found all matches). Returns FALSE otherwise.
 	 */
-	private void tryCombinations() {
+	private boolean tryCombinationsOneToMany() {
+		if (creditEntries.size()==1 && debitEntries.size()==1) {
+			// If we have exactly one credit and one debit, turn it into one AccountingFlow
+			DailyAccountingFlow flow = new DailyAccountingFlow();
+			flow.setDate(currentDate);
+			flow.setDebitedAccountCode(debitEntries.get(0).getAccount());
+			flow.setCreditedAccountCode(creditEntries.get(0).getAccount());
+			flow.setAmount(Math.min(debitEntries.get(0).getAmount(),creditEntries.get(0).getAmount()));
+			addFlow(flow);
+			return true;
+		}
+		
+		Set<String> accounts_credited = creditEntries.stream().map(PartialEntry::getAccount).collect(Collectors.toSet());
+		Set<String> accounts_debited = debitEntries.stream().map(PartialEntry::getAccount).collect(Collectors.toSet());
+
+		if (accounts_credited.size()==1 && accounts_debited.size()==1) {
+			// If we have multiple entries related to the same account being credited and account being debited, turn into one AccountingFlow
+			DailyAccountingFlow flow = new DailyAccountingFlow();
+			flow.setDate(currentDate);
+			flow.setDebitedAccountCode(accounts_debited.iterator().next());
+			flow.setCreditedAccountCode(accounts_credited.iterator().next());
+			double sum_amounts_credited = creditEntries.stream().mapToDouble(PartialEntry::getAmount).sum();
+			double sum_amounts_debited = debitEntries.stream().mapToDouble(PartialEntry::getAmount).sum();
+			flow.setAmount(Math.min(sum_amounts_debited,sum_amounts_credited));
+			addFlow(flow);
+			return true;
+		}
+
+		if (accounts_credited.size()==1) {
+			// If we have multiple entries of multiple debited account crediting the same account, turn into multiple AccountingFlows (one for each debited account)
+			final String creditAccount = accounts_credited.iterator().next();
+			for (PartialEntry debit: debitEntries) {
+				DailyAccountingFlow flow = new DailyAccountingFlow();
+				flow.setDate(currentDate);
+				flow.setDebitedAccountCode(debit.getAccount());
+				flow.setCreditedAccountCode(creditAccount);
+				flow.setAmount(debit.getAmount());
+				addFlow(flow);					
+			}
+			return true;
+		}
+		
+		if (accounts_debited.size()==1) {
+			// If we have multiple entries of multiple credited account debiting the same account, turn into multiple AccountingFlows (one for each credited account)
+			final String debitAccount = accounts_debited.iterator().next();
+			for (PartialEntry credit: creditEntries) {
+				DailyAccountingFlow flow = new DailyAccountingFlow();
+				flow.setDate(currentDate);
+				flow.setDebitedAccountCode(debitAccount);
+				flow.setCreditedAccountCode(credit.getAccount());
+				flow.setAmount(credit.getAmount());
+				addFlow(flow);
+			}
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Try combinations if we have many accounts being debited and many accounts being credited.<BR>
+	 * The matches found are removed from 'debitEntries' and 'creditEntries'.
+	 * @return Returns TRUE if found at least one match. Returns FALSE if found none.
+	 */
+	private boolean tryCombinationsManyToMany() {
 		
 		// Let's order each set according to their values descending
 		debitEntries.sort(Comparator.comparing(PartialEntry::getAmount).reversed());
@@ -290,25 +314,32 @@ public class AccountingFlowProcessor {
 		
 		// Move along trying to match values from one to another
 		
+		boolean foundAny = false;
+		
 		// Try one debit to 1 or more credits
 		
 		int startingCreditNotBiggerThanDebit = 0;
 		lookingForDebits:
 		for (int debit=0; debit<debitEntries.size(); debit++) {
 			double debitAmount = debitEntries.get(debit).getAmount();
+			String debitAccount = debitEntries.get(debit).getAccount();
 			boolean updateStartingCreditNotBiggerThanDebit = true;
 			for (int credit=startingCreditNotBiggerThanDebit; credit<creditEntries.size(); credit++) {
 				double creditAmount = creditEntries.get(credit).getAmount();
+				String creditAccount = creditEntries.get(credit).getAccount();
 				if (creditAmount>debitAmount)
 					continue;
 				if (updateStartingCreditNotBiggerThanDebit) {
 					updateStartingCreditNotBiggerThanDebit = false;
 					startingCreditNotBiggerThanDebit = credit; // in the next 'debit loop' we know for sure that any credit before this position is bigger
 				}
+				if (debitAccount.equals(creditAccount)) 
+					 continue; // we won't try to match a debit/credit into the same account
 				// Check if we have a 1:1 match
 				if (Math.abs(debitAmount - creditAmount) < EPSILON) {
 					// We have a 1:1 match, form an accounting flow
 					commitFlow1D1C(debit, credit);
+					foundAny = true;
 					// Fix the debit index because we've removed one debit part when we built the flow
 					debit--;
 					// Let's move to the next debit
@@ -318,15 +349,21 @@ public class AccountingFlowProcessor {
 				// Check if we have a 1:2 match, starting with the extremes (upper and lower) boundaries in credits values
 				for (int credit2=creditEntries.size()-1;credit2>credit;credit2--) {
 					double credit2Amount = creditEntries.get(credit2).getAmount();
+					String credit2Account = creditEntries.get(credit2).getAccount();
 					double credits = creditAmount + credit2Amount;
+					if (debitAccount.equals(credit2Account)) 
+						 continue; // we won't try to match a debit/credit into the same account
 					if (Math.abs(debitAmount - credits) < EPSILON) {
 						// We have a 1:2 match, form an accounting flow
 						commitFlow1D2C(debit, credit, credit2);
+						foundAny = true;
 						// Fix the debit index because we've removed one debit part when we built the flow
 						debit--;
 						// Let's move to the next debit
 						continue lookingForDebits;
 					}
+					if (credits > creditAmount)
+						break; // there is no point continuing this LOOP as 'the sum of credits' gets bigger
 				}
 			}
 		}
@@ -337,34 +374,46 @@ public class AccountingFlowProcessor {
 		lookingForCredits:
 		for (int credit=0; credit<creditEntries.size(); credit++) {
 			double creditAmount = creditEntries.get(credit).getAmount();
+			String creditAccount = creditEntries.get(credit).getAccount();
 			boolean updateStartingDebitNotBiggerThanCredit  = true;
 			for (int debit=startingDebitNotBiggerThanCredit; debit<debitEntries.size(); debit++) {
 				double debitAmount = debitEntries.get(debit).getAmount();
+				String debitAccount = debitEntries.get(debit).getAccount();
 				if (debitAmount>creditAmount)
 					continue;
 				if (updateStartingDebitNotBiggerThanCredit) {
 					updateStartingDebitNotBiggerThanCredit = false;
 					startingDebitNotBiggerThanCredit = debit; // in the next 'credit loop' we know for sure that any debit before this position is bigger
 				}
+				if (debitAccount.equals(creditAccount)) 
+					 continue; // we won't try to match a debit/credit into the same account
 				// If we got here, we know for sure that the 'creditAmount' is bigger than the 'debitAmount',
 				// Check if we have a 1:2 match, starting with the extremes (upper and lower) boundaries in debit values
 				for (int debit2=debitEntries.size()-1;debit2>debit;debit2--) {
 					double debit2Amount = debitEntries.get(debit2).getAmount();
+					String debit2Account = debitEntries.get(debit2).getAccount();
 					double debits = debitAmount + debit2Amount;
+					if (debit2Account.equals(creditAccount)) 
+						 continue; // we won't try to match a debit/credit into the same account
 					if (Math.abs(creditAmount - debits) < EPSILON) {
 						// We have a 1:2 match, form an accounting flow
 						commitFlow2D1C(debit, debit2, credit);
+						foundAny = true;
 						// Fix the credit index because we've removed one credit part when we built the flow
 						credit--;
 						// Let's move to the next credit
 						continue lookingForCredits;
 					}
+					if (debits > creditAmount)
+						break; // there is no point continuing this LOOP as 'the sum of debits' gets bigger
 				}
 			}
 		}
 		
 		// Don't try any other combinations because with multiple debits and multiple credits
 		// we don't have a 'good' accounting flow (it would be written as 'many to many')
+		
+		return foundAny;
 	}
 	
 	/**

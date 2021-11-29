@@ -134,6 +134,10 @@ public class DailyAccountingFlow {
 	public void addAmount(double amount) {
 		this.amount += amount;
 	}
+	
+	public String toString() {
+		return creditedAccountCode+"=["+amount+"]=>"+debitedAccountCode;
+	}
     
     public int hashCode() {
 		int result = ObjectUtils.nullSafeHashCode(date);

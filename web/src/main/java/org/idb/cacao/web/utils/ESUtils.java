@@ -777,6 +777,26 @@ public class ESUtils {
 	}
 
 	/**
+	 * Remove Kibana saved object
+	 */
+	public static void deleteKibanaSavedObject(Environment env, RestTemplate restTemplate, String spaceId, String type, String id) {
+		String url = getKibanaURL(env, 
+				(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/saved_objects/"+type+"/"+id+"?force=true" 
+						: "/api/saved_objects/"+type+"/"+id+"?force=true");
+		
+		try {
+			restTemplate.execute(new URI(url), HttpMethod.DELETE, getKibanaRequestCallback(env,/*requestBody*/null), null);
+		}
+		catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+			return;
+		}
+		catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	/**
 	 * Returns URL for Kibana API requests
 	 */
 	public static String getKibanaURL(Environment env, String endpoint) {
@@ -816,7 +836,12 @@ public class ESUtils {
 			};			
 			return requestCallback;
 		}
-		return null;
+		else {
+			RequestCallback requestCallback = req->{
+				req.getHeaders().set("kbn-xsrf", "reporting");
+			};			
+			return requestCallback;			
+		}
 	}
 	
 	/**
@@ -1081,6 +1106,8 @@ public class ESUtils {
 		
 		private String title;
 		
+		private String timeFieldName;
+		
 		private String namespace;
 
 		public KibanaSavedObject() { }
@@ -1096,6 +1123,7 @@ public class ESUtils {
 			Map<?,?> attributes = (Map<?,?>)properties.get("attributes");
 			if (attributes!=null) {
 				this.title = ((String)attributes.get("title"));
+				this.timeFieldName = ((String)attributes.get("timeFieldName"));
 			}
 			else {
 				this.title = (String)properties.get("name");
@@ -1128,6 +1156,14 @@ public class ESUtils {
 
 		public void setTitle(String title) {
 			this.title = title;
+		}
+
+		public String getTimeFieldName() {
+			return timeFieldName;
+		}
+
+		public void setTimeFieldName(String timeFieldName) {
+			this.timeFieldName = timeFieldName;
 		}
 
 		public String getNamespace() {

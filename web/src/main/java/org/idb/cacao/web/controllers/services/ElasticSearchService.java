@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -98,9 +99,17 @@ public class ElasticSearchService {
 	}
 
 	/**
-	 * Check if the standard spaces already exists at Kiaban. Creates missing spaces as needed.
+	 * Check if the standard spaces already exists at Kibana. Creates missing spaces as needed.
 	 */
 	public void assertStandardSpaces() throws IOException {
+		assertStandardSpaces(/*collectCreationInfo*/null);
+	}
+	
+	/**
+	 * Check if the standard spaces already exists at Kibana. Creates missing spaces as needed.
+	 * @param collectCreationInfo If not NULL, collects output from this method about index creation
+	 */
+	public void assertStandardSpaces(Consumer<String> collectCreationInfo) throws IOException {
 
 		log.log(Level.FINE, "Asserting Standard Spaces at Kibana...");
 
@@ -119,6 +128,8 @@ public class ElasticSearchService {
 			space.setDisabledFeatures(getDisabledFeatures(/*keep features*/ "discover","visualize","dashboard"));
 			ESUtils.createKibanaSpace(env, restTemplate, space);
 			copyKibanaConfigFromSpaceToSpace("default", space.getId());
+			if (collectCreationInfo!=null)
+				collectCreationInfo.accept("Created SPACE "+space.getId()+" ("+space.getDescription()+") at Kibana\n");
 		}
 
 		if (!existing_spaces_ids.contains("tax-public")) {
@@ -132,6 +143,8 @@ public class ElasticSearchService {
 			space.setDisabledFeatures(getDisabledFeatures(/*keep features*/ "discover","visualize","dashboard"));
 			ESUtils.createKibanaSpace(env, restTemplate, space);
 			copyKibanaConfigFromSpaceToSpace("default", space.getId());
+			if (collectCreationInfo!=null)
+				collectCreationInfo.accept("Created SPACE "+space.getId()+" ("+space.getDescription()+") at Kibana\n");
 		}
 
 		if (!existing_spaces_ids.contains("tax-master")) {
@@ -145,6 +158,8 @@ public class ElasticSearchService {
 			space.setDisabledFeatures(getDisabledFeatures(/*keep features*/ "discover","visualize","dashboard"));
 			ESUtils.createKibanaSpace(env, restTemplate, space);
 			copyKibanaConfigFromSpaceToSpace("default", space.getId());
+			if (collectCreationInfo!=null)
+				collectCreationInfo.accept("Created SPACE "+space.getId()+" ("+space.getDescription()+") at Kibana\n");
 		}
 	}
 
@@ -152,6 +167,14 @@ public class ElasticSearchService {
 	 * Check if the standard roles already exists at ElasticSearch. Creates missing roles as needed.
 	 */
 	public Map<ESStandardRoles,Role> assertStandardRoles() throws IOException {
+		return assertStandardRoles(/*collectCreationInfo*/null);
+	}
+	
+	/**
+	 * Check if the standard roles already exists at ElasticSearch. Creates missing roles as needed.
+	 * @param collectCreationInfo If not NULL, collects output from this method about index creation
+	 */
+	public Map<ESStandardRoles,Role> assertStandardRoles(Consumer<String> collectCreationInfo) throws IOException {
 		
 		log.log(Level.FINE, "Asserting Standard Roles at ElasticSearch...");
 
@@ -177,8 +200,11 @@ public class ElasticSearchService {
 					standardRole.getPrivileges(), 
 					standardRole.getResources(),
 					standardRole.getAllIndicesPrivileges());
-			if (created_role!=null)
+			if (created_role!=null) {
 				map_of_roles.put(standardRole, created_role);
+				if (collectCreationInfo!=null)
+					collectCreationInfo.accept("Created ROLE "+created_role.getName()+" at Kibana\n");
+			}
 		}
 
 		return map_of_roles;

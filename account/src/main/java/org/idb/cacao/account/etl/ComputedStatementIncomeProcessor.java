@@ -21,6 +21,7 @@ package org.idb.cacao.account.etl;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -286,6 +287,8 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 		
 		// Store information in denormalized view
 		
+		final OffsetDateTime timestampForView = LocalDate.of(year, 12, 1).atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
+		
 		for (StatementComprehensiveIncome t: StatementComprehensiveIncome.values()) {
 			ComputedStatementEntry computed = mapStatementEntries.computeIfAbsent(t, k->new ComputedStatementEntry(k.getNature()));
 			Map<DomainLanguage, DomainEntry> multiLanguageDomainEntry = mapDomainTexts.get(t);
@@ -293,7 +296,7 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 			String rowId_SCI = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInStatement.incrementAndGet());
 			Map<String,Object> normalizedRecord_SCI = new HashMap<>();
 			normalizedRecord_SCI.put("doc_"+publishedTimestamp, timestamp);
-			normalizedRecord_SCI.put(publishedTimestamp, LocalDate.of(year, 12, 1));
+			normalizedRecord_SCI.put(publishedTimestamp, timestampForView);
 			normalizedRecord_SCI.put(publishedTaxpayerId, taxPayerId);
 			normalizedRecord_SCI.put(publishedtaxPeriodNumber, taxPeriodNumber);
 			if (gl!=null) {

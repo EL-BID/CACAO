@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,6 +101,15 @@ public class KibanaSpacesService {
 	 * as a 'index pattern', automatically creates one and replicates this over all existent Kibana spaces.
 	 */
 	public void syncKibanaIndexPatterns() {
+		syncKibanaIndexPatterns(/*collectCreationInfo*/null);
+	}
+	
+	/**
+	 * Checks all existent templates associated to published data. If any one of them is not yet represented at Kibana space
+	 * as a 'index pattern', automatically creates one and replicates this over all existent Kibana spaces.
+	 * @param collectCreationInfo If not NULL, collects output from this method about index creation
+	 */
+	public void syncKibanaIndexPatterns(Consumer<String> collectCreationInfo) {
 		
 		Map<String,KibanaSavedObject> map_patterns;
 		try {
@@ -138,7 +149,7 @@ public class KibanaSpacesService {
 		for (String index: indices) {
 
 			try {
-				syncKibanaIndexPatternsInternal(index, spaces, map_patterns);
+				syncKibanaIndexPatternsInternal(index, spaces, map_patterns, collectCreationInfo);
 			}
 			catch (Throwable ex) {
 				log.log(Level.WARNING, "Failed to synchronize index patterns at Kibana for ElasticSearch index "+index, ex);
@@ -218,7 +229,7 @@ public class KibanaSpacesService {
 				for (String index: indices) {
 		
 					try {
-						boolean ok = syncKibanaIndexPatternsInternal(index, spaces, map_patterns);
+						boolean ok = syncKibanaIndexPatternsInternal(index, spaces, map_patterns, /*collectCreationInfo*/null);
 						if (ok)
 							count_index_patterns_ok++;
 					}
@@ -242,9 +253,11 @@ public class KibanaSpacesService {
 	 * Internal function used by {@link #syncKibanaIndexPatterns() syncKibanaIndexPatterns}<BR>
 	 * Check if there is an index-pattern created at Kibana default space for the given template. Creates a new index-pattern
 	 * if none exists. Replicates the created index-pattern to all existente Kibana spaces.
+	 * @param collectCreationInfo If not NULL, collects output from this method about index creation
 	 * @return Returns TRUE if the index pattern was created successfully or if it already exists
 	 */
-	private boolean syncKibanaIndexPatternsInternal(String indexName, List<KibanaSpace> spaces, Map<String,KibanaSavedObject> map_patterns) {
+	private boolean syncKibanaIndexPatternsInternal(String indexName, List<KibanaSpace> spaces, Map<String,KibanaSavedObject> map_patterns,
+			Consumer<String> collectCreationInfo) {
 		
 		if (indexName==null || indexName.trim().length()==0)
 			return false;
@@ -256,7 +269,10 @@ public class KibanaSpacesService {
 			return true;
 		}
 		else {
-			return syncKibanaIndexPatternsInternal(indexName, indexPatternTitle, dataName, spaces);
+			boolean created = syncKibanaIndexPatternsInternal(indexName, indexPatternTitle, dataName, spaces);
+			if (created && collectCreationInfo!=null)
+				collectCreationInfo.accept("Created index-pattern "+indexPatternTitle+" at all known Kibana spaces\n");
+			return created;
 		}
 
 	}
@@ -297,8 +313,26 @@ public class KibanaSpacesService {
 				throw new RuntimeException("The API did not create a new index pattern!");
 		}
 		catch (Throwable ex) {
-			log.log(Level.WARNING, "Failed to create a new index pattern called '"+indexPatternTitle+"' at Kibana for template "+templateName, ex);
-			return false;
+			if (ex.getMessage()!=null && ex.getMessage().contains("Duplicate index pattern")) {
+				// Ignore if the index pattern already exists
+				List<KibanaSavedObject> existing_index_patterns;
+				try {
+					existing_index_patterns = ESUtils.getKibanaIndexPatterns(env, restTemplate, /*spaceId*/null);
+				} catch (IOException e) {
+					log.log(Level.WARNING, "Failed to create a new index pattern called '"+indexPatternTitle+"' at Kibana for template "+templateName, ex);
+					return false;
+				}
+				index_pattern_id = (existing_index_patterns==null) ? null
+						: existing_index_patterns.stream().filter(ip->indexPatternTitle.equalsIgnoreCase(ip.getTitle())).findAny().map(ip->ip.getId()).orElse(null);
+				if (index_pattern_id==null) {
+					log.log(Level.WARNING, "Failed to create a new index pattern called '"+indexPatternTitle+"' at Kibana for template "+templateName, ex);
+					return false;
+				}
+			}
+			else {
+				log.log(Level.WARNING, "Failed to create a new index pattern called '"+indexPatternTitle+"' at Kibana for template "+templateName, ex);
+				return false;
+			}
 		}
 		
 		// Copy the same index pattern to all known Kibana spaces
@@ -329,5 +363,13 @@ public class KibanaSpacesService {
 		catch (Throwable ex) {
 			return 0;
 		}
+	}
+
+	/**
+	 * Removes all in-memory 'checked' status (necessary after some index-pattern was deleted)
+	 */
+	public void clearChecked() {
+		checkedArchetypes.clear();
+		checkedIndices.clear();
 	}
 }

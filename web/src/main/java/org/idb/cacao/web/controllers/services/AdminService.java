@@ -123,6 +123,12 @@ public class AdminService {
 	
     @Autowired
     private ResourceMonitorService sysInfoService;
+    
+    @Autowired
+    private ElasticSearchService elasticSearchService;
+    
+    @Autowired
+    private KibanaSpacesService kibanaSpacesService;
 
     private RestTemplate restTemplate;
 
@@ -165,7 +171,8 @@ public class AdminService {
 				new Option("u","uploads",false, "Deletes all upload records and uploaded files."),
 				new Option("v","validated",false, "Deletes all validated records."),
 				new Option("p","published",false, "Deletes all published (denormalized) views."),
-				new Option("a","all",false, "Deletes all the above options.")),
+				new Option("kp","kibana_patterns",false, "Deletes all index patterns related to CACAO from all spaces of Kibana."),
+				new Option("a","all",false, "Deletes all data from ElasticSearch (corresponds to all the other options, except Kibana)")),
 
 		KAFKA(AdminService::kafka,
 				"Returns information about KAFKA",
@@ -176,7 +183,10 @@ public class AdminService {
 		KIBANA(AdminService::kibana,
 			"Performs some operations on KIBANA",
 			new Option("g","get",true, "Returns list of objects. Depending on the object type, each object may inform an identifier and a title. The parameter informed with this operation must be one of these: space, user, role, dashboard, pattern, visualization, lens"),
-			new Option("s","space",true, "Inform the identifier of the SPACE when returning information about saved dashboards")),
+			new Option("s","space",true, "Inform the identifier of the SPACE when returning information about saved dashboards"),
+			new Option("cs","create_spaces",false, "Creates missing Kibana SPACE's related to CACAO standards"),
+			new Option("cr","create_roles",false, "Creates missing Kibana roles related to CACAO standards"),
+			new Option("cp","create_patterns",false, "Creates missing index-patterns in all Kibana SPACE's related to all of the CACAO standard indices at ElasticSearch")),
 		
 		LOG(AdminService::log,
 			"Search LOG records",
@@ -614,9 +624,23 @@ public class AdminService {
 			}
 			
 		}
-		else {
-			throw new Exception("Missing operation for use with this command!");
+
+		StringBuilder report = new StringBuilder();
+
+		if (cmdLine.hasOption("cs")) {			
+			service.elasticSearchService.assertStandardSpaces(/*collectCreationInfo*/report::append);
 		}
+
+		if (cmdLine.hasOption("cr")) {			
+			service.elasticSearchService.assertStandardRoles(/*collectCreationInfo*/report::append);
+		}
+
+		if (cmdLine.hasOption("cp")) {
+			service.kibanaSpacesService.clearChecked();
+			service.kibanaSpacesService.syncKibanaIndexPatterns(/*collectCreationInfo*/report::append);
+		}
+
+		return report.toString();
 	}
 	
 	/**
@@ -954,6 +978,34 @@ public class AdminService {
 			report.append("Deleted ").append(count_uploads).append(" upload records from database.\n");
 			int deleted_files = service.fileSystemStorageService.deleteAll();
 			report.append("Deleted ").append(deleted_files).append(" uploaded files from file storage.\n");
+		}
+		
+		if (cmdLine.hasOption("kp")) {
+			// Deletes all Index Patterns from all Kibana spaces
+			List<org.idb.cacao.web.utils.ESUtils.KibanaSpace> spaces = ESUtils.getKibanaSpaces(service.env, service.restTemplate);
+			if (!spaces.isEmpty()) {
+				boolean deletedAny = false;
+				for (org.idb.cacao.web.utils.ESUtils.KibanaSpace space: spaces) {					
+					List<org.idb.cacao.web.utils.ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, space.getId());
+					int countDeleted = 0;
+					if (indexPatterns!=null && !indexPatterns.isEmpty()) {
+						for (org.idb.cacao.web.utils.ESUtils.KibanaSavedObject indexPattern: indexPatterns) {
+							if (indexPattern.getTitle().startsWith("cacao_")) {
+								report.append("Deleting ").append(indexPattern.getTitle()).append(" from space ").append(space.getId()).append("\n");
+								ESUtils.deleteKibanaSavedObject(service.env, service.restTemplate, space.getId(), "index-pattern", indexPattern.getId());
+								countDeleted++;
+								deletedAny = true;
+							}
+						}
+					}
+					if (countDeleted>0) {
+						report.append("Deleted ").append(countDeleted).append(" index patterns from space ").append(space.getId()).append("\n");
+					}
+				}
+				if (deletedAny) {
+					service.kibanaSpacesService.clearChecked();
+				}
+			}
 		}
 
 		return report.toString();

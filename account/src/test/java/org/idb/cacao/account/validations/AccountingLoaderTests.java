@@ -551,26 +551,124 @@ public class AccountingLoaderTests {
 		
 		flows.clear();
 
-		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"04", /*amount*/105.0, /*isDebit*/true);
-		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/1000.0, /*isDebit*/true);
-		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"05", /*amount*/105.0, /*isDebit*/true);
-		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"02", /*amount*/200.0, /*isDebit*/false);
-		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"03", /*amount*/800.0, /*isDebit*/false);
-		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"06", /*amount*/210.0, /*isDebit*/false);
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"04", /*amount*/105.0, /*isDebit*/true); // #1
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/1000.0, /*isDebit*/true); // #2
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"05", /*amount*/105.0, /*isDebit*/true); // #3
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"02", /*amount*/200.0, /*isDebit*/false); // #4
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"03", /*amount*/800.0, /*isDebit*/false); // #5
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"06", /*amount*/210.0, /*isDebit*/false); // #6
 		processor.finish();
 		
 		assertEquals(4, flows.size(), "Expected 4 accounting flows (two for each triplet of debits/credits)");
 		flows.stream()
-			.filter(flow->flow.getAmount()==800.0 && "01".equals(flow.getDebitedAccountCode()) && "03".equals(flow.getCreditedAccountCode()))
+			.filter(flow->flow.getAmount()==800.0 && "01".equals(flow.getDebitedAccountCode()) && "03".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#2,#4,#5)
 			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
 		flows.stream()
-			.filter(flow->flow.getAmount()==200.0 && "01".equals(flow.getDebitedAccountCode()) && "02".equals(flow.getCreditedAccountCode()))
+			.filter(flow->flow.getAmount()==200.0 && "01".equals(flow.getDebitedAccountCode()) && "02".equals(flow.getCreditedAccountCode()))	// 2nd flow for triplet (#2,#4,#5)
 			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
 		flows.stream()
-			.filter(flow->flow.getAmount()==105.0 && "04".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))
+			.filter(flow->flow.getAmount()==105.0 && "04".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#1,#3,#6)
 			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
 		flows.stream()
-			.filter(flow->flow.getAmount()==105.0 && "05".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))
+			.filter(flow->flow.getAmount()==105.0 && "05".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))	// 2nd flow for triplet (#1,#3,#6)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+
+		// Scenario 5: all the above, i.e.: triplets of 1 debit for 2 credits. triplets of 2 debits for 1 credit shuffled, duples of 1 debit : 1 credit
+		// and every one of them shuffled
+		
+		flows.clear();
+
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"04", /*amount*/105.0, /*isDebit*/true);	// #1	
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"07", /*amount*/220.0, /*isDebit*/true);	// #2	 
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/1000.0, /*isDebit*/true);	// #3
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"05", /*amount*/105.0, /*isDebit*/true);	// #4	
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"08", /*amount*/123.0, /*isDebit*/true);	// #5
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"02", /*amount*/200.0, /*isDebit*/false);	// #6
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"03", /*amount*/800.0, /*isDebit*/false);	// #7
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"06", /*amount*/210.0, /*isDebit*/false);	// #8 	
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"08", /*amount*/780.0, /*isDebit*/true);	// #9
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/1000.0, /*isDebit*/false);	// #10
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/123.0, /*isDebit*/false);	// #11
+		processor.finish();
+		
+		assertEquals(6, flows.size(), "Expected many accounting flows (two for each triplet of debits/credits and one pair of debit/credit, considering the last one summed into one of the others)");
+		flows.stream()
+			.filter(flow->flow.getAmount()==800.0 && "01".equals(flow.getDebitedAccountCode()) && "03".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#3,#6,#7)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==200.0 && "01".equals(flow.getDebitedAccountCode()) && "02".equals(flow.getCreditedAccountCode()))	// 2nd flow for triplet (#3,#6,#7)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==105.0 && "04".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#1,#4,#8)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==105.0 && "05".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))	// 2nd flow for triplet (#1,#4,#8)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==220.0 && "07".equals(flow.getDebitedAccountCode()) && "01".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#2,#9,#10)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==(780.0+123.0) && "08".equals(flow.getDebitedAccountCode()) && "01".equals(flow.getCreditedAccountCode()))	// sum of 2nd flow for triplet (#2,#9,#10) and flow dor duple (#5,$11) 
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+
+		// Scenario 6: built upon the previous one, but includes and additional 1:5 match
+		
+		flows.clear();
+
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/2000.0, /*isDebit*/true);	// #12
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"04", /*amount*/105.0, /*isDebit*/true);	// #1	
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"07", /*amount*/220.0, /*isDebit*/true);	// #2	 
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/1000.0, /*isDebit*/true);	// #3
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"05", /*amount*/105.0, /*isDebit*/true);	// #4	
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"08", /*amount*/123.0, /*isDebit*/true);	// #5
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"02", /*amount*/200.0, /*isDebit*/false);	// #6
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"03", /*amount*/800.0, /*isDebit*/false);	// #7
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"06", /*amount*/210.0, /*isDebit*/false);	// #8 	
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"08", /*amount*/780.0, /*isDebit*/true);	// #9
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/1000.0, /*isDebit*/false);	// #10
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"01", /*amount*/123.0, /*isDebit*/false);	// #11
+		
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"10", /*amount*/1.0, /*isDebit*/false);	// #13
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"11", /*amount*/2.0, /*isDebit*/false);	// #14
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"12", /*amount*/3.0, /*isDebit*/false);	// #15
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"13", /*amount*/4.0, /*isDebit*/false);	// #16
+		processor.computeEntry(OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC), /*accountCode*/"14", /*amount*/1990.0, /*isDebit*/false);	// #17
+
+		processor.finish();
+
+		assertEquals(11, flows.size(), "Expected many accounting flows (the same 6 as before, plus 5 more due to the last entries)");
+		flows.stream()
+			.filter(flow->flow.getAmount()==800.0 && "01".equals(flow.getDebitedAccountCode()) && "03".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#3,#6,#7)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==200.0 && "01".equals(flow.getDebitedAccountCode()) && "02".equals(flow.getCreditedAccountCode()))	// 2nd flow for triplet (#3,#6,#7)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==105.0 && "04".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#1,#4,#8)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==105.0 && "05".equals(flow.getDebitedAccountCode()) && "06".equals(flow.getCreditedAccountCode()))	// 2nd flow for triplet (#1,#4,#8)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==220.0 && "07".equals(flow.getDebitedAccountCode()) && "01".equals(flow.getCreditedAccountCode()))	// 1st flow for triplet (#2,#9,#10)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==(780.0+123.0) && "08".equals(flow.getDebitedAccountCode()) && "01".equals(flow.getCreditedAccountCode()))	// sum of 2nd flow for triplet (#2,#9,#10) and flow dor duple (#5,$11) 
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==1.0 && "01".equals(flow.getDebitedAccountCode()) && "10".equals(flow.getCreditedAccountCode()))	// 1st flow for (#12,#13,#14,#15,#16,#17)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==2.0 && "01".equals(flow.getDebitedAccountCode()) && "11".equals(flow.getCreditedAccountCode()))	// 2nd flow for (#12,#13,#14,#15,#16,#17)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==3.0 && "01".equals(flow.getDebitedAccountCode()) && "12".equals(flow.getCreditedAccountCode()))	// 3rd flow for (#12,#13,#14,#15,#16,#17)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==4.0 && "01".equals(flow.getDebitedAccountCode()) && "13".equals(flow.getCreditedAccountCode()))	// 4th flow for (#12,#13,#14,#15,#16,#17)
+			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
+		flows.stream()
+			.filter(flow->flow.getAmount()==1990.0 && "01".equals(flow.getDebitedAccountCode()) && "14".equals(flow.getCreditedAccountCode()))	// 5th flow for (#12,#13,#14,#15,#16,#17)
 			.findAny().orElseThrow(()->new Exception("Missing expected flow!"));
 
 	}
