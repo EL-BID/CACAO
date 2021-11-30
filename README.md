@@ -250,6 +250,22 @@ docker-compose build
 docker-compose up -d
 
 
+### Fix eventual issues with OAUTH (e.g. Login with Google) regarding 'An error occurred while attempting to decode the Jwt: The ID Token contains invalid claims:'
+
+Usually this problem is related to failure in synchronizing the system clock with external server (e.g. Google's) clocks.
+
+In order to check this, execute:
+
+    systemctl status chronyd
+    
+Look for some error message regarding this service. E.g.: 'Active: failed (Result: exit-code) ' or '(code=exited, status=1/FAILURE)'
+
+In order to fix this, execute:
+
+    sudo systemctl enable --now chronyd
+    
+
+
 ___
 
 ## Configure Role Based User Authentication (RBAC) for ElasticSearch and Kibana
