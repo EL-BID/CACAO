@@ -49,10 +49,8 @@ import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.idb.cacao.validator.controllers.services.FileUploadedConsumerService;
 import org.idb.cacao.validator.parsers.CSVParser;
 import org.idb.cacao.validator.parsers.DataIterator;
-import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 import org.idb.cacao.validator.validations.Validations;
 import org.junit.jupiter.api.AfterAll;
@@ -85,12 +83,6 @@ public class ValidationTests {
 	
 	@Autowired
 	private DomainTableRepository domainTableRepository;
-	
-	@Autowired
-	private DocumentUploadedRepository documentUploadedRepository;
-	
-	@Autowired
-	private FileUploadedConsumerService fileUploadedConsumerService;
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -126,6 +118,8 @@ public class ValidationTests {
 		domainTableRepository.saveWithTimestamp(accountSubcategory);
 		
 		DocumentTemplate template = new DocumentTemplate();
+		template.setName("ChartOfAccounts");
+		template.setVersion("1.0");
 		template.setFields(
 				Arrays.asList(
 						new DocumentField()
@@ -218,10 +212,7 @@ public class ValidationTests {
 		doc.setFilename("20211411 - Pauls Guitar Shop - Chart of Accounts_validations.csv");
 		doc.setFileId(UUID.randomUUID().toString());
 		doc.setSituation(DocumentSituation.RECEIVED);
-		doc.setTemplateVersion("1.0");
-		doc = documentUploadedRepository.saveWithTimestamp(doc);
-		
-		fileUploadedConsumerService.validateDocument(doc.getId());
+		doc.setTemplateVersion("1.0");		
 		
 		ValidationContext validationContext = new ValidationContext();
 		validationContext.setDocumentUploaded(doc);
