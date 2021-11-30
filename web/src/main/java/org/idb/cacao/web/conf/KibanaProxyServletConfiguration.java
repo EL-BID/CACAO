@@ -221,7 +221,8 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 		protected void service(HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws ServletException, IOException {
 			if (BLOCK_LIST.matcher(servletRequest.getRequestURI()).find()) {
 				servletResponse.setStatus(HttpStatus.SC_FORBIDDEN); // 403
-				servletResponse.getWriter().write("Forbidden");                    
+				servletResponse.getWriter().write("Forbidden");
+				log.log(Level.INFO, "Forbidden: "+servletRequest.getRequestURI());
 				return;				
 			}
 			
