@@ -114,7 +114,7 @@ docker exec -it my-nexus cat /nexus-data/admin.password
 
 http://localhost:8081
 
-6. Sigin at the user interface (see the 'Sign in' button at top right corner)
+6. Sign in at the user interface (see the 'Sign in' button at top right corner)
 
 Inform 'admin' as login and inform the password you saw at step 4.
 
@@ -196,6 +196,36 @@ ___
 ___
 
 ## Additional information
+
+### Setup minimal firewall rules
+
+The minimal rule set for a firewall running CACAO should deny all incoming connections and allow all outgoing connections. Afterwards, incoming connections with the SSH, HTTPS and HTTP should be allowed.
+
+For this minimal setup, the Uncomplicated Firewall (ufw) will be used. The following commands install ufw and configure it.
+
+```
+sudo yum install epel-release -y
+sudo yum install --enablerepo="epel" ufw -y
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow https
+sudo ufw allow http
+sudo ufw enable
+sudo systemctl enable ufw
+```
+
+For the Amazon Machine Image (AMI) linux, in the previous list of commands the first one:
+
+```
+sudo yum install epel-release -y
+```
+
+must be replaced for:
+
+```
+sudo amazon-linux-extras install epel
+```
 
 ### Setup EC2 instance at AWS (Amazon)
 
