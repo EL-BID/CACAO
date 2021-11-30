@@ -59,12 +59,6 @@ public class SwaggerConfig {
           .apis(RequestHandlerSelectors.basePackage("org.idb.cacao.web.controllers.rest"))
           .paths(PathSelectors.ant("/api/**"))
           .build()
-          .ignoredParameterTypes(
-        		  InputStream.class, 
-        		  OutputStream.class,
-        		  StreamingResponseBody.class,
-        		  Resource.class,
-        		  PaginationData.class)
           .genericModelSubstitutes(Optional.class)
           .apiInfo(apiInfo());
     }
