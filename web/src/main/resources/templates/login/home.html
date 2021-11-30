@@ -27,7 +27,7 @@
 	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
 	<script th:nonce="${cspNonce}">
 		$('.ui.accordion').accordion('open (1)');
-		$('.vertical.sidebar a').click(() => $('.vertical.sidebar' ).sidebar('hide'))
+		$('.vertical.sidebar a[href]').click(() => $('.vertical.sidebar' ).sidebar('hide'))
 	</script>
 </body>
 </html>
