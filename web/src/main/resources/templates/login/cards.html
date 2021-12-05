@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="th icon"></i>
+			<div class="content" th:text="#{cards.title}">Cards</div>
+		</h2>
+        <div class="ui stackable cards">
+          <a class="ui card" th:each="card : ${cards}" th:href="@{${card.link}}">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon cogs" th:class="'massive icon ' + ${card.icon}"></i></div>
+            <div class="content center aligned">
+              <div class="header" th:text="${card.name}" >Document Uploads</div>
+            </div>
+          </a>
+        </div>
+	</div>
+    
+<script th:nonce="${cspNonce}" th:inline="javascript">
+</script>
+</body>
+</html>
+    

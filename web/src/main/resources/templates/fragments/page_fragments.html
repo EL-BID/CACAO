@@ -33,7 +33,7 @@
 <th:block th:if="${more_links}">
 	<th:block th:replace="${more_links}" />
 </th:block>
-<script src="/js/jquery.min.js"></script>
+<script src="/js/jquery-3.6.0.min.js"></script>
 <script src="/js/jquery-ui.min.js"></script>
 <script src="/js/semantic.min.js"></script>
 <script src="/js/vue.min.js"></script>
@@ -157,6 +157,16 @@
 	max-width: 450px;
 }
 
+.ui.showfield {
+    margin: 0;
+    outline: 0;
+    line-height: 1.21428571em;
+    padding: .67857143em 1em;
+    font-size: 1em;
+    border: 1px solid rgba(34,36,38,.15);
+    border-radius: .28571429rem;
+}
+
 .pagination {
 	display: inline-block;
 }
@@ -182,6 +192,14 @@
 	overflow: hidden;
 	position: absolute;
 	z-index: -1;
+}
+
+@media only screen and (max-width: 1199.98px) {
+    .ui.ui.ui.ui.container {
+        width: auto;
+        margin-left: 1em;
+        margin-right: 1em;
+    }
 }
 
 @media only screen and (max-width: 700px) {
@@ -309,6 +327,14 @@ tr.assigned {
 select[readonly] {
 	pointer-events: none;
 	touch-action: none;
+}
+
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
+    white-space: normal;
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable .tabulator-col-title {
+    padding-right: 15px;
 }
 </style>
 </head>

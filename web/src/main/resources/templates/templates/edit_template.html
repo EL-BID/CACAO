@@ -42,7 +42,7 @@
             <div class="five wide field">
               <label th:text="#{template.periodicity}" style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
               <select th:field="*{periodicity}" class="ui fluid dropdown local" id="selectPeriodicity">
-                <option disabled value="">Select the periodicity</option>
+                <option disabled value="" th:text="#{select}">Select</option>
                 <option
                   th:each="i : ${T(org.idb.cacao.api.Periodicity).values()}"
                   th:value="${i.name()}" th:text="#{${i}}"
@@ -59,8 +59,7 @@
           </div>
           <div class="field">
             <div class="ui checkbox">
-              <input type="checkbox" tabindex="0" class="hidden"
-                th:field="*{required}" th:checked="*{required}">
+              <input type="checkbox" tabindex="0" id="required"  name="required" th:checked="*{required}" value="true">
               <label th:text="#{template.required}">Required</label>
             </div>
           </div>
@@ -80,19 +79,20 @@
         <div class="content">
             <form class="ui form" id="form_edit_field">
               <div class="fields">
-                <div class="eight wide field">
+                <div class="six wide field">
                   <label th:text="#{field.name}">Field Name</i></label> 
                   <input id="fieldName" type="text" name="fieldName" value="" placeholder="Field Name">
                 </div>
-                <div class="four wide field">
-                  <label th:text="#{field.type}">Field Type</label> 
-                  <select id="fieldType" class="ui selection dropdown" name="fieldType">
-                    <option value="">Select</option>
-                    <option th:each="i : ${fieldTypes}" th:value="${i.name()}"
-                      th:text="#{${i.toString()}}"></option>
-                  </select>
+                <div class="five wide field">
+                  <label th:text="#{field.type}">Field Type</label>
+                  <select name="fieldType" class="ui fluid dropdown" id="fieldType">
+                    <option disabled value="">Select</option>
+                    <option
+                      th:each="i : ${fieldTypes}"
+                      th:value="${i.name()}" th:text="#{${i.toString()}}"></option>
+                  </select> 
                 </div>
-                <div class="four wide field">
+                <div class="five wide field">
                   <label th:text="#{field.mapping}">Field Mapping</label> 
                   <select id="fieldMapping" class="ui selection dropdown local"
                     name="fieldMapping">
@@ -134,27 +134,27 @@
               </div>
               <div class="field">
                 <div class="ui checkbox">
-                  <input id="fieldRequired" type="checkbox" name="required" value="" class="hidden"> 
+                  <input id="fieldRequired" type="checkbox" name="required" value="true" class="hidden"> 
                   <label th:text="#{field.required}">Required</label>
                 </div>
               </div>
               <div class="field">
                 <div class="ui checkbox">
-                  <input id="fieldPersonalData" type="checkbox" name="personalData" value="" class="hidden"> 
+                  <input id="fieldPersonalData" type="checkbox" name="personalData" value="true" class="hidden"> 
                   <label th:text="#{field.personal.data}">Personal Data</label>
                 </div>
               </div>
               <div class="inline field">
                 <div class="ui checkbox">
-                  <input id="fieldFileUniqueness" type="checkbox" name="fileUniqueness" value="" class="hidden"> 
+                  <input id="fieldFileUniqueness" type="checkbox" name="fileUniqueness" value="true" class="hidden"> 
                   <label th:text="#{field.file.uniqueness}">File Uniqueness</label>
                 </div>
               </div>
             </form>
         </div>
         <div class="actions">
-          <div class="ui approve blue button" th:text="#{continue}">Continue</div>
-          <div class="ui cancel button" th:text="#{cancel}">Cancel</div>
+          <div class="ui approve blue button" th:text="#{continue}" type="submit">Continue</div>
+          <div class="ui cancel button" th:text="#{cancel}" type="button">Cancel</div>
         </div>
       </div>
 
@@ -193,9 +193,12 @@ $('#fieldType').dropdown({
 let processForm = function(event, fields) {
   event.preventDefault()
   form_obj = $('#form').serializeArray()
+  $('#form input[type="checkbox"]:not(:checked)').each(function(i, e) {
+    form_obj.push({name: e.getAttribute("name"), value: false});
+  });
   template = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), template)
   template.fields = table.getData()
-  console.log(template)
+  //console.log(template)
   [# th:if="${template.id==null}"]
   let url = [[@{/api/template}]]
   let req_type = 'POST'
@@ -245,78 +248,99 @@ let setDomainTableVersions = function(tableName, tableVersion) {
 		$('#select_domain_version').dropdown('change values', [])
 	}
 } 
-$(document).ready(function() {
-    $('#select_domain_version').dropdown({
-       clearable: true
-    })
-    $('#select_domain_table').dropdown({
-       apiSettings: {
-          url: '/api/domaintable_search?term={query}',
-          method: 'GET',
-          dataType: 'text',
-          cache: false,
-          onResponse: function(items) {
-              let r = { success: true, results: [] }
-              $.each(JSON.parse(items), function(index, item) {
-                  r.results.push({ name: item, value:item })
-              })
-              return r
-          }
-       },
-       onChange: function(value) {
-          setDomainTableVersions(value)
-      },
-      action: 'activate',
-      clearable: true
+  $('#select_domain_version').dropdown({
+     clearable: true
   })
-  $('.ui.checkbox').checkbox()
-  $('#selectPeriodicity').dropdown({clearable: true})
-  $('#form').form({
-    fields: {
-      name: {
-          identifier  : 'name',
-          rules: [
-            {
-              type   : 'empty',
-              prompt : "Name is missing!"
-            }
-          ]
+  $('#select_domain_table').dropdown({
+     apiSettings: {
+        url: '/api/domaintable_search?term={query}',
+        method: 'GET',
+        dataType: 'text',
+        cache: false,
+        onResponse: function(items) {
+            let r = { success: true, results: [] }
+            $.each(JSON.parse(items), function(index, item) {
+                r.results.push({ name: item, value:item })
+            })
+            return r
         }
+     },
+     onChange: function(value) {
+        setDomainTableVersions(value)
     },
-    onSuccess: (processForm)
-  })
-  $('.ui.dropdown.local').dropdown()
-  $('#newField').click(function() {
-    $('#form_edit_field').form('clear')
-    field={}
-    showConditionalFields(null)
-    $("#modal_edit_field").modal({ closable: false, onApprove: addField }).modal('show')
-  })
+    action: 'activate',
+    clearable: true
 })
+$('#selectPeriodicity').dropdown({clearable: true})
+
+
+$('#form').form({
+  inline : true,
+  on     : "submit",
+  fields : {
+    name: ['minLength[2]', 'maxLength[120]'],
+    group: ['minLength[2]', 'maxLength[120]'],
+    periodicity: ['empty'],
+    version: ['empty','maxLength[120]']
+  },
+  prompt: {
+  	empty : [[#{error.field.empty('{name}')}]],
+  	number: [[#{error.field.number('{name}')}]],
+  	minLength: [[#{error.field.minLength('{name}','{ruleValue}')}]],
+  	maxLength: [[#{error.field.maxLength('{name}','{ruleValue}')}]],
+  },
+  onSuccess: (processForm)
+})
+$('#form_edit_field').form({
+  inline : true,
+  on: "blur",
+  fields : {
+    fieldName: ['empty','maxLength[120]'],
+    fieldType: ['empty']
+  },
+  prompt: {
+      empty : [[#{error.field.empty('{name}')}]],
+      number: [[#{error.field.number('{name}')}]],
+      minLength: [[#{error.field.minLength('{name}','{ruleValue}')}]],
+      maxLength: [[#{error.field.maxLength('{name}','{ruleValue}')}]],
+  }
+})
+$('.ui.dropdown.local')
+   .dropdown({clearable: true})
+$('#newField').click(function() {
+  $('#form_edit_field').form('clear')
+  field={}
+  showConditionalFields(null)
+  showEditField()
+})
+$('.ui.checkbox').checkbox()
+
+let showEditField = function() {
+  $("#modal_edit_field").modal({
+    closable: false, 
+    onApprove: addField
+  }).modal('show')
+}
 
 let editField = function(e, cell) {
   field = Object.assign(cell.getRow().getData(), {})
-  //$('#fieldId').val(field.id)
-  $('#fieldName').val(field.fieldName)
-  $('#fieldType').val(field.fieldType).change()
-  $('#fieldMapping').val(field.fieldMapping).change()
-  $('#fieldDescription').val(field.description)
-  $('#fieldDomainTableName').val(field.domainTableName)
-  $('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
   setDomainTableVersions(field.domainTableName, field.domainTableVersion)
-  $('#fieldDomainTableVersion').val(field.domainTableVersion)
-  //$('#fieldDomainTableVersionText').text(field.domainTableVersion).removeClass('default')
-  $('#fieldRequired').val(field.required)
-  $('#fieldPersonalData').val(field.personalData)
-  $('#fieldFileUniqueness').val(field.fileUniqueness)
-  $('#fieldMaxLength').val(field.maxLength)
+  $('#form_edit_field').form('set values', field)
+  $('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
   showConditionalFields(field.fieldType)
-  $("#modal_edit_field").modal({ closable: false, onApprove: addField }).modal('show')
+  showEditField()
 }
 
 let addField = function() {
+  if(!$('#form_edit_field').form('is valid')) {
+	  console.log('validate error')
+	  return false
+  }
   let form_obj=$('#form_edit_field').serializeArray()
-  field = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value == '' ? null : kv.value}), field)
+  $('#form_edit_field input[type="checkbox"]:not(:checked)').each(function(i, e) {
+    form_obj.push({name: e.getAttribute("name"), value: false});
+  });
+  field = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), field)
   if( field.id == null) {
     field.id = Math.max(...table.getData().map(o => o.id),0)+1
     table.addRow(field, false)
@@ -324,7 +348,7 @@ let addField = function() {
   }
   else {
 	
-    table.updateRow(field.id, field)
+    table.updateData([field])
     table.redraw(true)
   }
 }
@@ -353,8 +377,8 @@ let table = new Tabulator('#table', {
         {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0},
         {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3 },
         {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3 },
-        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
         {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5},
+        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
         {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5 },
         {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6}
     ],

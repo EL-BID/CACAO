@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -99,12 +100,23 @@ public class LoginUIController {
 		
 		// TODO: should present the first page for taxpayers and tax administrators
 		//String first_page_child_frame = "/bulletin_board";
-		String first_page_child_frame = "/sys_info";
+		String first_page_child_frame = "/cards";
 
 		model.addAttribute("first_page_child_frame", first_page_child_frame);
 
 		return "login/home";
 	}
+	
+	@GetMapping("/cards")
+	public String showCards(Model model) {
+		List<MenuItem> cards = getHomeMenuItens().stream()
+		  .flatMap(m -> Stream.concat(Stream.of(m), m.getChildren().stream()))
+		  .filter(m -> m.isActive() && m.getIcon()!=null)
+		  .collect(Collectors.toList());
+		model.addAttribute("cards", cards);
+		return "login/cards";
+	}
+	
 	
 	public List<MenuItem> getHomeMenuItens() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -123,20 +135,23 @@ public class LoginUIController {
 
 		List<MenuItem> menu = new LinkedList<>();
 
+		menu.add(new MenuItem(messages.getMessage("menu.homepage", null, LocaleContextHolder.getLocale()), "/cards"));
+		
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_WRITE)) {
 			menu.add(new MenuItem(messages.getMessage("docs.main.upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
 		}
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ)) {
-			menu.add(new MenuItem(messages.getMessage("docs.history", null, LocaleContextHolder.getLocale()), "/docs_search"));
+			menu.add(new MenuItem(messages.getMessage("docs.history", null, LocaleContextHolder.getLocale()), 
+					"/docs_search", "upload"));
 		}
 		if (hasPrivilege(roles, SystemPrivilege.USER_READ)) {
 			menu.add(new MenuItem(messages.getMessage("users.title", null, LocaleContextHolder.getLocale()),
-				"/users"));
+				"/users", "users"));
 		}
 		if (hasPrivilege(roles, SystemPrivilege.TAX_TEMPLATE_WRITE)) {
 			menu.add(new MenuItem(messages.getMessage("templates", null, LocaleContextHolder.getLocale()),
-					"/templates"));
+					"/templates", "file alternate outline"));
 		}
 
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DOMAIN_TABLE_WRITE)) {
@@ -153,7 +168,7 @@ public class LoginUIController {
 
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			submenu.withChild(new MenuItem(messages.getMessage("sysinfo", null, LocaleContextHolder.getLocale()),
-					"/sys_info"));
+					"/sys_info",  "cogs"));
 		}
 		
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ_ALL)) {
@@ -178,7 +193,7 @@ public class LoginUIController {
 
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			menu.add(
-				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin_shell"));
+				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin_shell",  "cogs"));
 		}
 
 		return menu;

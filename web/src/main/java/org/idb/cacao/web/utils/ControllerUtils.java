@@ -84,6 +84,11 @@ public class ControllerUtils {
     			String.join("\n",errors));
 	}
 	
+	public static ResponseEntity<Object> returnBadRequest(String message, MessageSource messageSource, Object... args) {
+		return ResponseEntity.badRequest().body(Collections.singletonMap("error", 
+				messageSource.getMessage(message, args, LocaleContextHolder.getLocale())));
+	}
+	
 	public static boolean isLogged() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)

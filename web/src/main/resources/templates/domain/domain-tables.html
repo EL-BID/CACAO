@@ -76,7 +76,7 @@ var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i
 var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
 this.table = new Tabulator('#table', {
     index: 'id',
-    layout: "fitDataFill", //fit columns to width of table (optional)
+    layout: "fitDataFill",
     pagination: true,
     paginationMode: "remote", //enable remote pagination
     ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request

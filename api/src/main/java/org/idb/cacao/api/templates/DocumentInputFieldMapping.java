@@ -24,6 +24,9 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Keywo
 
 import java.io.Serializable;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 import org.springframework.data.elasticsearch.annotations.Field;
 
 /**
@@ -141,6 +144,8 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 * The field name according to the DocumentTemplate.
 	 */
 	@Field(type=Keyword)
+	@NotNull
+	@NotEmpty
 	private String fieldName;
 
 	/**
@@ -157,6 +162,11 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 		this.fieldId = fieldId;
 	}
 
+	public DocumentInputFieldMapping withFieldId(int fieldId) {
+		setFieldId(fieldId);
+		return this;
+	}
+	
 	/**
 	 * Some regular expression including group capturing syntax for retrieving the information from the filename.<BR>
 	 * May be NULL if this field is not related to the filename.<BR>

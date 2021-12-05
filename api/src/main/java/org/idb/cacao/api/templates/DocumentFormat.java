@@ -31,10 +31,7 @@ public enum DocumentFormat {
 	JSON("JSON"),
 	XML("XML"),
 	PDF("PDF"),
-	CSV("TXT/CSV"),
-	IMAGE_GIF("GIF"),
-	IMAGE_PNG("PNG"),
-	IMAGE_JPG("JPG");
+	CSV("TXT/CSV");
 
 	private final String display;
 	

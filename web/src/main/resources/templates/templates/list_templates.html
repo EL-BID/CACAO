@@ -23,14 +23,15 @@
 			</div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/addtemplate}" class="ui blue button"><i class="plus icon"></i><span th:text="#{template.new}">New Template</span></a>
+				<a th:href="@{/templates/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{template.new}">New Template</span></a>
 			</div>
 		</div>
 	</div>
  
 <script th:nonce="${cspNonce}" th:inline="javascript">
 var editRow = function(e, cell) {
-	window.location.replace([[@{/edittemplate/}]] +  cell.getRow().getIndex());
+	e.stopPropagation();
+	window.location.replace([[@{/templates/}]] +  cell.getRow().getIndex() + "/edit");
 }
 var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
 var tableData = /*[[${templates}]]*/ null;
@@ -46,13 +47,20 @@ table = new Tabulator('#table', {
 	//},			
 	//persistenceID:"docs_templates_persistence",	
 	columns:[ //Define Table Columns
-		{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editRow, headerSort:false, width:45},
-		{title: /*[[#{template.name}]]*/ "Name", field:"name"},
-		{title: /*[[#{template.group}]]*/ "Group", field:"group"},
-		{title: /*[[#{template.version}]]*/ "Version", field:"version"},
-		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", minWidth:150 },
-		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required", headerSort:false, formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
+		{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editRow, headerSort:false, width:45, responsive:0},
+		{title: /*[[#{template.name}]]*/ "Name", field:"name", responsive:0},
+		{title: /*[[#{template.group}]]*/ "Group", field:"group", responsive:3},
+		{title: /*[[#{template.version}]]*/ "Version", field:"version", responsive:1},
+		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", minWidth:150, responsive:2 },
+		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
+			formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
 	]
+})
+table.on('rowClick', function(e, row) {
+	if( e.target.classList.contains('edit')) {
+		return
+	}
+	window.location.replace([[@{/templates/}]] + row.getIndex());
 })
 </script>
 </body>

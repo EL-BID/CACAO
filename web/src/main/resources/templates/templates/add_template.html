@@ -16,7 +16,7 @@
 	<div id="app">
   <div class="ui container">
     <div class="ui large header" th:text="#{template.new}">New Document Template</div>
-      <form class="ui form" name="form" id="add_template_form" method="post" action="#" th:action="@{/newtemplate}">
+      <form class="ui form" name="form" id="add_template_form" method="post" action="#" th:action="@{/templates/new}">
         <div class="grouped fields">
           <h4 th:text="#{archetype}">Base the template on</h4>
           <div class="field">

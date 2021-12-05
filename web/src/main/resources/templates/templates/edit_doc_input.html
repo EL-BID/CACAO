@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head
+  th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+    for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+  <!-- Fix to avoid overlap from the Menu -->
+  <div>
+    <br>
+  </div>
+  <div class="ui container">
+    <h2 class="ui header">
+      <i class="file alternate outline icon"></i>
+      <div class="content" th:text="#{doc.input.edit}">Edit Input Format</div>
+    </h2>
+    <div class="ui container">
+      <div class="ui orange segment">
+         <form action="#" name="form" id="form" class="ui form" th:object="${docInput}" method="post">
+          <div class="fields">
+            <div class="ten wide field">
+              <label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label>
+              <input type="text" name="name" th:value="${template.name}" class="" readonly>
+            </div>
+            <div class="six wide field">
+              <label th:text="#{template.version}" style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
+              <input type="text" name="version" th:value="${template.version}" class="" readonly> 
+            </div>
+          </div>
+          <div class="fields">
+            <div class="ten wide field">
+                <label th:text="#{doc.input.name}" style="margin-bottom: 0px; text-transform: uppercase;">Document Input Name</label> 
+                <input type="text" th:field="*{inputName}" th:value="*{inputName}" class="" id="inputName" placeholder="Input Name" th:placeholder="#{doc.input.name}">
+            </div>
+            <div class="six wide field">
+              <label th:text="#{doc.input.format}" style="margin-bottom: 0px; text-transform: uppercase;">Format</label>
+              <input type="text" name="format" th:value="${docInput.format.toString()}" class="" id="format" readonly>
+            </div>
+          </div>
+          <div class="row">
+            <input type="submit" class="ui blue button"  th:value="#{save}" value="Save"> 
+            <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
+          </div>
+        </form>
+      </div>
+      <h4 class="ui centered dividing header" th:text="#{doc.input.fields.title}">Input Fields</h4>
+      <div id="table" class="ui orange celled striped table"></div>
+    </div>
+
+  </div>
+  <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+  <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+  <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+<script th:nonce="${cspNonce}" th:inline="javascript">
+let docInput =  [[${docInput}]]
+let fields = docInput.fields || []
+$('#cancel').click(function(){
+  window.location.replace([[@{/templates/{id}(id=${template.id})}]])
+})
+
+let processForm = function(event, fields) {
+  event.preventDefault()
+  docInput.inputName = fields.inputName
+  docInput.format = [[${docInput.format}]]
+  docInput.fields = table.getData()
+  //console.log(template)
+  let url = [[@{/api/template/{id}/input(id=${template.id})}]] 
+  [# th:if="${docInput.inputName==null}"]
+  let req_type = 'POST'
+  [/]
+  [# th:if="${docInput.inputName!=null}"]
+  let req_type = 'PUT'
+  [/]
+  $.ajax({
+    url: url,
+    type: req_type,
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(docInput),
+    cache: false,    
+    success: function(result) {
+        $('#modal_successful').modal('show')
+        setTimeout(function(){
+            window.location = [[@{/templates/{id}(id=${template.id})}]]
+        }, 2000);
+    },
+    error: function(e) {
+        var msg = e.responseText.replace(/\n/g, "<br />");
+        $('#modal_failed').find('.description').html(msg)
+        $('#modal_failed').modal('show')
+        console.log("ERROR : "+msg);
+    }
+  })
+}            
+
+$(document).ready(function() {
+  $('.ui.checkbox').checkbox()
+  $('#form').form({
+	inline : true,
+	on     : 'change',
+    fields: {
+      inputName: {
+          identifier  : 'inputName', 
+          rules: [ 
+        	  { type: 'minLength[2]', prompt: [[#{error.field.minLength('{name}','{ruleValue}')}]] }, 
+        	  { type: 'maxLength[120]', prompt: [[#{error.field.maxLength('{name}','{ruleValue}')}]] } 
+          ]
+      }
+    },
+    onSuccess: (processForm)
+  })
+  $('.ui.dropdown.local').dropdown()
+})
+
+let table = new Tabulator('#table', {
+    index: 'id',
+    layout: "fitColumns", //fit columns to width of table (optional)
+    columnHeaderVertAlign:"bottom",
+    //responsiveLayout: "collapse",
+    //placeholder: "Empty",
+    columns:[ //Define Table Columns
+        {title: /*[[#{field.name}]]*/ "Field Name", field:"fieldName", minWidth: 100, responsive: 0},
+        {title: /*[[#{mapping.filename.expression}]]*/ "Filename Expression", field:"filenameExpression", minWidth:100, editor:"input", responsive: 3},
+        {title: /*[[#{mapping.sheet.index}]]*/"Sheet Index", field: "SheetIndex", width:80, editor:"number", responsive: 5,
+            editorParams: { min:0, max:99 }},
+        {title: /*[[#{mapping.sheet.name.expression}]]*/ "Name Expression", field:"SheetNameExpression", minWidth:100,  editor:true, responsive:6},
+        {title: /*[[#{mapping.row.index}]]*/ "Row Index", field: "rowIndex", width:80, minWidth:100, editor:"number", responsive: 5,
+            editorParams: { min:0 }},
+        {title: /*[[#{mapping.column.index}]]*/ "Column Index", field:"columnIndex", width:80, minWidth:100, editor:"number", responsive: 3,
+                editorParams: { min:0 }},
+        {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 5},
+        {title: /*[[#{mapping.path.expression}]]*/ "Path Expression", field:"pathExpression", minWidth:100, editor:true, responsive:6, visible:false}
+    ],
+    data: fields
+})
+
+</script>
+</body>
+</html>
