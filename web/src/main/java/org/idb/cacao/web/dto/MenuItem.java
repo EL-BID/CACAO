@@ -55,6 +55,8 @@ public class MenuItem implements Serializable, Comparable<MenuItem> {
     private MenuItem parent;
 
     private List<MenuItem> children;
+    
+    private String icon;
 
 	public MenuItem() { 
 		this.active = true;
@@ -70,6 +72,14 @@ public class MenuItem implements Serializable, Comparable<MenuItem> {
 		this.link = link;
 		this.active = true;
 	}
+	
+	public MenuItem(String name, String link, String icon) {
+		this.name = name;
+		this.link = link;
+		this.active = true;
+		this.icon = icon;
+	}
+
 
     public MenuItem(String name,List<MenuItem> children) {
         this.name = name;
@@ -116,6 +126,18 @@ public class MenuItem implements Serializable, Comparable<MenuItem> {
 		return link;
 	}
 
+	/**
+	 * Icon for this menu
+	 */
+	public String getIcon() {
+		return icon;
+	}
+
+	public void setIcon(String icon) {
+		this.icon = icon;
+	}
+
+	
 	/**
 	 * Flag indicating if this menu item should be expanded by default
 	 */
@@ -226,4 +248,5 @@ public class MenuItem implements Serializable, Comparable<MenuItem> {
 	public String toString() {
 		return name;
 	}
+
 }

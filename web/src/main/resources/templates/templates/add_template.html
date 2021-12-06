@@ -13,152 +13,123 @@
 	<div>
 		<br>
 	</div>
-	<div id="app">
   <div class="ui container">
-    <div class="ui large header" th:text="#{template.new}">New Document Template</div>
-      <form class="ui form" name="form" id="add_template_form" method="post" action="#" th:action="@{/newtemplate}">
-        <div class="grouped fields">
-          <h4 th:text="#{archetype}">Base the template on</h4>
-          <div class="field">
-            <div class="ui radio checkbox">
-              <input name="type" type="radio" value="archetype" v-model="type">
-              <label th:text="#{archetype}">Archetype</label>
+    <h2 class="ui header">
+      <i class="file alternate outline icon"></i>
+      <div class="content" th:text="#{template.new}">New Document Template</div>
+    </h2>
+    <div class="ui container">
+      <div class="ui orange segment">
+        <div class="ui stackable cards">
+          <a class="ui card" th:href="@{/templates/new(type=)}" id="empty">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon file outline"></i></div>
+            <div class="content center aligned">
+              <div class="header" th:text="#{template.empty}">Empty Template</div>
             </div>
-          </div>
-          <div class="field">
-            <div class="ui radio checkbox">
-              <input name="type" type="radio" value="template" v-model="type">
-              <label th:text="#{template.existing}">Existing Document Template</label>
+          </a>
+          <a class="ui card" href="#" id="archetype">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon archway"></i></div>
+            <div class="content center aligned">
+              <div class="header" th:text="#{archetype}">Archetype</div>
             </div>
-          </div>
-          <div class="field">
-            <div class="ui radio checkbox">
-              <input name="type" type="radio" value="empty" v-model="type">
-              <label th:text="#{template.empty}">Empty Template</label>
+          </a>
+          <a class="ui card" href="#" id="template">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon file alternate outline"></i></div>
+            <div class="content center aligned">
+              <div class="header" th:text="#{template.existing}">Existing Document Template</div>
             </div>
-          </div>
-		</div>
-		<input type="hidden" name="id" id="template_id" value="">
-	</form>
-	<div id="chooseTemplate" v-show="type=='template'">
-		<h4 class="ui horizontal divider header" th:text="#{templates.title}">
-  		Template
-		</h4>
-		<div class="ui icon input">
-			<input type="text" v-model="filter" placeholder="Search..." @keypress="filterKeyPress">
-			<i class="circular search link icon" @click="applyFilter"></i>
-		</div>
-		<div id="table" class="ui table"></div>
-	</div>
-	<div id="chooseArchetype" v-if="type=='archetype'">
-		<h4 class="ui horizontal divider header" th:text="#{archetype}">
-  			Archetype
-		</h4>
-		<form class="ui form">
-        <div class="grouped fields">
-          <h4>Available Archetypes:</h4>
-          <div class="field" v-for="t in archetypes">
-            <div class="ui radio checkbox">
-              <input type="radio" :value="t.id" v-model="archetype">
-              <label>{{ t.name }}</label>
-            </div>
-          </div>
-		</div>
-		</form>
-	</div>
-	<div id="empty" v-if="type=='empty'">
-		<h4 class="ui horizontal divider header" th:text="#{template.empty}">
-  			Empty Template
-		</h4>
-	</div>
-	<button class="ui primary button" v-if="ready" @click="submit" th:text="#{start}"></button>
+          </a>
+        </div>
+        <p>
+        </p>
+    	<div id="chooseTemplate" class="ui segment" style="display:none">
+    		<h3 class="ui horizontal divider orange header" th:text="#{templates.title}">Template</h3>
+    		<div class="ui icon input">
+    			<input type="text" name="filter" id="filter" placeholder="Search...">
+    			<i class="circular search link icon" id="search"></i>
+    		</div>
+    		<div id="table" class="ui table"></div>
+    	</div>
+    	<div id="chooseArchetype" class="ui center aligned segment" style="display:none">
+    		<h3 class="ui horizontal divider orange header" th:text="#{archetype}">Archetype</h3>
+            <div class="ui large list">
+              <a class="item" th:each="t : ${archetypes}" th:text="${t.name}"
+                th:href="@{/templates/new(type=archetype,id=${t.id})}"></a>
+    		</div>
+    	</div>
+      </div>
+     </div>
+	
   </div>
-</div>
 <script th:nonce="${cspNonce}" th:inline="javascript">
 $('ui.checkbox').checkbox()
-var app = new Vue({
-  el: '#app',
-  data: {
-    type: '',
-	table: null,
-	template: null,
-	filter: '',
-	archetypes: /*[[${archetypes}]]*/ null,
-	archetype: null
-  },
-  computed: {
-	  ready: function() {
-		  return this.type=='empty' || (this.type=='archetype' && this.archetype!=null)
-		  	|| (this.type=='template' && this.table.getSelectedData().length==1)
-	  }
-  },
-  methods: {
-	getId: function() {
-		if(this.type=="archetype")
-			return this.archetype
-		else if(this.type=="template" && this.table.getSelectedData().length==1)
-			return this.table.getSelectedData()[0].id
-
-		return "empty"
-	},
-	applyFilter: function() {
-		this.table.setFilter("name", "like", "*" + this.filter + "*")
-	},
-	filterKeyPress: function(event) {
-		if(event.keyCode == 13) {
-			event.preventDefault()
-			this.applyFilter()
-		}
-	},
-	submit: function(e) {
-		$('#template_id').val(this.getId())
-		$('#add_template_form').submit()
+$('#template').click(function(event) {
+	$('#chooseArchetype').hide()
+	$('#chooseTemplate').show()
+	createTable()
+})
+$('#archetype').click(function(event) {
+	if(table!=null) {
+	   table.destroy()
+	   table=null
 	}
-	
-  },
-  mounted() {
-	
-	this.table = new Tabulator('#table', {
-		index: 'id',
-		layout: "fitColumns", //fit columns to width of table (optional)
-		selectable: 1,
-		pagination: true,
-		paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/templates}]]*/ "/api/templates", //set url for ajax request
-		paginationSize: 5,
-		ajaxContentType: "json",
-		filterMode:"remote",
-		sortMode: "remote",
-		headerFilterLiveFilterDelay:700,
-		persistence:{
-			columns:true,
-		},
-		responsiveLayout: true,
-		persistenceID:"select_template_persistence",
-		ajaxURLGenerator: function(url, config, params ){
-			p= new URLSearchParams()
-			p.set('page', params.page)
-			p.set('size', params.size)
-			p.set('filter', JSON.stringify(params.filter))
-			if(params.sort.length>0) {
-				p.set('sortby', params.sort[0].field)
-				p.set('sortorder', params.sort[0].dir)
-			}
-			return url + '?' + p.toString()
-		},
-		columns:[ //Define Table Columns
-			{title: /*[[#{template.name}]]*/ "Name", field:"name"},
-			{title: /*[[#{template.group}]]*/ "Group", field:"group"},
-			{title: /*[[#{template.version}]]*/ "Version", field:"version"},
-			{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity"},
-			{title: /*{{#{template.required}}} */ "Required", field:"required", 
-			formatter:"tickCross",  
-			formatterParams: { crossElement:false} }
-		]
-	})
+    $('#chooseTemplate').hide()
+    $('#chooseArchetype').show()
+})
+let applyFilter = () => table.setFilter("name", "like", "*" + $('#filter').val() + "*")
+$('#search').click(applyFilter)
+$('#filter').keypress(function(event) {
+	if(event.keyCode == 13) {
+        console.log(event)
+		event.preventDefault()
+		applyFilter()
 	}
 })
 
+let table = null
+
+let createTable = function() {
+  table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitColumns", //fit columns to width of table (optional)
+	selectable: 1,
+	pagination: true,
+	paginationMode: "remote", //enable remote pagination
+	ajaxURL: /*[[@{/api/templates}]]*/ "/api/templates", //set url for ajax request
+	paginationSize: 5,
+	ajaxContentType: "json",
+	filterMode:"remote",
+	sortMode: "remote",
+	responsiveLayout: true,
+	ajaxURLGenerator: function(url, config, params ){
+		p= new URLSearchParams()
+		p.set('page', params.page)
+		p.set('size', params.size)
+		p.set('filter', JSON.stringify(params.filter))
+		if(params.sort.length>0) {
+			p.set('sortby', params.sort[0].field)
+			p.set('sortorder', params.sort[0].dir)
+		}
+		
+		return url + '?' + p.toString()
+	},
+	columns:[ //Define Table Columns
+		{title: /*[[#{template.name}]]*/ "Name", field:"name"},
+		{title: /*[[#{template.group}]]*/ "Group", field:"group"},
+		{title: /*[[#{template.version}]]*/ "Version", field:"version"},
+		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity"},
+		{title: /*{{#{template.required}}} */ "Required", field:"required", 
+		formatter:"tickCross",  
+		formatterParams: { crossElement:false} }
+	]
+  })
+  table.on('rowClick', function(e, row) {
+	p= new URLSearchParams()
+	p.set('type', 'template')
+    p.set('id', row.getIndex())
+	window.location.replace([[@{/templates/new}]] + "?" + p.toString())
+  })
+}
 </script>
 </body>
 </html>

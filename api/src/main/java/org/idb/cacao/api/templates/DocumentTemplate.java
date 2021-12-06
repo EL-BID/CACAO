@@ -399,13 +399,13 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	}
 	
 	/**
-	 * Returns all DocumentInput options associated to this template with a given DocumentFormat
+	 * Returns DocumentInput associated to this template with a given DocumentFormat
 	 */
 	@JsonIgnore
-	public List<DocumentInput> getInputsOfFormat(DocumentFormat format) {
+	public DocumentInput getInputOfFormat(DocumentFormat format) {
 		if (inputs==null)
-			return Collections.emptyList();
-		return inputs.stream().filter(f->format.equals(f.getFormat())).collect(Collectors.toList());		
+			return null;
+		return inputs.stream().filter(f->format.equals(f.getFormat())).findAny().orElse(null);		
 	}
 
 	public void setInputs(List<DocumentInput> inputs) {

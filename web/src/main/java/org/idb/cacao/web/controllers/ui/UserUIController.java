@@ -66,7 +66,7 @@ public class UserUIController {
 	}
 
 	//@Secured({ "ROLE_USER_WRITE" })
-	@GetMapping("/adduser")
+	@GetMapping("/users/add")
 	public String showAddUser(User user, Model model) {
 		ConfigEMail config_email = configEmailService.getActiveConfig();
 		if (config_email != null && config_email.getSupportEmail() != null
@@ -77,7 +77,7 @@ public class UserUIController {
 	}
 
 	@Secured({ "ROLE_USER_WRITE" })
-	@GetMapping("/edituser/{id}")
+	@GetMapping("/users/{id}/edit")
 	public String showUpdateForm(@PathVariable("id") String id, Model model) {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));

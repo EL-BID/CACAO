@@ -11,6 +11,7 @@ import javax.validation.Valid;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
@@ -131,6 +132,55 @@ public class DocumentTemplateAPIController {
         return ResponseEntity.ok().body(template);
     }
 
+//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+    @PostMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Creates a new document input", response=DocumentTemplate.class)
+    public ResponseEntity<Object> addDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
+        if (result.hasErrors()) {
+        	return ControllerUtils.returnErrors(result, messageSource);
+        }
+		Optional<DocumentTemplate> match = templateRepository.findById(id);
+		
+		if (!match.isPresent())
+        	return ResponseEntity.notFound().build();
+		
+		DocumentTemplate template = match.get();
+		
+		DocumentInput existingDocInput = template.getInputOfFormat(docInput.getFormat());
+		if (existingDocInput!=null) {
+			ControllerUtils.returnBadRequest("template.input.format.exists", messageSource, docInput.getFormat().toString());
+		}
+		template.addInput(docInput);
+        templateRepository.saveWithTimestamp(template);
+        return ResponseEntity.ok().body(template);
+    }
+
+    
+    //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+    @PutMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Updates an existing document template", response=DocumentTemplate.class)
+    public ResponseEntity<Object> editDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
+        if (result.hasErrors()) {
+        	return ControllerUtils.returnErrors(result, messageSource);
+        }
+		Optional<DocumentTemplate> match = templateRepository.findById(id);
+		
+		if (!match.isPresent())
+        	return ResponseEntity.notFound().build();
+		
+		DocumentTemplate template = match.get();
+		
+		DocumentInput existingDocInput = template.getInputOfFormat(docInput.getFormat());
+		if (existingDocInput==null) {
+			ControllerUtils.returnBadRequest("template.input.format.not.exists", messageSource, docInput.getFormat().toString());
+		}
+		existingDocInput.setInputName(docInput.getInputName());
+		existingDocInput.setFields(docInput.getFields());
+        templateRepository.saveWithTimestamp(template);
+        return ResponseEntity.ok().body(template);
+    }
+    
+    
     /**
 	 * Search templates with pagination and filters
 	 * @return

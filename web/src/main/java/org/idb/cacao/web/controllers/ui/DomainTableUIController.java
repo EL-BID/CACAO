@@ -69,8 +69,19 @@ public class DomainTableUIController {
 		return "domain/add-domain-tables";
 	}
 
-	@GetMapping("/editdomaintable/{id}")
+	@GetMapping("/domaintables/{id}/edit")
 	public String showUpdateForm(@PathVariable("id") String id, Model model) {
+		DomainTable table = domainTableRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid domain table Id:" + id));
+		model.addAttribute("table", table);
+		model.addAttribute("languages", domainTableService.getProvidedLanguages().stream()
+				.map(l -> new NameId(l.name(), messageSource.getMessage(l.toString(), null, LocaleContextHolder.getLocale())))
+				.collect(Collectors.toList()));
+		return "domain/update-domain-table";
+	}
+
+	@GetMapping("/domaintables/{id}")
+	public String showDomainTable(@PathVariable("id") String id, Model model) {
 		DomainTable table = domainTableRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid domain table Id:" + id));
 		model.addAttribute("table", table);

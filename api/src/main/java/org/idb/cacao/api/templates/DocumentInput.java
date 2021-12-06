@@ -29,6 +29,10 @@ import java.util.List;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import org.springframework.data.elasticsearch.annotations.Field;
 
@@ -57,6 +61,10 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	 * the same document template.
 	 */
 	@Field(type=Text)
+	@NotBlank
+	@NotNull
+	@NotEmpty
+	@Size(min=2, max=120)
 	private String inputName;
 
 	/**
@@ -64,6 +72,7 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	 */
 	@Enumerated(EnumType.STRING)
 	@Field(type=Text)
+	@NotNull
 	private DocumentFormat format;
 	
 	@Field(type=Nested)
@@ -125,7 +134,11 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	}
 
 	public void setFields(List<DocumentInputFieldMapping> fields) {
-		this.fields = fields;
+		if (fields==null) {
+			this.fields = null;
+			return;
+		}
+		fields.stream().forEach(f -> addField(f));
 	}
 	
 	public void addField(DocumentInputFieldMapping field) {

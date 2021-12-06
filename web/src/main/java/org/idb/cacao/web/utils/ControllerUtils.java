@@ -84,6 +84,11 @@ public class ControllerUtils {
     			String.join("\n",errors));
 	}
 	
+	public static ResponseEntity<Object> returnBadRequest(String message, MessageSource messageSource, Object... args) {
+		return ResponseEntity.badRequest().body(Collections.singletonMap("error", 
+				messageSource.getMessage(message, args, LocaleContextHolder.getLocale())));
+	}
+	
 	public static boolean isLogged() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -300,5 +305,24 @@ public class ControllerUtils {
 			return pageSize.get();
 		}
 		return Integer.parseInt(env.getProperty("default.page.size"));
+	}
+
+	/**
+	 * Check if it's running inside JUnit test
+	 */
+	public static boolean isJUnitTest() {  
+	  for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+	    if (element.getClassName().startsWith("org.junit.")) {
+	      return true;
+	    }           
+	  }
+	  return false;
+	}
+	
+	/**
+	 * Check for the presence of 'Mocked Elastic Search' component in runtime
+	 */
+	public static boolean hasMockES() {
+		return System.getProperty("MOCKED_ELASTIC_SEARCH")!=null;
 	}
 }

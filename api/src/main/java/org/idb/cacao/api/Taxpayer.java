@@ -37,6 +37,8 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
 
+import com.fasterxml.jackson.annotation.JsonView;
+
 /**
  * Taxpayers registration
  * 
@@ -53,6 +55,7 @@ public class Taxpayer implements Serializable, Cloneable {
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
 	@Id
+	@JsonView(Views.Public.class)
 	@AFieldDescriptor(externalName = "doc.id")
 	private String id;
 
@@ -69,7 +72,8 @@ public class Taxpayer implements Serializable, Cloneable {
 	@NotBlank
 	@NotNull
 	@NotEmpty
-	@Size(min=9, max=9)
+	@Size(min=6, max=20)
+	@JsonView(Views.Public.class)
 	@AFieldDescriptor(externalName = "taxpayer.id", audit=true)
 	private String taxPayerId;
 
@@ -78,16 +82,19 @@ public class Taxpayer implements Serializable, Cloneable {
 	@NotNull
 	@NotEmpty
 	@Size(min=2, max=300)
+	@JsonView(Views.Public.class)
 	@AFieldDescriptor(externalName = "taxpayer.name", audit=true)
 	private String name;
 
 	@Field(type=Text)
 	@Size(max=500)
+	@JsonView(Views.Authority.class)
 	@AFieldDescriptor(externalName = "taxpayer.address")
 	private String address;
 	
 	@Field(type=Keyword)
 	@Size(max=100)
+	@JsonView(Views.Authority.class)
 	@AFieldDescriptor(externalName = "taxpayer.zip.code")
 	private String zipCode;
 
@@ -104,6 +111,7 @@ public class Taxpayer implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Authority.class)
 	private String qualifier1;
 
 	@MultiField(
@@ -112,6 +120,7 @@ public class Taxpayer implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Authority.class)
 	private String qualifier2;
 
 	@MultiField(
@@ -120,6 +129,7 @@ public class Taxpayer implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Authority.class)
 	private String qualifier3;
 	
 	@MultiField(
@@ -128,6 +138,7 @@ public class Taxpayer implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Authority.class)
 	private String qualifier4;
 	
 	@MultiField(
@@ -136,6 +147,7 @@ public class Taxpayer implements Serializable, Cloneable {
 			@InnerField(suffix = "keyword", type=Keyword)
 		}
 	)
+	@JsonView(Views.Authority.class)
 	private String qualifier5;
 	
 	public String getId() {

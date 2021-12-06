@@ -18,12 +18,10 @@
 			<i class="archive icon"></i>
 			<div class="content" th:text="#{docs.history}">All Uploads</div>
 		</h2>
-			<div id="app">
-				<div id="table" class="ui orange table"></div>
-			</div>
+		<div id="table" class="ui orange compact table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/docs}" class="ui button"><i class="plus icon"></i><span th:text="#{docs.main.upload}">Upload Documents</span></a>
+				<a th:href="@{/docs}" class="ui primary button"><i class="plus icon"></i><span th:text="#{docs.main.upload}">Upload Documents</span></a>
 			</div>
 		</div>
 	</div>
@@ -37,73 +35,82 @@ dateFormatter = function(cell, formatterParams, onRendered) {
 	return cell.getValue()
 }
 
-var app = new Vue({
-	el: '#app',
-	data: {
-		table: null,
-		headerFilter: false
+let showSituationHistory = function(e, cell) {
+	window.location.replace([[@{/doc/situations/}]] + cell.getRow().getIndex());			
+}
+
+let showErrorMessages = function(e, cell) {
+	window.location.replace([[@{/doc/errors/}]] + cell.getRow().getIndex());			
+}	
+
+let downloadFile = function(e, cell) {
+	window.location.replace([[@{/doc/download/}]] + cell.getRow().getIndex());			
+}
+	
+let situationsIcon = function(cell, formatterParams){ return "<i class='file alternate outline icon'></i>"};
+let errorsIcon = function(cell, formatterParams){ return "<i class='warning sign icon'></i>"};
+let downloadIcon = function(cell, formatterParams){ return "<i class='save icon'></i>"};
+
+let table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitColumns", //fit columns to width of table (optional)
+    pagination: true,
+	paginationMode: "remote", //enable remote pagination
+		ajaxURL: /*[[@{/api/docs_search}]]*/ "/api/docs_seach", //set url for ajax request
+	paginationSize: 5,
+	ajaxContentType: "json",
+	filterMode:"remote",
+	sortMode: "remote",
+	headerFilterLiveFilterDelay:700,
+    persistence:{
+		columns:true,
+	},			
+	persistenceID:"all_documents_persistence",
+	ajaxURLGenerator: function(url, config, params ){
+		console.log(config)
+		console.log(params)
+		p= new URLSearchParams()
+		p.set('page', params.page)
+		p.set('size', params.size)
+		p.set('filter', JSON.stringify(params.filter))
+		if(params.sort.length>0) {
+			p.set('sortby', params.sort[0].field)
+			p.set('sortorder', params.sort[0].dir)
+		}
+		return url + '?' + p.toString()
 	},
-	methods: {
-		showSituationHistory(e, cell) {
-			console.log('edit  ' + cell.getRow().getIndex() )
-			window.location.replace([[@{/doc/situations/}]] + cell.getRow().getIndex());			
-		},
-		showErrorMessages(e, cell) {
-			console.log('edit  ' + cell.getRow().getIndex() )
-			window.location.replace([[@{/doc/errors/}]] + cell.getRow().getIndex());			
-		},	
-		downloadFile(e, cell) {
-			console.log('downloading  ' + cell.getRow().getIndex() )
-			window.location.replace([[@{/doc/download/}]] + cell.getRow().getIndex());			
-		},
-	},	
-	mounted() {
-		var situationsIcon = function(cell, formatterParams){ return "<i class='file alternate outline icon'></i>"};
-		var errorsIcon = function(cell, formatterParams){ return "<i class='warning sign icon'></i>"};
-		var downloadIcon = function(cell, formatterParams){ return "<i class='save icon'></i>"};
-		this.table = new Tabulator('#table', {
-			index: 'id',
-			layout: "fitColumns", //fit columns to width of table (optional)
-		    pagination: true,
-			paginationMode: "remote", //enable remote pagination
-    		ajaxURL: /*[[@{/api/docs_search}]]*/ "/api/docs_seach", //set url for ajax request
-			paginationSize: 5,
-			ajaxContentType: "json",
-			filterMode:"remote",
-			sortMode: "remote",
-			headerFilterLiveFilterDelay:700,
-		    persistence:{
-				columns:true,
-			},			
-			persistenceID:"all_documents_persistence",
-			ajaxURLGenerator: function(url, config, params ){
-				console.log(config)
-				console.log(params)
-				p= new URLSearchParams()
-				p.set('page', params.page)
-				p.set('size', params.size)
-				p.set('filter', JSON.stringify(params.filter))
-				if(params.sort.length>0) {
-					p.set('sortby', params.sort[0].field)
-					p.set('sortorder', params.sort[0].dir)
-				}
-				console.log(p.toString())
-				return url + '?' + p.toString()
-			},
-			columns:[ //Define Table Columns
-				{title: /*[[#{doc.user}]]*/ "User", field:"user", headerFilter:this.headerFilter},
-				{title: /*[[#{taxpayer.id}]]*/ "Tax Payer Id", field:"taxPayerId" },
-				{title: /*[[#{doc.taxperiod}]]*/ "Tax Period", field:"taxPeriodNumber" },
-				{title: /*[[#{doc.template}]]*/ "Template", field:"templateName" , headerFilter:this.headerFilter},
-				{title: /*[[#{doc.timestamp}]]*/ "Date/time uploaded", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
-				{title: /*[[#{doc.situation}]]*/ "Situation", field:"situation", headerFilter:this.headerFilter},
-				//{title: /*{{#doc.id}}} */ "Document Id", field:"id", headerFilter:this.headerFilter},
-				{formatter:situationsIcon, width:50, cellClick: this.showSituationHistory, tooltip : /*[[#{doc.situation.history}]]*/, headerSort:false},
-				{formatter:errorsIcon, width:50, cellClick: this.showErrorMessages, tooltip : /*[[#{doc.error.message}]]*/, headerSort:false},
-				{formatter:downloadIcon, width:50, cellClick: this.downloadFile, tooltip : /*[[#{doc.download}]]*/, headerSort:false}
-			]
-		})
-	}
+    paginationSizeSelector:[10, 25, 50],
+    locale:'xx',
+    langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
+
+	columns:[ //Define Table Columns
+		{title: /*[[#{doc.user}]]*/ "User", field:"user"},
+		{title: /*[[#{taxpayer.id}]]*/ "Tax Payer Id", field:"taxPayerId" },
+		{title: /*[[#{doc.taxperiod}]]*/ "Tax Period", field:"taxPeriodNumber" },
+		{title: /*[[#{doc.template}]]*/ "Template", field:"templateName"},
+		{title: /*[[#{doc.timestamp}]]*/ "Date/time uploaded", field:"timestamp", formatter: dateFormatter},
+		{title: /*[[#{doc.situation}]]*/ "Situation", field:"situation"},
+		//{title: /*{{#doc.id}}} */ "Document Id", field:"id", headerFilter:this.headerFilter},
+		{formatter:situationsIcon, width:50, cellClick: showSituationHistory, tooltip : /*[[#{doc.situation.history}]]*/, headerSort:false},
+		{formatter:errorsIcon, width:50, cellClick: showErrorMessages, tooltip : /*[[#{doc.error.message}]]*/, headerSort:false},
+		{formatter:downloadIcon, width:50, cellClick: downloadFile, tooltip : /*[[#{doc.download}]]*/, headerSort:false}
+	]
 })
 </script>
 </body>

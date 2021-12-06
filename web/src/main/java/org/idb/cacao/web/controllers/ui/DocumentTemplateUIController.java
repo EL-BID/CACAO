@@ -22,10 +22,14 @@ package org.idb.cacao.web.controllers.ui;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.idb.cacao.api.templates.DocumentFormat;
+import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
@@ -68,7 +72,7 @@ public class DocumentTemplateUIController {
 	}
 
 //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
-	@GetMapping("/addtemplate")
+	@GetMapping("/templates/add")
     public String showAddTemplate(Model model) {
 		model.addAttribute("archetypes", 
 				TemplateArchetypes.getNames()
@@ -79,8 +83,24 @@ public class DocumentTemplateUIController {
 		return "templates/add_template";
 	}
     
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
-    @GetMapping("/edittemplate/{id}")
+    @GetMapping("/templates/{id}")
+    public String showTemplate(@PathVariable("id") String id, Model model) {
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
+        model.addAttribute("template", template);
+        model.addAttribute("fieldTypes", FieldType.values());
+        model.addAttribute("fieldMappings", FieldMapping.values());
+        List<DocumentFormat> usedFormats = template.getInputs().stream()
+        	.map(input -> input.getFormat())
+        	.collect(Collectors.toList());
+        List<DocumentFormat> availableFormats = Arrays.stream(DocumentFormat.values())
+            .filter(format -> !usedFormats.contains(format))
+            .collect(Collectors.toList());
+        model.addAttribute("formats", availableFormats);
+        return "templates/show_template";
+    }
+	
+	//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+    @GetMapping("/templates/{id}/edit")
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
         model.addAttribute("template", template);
@@ -88,8 +108,41 @@ public class DocumentTemplateUIController {
         model.addAttribute("fieldMappings", FieldMapping.values());
         return "templates/edit_template";
     }
+
+    @GetMapping("/templates/{id}/input/{format}")
+    public String showEditDocumentInput(@PathVariable("id") String id, @PathVariable("format") String format, Model model) {
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
+    	DocumentFormat docFormat = DocumentFormat.valueOf(format);
+    	DocumentInput docInput = template.getInputOfFormat(docFormat);
+    	if(docInput==null) {
+    		throw new IllegalArgumentException("Input format " + docFormat.toString() + " is not defined in template");
+    	}
+        model.addAttribute("template", template);
+        model.addAttribute("docInput", docInput);
+        return "templates/edit_doc_input";
+    }
+
+    @GetMapping("/templates/{id}/addinput")
+    public String showAddDocumentInput(@PathVariable("id") String id, @RequestParam("format") String format, Model model) {
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
+    	DocumentFormat docFormat = DocumentFormat.valueOf(format);
+    	if (template.getInputOfFormat(docFormat)!=null) {
+    		throw new IllegalArgumentException("Input format " + docFormat.toString() + " is already defined in template");
+    	}
+    	DocumentInput docInput = new DocumentInput();
+    	docInput.setFormat(docFormat);
+    	template.getFields().stream().forEach( f -> docInput.addField(
+    			new DocumentInputFieldMapping()
+    			.withFieldName(f.getFieldName())
+    			.withFieldId(f.getId())));
+    	docInput.setFormat(docFormat);
+        model.addAttribute("template", template);
+        model.addAttribute("docInput", docInput);
+        return "templates/edit_doc_input";
+    }
+
     
-    @PostMapping(value="/newtemplate")
+    @GetMapping(value="/templates/new")
     public String showEditForm(Model model, @RequestParam("type") Optional<String> type_param, @RequestParam("id") Optional<String> id_param) {
     	String type=type_param.orElse("empty");
     	String id=id_param.orElse("");

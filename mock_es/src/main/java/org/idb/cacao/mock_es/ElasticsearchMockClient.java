@@ -52,6 +52,8 @@ import java.util.logging.LogManager;
  *
  */
 public class ElasticsearchMockClient {
+	
+	public static final String PROP_SIGNAL_MOCK = "MOCKED_ELASTIC_SEARCH";
 
 	private final ClientAndServer mockServer;
 
@@ -90,9 +92,26 @@ public class ElasticsearchMockClient {
 			return socket.getLocalPort();
 		}
 	}
+	
+	/**
+	 * Set a system property telling we just started a mocked version of Elastic Search
+	 */
+	public static void setSignalMockedES() {
+		System.setProperty(PROP_SIGNAL_MOCK, String.valueOf(System.currentTimeMillis()));
+
+	}
+	
+	/**
+	 * Removes the system property informed with 'setSignalMockedES'
+	 */
+	public static void clearSignalMockedES() {
+		System.clearProperty(PROP_SIGNAL_MOCK);
+		
+	}
 
 	public void stop() {
 		mockServer.stop();
+		clearSignalMockedES();
 	}
 
 	/**
@@ -100,6 +119,8 @@ public class ElasticsearchMockClient {
 	 * requests according to Elastic Search API specification (just a few of them)
 	 */
 	protected void init() {
+		
+		setSignalMockedES();
 
 		// Program all the expectations for each request pattern
 
