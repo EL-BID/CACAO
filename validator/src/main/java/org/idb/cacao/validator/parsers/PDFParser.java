@@ -19,23 +19,19 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
-import static org.idb.cacao.api.utils.ParserUtils.formatDecimal;
-import static org.idb.cacao.api.utils.ParserUtils.formatTimestamp;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,7 +45,6 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDXFAResource;
 import org.idb.cacao.api.templates.DocumentInput;
-import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.validator.utils.XMLUtils;
 import org.w3c.dom.Document;
@@ -72,7 +67,7 @@ public class PDFParser implements FileParser {
 
 	private DocumentInput documentInputSpec;
 
-	private Map<String, Object> templateFields;
+	private Map<String, List<Object>> allFieldsValues;
 
 	/*
 	 * (non-Javadoc)
@@ -123,18 +118,18 @@ public class PDFParser implements FileParser {
 			return;			
 		}			
 		
-		if ( templateFields != null ) {
-			templateFields.clear();
-			templateFields = null;
+		if ( allFieldsValues != null ) {
+			allFieldsValues.clear();
+			allFieldsValues = null;
 		}
 		
 		try {
 		
-			templateFields = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+			allFieldsValues = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 			
 			try (FileInputStream stream = new FileInputStream(path.toFile())) {
 				try (PDDocument document = PDDocument.load(stream);) {
-					processForms(document, /*includeAllNamedObject*/true, templateFields::put);
+					processForms(document, /*includeAllNamedObject*/true);
 				} catch (Exception e) {
 					log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 				}
@@ -151,32 +146,35 @@ public class PDFParser implements FileParser {
 			return null;			
 		}			
 		
-		if ( templateFields == null ) {
+		if ( allFieldsValues == null ) {
 			start();
 		}
 		
-		if ( templateFields == null )
+		if ( allFieldsValues == null )
 			return null;
 		
 		try {
 			
-			final Iterator<Map.Entry<String, Object>> fieldsIterator = templateFields.entrySet().iterator();
+			final PDFParser parser = this;			
+			final int size = allFieldsValues.values().stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst().get();			
 			
 			return new DataIterator() {
 				
+				int atual = 0;
+				
 				@Override
-				public Map<String, Object> next() {
-					Map.Entry<String, Object> object = fieldsIterator.next();
-					return null;
+				public Map<String, Object> next() {					
+					return getNext(atual++);
 				}
 				
 				@Override
 				public boolean hasNext() {					
-					return fieldsIterator.hasNext();
+					return atual < size;
 				}
 				
 				@Override
-				public void close() {										
+				public void close() {
+					parser.close();	
 				}
 			}; 
 			
@@ -187,31 +185,50 @@ public class PDFParser implements FileParser {
 		return null;
 	}
 
+	/**
+	 * Get record identified by index param.
+	 * 
+	 * @param index	Index of record to be returned
+	 * @return	A record with all fiedls at index position.
+	 */
+	protected Map<String, Object> getNext(int index) {
+		
+		Map<String, Object> record = new LinkedHashMap<>();
+		
+		for ( Map.Entry<String,List<Object>> entry : allFieldsValues.entrySet() ) {
+			
+			String fieldName = entry.getKey();
+			List<Object> fieldValues = entry.getValue(); 
+			
+			if ( index < (fieldValues.size() -1) ) {
+				record.put(fieldName, fieldValues.get(index));	
+			}
+			else if ( index > 0 && fieldValues.size() == 1 ) {
+				record.put(fieldName, fieldValues.get(0));
+			}
+			else {
+				record.put(fieldName, null);	
+			}
+			
+		}
+		
+		return record;
+	}
+
 	@Override
 	public void close() {
-		if ( templateFields != null ) {
-			templateFields.clear();
-			templateFields = null;
+		if ( allFieldsValues != null ) {
+			allFieldsValues.clear();
+			allFieldsValues = null;
 		}
-	}
-	
-	private static String formatValue(Object obj) {
-		if (obj instanceof Date)
-			return formatTimestamp((Date)obj);
-		if (obj instanceof Double)
-			return formatDecimal((Double)obj);
-		if (obj instanceof Float)
-			return formatDecimal((Float)obj);
-		return obj.toString();
 	}	
 
 	/**
 	 * Process internal form structures
 	 * @param document
-	 * @param includeAllNamedObject If set to TRUE, will include in 'storeFields' all objects with 'name' property, including those ones without values
-	 * @param storeFields
+	 * @param includeAllNamedObject If set to TRUE, will include in 'fieldValues' all objects with 'name' property, including those ones without values
 	 */
-	protected void processForms(PDDocument document, boolean includeAllNamedObject, BiConsumer<String, Object> storeFields) throws Exception {
+	protected void processForms(PDDocument document, boolean includeAllNamedObject) throws Exception {
 		
 		// O arquivo PDF pode trabalhar com diferentes estruturas de formulário.
 		
@@ -228,14 +245,14 @@ public class PDFParser implements FileParser {
 				DocumentBuilder builder = factory.newDocumentBuilder();
 				try (InputStream in = new BufferedInputStream(new ByteArrayInputStream(pdfxfa.getBytes()))) {
 					Document root = builder.parse(in);
-					processXFAForm(root.getDocumentElement(), includeAllNamedObject, storeFields, /*prefix_field_name*/null);
+					processXFAForm(root.getDocumentElement(), includeAllNamedObject, allFieldsValues, /*prefix_field_name*/null);
 				}
 			}
 			else {
 				List<PDField> fields = pdAcroForm.getFields();
 				if (fields!=null && !fields.isEmpty()) { 
 					for (PDField field:fields) {
-						storeFields.accept(field.getMappingName(), field.getValueAsString());
+						allFieldsValues.compute(field.getMappingName(), (k,v)-> v == null ? new LinkedList<>() : v).add(field.getValueAsString());
 					}
 				}
 			}
@@ -245,7 +262,7 @@ public class PDFParser implements FileParser {
 			if (sfields!=null && !sfields.isEmpty()) {
 				for (PDSignatureField sfield:sfields) {
 					System.out.println(sfield);
-					storeFields.accept(sfield.getMappingName(), sfield.getValueAsString());
+					allFieldsValues.compute(sfield.getMappingName(), (k,v)-> v == null ? new LinkedList<>() : v).add(sfield.getValueAsString());
 				}
 			}
 		} catch (IOException e) {
@@ -255,9 +272,9 @@ public class PDFParser implements FileParser {
 	
 	/**
 	 * Process internal XFA form structures using recursive calls
-	 * @param includeAllNamedObject If set to TRUE, will include in 'storeFields' all objects with 'name' property, including those ones without values
+	 * @param includeAllNamedObject If set to TRUE, will include in 'fieldValues' all objects with 'name' property, including those ones without values
 	 */
-	protected static void processXFAForm(Node node, boolean includeAllNamedObject, BiConsumer<String, Object> storeFields, String prefixFieldName) throws TransformerException {
+	protected static void processXFAForm(Node node, boolean includeAllNamedObject, Map<String, List<Object>> fieldValues, String prefixFieldName) throws TransformerException {
 		NodeList children = node.getChildNodes();
 		if (children!=null && children.getLength()>0) {
 			for (int i=0; i<children.getLength(); i++) {
@@ -276,10 +293,10 @@ public class PDFParser implements FileParser {
 								if (content!=null)
 									content = content.trim();
 								if (content!=null && content.length()>0) {
-									storeFields.accept(name, content);
+									fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(content);
 								}
 								else if (includeAllNamedObject) {
-									storeFields.accept(name, null);												
+									fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);												
 								}
 								continue;
 							}
@@ -295,10 +312,10 @@ public class PDFParser implements FileParser {
 											valor = ParserUtils.parseDecimalWithComma(content);
 										else
 											valor = Double.valueOf(content);
-										storeFields.accept(name, valor);
+										fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(valor);
 									}
 									else if (includeAllNamedObject) {
-										storeFields.accept(name, null);												
+										fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
 									}
 									continue;
 								}
@@ -310,10 +327,10 @@ public class PDFParser implements FileParser {
 											content = content.trim();
 										if (content.length()>0) {
 											Date d = ParserUtils.parseFlexibleDate(content);
-											storeFields.accept(name, d);
+											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(d);
 										}
 										else if (includeAllNamedObject) {
-											storeFields.accept(name, null);												
+											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);												
 										}
 										continue;
 									}
@@ -325,10 +342,10 @@ public class PDFParser implements FileParser {
 												content = content.trim();
 											if (content.length()>0) {
 												long valor = Long.valueOf(content);		
-												storeFields.accept(name, valor);
+												fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(valor);
 											}
 											else if (includeAllNamedObject) {
-												storeFields.accept(name, null);												
+												fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
 											}
 											continue;		
 										}
@@ -336,7 +353,7 @@ public class PDFParser implements FileParser {
 										// Ignore other field types
 										
 										else if (includeAllNamedObject) {
-											storeFields.accept(name, null);
+											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);
 										}
 									}
 								}
@@ -344,24 +361,24 @@ public class PDFParser implements FileParser {
 						}
 						catch (Throwable ex) {
 							// Algum erro de conversão...
-							storeFields.accept(name, null);
+							fieldValues.compute(name, null);
 						}
 					}
 					else if (includeAllNamedObject) {
-						storeFields.accept(name, null);												
+						fieldValues.compute(name, null);												
 					}
 				}
 				else {
 					String name = XMLUtils.getAttribute(child, "name");
 					if (name!=null) {
 						if (includeAllNamedObject) {
-							storeFields.accept(name, null);												
+							fieldValues.compute(name, null);												
 						}
 						String next_prefix = (prefixFieldName==null) ? (name+".") : (prefixFieldName+name+".");
-						processXFAForm(child, includeAllNamedObject, storeFields, next_prefix);
+						processXFAForm(child, includeAllNamedObject, fieldValues, next_prefix);
 					}
 					else {
-						processXFAForm(child, includeAllNamedObject, storeFields, prefixFieldName);
+						processXFAForm(child, includeAllNamedObject, fieldValues, prefixFieldName);
 					}
 				}				
 			}
