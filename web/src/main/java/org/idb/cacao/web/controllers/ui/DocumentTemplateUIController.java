@@ -142,7 +142,7 @@ public class DocumentTemplateUIController {
     }
 
     
-    @PostMapping(value="/templates/new")
+    @GetMapping(value="/templates/new")
     public String showEditForm(Model model, @RequestParam("type") Optional<String> type_param, @RequestParam("id") Optional<String> id_param) {
     	String type=type_param.orElse("empty");
     	String id=id_param.orElse("");

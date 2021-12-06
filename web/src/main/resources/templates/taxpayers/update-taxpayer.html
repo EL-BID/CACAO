@@ -1,0 +1,125 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="address book outline icon"></i>
+			<div class="content" th:text="#{taxpayer.update.title}">Update Taxpayer</div>
+		</h2>
+        <div class="ui container">
+            <div class="ui orange segment">
+                <form class="ui form" action="#" name="form" id="form" th:action="@{/api/taxpayer}" th:object="${taxpayer}" method="post">
+                    <div class="fields">
+                      <div class="six wide field">
+                        <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
+                        <input type="text" th:field="*{taxPayerId}" class="form-control" id="taxPayerId" th:placeholder="#{taxpayer.id}">
+                      </div>
+                      <div class="ten wide field">
+                        <label th:text="#{user.name}" style="margin-bottom: 0px; text-transform: uppercase;">User Name</label> 
+                        <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}">
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label th:text="#{taxpayer.address}" style="margin-bottom: 0px; text-transform: uppercase;">Address</label>
+                      <textarea id="address" rows="4" th:field="*{address}"></textarea>
+                    </div>
+                    <div class="fields">
+                      <div class="eight wide field">
+                        <label th:text="#{taxpayer.zip.code}" style="margin-bottom: 0px; text-transform: uppercase;">Zip Code</label> 
+                        <input type="text" th:field="*{zipCode}" class="form-control" id="zipCode" th:placeholder="#{taxpayer.zip.code}">
+                      </div>
+                      <div class="eight wide field">
+                        <label th:text="#{taxpayer.qualifier.1}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 1</label> 
+                        <input type="text" th:field="*{qualifier1}" class="form-control" id="qualifier1" th:placeholder="#{taxpayer.qualifier.1}">
+                      </div>
+                    </div>
+                    <div class="fields">
+                      <div class="eight wide field">
+                        <label th:text="#{taxpayer.qualifier.2}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 2</label> 
+                        <input type="text" th:field="*{qualifier2}" class="form-control" id="qualifier2" th:placeholder="#{taxpayer.qualifier.2}">
+                      </div>
+                      <div class="eight wide field">
+                        <label th:text="#{taxpayer.qualifier.3}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 3</label> 
+                        <input type="text" th:field="*{qualifier3}" class="form-control" id="qualifier3" th:placeholder="#{taxpayer.qualifier.3}">
+                      </div>
+                    </div>
+                    <div class="fields">
+                      <div class="eight wide field">
+                          <label th:text="#{taxpayer.qualifier.4}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 4</label> 
+                          <input type="text" th:field="*{qualifier4}" class="form-control" id="qualifier4" th:placeholder="#{taxpayer.qualifier.4}">
+                      </div>
+                      <div class="eight wide field">
+                          <label th:text="#{taxpayer.qualifier.5}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 5</label> 
+                          <input type="text" th:field="*{qualifier5}" class="form-control" id="qualifier5" th:placeholder="#{taxpayer.qualifier.5}">
+                      </div>
+                    </div>
+                    <div class="row">
+                        <div class="ui segment">
+                            <input type="submit" class="ui blue submit button" th:value="#{taxpayer.update.title}" value="Add Taxpayer">
+                            <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+    <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+<script th:nonce="${cspNonce}" th:inline="javascript">
+$('#cancel').click( () => window.location.replace( [[@{/taxpayers}]] ))
+
+let processForm = function(event, fields) {
+  event.preventDefault()
+  $.ajax({
+    url: [[@{/api/taxpayer/{id}(id=${taxpayer.id})}]],
+    type: 'PUT',
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(fields),
+    cache: false,    
+	success: function(result) {
+		$('#modal_successful').modal('show')
+		setTimeout(function(){
+			window.location = [[@{/taxpayers}]]
+		}, 2000);
+	},
+	error: function(e) {
+		var msg = e.responseText.replace(/\n/g, "<br />");
+		$('#modal_failed').find('.description').html(msg)
+		$('#modal_failed').modal('show')
+		console.log("ERROR : "+msg);
+	}
+  })
+}
+
+$('#form').form({
+  inline : true,
+  on     : "blur",
+  fields : {
+    taxPayerId: ['minLength[6]', 'maxLength[20]'],
+    name: ['minLength[2]', 'maxLength[300]'],
+    address: ['maxLength[500]'],
+    profile: ['empty'],
+    zipCode: ['maxLength[100]']
+  },
+  prompt: {
+    empty : [[#{error.field.empty('{name}')}]],
+    number: [[#{error.field.number('{name}')}]],
+    minLength: [[#{error.field.minLength('{name}','{ruleValue}')}]],
+    maxLength: [[#{error.field.maxLength('{name}','{ruleValue}')}]],
+    match: [[#{error.field.match('{name}','{ruleValue}')}]],
+  },
+  onSuccess: (processForm)
+})
+</script>
+</body>
+</html>

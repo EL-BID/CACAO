@@ -20,13 +20,19 @@
 package org.idb.cacao.web.controllers.ui;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.idb.cacao.api.DocumentSituationHistory;
+import org.idb.cacao.api.DocumentValidationErrorMessage;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.controllers.services.MessagesService;
 import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
+import org.idb.cacao.web.repositories.DocumentValidationErrorMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -49,7 +55,13 @@ public class DocumentStoreUIController {
 
 	@Autowired
 	private DocumentTemplateService templateService;
+	
+	@Autowired
+	private DocumentSituationHistoryRepository documentSituationHistoryRepository;
 
+	@Autowired
+	private MessagesService messagesService;
+	
 	@Autowired
 	private MessageSource messageSource;
 
@@ -68,11 +80,11 @@ public class DocumentStoreUIController {
 	@GetMapping("/doc/situations/{documentId}")
     public String getDocSituations(@PathVariable("documentId") String documentId, Model model) {
 		
-		// Parse the 'templateName' informed at request path
 		if (documentId==null || documentId.trim().length()==0) {
 			throw new MissingParameter("documentId");
 		}
-		//List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentId(documentId);
+		List<DocumentSituationHistory> situations = documentSituationHistoryRepository.findByDocumentId(documentId);
+		model.addAttribute("situations", situations);
 		model.addAttribute("documentId", documentId);		
 		model.addAttribute("dateTimeFormat", messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
         return "docs/doc_situations";
@@ -81,12 +93,12 @@ public class DocumentStoreUIController {
 	@GetMapping("/doc/errors/{documentId}")
 	public String getDocErrors(@PathVariable("documentId") String documentId, Model model) {
 
-		// Parse the 'templateName' informed at request path
 		if (documentId == null || documentId.trim().length() == 0) {
 			throw new MissingParameter("documentId");
 		}
-		//List<DocumentValidationErrorMessage> messages = messagesService.findByDocumentId(documentId);
+		List<DocumentValidationErrorMessage> messages = messagesService.findByDocumentId(documentId);
 
+		model.addAttribute("errors", messages);
 		model.addAttribute("documentId", documentId);
 		model.addAttribute("dateTimeFormat",
 				messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));

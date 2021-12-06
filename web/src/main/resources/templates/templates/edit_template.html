@@ -27,9 +27,8 @@
         <form action="#" name="form" id="form" class="ui form" th:object="${template}" method="post">
           <div class="fields">
             <div class="ten wide field">
-              <label th:text="#{template.name}"
-                style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label> 
-                <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
+              <label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label> 
+              <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
                 <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
             <div class="six wide field">

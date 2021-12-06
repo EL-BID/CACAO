@@ -15,34 +15,45 @@
 			<i class="user icon"></i>
 			<div class="content" th:text="#{user.update.title}">Update User</div>
 		</h2>
-		<div id="app">
 		<div class="ui center aligned container">
 			<div class="ui orange segment">
-				<form action="#" th:object="${user}" method="post" @submit.prevent="processForm">
-					<div class="row">
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{user.name}">User Name</div>
-						</h4>
-						<div class="ui form">
-							<input type="text" v-model="user.name" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}">
-							<span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
-						</div>
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{user.login}">"Login</div>
-						</h4>
-						<div class="ui form">
-							<input type="text" v-model="user.login" class="form-control" id="login" placeholder="Login" th:placeholder="#{user.login}">
-							<span th:if="${#fields.hasErrors('login')}" th:errors="*{login}" class="ui warning message"></span>
-						</div>
-						<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-							<div class="content" th:text="#{user.profile}">Profile</div>
-						</h4>
-						<div class="ui form">
-							<select v-model="user.profile" class="ui fluid dropdown">
-								<option th:each="i : ${T(org.idb.cacao.web.entities.UserProfile).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
-							</select>
-						</div>
-					</div>
+                <form class="ui form" action="#" name="form" id="form" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
+                    <input type="hidden" th:field="*{id}">
+                    <div class="fields">
+                      <div class="six wide field">
+                        <label th:text="#{user.name}" style="margin-bottom: 0px; text-transform: uppercase;">User Name</label> 
+                        <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}">
+                      </div>
+                      <div class="ten wide field">
+                        <label th:text="#{user.login}" style="margin-bottom: 0px; text-transform: uppercase;">Login</label> 
+                        <input type="text" th:field="*{login}" th:value="*{login}" class="form-control" id="login" placeholder="Login" th:placeholder="#{user.login}">
+                      </div>
+                    </div>
+                    <th:block th:unless="${omit_password}">
+                      <div class="fields">
+                         <div class="eight wide field">
+                            <label style="margin-bottom: 0px; text-transform: uppercase;" class="ui label">
+                            <i class="lock icon"></i><th:block th:text="#{user.password}">Password</th:block>
+                            </label> 
+                            <input type="password" th:field="*{password}" class="form-control" id="password" placeholder="Password" th:placeholder="#{user.password}">
+                         </div>
+                         <div class="eight wide field">
+                            <label style="margin-bottom: 0px; text-transform: uppercase;" class="ui label">
+                            <i class="lock icon"></i><th:block th:text="#{user.password.confirm}">Confirm Password</th:block>
+                            </label> 
+                            <input type="password" th:field="*{confirmPassword}" class="form-control" id="confirmPassword" placeholder="Password" th:placeholder="#{user.password.confirm}">
+                         </div>
+                      </div>     
+                    </th:block>
+                    <div class="field">
+                        <label th:text="#{user.profile}" style="margin-bottom: 0px; text-transform: uppercase;">Profile</label>
+                        <select th:field="*{profile}" class="ui fluid dropdown local" id="selectProfile">
+                        <option value="" th:text="#{select}">Select</option>
+                        <option
+                          th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"
+                          th:value="${i.name()}" th:text="#{${i}}"></option>
+                      </select>  
+                    </div>
 					<div class="row">
 						<div class="ui segment">
 							<input type="submit" class="ui blue button" th:value="#{save}" value="Update User">
@@ -58,44 +69,50 @@
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-var app = new Vue({
-	el: '#app',
-	data: {
-		user: {
-			id: [[${user.id}]],
-			name: [[${user.name}]],
-			login: [[${user.login}]],
-			profile: [[${user.profile}]]
-		}
+$('#cancel').click( () => window.location.replace( [[@{/users}]] ))
+
+let processForm = function(event, fields) {
+  event.preventDefault()
+  $.ajax({
+    url: [[@{/api/user/{id}(id=${user.id})}]],
+    type: 'PUT',
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(fields),
+    cache: false,    
+	success: function(result) {
+		$('#modal_successful').modal('show')
+		setTimeout(function(){
+			window.location = [[@{/users}]]
+		}, 2000);
 	},
-	methods: {
-		cancel() {
-			window.location.replace([[@{/users}]])
-		},
-		processForm() {
-			$.ajax({
-   			    url: [[@{/api/user/{id}(id=${user.id})}]],
-   			    type: 'PUT',
-   			    dataType: 'json',
-   			    contentType: 'application/json',
-   			    data: JSON.stringify(this.user),
-   			    cache: false,    
-   				success: function(result) {
-   					$('#modal_successful').modal('show')
-   					setTimeout(function(){
-   						window.location = [[@{/users}]]
-   					}, 2000);
-   				},
-   				error: function(e) {
-   					var msg = e.responseText.replace(/\n/g, "<br />");
-   					$('#modal_failed').find('.description').html(msg)
-   					$('#modal_failed').modal('show')
-   					console.log("ERROR : "+msg);
-   				}
-   			});			 
-		}
+	error: function(e) {
+		var msg = e.responseText.replace(/\n/g, "<br />");
+		$('#modal_failed').find('.description').html(msg)
+		$('#modal_failed').modal('show')
+		console.log("ERROR : "+msg);
 	}
+  })
+}
+
+$('#form').form({
+  inline : true,
+  on     : "blur",
+  fields : {
+    name: ['minLength[4]', 'maxLength[120]'],
+    login: ['email', 'maxLength[60]'],
+    profile: ['empty'],
+  },
+  prompt: {
+    empty : [[#{error.field.empty('{name}')}]],
+    number: [[#{error.field.number('{name}')}]],
+    minLength: [[#{error.field.minLength('{name}','{ruleValue}')}]],
+    maxLength: [[#{error.field.maxLength('{name}','{ruleValue}')}]],
+    match: [[#{error.field.match('{name}','{ruleValue}')}]],
+  },
+  onSuccess: (processForm)
 })
+
 
 </script>
 </body>

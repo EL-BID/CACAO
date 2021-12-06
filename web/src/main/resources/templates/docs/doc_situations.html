@@ -18,12 +18,10 @@
 			<i class="archive icon"></i>
 			<div class="content" th:text="#{doc.situation.history}">All Uploads</div>
 		</h2>
-			<div id="app">
-				<div id="table" class="ui orange table"></div>
-			</div>
+		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/docs_search}" class="ui button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
+				<a th:href="@{/docs_search}" class="ui primary button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
 			</div>
 		</div>
 	</div>
@@ -37,49 +35,24 @@ dateFormatter = function(cell, formatterParams, onRendered) {
 	return cell.getValue()
 }
 
-var app = new Vue({
-	el: '#app',
-	data: {
-		table: null,
-		headerFilter: false
+this.table = new Tabulator('#table', {
+	index: "id",
+	layout:"fitDataFill",		
+    pagination: false,
+	headerFilterLiveFilterDelay:700,			
+    persistence:{
+		columns:true,
 	},
-	
-	mounted() {
-		
-		var documentId = /*[[${documentId}]]*/ null;
-		
-		this.table = new Tabulator('#table', {
-			index: "id",
-			layout:"fitDataFill",		
-		    pagination: false,
-			ajaxURL: /*[[@{/api/doc/situations}]]*/ "/api/doc/situations", //set url for ajax request
-			ajaxURLGenerator: function(url, config, params ){
-				console.log(config)
-				console.log(params)
-				p = new URLSearchParams()
-				p.set('documentId', documentId)
-				console.log(url + '?' + p.toString())
-				return url + '?' + p.toString()
-			},
-			ajaxContentType: "json",
-			filterMode:"local",
-			sortMode: "local",
-			headerFilterLiveFilterDelay:700,			
-		    persistence:{
-				columns:true,
-			},
-		    persistenceID:"doc_situation_history_persistence",
-			columns:[ //Define Table Columns
-				{title: /*{{#taxpayer.id}}} */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
-				{title: /*[[#{doc.timestamp}]]*/ "Upload date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
-				{title: /*[[#{doc.situation.history.timestamp}]]*/ "Situation date/time", field:"changedTime", formatter: dateFormatter, headerFilter:this.headerFilter},
-				{title: /*[[#{doc.situation.history.situation}]]*/ "Situation", field: "situation", headerFilter:this.headerFilter},
-				{title: /*[[#{doc.situation.history.templateName}]] */ "Template", field:"templateName", headerFilter:this.headerFilter},								
-				{title: /*[[#{doc.situation.history.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
-			]
-		})
-	},
-		
+    persistenceID:"doc_situation_history_persistence",
+	columns:[ //Define Table Columns
+		{title: /*{{#taxpayer.id}}} */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
+		{title: /*[[#{doc.timestamp}]]*/ "Upload date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
+		{title: /*[[#{doc.situation.history.timestamp}]]*/ "Situation date/time", field:"changedTime", formatter: dateFormatter, headerFilter:this.headerFilter},
+		{title: /*[[#{doc.situation.history.situation}]]*/ "Situation", field: "situation", headerFilter:this.headerFilter},
+		{title: /*[[#{doc.situation.history.templateName}]] */ "Template", field:"templateName", headerFilter:this.headerFilter},								
+		{title: /*[[#{doc.situation.history.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
+	],
+	data: /*[[${situations}]]*/ null
 })
 </script>
 </body>

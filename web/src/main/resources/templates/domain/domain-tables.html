@@ -16,7 +16,7 @@
 	</div>
 	<div class="ui container">
 		<h2 class="ui header">
-			<i class="users icon"></i>
+			<i class="table icon"></i>
 			<div class="content" th:text="#{domain.tables.title}">Domain Tables</div>
 		</h2>
 		<div id="table" class="ui orange table"></div>
@@ -34,7 +34,7 @@
 <script th:nonce="${cspNonce}" th:inline="javascript">
 
 var editRow = function(e, cell) {
-    window.location.replace([[@{/editdomaintable/}]] +  cell.getRow().getIndex());
+    window.location.replace([[@{/domaintables/}]] +  cell.getRow().getIndex()) + "/edit";
 }
 
 var sendDelete = function(id) {
@@ -90,6 +90,12 @@ this.table = new Tabulator('#table', {
         {formatter:editIcon, width:50, cellClick: editRow, headerSort:false, responsive:0},
         {formatter:trashIcon, width:50, cellClick: deleteRow, headerSort:false, responsive:0}
     ]
+})
+table.on('rowClick', function(e, row) {
+    if( e.target.classList.contains('edit') || e.target.classList.contains('trash')) {
+        return
+    }
+    window.location.replace([[@{/domaintables/}]] + row.getIndex());
 })
 </script>
 </body>

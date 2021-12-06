@@ -17,12 +17,12 @@
 	<div class="ui container">
 		<h2 class="ui header">
 			<i class="users icon"></i>
-			<div class="content" th:text="#{users.title}">Users</div>
+			<div class="content" th:text="#{taxpayers.title}">Taxpayers</div>
 		</h2>
     		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/users/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
+				<a th:href="@{/taxpayers/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{taxpayer.new}">New Taxpayer</span></a>
 			</div>
 		</div>
 	</div>
@@ -33,12 +33,12 @@
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
 let editRow = function(e, cell) {
-  window.location.replace([[@{/users/}]] +  cell.getRow().getIndex() + "/edit");
+  window.location.replace([[@{/taxpayers/}]] +  cell.getRow().getIndex() + "/edit");
 }
 
-let sendDelete = function(userId) {
+let sendDelete = function(id) {
 	$.ajax({
-	    url: [[@{/api/user/}]] + userId,
+	    url: [[@{/api/taxpayer/}]] + id,
 	    type: 'DELETE',
 	    dataType: 'json',
 	    contentType: 'application/json',
@@ -51,7 +51,7 @@ let sendDelete = function(userId) {
 let onDeleteSuccess = function(result) {
 	$('#modal_successful').modal('show')
 	setTimeout(function(){
-		window.location.replace([[@{/users}]])
+		window.location.replace([[@{/taxpayers}]])
 	}, 2000);
 }
 		
@@ -64,7 +64,7 @@ let onDeleteError = function(e) {
 
 let deleteRow = function(e, cell) {
     var dlg = $('#modal_confirm')
-	dlg.find('.description').html([[#{user.delete.confirm}]])
+	dlg.find('.description').html([[#{taxpayer.delete.confirm}]])
 	dlg.modal({
 	    closable:false,
 	    onApprove: function() { 
@@ -81,7 +81,7 @@ let table = new Tabulator('#table', {
 	layout: "fitData", //fit columns to width of table (optional)
     pagination: true,
 	paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
+		ajaxURL: /*[[@{/api/taxpayers}]]*/ "/api/taxpayers", //set url for ajax request
 	paginationSize: 5,
 	ajaxContentType: "json",
 	paginationSizeSelector:[10, 25, 50],
@@ -104,9 +104,8 @@ let table = new Tabulator('#table', {
         }
     },
 	columns:[ //Define Table Columns
-		{title: /*[[#{user.name}}*/ "Name", field:"name"},
-		{title: /*[[#{user.login}}*/ "Login", field:"login", hozAlign:"left" },
-		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", width: 150 },
+		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxPayerId"},
+		{title: /*[[#{taxpayer.name}}*/ "Name", field:"name" },
 		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
 	]
@@ -115,7 +114,7 @@ table.on('rowClick', function(e, row) {
     if( e.target.classList.contains('edit') || e.target.classList.contains('trash')) {
         return
     }
-    window.location.replace([[@{/users/}]] + row.getIndex());
+    window.location.replace([[@{/taxpayers/}]] + row.getIndex());
 })
 </script>
 </body>

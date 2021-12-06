@@ -71,92 +71,32 @@ public class TaxpayerUIController {
 	@Autowired
 	private TaxpayerRepository taxPayerRepository;
 	
-	@Autowired
-	private FieldsConventionsService fieldsConventionsService;
-
-	@Autowired
-	private RestHighLevelClient elasticsearchClient;
-
 	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
 	@GetMapping("/taxpayers")
-	public String getTaxpayers(Model model, 
-			@RequestParam("page") Optional<Integer> page, 
-			@RequestParam("size") Optional<Integer> size,
-			@RequestParam("q") Optional<String> filters_as_json) {
-		int currentPage = page.orElse(1);
-		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
-		Page<Taxpayer> taxpayers;
-		try {
-			if (filters.isPresent() && !filters.get().isEmpty()) {
-				taxpayers = SearchUtils.doSearch(filters.get(), Taxpayer.class, elasticsearchClient, page, size, Optional.of("taxPayerId.keyword"), Optional.of(SortOrder.ASC));
-			}
-			else {
-				taxpayers = searchPage(()->taxPayerRepository.findAll(PageRequest.of(currentPage-1, pageSize, Sort.by("taxPayerId.keyword").ascending())));
-			}
-		}
-		catch (Exception ex) {
-			log.log(Level.SEVERE, "Error while searching for taxpayers", ex);
-			taxpayers = Page.empty();
-		}
-		model.addAttribute("taxpayers", taxpayers);
-		int totalPages = taxpayers.getTotalPages();
-		if (totalPages > 0) {
-			List<Integer> pageNumbers = IntStream.rangeClosed(1, totalPages)
-					.boxed()
-					.collect(Collectors.toList());
-			model.addAttribute("pageNumbers", pageNumbers);
-		}
-		
-		model.addAttribute("filter_options", new AdvancedSearch()
-			.withFilter(new AdvancedSearch.QueryFilterTerm("taxPayerId").withDisplayName(messages.getMessage("taxpayer_id", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("name").withDisplayName(messages.getMessage("taxpayer_name", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("surname").withDisplayName(messages.getMessage("taxpayer_surname", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("address").withDisplayName(messages.getMessage("taxpayer_address", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("zipCode").withDisplayName(messages.getMessage("taxpayer_zip", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("qualifier1").withDisplayName(messages.getMessage("taxpayer_qualifier1", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("qualifier2").withDisplayName(messages.getMessage("taxpayer_qualifier2", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("qualifier3").withDisplayName(messages.getMessage("taxpayer_qualifier3", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("qualifier4").withDisplayName(messages.getMessage("taxpayer_qualifier4", null, LocaleContextHolder.getLocale())))
-			.withFilter(new AdvancedSearch.QueryFilterTerm("qualifier5").withDisplayName(messages.getMessage("taxpayer_qualifier5", null, LocaleContextHolder.getLocale())))
-			);
-		model.addAttribute("applied_filters", filters.map(f->f.withDisplayNames((AdvancedSearch)model.getAttribute("filter_options")).wiredTo(messages)));
-
-        return "taxpayers";
+	public String getTaxpayers(Model model) {
+		return "taxpayers/taxpayers";
 	}
 
 	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
-	@GetMapping("/addtaxpayer")
+	@GetMapping("/taxpayers/add")
     public String showAddTaxpayer(Taxpayer taxpayer, Model model) {
-		return "add-taxpayer";
+		return "taxpayers/add-taxpayer";
 	}
 
 	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
-    @GetMapping("/edittaxpayer/{id}")
+    @GetMapping("/taxpayers/{id}/edit")
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
 		Taxpayer taxpayer = taxPayerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid taxpayer Id:" + id));
         model.addAttribute("taxpayer", taxpayer);
-        return "update-taxpayer";
+        return "taxpayers/update-taxpayer";
     }
 
 	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
-	@GetMapping("/viewtaxpayer/{id}")
+	@GetMapping("/taxpayers/{id}")
     public String showTaxpayerDetails(@PathVariable("id") String id, Model model) {
 		Taxpayer taxpayer = taxPayerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid taxpayer Id:" + id));
         model.addAttribute("taxpayer", taxpayer);
-        MenuItem taxpayer_details = new MenuItem();
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_id", null, LocaleContextHolder.getLocale())).withChild(taxpayer.getTaxPayerId()));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_name", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getName())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_qualifier1", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getQualifier1())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_qualifier2", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getQualifier2())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_qualifier3", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getQualifier3())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_qualifier4", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getQualifier4())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_qualifier5", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getQualifier5())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_address", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getAddress())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_zip", null, LocaleContextHolder.getLocale())).withChild(nvl(taxpayer.getZipCode())));
-        taxpayer_details.addChild(new MenuItem(messages.getMessage("taxpayer_timestamp", null, LocaleContextHolder.getLocale())).withChild(fieldsConventionsService.formatValue(taxpayer.getTimestamp())));
-        model.addAttribute("taxpayer_details", taxpayer_details);
-        return "view-taxpayer";
+        return "taxpayers/view-taxpayer";
     }
 	
 	public static String nvl(String v) {

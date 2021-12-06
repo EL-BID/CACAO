@@ -149,6 +149,11 @@ public class LoginUIController {
 			menu.add(new MenuItem(messages.getMessage("users.title", null, LocaleContextHolder.getLocale()),
 				"/users", "users"));
 		}
+		if (hasPrivilege(roles, SystemPrivilege.TAXPAYER_READ)) {
+			menu.add(new MenuItem(messages.getMessage("taxpayers.title", null, LocaleContextHolder.getLocale()),
+					"/taxpayers", "address book outline"));
+		}
+		
 		if (hasPrivilege(roles, SystemPrivilege.TAX_TEMPLATE_WRITE)) {
 			menu.add(new MenuItem(messages.getMessage("templates", null, LocaleContextHolder.getLocale()),
 					"/templates", "file alternate outline"));
@@ -156,7 +161,7 @@ public class LoginUIController {
 
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DOMAIN_TABLE_WRITE)) {
 			menu.add(new MenuItem(messages.getMessage("domain.tables.title", null, LocaleContextHolder.getLocale()),
-					"/domaintables"));
+					"/domaintables", "table"));
 		}
 
 		MenuItem submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
