@@ -44,6 +44,7 @@ import org.apache.http.ssl.TrustStrategy;
 import org.idb.cacao.web.controllers.services.ElasticSearchService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.EnvironmentAware;
@@ -170,7 +171,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 			this.checkedUserStatusMap = new ConcurrentHashMap<>();
 			this.sslVerifyHost = !"false".equalsIgnoreCase(propertyResolver.getProperty("es.ssl.verifyhost"));
 			this.userService = app.getBean(UserService.class);
-			if (isJUnitTest()) {
+			if (ControllerUtils.isJUnitTest()) {
 				log.log(Level.INFO, "Skipping KibanaProxy initialization because it's running in a JUnit test case");
 				return;
 			}
@@ -364,18 +365,6 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 			String username;
 			String usertoken;
 		}
-	}
-
-	/**
-	 * Check if it's running inside JUnit test
-	 */
-	public static boolean isJUnitTest() {  
-	  for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-	    if (element.getClassName().startsWith("org.junit.")) {
-	      return true;
-	    }           
-	  }
-	  return false;
 	}
 
 }

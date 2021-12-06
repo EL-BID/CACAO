@@ -306,4 +306,23 @@ public class ControllerUtils {
 		}
 		return Integer.parseInt(env.getProperty("default.page.size"));
 	}
+
+	/**
+	 * Check if it's running inside JUnit test
+	 */
+	public static boolean isJUnitTest() {  
+	  for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+	    if (element.getClassName().startsWith("org.junit.")) {
+	      return true;
+	    }           
+	  }
+	  return false;
+	}
+	
+	/**
+	 * Check for the presence of 'Mocked Elastic Search' component in runtime
+	 */
+	public static boolean hasMockES() {
+		return System.getProperty("MOCKED_ELASTIC_SEARCH")!=null;
+	}
 }

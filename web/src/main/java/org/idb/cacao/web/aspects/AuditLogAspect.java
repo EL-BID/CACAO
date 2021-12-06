@@ -42,6 +42,7 @@ import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.AuditTrailRepository;
 import org.idb.cacao.web.sec.ApiKeyAuthenticationToken;
+import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -111,7 +112,7 @@ public class AuditLogAspect {
 	public void adviceLogControllerMethods(JoinPoint joinPoint) throws Throwable {
 
 		// Ignores auditing while running inside JUnit test cases
-		if (isJUnitTest()) {
+		if (ControllerUtils.isJUnitTest()) {
 			return;
 		}
 		
@@ -381,15 +382,4 @@ public class AuditLogAspect {
 		return new AuditTrailParameterCollectorCollection(feedAuditField);
 	}
 	
-	/**
-	 * Check if it's running inside JUnit test
-	 */
-	public static boolean isJUnitTest() {  
-	  for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-	    if (element.getClassName().startsWith("org.junit.")) {
-	      return true;
-	    }           
-	  }
-	  return false;
-	}
 }

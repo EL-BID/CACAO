@@ -31,6 +31,7 @@ import org.idb.cacao.web.controllers.services.KibanaSpacesService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
+import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -142,7 +143,8 @@ public class WebApplication {
 		}
 		
 		try {
-			if (kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0)
+			if ((!ControllerUtils.isJUnitTest() && !ControllerUtils.hasMockES())
+					&& kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0)
 				kibanaSpacesService.syncKibanaIndexPatterns();
 		}
 		catch (Throwable ex) {
