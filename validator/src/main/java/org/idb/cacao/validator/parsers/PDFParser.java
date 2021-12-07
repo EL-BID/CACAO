@@ -155,8 +155,9 @@ public class PDFParser implements FileParser {
 		
 		try {
 			
-			final PDFParser parser = this;			
-			final int size = allFieldsValues.values().stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst().get();			
+			final PDFParser parser = this;
+			final int size = allFieldsValues.size() == 0 ? 0 : 
+				allFieldsValues.values().stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst().get();			
 			
 			return new DataIterator() {
 				
@@ -372,7 +373,7 @@ public class PDFParser implements FileParser {
 					String name = XMLUtils.getAttribute(child, "name");
 					if (name!=null) {
 						if (includeAllNamedObject) {
-							fieldValues.compute(name, null);												
+							fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
 						}
 						String next_prefix = (prefixFieldName==null) ? (name+".") : (prefixFieldName+name+".");
 						processXFAForm(child, includeAllNamedObject, fieldValues, next_prefix);

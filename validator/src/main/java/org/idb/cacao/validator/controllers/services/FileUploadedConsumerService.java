@@ -205,6 +205,13 @@ public class FileUploadedConsumerService {
 			try {
 
 				iterator = parser.iterator();
+				
+				if ( iterator == null ) {
+					setSituation(doc, DocumentSituation.INVALID);
+					log.log(Level.SEVERE, "Impossible to read fields in file " + documentId);
+					throw new ValidationException(
+							"An error ocurred while attempting to read data in file " + doc.getFilename() + ".");
+				}
 
 				long added = 0;
 				while (iterator.hasNext()) {

@@ -43,7 +43,7 @@ public class CreateDocumentTemplatesSamples {
 
         List<DocumentTemplate> toRet = new ArrayList<>(3);
 
-        //Livro diário
+        //General Ledger
         DocumentTemplate docTemplate = new DocumentTemplate();
         docTemplate.setName("General Ledger");
         docTemplate.setGroup("Accounting");
@@ -108,7 +108,7 @@ public class CreateDocumentTemplatesSamples {
         docTemplate.setFields(fields);
         addInputsGeneralLedger(docTemplate);
 
-        //Plano de contas
+        //IFRS Chart Of Accounts
         docTemplate = new DocumentTemplate();
         docTemplate.setName("Chart Of Accounts");
         docTemplate.setGroup("Accounting");
@@ -170,8 +170,71 @@ public class CreateDocumentTemplatesSamples {
 
         docTemplate.setFields(fields);
         addInputsChartOfAccounts(docTemplate);
+        
+        //GAAP Chart Of Accounts
+        docTemplate = new DocumentTemplate();
+        docTemplate.setName("Chart Of Accounts GAAP");
+        docTemplate.setGroup("Accounting");
+        docTemplate.setPeriodicity(Periodicity.YEARLY);
+        docTemplate.setRequired(true);
+        docTemplate.setVersion("1.0");
+        docTemplate.setArchetype("accounting.chart.accounts");
 
-        //Saldos Iniciais
+        toRet.add(docTemplate);
+        fields = Arrays.asList(
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name())
+                        .withFieldType(FieldType.CHARACTER)
+                        .withFieldMapping(FieldMapping.TAXPAYER_ID)
+                        .withDescription("Taxpayer Identification Number")
+                        .withMaxLength(128)
+                        .withRequired(true),
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name())
+                        .withFieldType(FieldType.INTEGER)
+                        .withFieldMapping(FieldMapping.TAX_YEAR)
+                        .withDescription("Fiscal year of this financial reporting")
+                        .withRequired(true),
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name())
+                        .withFieldType(FieldType.CHARACTER)
+                        .withDescription("Account code")
+                        .withMaxLength(256)
+                        .withRequired(true),
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())
+                        .withFieldType(FieldType.DOMAIN)
+                        .withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_GAAP.getName())
+                        .withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_GAAP.getVersion())
+                        .withDescription("Category of this account")
+                        .withMaxLength(256)
+                        .withRequired(true),
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())
+                        .withFieldType(FieldType.DOMAIN)
+                        .withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_GAAP.getName())
+                        .withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_GAAP.getVersion())
+                        .withDescription("Sub-category of this account")
+                        .withMaxLength(256)
+                        .withRequired(true),
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountName.name())
+                        .withFieldType(FieldType.CHARACTER)
+                        .withDescription("Account name for displaying alongside the account code in different financial reports")
+                        .withMaxLength(256)
+                        .withRequired(true),
+                new DocumentField()
+                        .withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())
+                        .withFieldType(FieldType.CHARACTER)
+                        .withDescription("Account description")
+                        .withMaxLength(1024)
+                        .withRequired(false)
+        );
+
+        docTemplate.setFields(fields);
+        addInputsChartOfAccounts(docTemplate);        
+
+        //Opening Balance
         docTemplate = new DocumentTemplate();
         docTemplate.setName("Opening Balance");
         docTemplate.setGroup("Accounting");

@@ -42,7 +42,7 @@ this.table = new Tabulator('#table', {
     persistenceID:"doc_error_messages_persistence",				
 	columns:[ //Define Table Columns
 		{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId"},
-		{title: /*[[#{tax.year}]] */ "Tax yer", field:"templateName"},
+		{title: /*[[#{tax.period}]] */ "Tax year", field:"templateName"},
 		{title: /*[[#{doc.timestamp}]] */ "Transmission time", field:"timestamp", formatter: dateFormatter},
 		{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename"},				
 		{title: /*[[#{doc.error.message}]]*/ "Error message", field:"errorMessage"},								
