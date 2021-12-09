@@ -145,6 +145,8 @@ public class FileUploadedConsumerService {
 					doc.getTemplateVersion());
 			if (template == null || !template.isPresent()) {
 				doc = setSituation(doc, DocumentSituation.INVALID);
+				validations.addLogError("{doc.error.template.not.found}");
+				saveValidationMessages(validationContext);
 				throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version "
 						+ doc.getTemplateVersion() + " wasn't found in database.");
 			}
@@ -165,6 +167,8 @@ public class FileUploadedConsumerService {
 			DocumentInput docInputExpected;
 			if (possibleInputs == null || possibleInputs.isEmpty()) {
 				doc = setSituation(doc, DocumentSituation.INVALID);
+				validations.addLogError("{doc.error.template.not.found}");
+				saveValidationMessages(validationContext);
 				throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version "
 						+ doc.getTemplateVersion() + " was not configured with proper input format!");
 			} else if (possibleInputs.size() == 1) {
@@ -175,6 +179,8 @@ public class FileUploadedConsumerService {
 				docInputExpected = chooseFileInput(filePath, doc.getFilename(), possibleInputs);
 				if (docInputExpected == null) {
 					doc = setSituation(doc, DocumentSituation.INVALID);
+					validations.addLogError("{doc.error.file.format.not.found}");
+					saveValidationMessages(validationContext);
 					throw new UnknownFileFormatException(
 							"The file did not match any of the expected file formats for template "
 									+ doc.getTemplateName() + " and version " + doc.getTemplateVersion());
@@ -185,6 +191,8 @@ public class FileUploadedConsumerService {
 			DocumentFormat format = docInputExpected.getFormat();
 			if (format == null) {
 				doc = setSituation(doc, DocumentSituation.INVALID);
+				validations.addLogError("{doc.error.template.not.found}");
+				saveValidationMessages(validationContext);
 				throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version "
 						+ doc.getTemplateVersion() + " was not configured with proper input format!");
 			}
@@ -208,6 +216,8 @@ public class FileUploadedConsumerService {
 				
 				if ( iterator == null ) {
 					setSituation(doc, DocumentSituation.INVALID);
+					validations.addLogError("{doc.error.no.records.found}");
+					saveValidationMessages(validationContext);
 					log.log(Level.SEVERE, "Impossible to read fields in file " + documentId);
 					throw new ValidationException(
 							"An error ocurred while attempting to read data in file " + doc.getFilename() + ".");
@@ -225,11 +235,23 @@ public class FileUploadedConsumerService {
 					added++;
 
 				} // LOOP over each parsed record
+				
+				if ( added == 0 ) { //Records not found
+					setSituation(doc, DocumentSituation.INVALID);
+					validations.addLogError("{doc.error.no.records.found}");
+					saveValidationMessages(validationContext);
+					log.log(Level.SEVERE, "No records found on file " + documentId);
+					throw new ValidationException(
+							"No records found on file file " + doc.getFilename() + ".");					
+				}					
+				
 				log.log(Level.INFO, added + " records added to validator from " + doc.getFilename());
 
 			} catch (Exception e) {
 				setSituation(doc, DocumentSituation.INVALID);
-				log.log(Level.SEVERE, "Exception while parsing record for file " + documentId, e);
+				validations.addLogError("{doc.error.parse}");
+				saveValidationMessages(validationContext);
+				log.log(Level.SEVERE, "Exception while parsing record for file " + documentId, e);				
 				throw new ValidationException(
 						"An error ocurred while attempting to read data in file " + doc.getFilename() + ".", e);
 			} finally {
@@ -237,7 +259,7 @@ public class FileUploadedConsumerService {
 				if (iterator != null)
 					iterator.close();
 
-				parser.close();
+				parser.close();			
 			}
 
 			// Fetch information from file name according to the configuration
@@ -368,7 +390,7 @@ public class FileUploadedConsumerService {
 				.withTimestamp(doc.getTimestamp())
 				.withTaxPeriodNumber(doc.getTaxPeriodNumber());
 
-		alerts.parallelStream().forEach(alert -> {
+		alerts.stream().forEach(alert -> {
 			DocumentValidationErrorMessage newMessage = message.clone();
 			newMessage.setErrorMessage(alert);
 			documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);

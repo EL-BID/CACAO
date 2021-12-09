@@ -171,8 +171,7 @@ public class CSVParser implements FileParser {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 		}	
 		
-	}
-	
+	}	
 	
 	@Override
 	public DataIterator iterator() {

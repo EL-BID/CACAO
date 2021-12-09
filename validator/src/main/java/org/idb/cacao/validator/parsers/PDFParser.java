@@ -44,7 +44,9 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDXFAResource;
+import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.validator.utils.XMLUtils;
 import org.w3c.dom.Document;
@@ -68,6 +70,11 @@ public class PDFParser implements FileParser {
 	private DocumentInput documentInputSpec;
 
 	private Map<String, List<Object>> allFieldsValues;
+	
+	/**
+	 * Field positions relative to column positions
+	 */
+	private Map<String,String> fieldComlunKeys;	
 
 	/*
 	 * (non-Javadoc)
@@ -129,11 +136,35 @@ public class PDFParser implements FileParser {
 			
 			try (FileInputStream stream = new FileInputStream(path.toFile())) {
 				try (PDDocument document = PDDocument.load(stream);) {
-					processForms(document, /*includeAllNamedObject*/true);
+					processForms(document, /*includeAllNamedObject*/false);
 				} catch (Exception e) {
 					log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 				}
 			}
+			
+			fieldComlunKeys = new LinkedHashMap<>();
+			
+			//Check all field mappings and set it's corresponding column
+			for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
+				
+				String fieldName = fieldMapping.getFieldName();
+				if ( fieldName != null && !fieldName.isEmpty() ) {							
+					Object key = ValidationContext.matchExpression(allFieldsValues.entrySet(), Map.Entry::getKey, fieldName).map(Map.Entry::getKey).orElse(null);
+					if ( key != null ) {
+						fieldComlunKeys.put(fieldMapping.getFieldName(), key.toString());
+					}
+					else {
+						String expression = fieldMapping.getColumnNameExpression();
+						if ( expression != null && !expression.isEmpty() ) {							
+							key = ValidationContext.matchExpression(allFieldsValues.entrySet(), Map.Entry::getKey, expression).map(Map.Entry::getKey).orElse(null);
+							if ( key != null )
+								fieldComlunKeys.put(fieldMapping.getFieldName(), key.toString());
+						}		
+					}
+				} 
+				
+			}			
+			
 		}
 		catch (IOException e) {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
@@ -196,19 +227,33 @@ public class PDFParser implements FileParser {
 		
 		Map<String, Object> record = new LinkedHashMap<>();
 		
-		for ( Map.Entry<String,List<Object>> entry : allFieldsValues.entrySet() ) {
+		for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 			
-			String fieldName = entry.getKey();
-			List<Object> fieldValues = entry.getValue(); 
+			String key =  fieldComlunKeys.getOrDefault(fieldMapping.getFieldName(), null);
+			String fieldName = fieldMapping.getFieldName();
 			
-			if ( index < (fieldValues.size() -1) ) {
-				record.put(fieldName, fieldValues.get(index));	
-			}
-			else if ( index > 0 && fieldValues.size() == 1 ) {
-				record.put(fieldName, fieldValues.get(0));
+			if ( key == null ) {
+				record.put(fieldName, null);
 			}
 			else {
-				record.put(fieldName, null);	
+				List<Object> fieldValues = allFieldsValues.get(key); 
+				
+				if ( fieldValues == null || fieldValues.isEmpty() ) {
+					record.put(fieldName, null);	
+				}
+				else {
+				
+					if ( index <= (fieldValues.size() -1) ) {
+						record.put(fieldName, fieldValues.get(index));	
+					}
+					else if ( index > 0 && fieldValues.size() == 1 ) {
+						record.put(fieldName, fieldValues.get(0));
+					}
+					else {
+						record.put(fieldName, null);	
+					}
+					
+				}
 			}
 			
 		}
@@ -279,7 +324,7 @@ public class PDFParser implements FileParser {
 		NodeList children = node.getChildNodes();
 		if (children!=null && children.getLength()>0) {
 			for (int i=0; i<children.getLength(); i++) {
-				Node child = children.item(i);
+				Node child = children.item(i);				
 				if ("field".equalsIgnoreCase(child.getNodeName())) {
 					List<Node> button = XMLUtils.locateNodesRecursive(child, null, "button");
 					if (button!=null && !button.isEmpty())
@@ -350,11 +395,30 @@ public class PDFParser implements FileParser {
 											}
 											continue;		
 										}
+										else {											
+											Node decimal_value = XMLUtils.locateNode(node_value, null, "decimal");
+											if (decimal_value!=null) {
+												String content = decimal_value.getTextContent();
+												if (content!=null)
+													content = content.trim();
+												if (content.length()>0) {
+													Number valor;		
+													if (content.contains(",") && !content.contains("."))
+														valor = ParserUtils.parseDecimalWithComma(content);
+													else
+														valor = Double.valueOf(content);
+													fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(valor);
+												}
+												else if (includeAllNamedObject) {
+													fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
+												}
+												continue;
+											}
 										
-										// Ignore other field types
-										
-										else if (includeAllNamedObject) {
-											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);
+											// Ignore other field types
+											else if (includeAllNamedObject) {
+												fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);
+											}											
 										}
 									}
 								}
@@ -362,11 +426,11 @@ public class PDFParser implements FileParser {
 						}
 						catch (Throwable ex) {
 							// Algum erro de conversão...
-							fieldValues.compute(name, null);
+							fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);
 						}
 					}
 					else if (includeAllNamedObject) {
-						fieldValues.compute(name, null);												
+						fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);												
 					}
 				}
 				else {

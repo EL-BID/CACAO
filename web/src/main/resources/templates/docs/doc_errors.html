@@ -27,28 +27,53 @@
 	</div>
  
 <script th:nonce="${cspNonce}" th:inline="javascript">
-dateFormatter = function(cell, formatterParams, onRendered) {
-	var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
-	if(newDate.isValid) {
-		return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
+	dateFormatter = function(cell, formatterParams, onRendered) {
+		var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
+		if(newDate.isValid) {
+			return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
+		}
+		return cell.getValue()
 	}
-	return cell.getValue()
-}
 
-this.table = new Tabulator('#table', {
-	index: "id",
-	layout:"fitDataFill",		
-	persistentLayout:true,
-    persistenceID:"doc_error_messages_persistence",				
-	columns:[ //Define Table Columns
-		{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId"},
-		{title: /*[[#{tax.period}]] */ "Tax year", field:"templateName"},
-		{title: /*[[#{doc.timestamp}]] */ "Transmission time", field:"timestamp", formatter: dateFormatter},
-		{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename"},				
-		{title: /*[[#{doc.error.message}]]*/ "Error message", field:"errorMessage"},								
-	],
-	data: /*[[${errors}]]*/ null;
-})
+	let documentId = /*[[${documentId}]]*/ null;
+	
+	let table = new Tabulator('#table', {
+		index: "id",
+		layout:"fitDataFill",		
+	    pagination: true,
+		paginationMode: "remote", //enable remote pagination
+		paginationSize: 5,		    
+		ajaxURL: /*[[@{/api/doc/errors}]]*/ "/api/doc/errors", //set url for ajax request
+		ajaxURLGenerator: function(url, config, params ){
+			console.log(config)
+			console.log(params)
+			p = new URLSearchParams()
+			p.set('page', params.page)
+			p.set('size', params.size)
+			p.set('filter', JSON.stringify(params.filter))
+			if(params.sort.length>0) {
+				p.set('sortby', params.sort[0].field)
+				p.set('sortorder', params.sort[0].dir)
+			}				
+			p.set('documentId', documentId)
+			console.log(url + '?' + p.toString())
+			return url + '?' + p.toString()
+		},
+		ajaxContentType: "json",			
+		filterMode:"remote",
+		sortMode: "remote",
+		headerFilterLiveFilterDelay:700,			
+		persistentLayout:true,
+	    persistenceID:"doc_error_messages_persistence",				
+		columns:[ //Define Table Columns
+			{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
+			{title: /*[[#{tax.period}]] */ "Tax Period", field:"templateName", headerFilter:this.headerFilter},
+			{title: /*[[#{doc.timestamp}]] */ "Transmission Time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
+			{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
+			{title: /*[[#{doc.error.message}]]*/ "Error Message", field:"errorMessage", headerFilter:this.headerFilter},								
+		]
+	})
+		
 </script>
 </body>
 </html>

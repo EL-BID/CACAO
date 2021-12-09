@@ -110,7 +110,7 @@ public class Validations {
 	 * 
 	 * @param message	A message to be logged
 	 */
-	private synchronized void addLogError(String message) {
+	public synchronized void addLogError(String message) {
 		validationContext.addAlert(message);
 		log.log(Level.WARNING, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
 				message);
