@@ -1,0 +1,184 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::style}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<style>
+.result .content .title {
+  display: inline;
+  padding-right: 10px;
+  font-weight: 700;
+}
+.ui.search>.results .result .description.description {
+  display: inline;
+  color: rgba(0,0,0,.8);
+}
+.ui.search>.results.results  {
+  width: 32em;
+}
+.ui.search>.results .result.result {
+  padding: .25em 0.8em;
+}
+.ui.search .prompt.label {
+  border-radius: inherit;
+  padding-top: calc(.5833em - 1px);
+  padding-bottom: calc(.5833em - 1px);
+  padding-right: calc(.833em - 1px);
+  font-size: .85714286rem;
+  margin-top: 1em;
+}
+
+.ui.selection.dropdown .menu>.item.item {
+    white-space: nowrap;
+    min-height: 1rem;
+    padding: 0.35em 0.8em !important;
+}
+</style>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="people arrows icon"></i>
+			<div class="content" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</div>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+            <form action="#" name="form" id="form" class="ui form" th:object="${interpersonal}" method="post">
+              <div class="ui field" id="search1">
+                <label th:text="#{interpersonal.person1}">Referring person</label>
+                <div class="ui search selection dropdown" id="select1">
+                    <input id="taxpayer1" type="hidden" name="personId1">
+                    <div class="default text" th:text="#{select}">Select</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                </div>
+              </div>
+              <div class="ui field" id="search2">
+                <label th:text="#{interpersonal.person2}">Referred person</label>
+                <div class="ui search selection dropdown" id="select2">
+                    <input id="taxpayer2" type="hidden" name="personId2">
+                    <div class="default text" th:text="#{select}">Select</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                </div>
+              </div>
+              
+             <div class="field">
+                <label th:text="#{interpersonal.relationship.type}">Relationship Type</label>
+                <select th:field="*{relationshipType}" class="ui fluid dropdown">
+                    <option value="" th:text="#{select}"></option>
+                    <option th:each="i : ${T(org.idb.cacao.web.entities.RelationshipType).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+                </select>
+             </div>
+             
+            <div class="row">
+              <input type="submit" class="ui blue button"  th:value="#{save}" value="Save"> 
+              <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
+            </div>             
+            </form>
+		    </div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+
+<script th:nonce="${cspNonce}" th:inline="javascript">
+$('#select1').dropdown({
+     apiSettings: {
+        url: '/api/taxpayers/autocomplete?term={query}',
+        method: 'GET',
+        //dataType: 'text',
+        cache: false,
+        onResponse: function(result) {
+             results = []
+             $.each(result.results, function(index, item) {
+                 results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+             })
+             result.results = results
+             return result
+        },
+     },
+     onChange: function(value) {
+        
+    },
+    action: 'activate',
+    clearable: true
+})
+
+$('#select2').dropdown({
+     apiSettings: {
+        url: '/api/taxpayers/autocomplete?term={query}',
+        method: 'GET',
+        //dataType: 'text',
+        cache: false,
+        onResponse: function(result) {
+             results = []
+             $.each(result.results, function(index, item) {
+                 results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+             })
+             result.results = results
+             return result
+        },
+     },
+     onChange: function(value) {
+        
+    },
+    action: 'activate',
+    clearable: true
+})
+
+
+let cancel = function() {
+    window.location.replace([[@{/interpersonals}]])
+}
+
+let processForm = function(event, fields) {
+    event.preventDefault()
+    console.log(fields)
+    $.ajax({
+        url: [[@{/api/interpersonal}]],
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify(fields),
+        cache: false,    
+        success: function(result) {
+            $('#modal_successful').modal('show')
+            setTimeout(function(){
+                window.location = [[@{/interpersonals}]]
+            }, 2000);
+        },
+        error: function(e) {
+            var msg = e.responseText.replace(/\n/g, "<br />");
+            $('#modal_failed').find('.description').html(msg)
+            $('#modal_failed').modal('show')
+            console.log("ERROR : "+msg);
+        }
+    })
+};      
+
+$('#form').form({
+  inline : true,
+  on     : "submit",
+  fields : {
+    personId1: ['empty'],
+    personId2: ['empty', 'different[personId1]'],
+    relationshipType: ['empty']
+  },
+  prompt: {
+    empty : [[#{error.field.empty('{name}')}]],
+    number: [[#{error.field.number('{name}')}]],
+    minLength: [[#{error.field.minLength('{name}','{ruleValue}')}]],
+    maxLength: [[#{error.field.maxLength('{name}','{ruleValue}')}]],
+    different: [[#{error.field.different('{name}','{ruleValue}')}]],
+  },
+  onSuccess: (processForm)
+})
+</script>
+</body>
+</html>

@@ -51,6 +51,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -96,6 +97,7 @@ public class UserAPIController {
 	private Environment env;
 
 	@JsonView(Views.Public.class)
+	@Secured({"ROLE_USER_READ"})
 	@GetMapping(value="/users", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing users using pagination")
 	public PaginationData<User> getUsers(Model model, @RequestParam("page") Optional<Integer> page,
@@ -117,6 +119,7 @@ public class UserAPIController {
 	/**
 	 * Method used for returning names of users that match a given term. Useful for 'auto complete' fields
 	 */
+	@Secured({"ROLE_USER_READ"})
 	@GetMapping("/user/names")
 	@ApiOperation(value="Method used for returning names of users that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> getUserNames(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
@@ -138,8 +141,8 @@ public class UserAPIController {
 		return ResponseEntity.ok().body(names);
 	}
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
-    @PostMapping(value="/user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@Secured({"ROLE_USER_WRITE"})
+	@PostMapping(value="/user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new user",response=User.class)
     public ResponseEntity<Object> addUser(@Valid @RequestBody User user, BindingResult result) {
         if (result.hasErrors()) {
@@ -181,7 +184,7 @@ public class UserAPIController {
         return ResponseEntity.ok().body(user);
     }
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
+	@Secured({"ROLE_USER_WRITE"})
     @PutMapping(value="/user/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing user",response=User.class)
     public ResponseEntity<Object> updateUser(@PathVariable("id") String id, @Valid @RequestBody User user, BindingResult result) {
@@ -228,8 +231,8 @@ public class UserAPIController {
         return ResponseEntity.ok().body(user);
     }
     
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
-    @DeleteMapping(value="/user/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	@Secured({"ROLE_USER_WRITE"})
+	@DeleteMapping(value="/user/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing user",response=User.class)
     public ResponseEntity<Object> deleteUser(@PathVariable("id") String id) {
         User user = userRepository.findById(id).orElse(null);

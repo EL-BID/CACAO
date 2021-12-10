@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -130,7 +131,7 @@ public class DomainTableAPIController {
 
 	}
 	
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @DeleteMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing domain table",response=DomainTable.class)
     public ResponseEntity<Object> deleteUser(@PathVariable("id") String id) {
@@ -146,7 +147,8 @@ public class DomainTableAPIController {
         return ResponseEntity.ok().body(table);
     }
 
-    @PutMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
+	@PutMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing domain table",response=DomainTable.class)
     public ResponseEntity<Object> updateDomainTable(@PathVariable("id") String id, @Valid @RequestBody DomainTable table, BindingResult result) {
         if (result.hasErrors()) {
@@ -163,6 +165,7 @@ public class DomainTableAPIController {
         return ResponseEntity.ok().body(table);
     }
     
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @PostMapping(value="/domaintable", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Adds a new domain table",response=DomainTable.class)
     public ResponseEntity<Object> addDomainTable(@Valid @RequestBody DomainTable table, BindingResult result) {

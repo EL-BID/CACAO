@@ -23,18 +23,22 @@ import java.util.List;
 
 /**
  * Data Transfer Object for the result of a search on for use with 
- * Fomantic UI dropdown
+ * Fomantic UI
  * @author Luis Kauer
  *
  */
-public class DropdownSearchResult {
+public class SearchResult<T> {
 	
 	/**
 	 * The search was successfull
 	 */
 	private boolean success=true;
 	
-	private List<ResultItem> results;
+	private List<T> results;
+	
+	public SearchResult(List<T> results) {
+		this.results = results;
+	}
 	
 	public boolean isSuccess() {
 		return success;
@@ -44,75 +48,11 @@ public class DropdownSearchResult {
 		this.success = success;
 	}
 
-	public List<ResultItem> getResults() {
+	public List<T> getResults() {
 		return results;
 	}
 
-	public void setResults(List<ResultItem> results) {
+	public void setResults(List<T> results) {
 		this.results = results;
-	}
-
-	/**
-	 * Holds the each result item
-	 */
-	public static class ResultItem {
-		
-		/**
-		 * Html or text displayed in dropdown
-		 */
-		private String name;
-		
-		/**
-		 * Selected value
-		 */
-		private String value;
-		
-		/**
-		 * Text displayed after selection
-		 */
-		private String text;
-		
-		/**
-		 * Details displayed to the right of the text
-		 */
-		private String description;
-		
-		public ResultItem(String name, String value, String description) {
-			this.name = name;
-			this.value = value;
-			this.description = description;
-		}
-		
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		public String getValue() {
-			return value;
-		}
-
-		public void setValue(String value) {
-			this.value = value;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public void setText(String text) {
-			this.text = text;
-		}
-
-		public String getDescription() {
-			return description;
-		}
-
-		public void setDescription(String description) {
-			this.description = description;
-		}
 	}
 }

@@ -23,6 +23,7 @@ import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,7 +38,9 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.Views;
 import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.dto.NameId;
 import org.idb.cacao.web.controllers.dto.PaginationData;
+import org.idb.cacao.web.controllers.dto.SearchResult;
 import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
@@ -50,6 +53,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -93,6 +97,7 @@ public class TaxPayerAPIController {
 	@Autowired
 	private Environment env;
 
+	@Secured({"ROLE_TAXPAYER_READ"})
 	@JsonView(Views.Authority.class)
 	@GetMapping(value="/taxpayers", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing taxpayers using pagination")
@@ -120,6 +125,28 @@ public class TaxPayerAPIController {
 	/**
 	 * Method used for returning names of users that match a given term. Useful for 'auto complete' fields
 	 */
+	@Secured({"ROLE_TAXPAYER_READ"})
+	@GetMapping("/taxpayers/autocomplete")
+	@ApiOperation(value="Method used for returning taxpayer id that match a given term with their names. Useful for 'auto complete' fields")
+	public SearchResult<NameId> autocompleteTaxpayer(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
+		List<NameId> result;
+		try {
+			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, "taxPayerId", term.orElse(""), 10)
+			    .stream()
+			    .map(t -> new NameId(t.get("name").toString(), t.get("taxPayerId").toString()))
+			    .collect(Collectors.toList());
+			return new SearchResult<NameId>(result);
+		} catch (IOException ex) {
+			log.log(Level.SEVERE,"Search taxpayer failed", ex);
+		}
+		return null;
+	}
+
+	
+	/**
+	 * Method used for returning names of users that match a given term. Useful for 'auto complete' fields
+	 */
+	@Secured({"ROLE_TAXPAYER_READ"})
 	@GetMapping("/taxpayer/names")
 	@ApiOperation(value="Method used for returning names of taxpayers that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> getTaxpayerNames(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
@@ -141,7 +168,7 @@ public class TaxPayerAPIController {
 		return ResponseEntity.ok().body(names);
 	}
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
+	@Secured({"ROLE_TAXPAYER_WRITE"})
     @PostMapping(value="/taxpayer", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new taxpayer",response=Taxpayer.class)
     public ResponseEntity<Object> addTaxpayer(@Valid @RequestBody Taxpayer taxpayer, BindingResult result) {
@@ -161,8 +188,8 @@ public class TaxPayerAPIController {
         return ResponseEntity.ok().body(taxpayer);
     }
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
-    @PutMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@Secured({"ROLE_TAXPAYER_WRITE"})
+	@PutMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing taxpayer",response=Taxpayer.class)
     public ResponseEntity<Object> updateTaxpayer(@PathVariable("id") String id, @Valid @RequestBody Taxpayer taxpayer, BindingResult result) {
         if (result.hasErrors()) {
@@ -179,8 +206,8 @@ public class TaxPayerAPIController {
         return ResponseEntity.ok().body(taxpayer);
     }
     
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT"})
-    @DeleteMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	@Secured({"ROLE_TAXPAYER_WRITE"})
+	@DeleteMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing taxpayer",response=Taxpayer.class)
     public ResponseEntity<Object> deleteTaxpayer(@PathVariable("id") String id) {
     	Taxpayer taxpayer = taxpayerRepository.findById(id).orElse(null);

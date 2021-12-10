@@ -15,16 +15,15 @@
 			<i class="user icon"></i>
 			<div class="content" th:text="#{user.update.title}">Update User</div>
 		</h2>
-		<div class="ui center aligned container">
+		<div class="ui container">
 			<div class="ui orange segment">
-                <form class="ui form" action="#" name="form" id="form" th:action="@{/api/user}" th:object="${user}" method="post" @submit.prevent="processForm">
-                    <input type="hidden" th:field="*{id}">
+                <form class="ui form" action="#" name="form" id="form" th:action="@{/api/user}" th:object="${user}" method="post">
                     <div class="fields">
-                      <div class="six wide field">
+                      <div class="eight wide field">
                         <label th:text="#{user.name}" style="margin-bottom: 0px; text-transform: uppercase;">User Name</label> 
                         <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}">
                       </div>
-                      <div class="ten wide field">
+                      <div class="eight wide field">
                         <label th:text="#{user.login}" style="margin-bottom: 0px; text-transform: uppercase;">Login</label> 
                         <input type="text" th:field="*{login}" th:value="*{login}" class="form-control" id="login" placeholder="Login" th:placeholder="#{user.login}">
                       </div>
@@ -45,23 +44,29 @@
                          </div>
                       </div>     
                     </th:block>
-                    <div class="field">
+                    <div class="fields">
+                      <div class="eight wide field">
                         <label th:text="#{user.profile}" style="margin-bottom: 0px; text-transform: uppercase;">Profile</label>
                         <select th:field="*{profile}" class="ui fluid dropdown local" id="selectProfile">
-                        <option value="" th:text="#{select}">Select</option>
-                        <option
-                          th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"
-                          th:value="${i.name()}" th:text="#{${i}}"></option>
-                      </select>  
+                          <option value="" th:text="#{select}">Select</option>
+                          <option
+                            th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"
+                            th:value="${i.name()}" th:text="#{${i}}"></option>
+                        </select>  
+                      </div>
+                      <div class="eight wide field" id="showTaxpayer" th:style="${user.profile.name().equals('DECLARANT') ? 'display:block' : 'display: none'}">
+                        <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
+                        <input type="text" th:field="*{taxpayerId}" class="form-control" id="taxpayerId" placeholder="Taxpayer ID" th:placeholder="#{taxpayer.id}">
+                      </div>
                     </div>
-					<div class="row">
-						<div class="ui segment">
-							<input type="submit" class="ui blue button" th:value="#{save}" value="Update User">
-							<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel" @click.prevent="cancel">
-						</div>
-					</div>
-				</form>
-			</div>
+                    <div class="row">
+                        <div class="ui segment">
+                            <input type="submit" class="ui blue submit button" th:value="#{user.add.title}" value="Add User">
+                            <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
+                        </div>
+                    </div>
+                </form>
+ 			</div>
 		</div>
 		</div>
 	</div>
@@ -70,6 +75,11 @@
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 $('#cancel').click( () => window.location.replace( [[@{/users}]] ))
+$('#selectProfile').dropdown({
+    onChange: function(value, text) {
+        $('#showTaxpayer').toggle(value=='DECLARANT')
+    }
+})
 
 let processForm = function(event, fields) {
   event.preventDefault()

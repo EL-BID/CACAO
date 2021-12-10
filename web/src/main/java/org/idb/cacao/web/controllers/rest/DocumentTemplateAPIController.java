@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
@@ -81,7 +82,7 @@ public class DocumentTemplateAPIController {
 		return ResponseEntity.ok(match.get());
 	}
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PostMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new document template",response=DocumentTemplate.class)
     public ResponseEntity<Object> addTemplate(@Valid @RequestBody DocumentTemplate template, BindingResult result) {
@@ -110,7 +111,7 @@ public class DocumentTemplateAPIController {
         return ResponseEntity.ok().body(template);
     }
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PutMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing document template", response=DocumentTemplate.class)
     public ResponseEntity<Object> updateTemplate(@PathVariable("id") String id, @Valid @RequestBody DocumentTemplate template, BindingResult result) {
@@ -132,7 +133,7 @@ public class DocumentTemplateAPIController {
         return ResponseEntity.ok().body(template);
     }
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PostMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Creates a new document input", response=DocumentTemplate.class)
     public ResponseEntity<Object> addDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
@@ -156,7 +157,7 @@ public class DocumentTemplateAPIController {
     }
 
     
-    //	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PutMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing document template", response=DocumentTemplate.class)
     public ResponseEntity<Object> editDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
@@ -197,7 +198,7 @@ public class DocumentTemplateAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
 
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON2(filter);
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<DocumentTemplate> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("name"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);

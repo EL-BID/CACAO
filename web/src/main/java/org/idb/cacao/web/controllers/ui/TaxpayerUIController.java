@@ -71,19 +71,19 @@ public class TaxpayerUIController {
 	@Autowired
 	private TaxpayerRepository taxPayerRepository;
 	
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAXPAYER_READ"})
 	@GetMapping("/taxpayers")
 	public String getTaxpayers(Model model) {
 		return "taxpayers/taxpayers";
 	}
 
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAXPAYER_WRITE"})
 	@GetMapping("/taxpayers/add")
     public String showAddTaxpayer(Taxpayer taxpayer, Model model) {
 		return "taxpayers/add-taxpayer";
 	}
 
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAXPAYER_WRITE"})
     @GetMapping("/taxpayers/{id}/edit")
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
 		Taxpayer taxpayer = taxPayerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid taxpayer Id:" + id));
@@ -91,7 +91,7 @@ public class TaxpayerUIController {
         return "taxpayers/update-taxpayer";
     }
 
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAXPAYER_READ"})
 	@GetMapping("/taxpayers/{id}")
     public String showTaxpayerDetails(@PathVariable("id") String id, Model model) {
 		Taxpayer taxpayer = taxPayerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid taxpayer Id:" + id));

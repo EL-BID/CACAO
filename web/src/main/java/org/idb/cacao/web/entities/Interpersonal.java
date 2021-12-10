@@ -34,11 +34,14 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.idb.cacao.api.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
+
+import com.fasterxml.jackson.annotation.JsonView;
 
 /**
  * Interpersonal relationships
@@ -55,7 +58,8 @@ public class Interpersonal implements Serializable, Cloneable {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
-	@Id   
+	@Id
+	@JsonView(Views.Authority.class)
 	private String id;
 
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
@@ -73,10 +77,12 @@ public class Interpersonal implements Serializable, Cloneable {
 	@NotBlank
 	@NotNull
 	@NotEmpty
-	@Size(min=9, max=9)
+	@Size(min=6, max=20)
+	@JsonView(Views.Authority.class)
 	private String personId1;
 	
 	@Field(type=Boolean)
+	@JsonView(Views.Authority.class)
 	private boolean removed;
 	
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
@@ -86,7 +92,8 @@ public class Interpersonal implements Serializable, Cloneable {
 	@NotBlank
 	@NotNull
 	@NotEmpty
-	@Size(min=9, max=9)
+	@Size(min=6, max=20)
+	@JsonView(Views.Authority.class)
 	private String personId2;
 
 	/**
@@ -95,6 +102,7 @@ public class Interpersonal implements Serializable, Cloneable {
 	@Field(type=Text)
 	@Enumerated(EnumType.STRING)
 	@NotNull
+	@JsonView(Views.Authority.class)
 	private RelationshipType relationshipType;
 
 	/**

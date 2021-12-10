@@ -30,6 +30,7 @@ import org.idb.cacao.web.errors.MissingParameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,18 +54,21 @@ public class DocumentStoreUIController {
 	@Autowired
 	private MessageSource messageSource;
 
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping("/docs")
 	public String getDocs(Model model) {
 		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
 		return "docs/docs_main";
 	}
 
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping("/docs_search")
 	public String searchDocs(Model model) {
 		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
 		return "docs/docs_search";
 	}
 
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping("/doc/situations/{documentId}")
     public String getDocSituations(@PathVariable("documentId") String documentId, Model model) {
 		
@@ -77,6 +81,7 @@ public class DocumentStoreUIController {
         return "docs/doc_situations";
     }
 
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping("/doc/errors/{documentId}")
 	public String getDocErrors(@PathVariable("documentId") String documentId, Model model) {
 
@@ -91,6 +96,7 @@ public class DocumentStoreUIController {
 		return "docs/doc_errors";
 	}
 	
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping("/doc/download/{documentId}")
     public void downloadDocument(HttpServletResponse response, @PathVariable("documentId") String documentId) {
 		

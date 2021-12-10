@@ -357,16 +357,15 @@ public class UserService {
 	@Transactional(readOnly=true)
 	public Set<String> getFilteredTaxpayersForUserAsManager(Authentication auth) {
     	Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
-    	boolean is_sysadmin_or_master = roles.stream().anyMatch(a->UserProfile.SYSADMIN.getRole().equalsIgnoreCase(a.getAuthority()))
-    			|| roles.stream().anyMatch(a->UserProfile.MASTER.getRole().equalsIgnoreCase(a.getAuthority()));
+    	boolean readAll = roles.stream().anyMatch(a-> a.getAuthority().equals("TAX_DECLARATION_READ_ALL"));
     	final Set<String> filter_taxpayers_ids;
-    	if (!is_sysadmin_or_master) {
+    	if (!readAll) {
         	User user = getUser(auth);
         	if (user==null)
         		return Collections.emptySet();
     		String user_taxpayer_id = userRepository.findById(user.getId()).map(User::getTaxpayerId).orElse(null);
     		if (user_taxpayer_id==null || user_taxpayer_id.trim().length()==0)
-    			throw new MissingParameter(messages.getMessage("taxpayer_id", null, LocaleContextHolder.getLocale()));
+    			throw new MissingParameter(messages.getMessage("user.missing.taxpayerid", null, LocaleContextHolder.getLocale()));
     		filter_taxpayers_ids = getTaxpayersForTaxManager(user);
     	}
     	else {

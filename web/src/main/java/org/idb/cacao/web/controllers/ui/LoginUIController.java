@@ -153,6 +153,11 @@ public class LoginUIController {
 			menu.add(new MenuItem(messages.getMessage("taxpayers.title", null, LocaleContextHolder.getLocale()),
 					"/taxpayers", "address book outline"));
 		}
+
+		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {
+			menu.add(new MenuItem(messages.getMessage("interpersonals.title", null, LocaleContextHolder.getLocale()),
+					"/interpersonals", "people arrows"));
+		}
 		
 		if (hasPrivilege(roles, SystemPrivilege.TAX_TEMPLATE_WRITE)) {
 			menu.add(new MenuItem(messages.getMessage("templates", null, LocaleContextHolder.getLocale()),

@@ -21,6 +21,8 @@ package org.idb.cacao.web.controllers.rest;
 
 import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
+import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -30,17 +32,24 @@ import java.util.logging.Logger;
 
 import javax.validation.Valid;
 
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.Views;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.GenericCounts;
+import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.InterpersonalRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
+import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -49,13 +58,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.annotation.JsonView;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -84,7 +98,38 @@ public class InterpersonalAPIController {
 	@Autowired
 	private InterpersonalRepository interpersonalRepository;
 	
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Autowired
+	private RestHighLevelClient elasticsearchClient;
+	
+	@Autowired
+	private Environment env;
+	
+	@Secured({"ROLE_INTERPERSONAL_READ_ALL"})
+	@JsonView(Views.Authority.class)
+	@GetMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Method used for listing interpersonal relationships using pagination")
+	public PaginationData<Interpersonal> getTaxpayers(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
+		int currentPage = page.orElse(1);
+		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
+		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
+		Page<Interpersonal> interpersonals;
+		if (filters.isPresent() && !filters.get().isEmpty()) {
+			try {
+				interpersonals = SearchUtils.doSearch(filters.get().wiredTo(messageSource), Interpersonal.class, elasticsearchClient, 
+						page, size, Optional.of("personId1"), Optional.of(SortOrder.ASC));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			interpersonals = searchPage(() -> interpersonalRepository
+					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("personId1").ascending())));
+		}
+		PaginationData<Interpersonal> result = new PaginationData<>(interpersonals.getTotalPages(), interpersonals.getContent());
+		return result;
+	}
+	
+	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonal", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new interpersonal relationship configuration",response=Interpersonal.class)
     public ResponseEntity<Object> addInterpersonal(@Valid @RequestBody Interpersonal interpersonal, BindingResult result) {
@@ -125,7 +170,7 @@ public class InterpersonalAPIController {
         return ResponseEntity.ok().body(interpersonal);
     }
 
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add multiple interpersonal relationship configurations",response=GenericCounts.class)
     public ResponseEntity<Object> addInterpersonals(@Valid @RequestBody Interpersonal[] interpersonal_relationships, BindingResult result) {
@@ -212,7 +257,7 @@ public class InterpersonalAPIController {
         return new GenericCounts().withCreated(count_created.longValue()).withUpdated(count_updated.longValue()).withErrors(count_errors.longValue());
 	}
 
-	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @DeleteMapping(value="/interpersonal/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing interpersonal relationship configuration (actually it will only disable this configuration)",response=Interpersonal.class)
     public ResponseEntity<Object> deleteInterpersonal(@PathVariable("id") String id) {

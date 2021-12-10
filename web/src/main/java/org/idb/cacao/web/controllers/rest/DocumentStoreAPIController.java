@@ -80,7 +80,6 @@ import org.idb.cacao.web.controllers.services.FileUploadedProducer;
 import org.idb.cacao.web.controllers.services.MessagesService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
-import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -104,7 +103,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -122,6 +120,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 
@@ -201,6 +200,7 @@ public class DocumentStoreAPIController {
 	/**
 	 * Endpoint for uploading a document to be parsed
 	 */
+	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@PostMapping(value = "/doc", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading a document to be parsed")
 	public ResponseEntity<Map<String, String>> handleFileUpload(@RequestParam("fileinput") MultipartFile fileinput,
@@ -302,6 +302,7 @@ public class DocumentStoreAPIController {
 	/**
 	 * Endpoint for uploading many documents to be parsed in one ZIP file
 	 */
+	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@PostMapping(value = "/docs_zip", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading many documents to be parsed in one ZIP file")
 	public ResponseEntity<Map<String, String>> handleFileUploadZIP(@RequestParam("filezip") MultipartFile filezip,
@@ -371,6 +372,7 @@ public class DocumentStoreAPIController {
 	/**
 	 * Endpoint for uploading many separate document to be parsed
 	 */
+	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@PostMapping(value = "/docs", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading many separate document to be parsed")
 	public ResponseEntity<Map<String, String>> handleFilesUpload(@RequestParam("files") MultipartFile[] files,
@@ -477,6 +479,9 @@ public class DocumentStoreAPIController {
 			if (auth != null) {
 				regUpload.setUser(String.valueOf(auth.getName()));
 			}
+			if (user != null) {
+				regUpload.setTaxPayerId(user.getTaxpayerId());
+			}
 			DocumentUploaded savedInfo = documentsUploadedRepository.saveWithTimestamp(regUpload);
 
 			DocumentSituationHistory situationHistory = new DocumentSituationHistory();
@@ -532,6 +537,7 @@ public class DocumentStoreAPIController {
 	/**
 	 * Downloads original file given the id stored in ElasticSearch
 	 */
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping(value = "/doc_contents/{id}/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	@ApiOperation("Downloads original file given the id stored in ElasticSearch")
 	public FileSystemResource getFile(@PathVariable("id") String id, HttpServletResponse response) throws Exception {
@@ -545,15 +551,10 @@ public class DocumentStoreAPIController {
 			throw new DocumentNotFoundException();
 		}
 
-		// Check permission
 
-		Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
-		boolean isSysadminOrOfficer = roles.stream()
-				.anyMatch(a -> UserProfile.SYSADMIN.getRole().equalsIgnoreCase(a.getAuthority())
-						|| UserProfile.MASTER.getRole().equalsIgnoreCase(a.getAuthority())
-						|| UserProfile.SUPPORT.getRole().equalsIgnoreCase(a.getAuthority())
-						|| UserProfile.AUTHORITY.getRole().equalsIgnoreCase(a.getAuthority()));
-		if (!isSysadminOrOfficer && refDoc.get().getUser() != null) {
+		boolean readAll = canReadAll(auth);
+		
+		if (!readAll && refDoc.get().getUser() != null) {
 			if (!refDoc.get().getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
 					&& !userService.isUserAuthorizedForSubject(user, refDoc.get().getTaxPayerId()))
 				throw new InsufficientPrivilege();
@@ -597,11 +598,20 @@ public class DocumentStoreAPIController {
 	}
 
 	/**
+	 * Check if user can access any uploaded document 
+	 */
+	private boolean canReadAll(Authentication auth) {
+		return auth.getAuthorities().stream().anyMatch( 
+				r -> { return r.getAuthority().equals("ROLE_TAX_DECLARATION_READ_ALL");});
+	}
+	
+	/**
 	 * Search documents upload with pagination and filters
 	 * 
 	 * @return
 	 */
 	@JsonView(Views.Declarant.class)
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping(value = "/docs_search", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Method used for listing documents uploaded using pagination")
 	public PaginationData<DocumentUploaded> getDocsWithPagination(Model model,
@@ -615,31 +625,29 @@ public class DocumentStoreAPIController {
 		if (user == null)
 			throw new UserNotFoundException();
 
-		// Only SYSADMIN users may see every documents. Other users are restricted to
-		// their relationships
+		boolean readAll = canReadAll(auth);
+		
 		final Set<String> filterTaxpayersIds;
-		try {
+		if (!readAll) {
+			// Only SYSADMIN users may see every documents. Other users are restricted to
+			// their relationships
 			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
-		} catch (MissingParameter missing) {
-			/*
-			 * model.addAttribute("message",messageSource.getMessage(
-			 * "user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
-			 * model.addAttribute("docs", Page.empty());
-			 * model.addAttribute("filter_options", new AdvancedSearch());
-			 * model.addAttribute("applied_filters", Optional.empty());
-			 */
-			return null;
+			
+			if ( filterTaxpayersIds == null || filterTaxpayersIds.isEmpty()) {
+				return new PaginationData<DocumentUploaded>(1, Collections.emptyList());
+			}
+		}
+		else {
+			filterTaxpayersIds = null;
 		}
 
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON2(filter);
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<DocumentUploaded> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
 		Optional<SortOrder> direction = Optional
 				.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
-			if (filterTaxpayersIds != null && filterTaxpayersIds.isEmpty())
-				docs = Page.empty();
-			else if (filterTaxpayersIds == null)
+			if (readAll)
 				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentUploaded.class,
 						elasticsearchClient, page, size, sortField, direction);
 			else
@@ -661,7 +669,7 @@ public class DocumentStoreAPIController {
 	 * to: Date/time for last upload<BR>
 	 * days: Number of past days (overrides 'from' and 'to' parameters)
 	 */
-	@Secured({ "ROLE_SYSADMIN", "ROLE_SUPPORT" })
+	@Secured({ "ROLE_TAX_DECLARATION_READ_ALL" })
 	@GetMapping(value = "/docs_uploads", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return document uploads records via API", response = DocumentUploaded[].class)
 	public ResponseEntity<Object> getDocsUploads(
@@ -723,7 +731,7 @@ public class DocumentStoreAPIController {
 	 * to: Date/time for last day/time of document receipt<BR>
 	 * days: Number of past days (overrides 'from' and 'to' parameters)
 	 */
-	@Secured({ "ROLE_SYSADMIN", "ROLE_SUPPORT" })
+	@Secured({ "ROLE_TAX_DECLARATION_READ_ALL" })
 	@GetMapping(value = "/docs/{templateName}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return documents (their parsed contents) via API for a given template. The template may be identified by the internal numerical ID, "
 			+ "or by its name (in this case, replace all spaces and symbols with underlines).")
@@ -818,6 +826,7 @@ public class DocumentStoreAPIController {
 	}
 
 	@JsonView(Views.Declarant.class)
+	@Secured({ "ROLE_TAX_DECLARATION_READ" })
 	@GetMapping(value = "/doc/situations", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return situation history via API for a given document. The document may be identified by the internal numerical ID.")
 	public ResponseEntity<Object> getDocSituations(@RequestParam("documentId") String documentId) {
@@ -834,45 +843,45 @@ public class DocumentStoreAPIController {
 		if (user == null)
 			throw new UserNotFoundException();
 
-		// Only SYSADMIN users may see every documents. Other users are restricted to
-		// their relationships
-		final Set<String> filterTaxpayersIds;
-		try {
-			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
-		} catch (MissingParameter missing) {
-			/*
-			 * model.addAttribute("message",messageSource.getMessage(
-			 * "user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
-			 * model.addAttribute("docs", Page.empty());
-			 * model.addAttribute("filter_options", new AdvancedSearch());
-			 * model.addAttribute("applied_filters", Optional.empty());
-			 */
-			return null;
+		DocumentUploaded refDoc = documentsUploadedRepository.findById(documentId).orElse(null);
+		if (refDoc==null) {
+			throw new DocumentNotFoundException();
 		}
 
-		Optional<AdvancedSearch> filters = Optional.of(
-				new AdvancedSearch().withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)));
+		boolean readAll = canReadAll(auth);
+		
+		if (!readAll) {
+			if (refDoc.getUser() != null && (!refDoc.getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
+					&& !userService.isUserAuthorizedForSubject(user, refDoc.getTaxPayerId())))
+				throw new InsufficientPrivilege();
+			
+			// Only SYSADMIN users may see every documents. Other users are restricted to
+			// their relationships
+			final Set<String> filterTaxpayersIds;
+			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			
+			if ( filterTaxpayersIds != null ) {
+				
+				if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(refDoc.getTaxPayerId())) {
+					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+							messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
+				}			
+			}
+		}
+
+		AdvancedSearch filters = new AdvancedSearch().withFilter(new AdvancedSearch.QueryFilterTerm("documentId", documentId));
 		Optional<String> sortField = Optional.of("changedTime");
 		Optional<SortOrder> direction = Optional.of(SortOrder.DESC);
 
 		Page<DocumentSituationHistory> situations;
 
 		try {
-
-			if (filterTaxpayersIds != null && filterTaxpayersIds.isEmpty())
-				situations = Page.empty();
-			else if (filterTaxpayersIds == null)
-				situations = SearchUtils.doSearch(filters.get(), DocumentSituationHistory.class, elasticsearchClient,
-						Optional.empty()/* page */, Optional.empty()/* size */, sortField, direction);
-			else
-				situations = SearchUtils
-						.doSearch(
-								filters.orElse(new AdvancedSearch()).clone()
-										.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword",
-												filterTaxpayersIds)),
-								DocumentSituationHistory.class, elasticsearchClient,
-								Optional.empty()/* page */, Optional.empty()/* size */, sortField,
-								direction);
+			situations = SearchUtils
+				.doSearch(
+					filters,
+					DocumentSituationHistory.class, elasticsearchClient,
+					Optional.empty()/* page */, Optional.empty()/* size */, sortField,
+					direction);
 
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
@@ -884,6 +893,7 @@ public class DocumentStoreAPIController {
 	}
 
 	@JsonView(Views.Declarant.class)
+	@Secured({ "ROLE_TAX_DECLARATION_READ" })
 	@GetMapping(value = "/doc/errors", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return validation error messages via API for a given document. The document may be identified by the internal numerical ID.")
 	public PaginationData<DocumentValidationErrorMessage> getDocErrorMessages(
@@ -891,7 +901,6 @@ public class DocumentStoreAPIController {
 			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter,
 			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
 
-		// Parse the 'templateName' informed at request path
 		if (documentId == null || documentId.trim().length() == 0) {
 			throw new MissingParameter("documentId");
 		}
@@ -903,23 +912,33 @@ public class DocumentStoreAPIController {
 		if (user == null)
 			throw new UserNotFoundException();
 
-		// Only SYSADMIN users may see every documents. Other users are restricted to
-		// their relationships
-		final Set<String> filterTaxpayersIds;
-		try {
-			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
-		} catch (MissingParameter missing) {
-			/*
-			 * model.addAttribute("message",messageSource.getMessage(
-			 * "user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
-			 * model.addAttribute("docs", Page.empty());
-			 * model.addAttribute("filter_options", new AdvancedSearch());
-			 * model.addAttribute("applied_filters", Optional.empty());
-			 */
-			return null;
+		DocumentUploaded refDoc = documentsUploadedRepository.findById(documentId).orElse(null);
+		if (refDoc==null) {
+			throw new DocumentNotFoundException();
 		}
 
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON2(filter);
+		boolean readAll = canReadAll(auth);
+		
+		if (!readAll) {
+			if (refDoc.getUser() != null && (!refDoc.getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
+					&& !userService.isUserAuthorizedForSubject(user, refDoc.getTaxPayerId())))
+				throw new InsufficientPrivilege();
+			
+			// Only SYSADMIN users may see every documents. Other users are restricted to
+			// their relationships
+			final Set<String> filterTaxpayersIds;
+			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			
+			if ( filterTaxpayersIds != null ) {
+				
+				if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(refDoc.getTaxPayerId())) {
+					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+							messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
+				}			
+			}
+		}
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
 		Optional<SortOrder> direction = Optional
 				.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
@@ -927,23 +946,12 @@ public class DocumentStoreAPIController {
 		Page<DocumentValidationErrorMessage> messages;
 
 		try {
-
-			if (filterTaxpayersIds != null && filterTaxpayersIds.isEmpty())
-				messages = Page.empty();
-			else if (filterTaxpayersIds == null)
-				messages = SearchUtils.doSearch(
-						filters.orElse(new AdvancedSearch()).clone()
-								.withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)),
-						DocumentValidationErrorMessage.class, elasticsearchClient, page, size, sortField, direction);
-			else
-				messages = SearchUtils
-						.doSearch(
-								filters.orElse(new AdvancedSearch()).clone()
-										.withFilter(new AdvancedSearch.QueryFilterList("taxPayerId.keyword",
-												filterTaxpayersIds))
-										.withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)),
-								DocumentValidationErrorMessage.class, elasticsearchClient, page, size, sortField,
-								direction);
+			messages = SearchUtils
+				.doSearch(
+					filters.orElse(new AdvancedSearch()).clone()
+						.withFilter(new AdvancedSearch.QueryFilterTerm("documentId", documentId)),
+					DocumentValidationErrorMessage.class, elasticsearchClient, page, size, sortField,
+					direction);
 
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
@@ -958,6 +966,7 @@ public class DocumentStoreAPIController {
 
 	}
 
+	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping(value = "/doc/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	@ApiOperation(value = "Return the document. The document may be identified by the internal numerical ID.")
 	public ResponseEntity<Resource> downloadDocument(@RequestParam("documentId") String documentId) {
@@ -974,38 +983,30 @@ public class DocumentStoreAPIController {
 		if (user == null)
 			throw new UserNotFoundException();
 
-		// Only SYSADMIN users may see every documents. Other users are restricted to
-		// their relationships
-		final Set<String> filterTaxpayersIds;
-		try {
-			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
-		} catch (MissingParameter missing) {
-			/*
-			 * model.addAttribute("message",messageSource.getMessage(
-			 * "user_missing_taxpayerid", null, LocaleContextHolder.getLocale()));
-			 * model.addAttribute("docs", Page.empty());
-			 * model.addAttribute("filter_options", new AdvancedSearch());
-			 * model.addAttribute("applied_filters", Optional.empty());
-			 */
-			return null;
+		DocumentUploaded doc = documentsUploadedRepository.findById(documentId).orElse(null);
+		if (doc==null) {
+			throw new DocumentNotFoundException();
 		}
 
-		DocumentUploaded doc = documentsUploadedRepository.findById(documentId).orElseGet(null);
+		boolean readAll = canReadAll(auth);
 		
-		if (doc == null) {
-			log.log(Level.SEVERE, "Null document for document id " + documentId);
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-					messageSource.getMessage("doc.not.found", null, LocaleContextHolder.getLocale()));
-		}
-		
-		//If user is not authorized to get documents from this taxpayer, returr error
-		if ( filterTaxpayersIds != null ) {
-		
-			if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(doc.getTaxPayerId())) {
-				throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-						messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
-			}			
+		if (!readAll) {
+			if (doc.getUser() != null && (!doc.getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
+					&& !userService.isUserAuthorizedForSubject(user, doc.getTaxPayerId())))
+				throw new InsufficientPrivilege();
+			
+			// Only SYSADMIN users may see every documents. Other users are restricted to
+			// their relationships
+			final Set<String> filterTaxpayersIds;
+			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			
+			if ( filterTaxpayersIds != null ) {
 				
+				if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(doc.getTaxPayerId())) {
+					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+							messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
+				}			
+			}
 		}
 
 		try {

@@ -65,7 +65,7 @@ public class UserUIController {
 		return "users/users";
 	}
 
-	//@Secured({ "ROLE_USER_WRITE" })
+	@Secured({ "ROLE_USER_WRITE" })
 	@GetMapping("/users/add")
 	public String showAddUser(User user, Model model) {
 		ConfigEMail config_email = configEmailService.getActiveConfig();

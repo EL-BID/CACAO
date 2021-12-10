@@ -28,6 +28,7 @@ import org.idb.cacao.web.repositories.DomainTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -59,6 +60,7 @@ public class DomainTableUIController {
 		return "domain/domain-tables";
 	}
 
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
 	@GetMapping("/adddomaintable")
 	public String showAddDomainTable(DomainTable table, Model model) {
 		model.addAttribute("table", new DomainTable());
@@ -69,6 +71,7 @@ public class DomainTableUIController {
 		return "domain/add-domain-tables";
 	}
 
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
 	@GetMapping("/domaintables/{id}/edit")
 	public String showUpdateForm(@PathVariable("id") String id, Model model) {
 		DomainTable table = domainTableRepository.findById(id)

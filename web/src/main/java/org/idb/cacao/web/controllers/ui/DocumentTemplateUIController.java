@@ -23,7 +23,6 @@ package org.idb.cacao.web.controllers.ui;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -42,11 +41,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
@@ -57,7 +56,6 @@ public class DocumentTemplateUIController {
 	@Autowired
 	private MessageSource messages;
 	
-	//@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
 	@GetMapping("/templates")
 	public String getTemplates(Model model) {
 		try {
@@ -71,7 +69,7 @@ public class DocumentTemplateUIController {
         return "templates/list_templates";
 	}
 
-//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
 	@GetMapping("/templates/add")
     public String showAddTemplate(Model model) {
 		model.addAttribute("archetypes", 
@@ -99,7 +97,7 @@ public class DocumentTemplateUIController {
         return "templates/show_template";
     }
 	
-	//	@Secured({"ROLE_SYSADMIN","ROLE_SUPPORT","ROLE_MASTER","ROLE_AUTHORITY"})
+    @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/edit")
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
@@ -109,6 +107,7 @@ public class DocumentTemplateUIController {
         return "templates/edit_template";
     }
 
+    @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/input/{format}")
     public String showEditDocumentInput(@PathVariable("id") String id, @PathVariable("format") String format, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
@@ -122,6 +121,7 @@ public class DocumentTemplateUIController {
         return "templates/edit_doc_input";
     }
 
+    @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/addinput")
     public String showAddDocumentInput(@PathVariable("id") String id, @RequestParam("format") String format, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
@@ -141,7 +141,7 @@ public class DocumentTemplateUIController {
         return "templates/edit_doc_input";
     }
 
-    
+    @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping(value="/templates/new")
     public String showEditForm(Model model, @RequestParam("type") Optional<String> type_param, @RequestParam("id") Optional<String> id_param) {
     	String type=type_param.orElse("empty");

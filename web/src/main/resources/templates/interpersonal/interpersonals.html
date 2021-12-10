@@ -1,0 +1,280 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::.style}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="style" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+<style class="style">
+.ui.selection.dropdown .menu>.item.item {
+    white-space: nowrap;
+    min-height: 1rem;
+    padding: 0.35em 0.8em !important;
+}
+</style>	
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="people arrows icon"></i>
+			<div class="content" th:text="#{interpersonals.title}">Interpersonal Relationships</div>
+		</h2>
+    		<div id="table" class="ui orange table"></div>
+		<div class="ui column right floated">
+			<div class="ui right floated primary labeled icon">
+				<button class="ui primary button" id="add_interpersonal" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</button>
+			</div>
+		</div>
+        <div class="ui orange segment" id="view_form" style="display:none">
+          <div class="ui orange inverted segment">
+            <h3 class="ui header">
+              <div class="content" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</div>
+            </h3>
+          </div>
+          <form action="#" name="form" id="form" class="ui form" method="post">
+              <div class="ui field" id="search1">
+                <label th:text="#{interpersonal.person1}">Referring person</label>
+                <div class="ui search selection dropdown" id="select1">
+                    <input id="taxpayer1" type="hidden" name="personId1">
+                    <div class="default text" th:text="#{select}">Select</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                </div>
+              </div>
+              <div class="ui field" id="search2">
+                <label th:text="#{interpersonal.person2}">Referred person</label>
+                <div class="ui search selection dropdown" id="select2">
+                    <input id="taxpayer2" type="hidden" name="personId2">
+                    <div class="default text" th:text="#{select}">Select</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                </div>
+              </div>
+              
+             <div class="field">
+                <label th:text="#{interpersonal.relationship.type}">Relationship Type</label>
+                <select name="relationshipType" class="ui fluid dropdown">
+                    <option value="" th:text="#{select}"></option>
+                    <option th:each="i : ${T(org.idb.cacao.web.entities.RelationshipType).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+                </select>
+             </div>
+             
+            <div class="row">
+              <input type="submit" class="ui blue button"  th:value="#{save}" value="Save"> 
+              <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
+            </div>             
+          </form>
+        </div>
+	</div>
+ 
+<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
+   
+<script th:nonce="${cspNonce}" th:inline="javascript">
+$('#select1').dropdown({
+    apiSettings: {
+       url: '/api/taxpayers/autocomplete?term={query}',
+       method: 'GET',
+       //dataType: 'text',
+       cache: false,
+       onResponse: function(result) {
+            results = []
+            $.each(result.results, function(index, item) {
+                results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+            })
+            result.results = results
+            return result
+       },
+    },
+    onChange: function(value) {
+       
+   },
+   action: 'activate',
+   clearable: true
+})
+
+$('#select2').dropdown({
+    apiSettings: {
+       url: '/api/taxpayers/autocomplete?term={query}',
+       method: 'GET',
+       //dataType: 'text',
+       cache: false,
+       onResponse: function(result) {
+            results = []
+            $.each(result.results, function(index, item) {
+                results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+            })
+            result.results = results
+            return result
+       },
+    },
+    onChange: function(value) {
+       
+   },
+   action: 'activate',
+   clearable: true
+})
+
+$('#cancel').click(function(event) {
+   event.preventDefault()
+   $('#view_form').hide()
+   $('#add_interpersonal').show()
+})
+
+let processForm = function(event, fields) {
+   event.preventDefault()
+   console.log(fields)
+   $.ajax({
+       url: [[@{/api/interpersonal}]],
+       type: 'POST',
+       dataType: 'json',
+       contentType: 'application/json',
+       data: JSON.stringify(fields),
+       cache: false,    
+       success: function(result) {
+           $('#modal_successful').modal('show')
+           setTimeout(function(){
+               window.location = [[@{/interpersonals}]]
+           }, 2000);
+       },
+       error: function(e) {
+           var msg = e.responseText.replace(/\n/g, "<br />");
+           $('#modal_failed').find('.description').html(msg)
+           $('#modal_failed').modal('show')
+           console.log("ERROR : "+msg);
+       }
+   })
+};      
+
+$('#form').form({
+ inline : true,
+ on     : "submit",
+ fields : {
+   personId1: ['empty'],
+   personId2: ['empty', 'different[personId1]'],
+   relationshipType: ['empty']
+ },
+ prompt: {
+   empty : [[#{error.field.empty('{name}')}]],
+   number: [[#{error.field.number('{name}')}]],
+   minLength: [[#{error.field.minLength('{name}','{ruleValue}')}]],
+   maxLength: [[#{error.field.maxLength('{name}','{ruleValue}')}]],
+   different: [[#{error.field.different('{name}','{ruleValue}')}]],
+ },
+ onSuccess: (processForm)
+})
+
+$('#add_interpersonal').click(function(event) {
+	event.preventDefault()
+	$('#form').form('reset')
+	$('#view_form').show()
+	$('#add_interpersonal').hide()
+})
+
+let typeLookup = { 
+  [# th:each="i : ${types}"] 
+  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+  [/]
+}
+
+let sendDelete = function(id) {
+	$.ajax({
+	    url: [[@{/api/interpersonal/}]] + id,
+	    type: 'DELETE',
+	    dataType: 'json',
+	    contentType: 'application/json',
+	    cache: false,  
+	    success: onDeleteSuccess,
+	    error: onDeleteError
+	})
+}
+
+let onDeleteSuccess = function(result) {
+	$('#modal_successful').modal('show')
+	setTimeout(function(){
+		window.location.replace([[@{/interpersonals}]])
+	}, 2000);
+}
+		
+let onDeleteError = function(e) {
+	var msg = e.responseText.replace(/\n/g, "<br />");
+	$('#modal_failed').find('.description').html(msg)
+	$('#modal_failed').modal('show')
+	console.log("ERROR : "+ msg);
+}
+
+let deleteRow = function(e, cell) {
+    var dlg = $('#modal_confirm')
+	dlg.find('.description').html([[#{interpersonal.delete.confirm}]])
+	dlg.modal({
+	    closable:false,
+	    onApprove: function() { 
+		  sendDelete(cell.getRow().getIndex()) 
+	    }
+    })
+	dlg.modal('show');
+}
+
+let editIcon = function(cell, formatterParams) {
+	if(cell.getRow().getData().removed)
+		return ""
+	return "<i class='edit icon'></i>"
+}
+let trashIcon = function(cell, formatterParams) {
+    if(cell.getRow().getData().removed)
+       return ""
+	return "<i class='trash icon'></i>"
+}
+let table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitData", //fit columns to width of table (optional)
+    pagination: true,
+	paginationMode: "remote", //enable remote pagination
+		ajaxURL: /*[[@{/api/interpersonals}]]*/ "/api/interpersonals", //set url for ajax request
+	paginationSize: 5,
+	ajaxContentType: "json",
+	paginationSizeSelector:[10, 25, 50],
+	locale:'xx',
+	langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
+	columns:[ //Define Table Columns
+		{title: /*[[#{interpersonal.person1}}*/ "Referring Person", field:"personId1"},
+		{title: /*[[#{interpersonal.person2}}*/ "Referred Person", field:"personId2" },
+		{title: /*[[#{interpersonal.relationship.type}}*/ "Relationship Type", field:"relationshipType",
+		   formatter:"lookup", formatterParams: typeLookup},
+		{title: /*[[#{interpersonal.removed}]]}*/ "Removed", field:"removed" },
+		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
+	]
+})
+table.on('rowClick', function(e, row) {
+    if( e.target.classList.contains('trash')) {
+        return
+    }
+    window.location.replace([[@{/interpersonals/}]] + row.getIndex());
+})
+</script>
+</body>
+</html>
+    

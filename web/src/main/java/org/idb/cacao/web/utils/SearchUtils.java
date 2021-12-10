@@ -106,7 +106,7 @@ public class SearchUtils {
 		}
 	}
 
-	public static Optional<AdvancedSearch> fromJSON2(Optional<String> as_json) {
+	public static Optional<AdvancedSearch> fromTabulatorJSON(Optional<String> as_json) {
 		if (as_json==null || !as_json.isPresent())
 			return Optional.empty();
 		ObjectMapper mapper = new ObjectMapper();
@@ -222,6 +222,40 @@ public class SearchUtils {
 		return new PageImpl<>(results, PageRequest.of(pageNumber-1, pageSize), totalCount);
 	}
 
+	/**
+	 * Performs advanced search at ElasticSearch filtering by searchText on a
+	 * specific field and returns the top entries
+	 * Returns a list of documents. Can be useful in autocomplete
+	 */
+	public static List<Map<String, Object>> doSearchTopWithFilter(
+			final RestHighLevelClient elasticsearchClient, 
+			final Class<?> entity,
+			final String searchField,
+			String searchText,
+			
+			int size) throws IOException {
+		Document doc = entity.getAnnotation(Document.class);
+		final String indexName = doc.indexName();
+		final SearchSourceBuilder builder = new SearchSourceBuilder().size(size);
+		if(searchText!=null && !searchText.isEmpty()) {
+			BoolQueryBuilder query = QueryBuilders.boolQuery();
+			query.should(new MatchQueryBuilder(searchField, searchText));
+			query.should(new MatchPhrasePrefixQueryBuilder(searchField, searchText));
+			builder.query(query);
+		}
+		SearchRequest searchRequest = new SearchRequest(indexName).source(builder);
+		final SearchResponse response = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		List<Map<String, Object>> result = Arrays.stream(response.getHits().getHits())
+		    .map(hit -> {
+		    	Map<String, Object> map = hit.getSourceAsMap();
+		    	map.put("id", hit.getId());
+		    	map.remove("_class");
+		    	return map;
+		    })
+		    .collect(Collectors.toList());
+        return result;
+	}
+	
 	/**
 	 * Performs advanced search at ElasticSearch filtering by searchText on a
 	 * specific field and returns the top distinct values from distinctField.
