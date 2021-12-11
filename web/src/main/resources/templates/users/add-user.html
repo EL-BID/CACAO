@@ -11,6 +11,13 @@
 		<br>
 	</div>
 	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <a class="section" th:text="#{users.title}" th:href="@{/users}">Users</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{user.new}">New User</div>
+        </div>
 		<h2 class="ui header">
 			<i class="user icon"></i>
 			<div class="content" th:text="#{user.new}">New User</div>
@@ -44,26 +51,27 @@
                          </div>
                       </div>     
 					</th:block>
-                    <div class="fields">
-                      <div class="eight wide field">
-                        <label th:text="#{user.profile}" style="margin-bottom: 0px; text-transform: uppercase;">Profile</label>
-                        <select th:field="*{profile}" class="ui fluid dropdown local" id="selectProfile">
-                          <option value="" th:text="#{select}">Select</option>
-                          <option
-                            th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"
-                            th:value="${i.name()}" th:text="#{${i}}"></option>
-                        </select>  
-                      </div>
-                      <div class="eight wide field" id="showTaxpayer" style="display: none;">
-                        <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
-                        <input type="text" th:field="*{taxpayerId}" class="form-control" id="taxpayerId" placeholder="Taxpayer ID" th:placeholder="#{taxpayer.id}">
+                    <div class="field">
+                      <label th:text="#{user.profile}" style="margin-bottom: 0px; text-transform: uppercase;">Profile</label>
+                      <select th:field="*{profile}" class="ui fluid dropdown local" id="selectProfile">
+                        <option value="" th:text="#{select}">Select</option>
+                        <option
+                          th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"
+                          th:value="${i.name()}" th:text="#{${i}}"></option>
+                      </select>  
+                    </div>
+                    <div class="field" id="showTaxpayer" style="display: none;">
+                      <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
+                      <div class="ui search selection dropdown" id="selectTaxpayer">
+                          <input type="hidden" th:field="*{taxpayerId}" id="taxpayerId">
+                          <div class="default text" th:text="#{search}">Search</div>
+                          <i class="dropdown icon"></i>
+                          <div class="menu"></div>
                       </div>
                     </div>
 					<div class="row">
-						<div class="ui segment">
-							<input type="submit" class="ui blue submit button" th:value="#{user.add.title}" value="Add User">
-							<input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
-						</div>
+						<input type="submit" class="ui blue submit button" th:value="#{user.add.title}" value="Add User">
+						<input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
 					</div>
 				</form>
 			</div>
@@ -81,6 +89,26 @@ $('#selectProfile').dropdown({
         $('#showTaxpayer').toggle(value=='DECLARANT')
     }
 })
+
+$('#selectTaxpayer').dropdown({
+    apiSettings: {
+       url: '/api/taxpayers/autocomplete?term={query}',
+       method: 'GET',
+       //dataType: 'text',
+       cache: false,
+       onResponse: function(result) {
+            results = []
+            $.each(result.results, function(index, item) {
+                results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+            })
+            result.results = results
+            return result
+       },
+    },
+   action: 'activate',
+   clearable: true
+})
+
 
 let processForm = function(event, fields) {
 	event.preventDefault()

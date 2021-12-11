@@ -15,12 +15,18 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{domain.tables.title}">Domain Tables</div>
+      </div>
+  
 		<h2 class="ui header">
 			<i class="table icon"></i>
 			<div class="content" th:text="#{domain.tables.title}">Domain Tables</div>
 		</h2>
 		<div id="table" class="ui orange table"></div>
-		<div class="ui column right floated">
+		<div class="ui column right floated" sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/adddomaintable}" class="ui blue button"><i class="plus icon"></i><span th:text="#{domain.table.new}">New Domain Table</span></a>
 			</div>
@@ -32,7 +38,7 @@
 <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
-
+[# sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')"]
 var editRow = function(e, cell) {
     window.location.replace([[@{/domaintables/}]] +  cell.getRow().getIndex()) + "/edit";
 }
@@ -74,6 +80,7 @@ var deleteRow = function(e, cell) {
 // Setup Tabulator
 var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
 var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+[/]
 this.table = new Tabulator('#table', {
     index: 'id',
     layout: "fitDataFill",
@@ -87,8 +94,10 @@ this.table = new Tabulator('#table', {
         {title: /*{{#domain.table.name}}*/ "Name", field:"name", responsive:0},
         {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left", responsive:1 },
         {title: /*{{#domain.table.group}}*/ "Group", field:"group", responsive:2},
+        [# sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')"]
         {formatter:editIcon, width:50, cellClick: editRow, headerSort:false, responsive:0},
         {formatter:trashIcon, width:50, cellClick: deleteRow, headerSort:false, responsive:0}
+        [/]
     ]
 })
 table.on('rowClick', function(e, row) {

@@ -19,9 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
+import java.util.Optional;
+
+import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.web.controllers.services.IConfigEMailService;
 import org.idb.cacao.web.entities.ConfigEMail;
 import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +48,8 @@ public class UserUIController {
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired TaxpayerRepository taxpayerRepository;
 
 	@Autowired
 	private IConfigEMailService configEmailService;
@@ -82,6 +88,13 @@ public class UserUIController {
 		User user = userRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
 		model.addAttribute("user", user);
+		if(user.getTaxpayerId()!=null) {
+			Optional<Taxpayer> name = taxpayerRepository.findByTaxPayerId(user.getTaxpayerId());
+			if (name.isPresent()) {
+				model.addAttribute("taxpayerName", name.get());
+			}
+		}
+		
 		return "users/update-user";
 	}
 

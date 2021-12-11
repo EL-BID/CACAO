@@ -15,12 +15,17 @@
 		<br>
 	</div>
 	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{users.title}">Users</div>
+        </div>
 		<h2 class="ui header">
 			<i class="users icon"></i>
 			<div class="content" th:text="#{users.title}">Users</div>
 		</h2>
     		<div id="table" class="ui orange table"></div>
-		<div class="ui column right floated">
+		<div class="ui column right floated" sec:authorize="hasRole('ROLE_USER_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/users/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
 			</div>
@@ -32,6 +37,7 @@
 <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
+[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
 let editRow = function(e, cell) {
   window.location.replace([[@{/users/}]] +  cell.getRow().getIndex() + "/edit");
 }
@@ -76,6 +82,14 @@ let deleteRow = function(e, cell) {
 
 let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
 let trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+[/]
+
+let profileLookup = {
+  [# th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"] 
+  [# th:text="${i.name()}"/]: [# th:text="#{${i}}"/], 
+  [/]
+}
+
 let table = new Tabulator('#table', {
 	index: 'id',
 	layout: "fitData", //fit columns to width of table (optional)
@@ -106,16 +120,19 @@ let table = new Tabulator('#table', {
 	columns:[ //Define Table Columns
 		{title: /*[[#{user.name}}*/ "Name", field:"name"},
 		{title: /*[[#{user.login}}*/ "Login", field:"login", hozAlign:"left" },
-		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", width: 150 },
+		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup },
+		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxpayerId"},
+		[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
 		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
+		[/]
 	]
 })
 table.on('rowClick', function(e, row) {
     if( e.target.classList.contains('edit') || e.target.classList.contains('trash')) {
         return
     }
-    window.location.replace([[@{/users/}]] + row.getIndex());
+    //window.location.replace([[@{/users/}]] + row.getIndex());
 })
 </script>
 </body>

@@ -14,6 +14,12 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{docs.history}">Doc Errors</div>
+      </div>
+  
 		<h2 class="ui header">
 			<i class="archive icon"></i>
 			<div class="content" th:text="#{docs.history}">All Uploads</div>

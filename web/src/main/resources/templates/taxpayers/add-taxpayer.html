@@ -11,6 +11,14 @@
 		<br>
 	</div>
 	<div class="ui container">
+       <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="#{taxpayers.title}" th:href="@{/taxpayers}">Taxpayers</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{taxpayer.new}">New Taxpayer</div>
+      </div>
+  
 		<h2 class="ui header">
 			<i class="address book outline icon"></i>
 			<div class="content" th:text="#{taxpayer.new}">New Taxpayer</div>

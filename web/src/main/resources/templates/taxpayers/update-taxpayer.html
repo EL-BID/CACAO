@@ -11,6 +11,15 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="#{taxpayers.title}" th:href="@{/taxpayers}">Taxpayers</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="${taxpayer.taxPayerId}" th:href="@{/taxpayers/{id}(id=${taxpayer.id})}"></a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{taxpayer.update.title}">Edit Taxpayer</div>
+      </div>
 		<h2 class="ui header">
 			<i class="address book outline icon"></i>
 			<div class="content" th:text="#{taxpayer.update.title}">Update Taxpayer</div>
@@ -21,7 +30,7 @@
                     <div class="fields">
                       <div class="six wide field">
                         <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
-                        <input type="text" th:field="*{taxPayerId}" class="form-control" id="taxPayerId" th:placeholder="#{taxpayer.id}">
+                        <input type="text" th:field="*{taxPayerId}" class="form-control" id="taxPayerId" th:placeholder="#{taxpayer.id}" readonly>
                       </div>
                       <div class="ten wide field">
                         <label th:text="#{user.name}" style="margin-bottom: 0px; text-transform: uppercase;">User Name</label> 

@@ -15,12 +15,18 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{taxpayers.title}">Taxpayers</div>
+      </div>
+  
 		<h2 class="ui header">
 			<i class="users icon"></i>
 			<div class="content" th:text="#{taxpayers.title}">Taxpayers</div>
 		</h2>
     		<div id="table" class="ui orange table"></div>
-		<div class="ui column right floated">
+		<div class="ui column right floated" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/taxpayers/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{taxpayer.new}">New Taxpayer</span></a>
 			</div>
@@ -32,6 +38,7 @@
 <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
+[# sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')"]
 let editRow = function(e, cell) {
   window.location.replace([[@{/taxpayers/}]] +  cell.getRow().getIndex() + "/edit");
 }
@@ -76,6 +83,7 @@ let deleteRow = function(e, cell) {
 
 let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
 let trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+[/]
 let table = new Tabulator('#table', {
 	index: 'id',
 	layout: "fitData", //fit columns to width of table (optional)
@@ -106,8 +114,10 @@ let table = new Tabulator('#table', {
 	columns:[ //Define Table Columns
 		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxPayerId"},
 		{title: /*[[#{taxpayer.name}}*/ "Name", field:"name" },
+		[# sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')"]
 		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
+		[/]
 	]
 })
 table.on('rowClick', function(e, row) {

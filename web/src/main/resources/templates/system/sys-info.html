@@ -12,6 +12,12 @@
 	</div>
 	<div class="ui container">
 		<div class="ui middle aligned center container">
+          <div class="ui breadcrumb">
+            <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+            <div class="divider"> / </div>
+            <div class="active section" th:text="#{sysinfo}">System Operations</div>
+          </div>
+    
 			<div th:if="${message!=null}" class="ui warning message" th:text="${message}">Warning</div>
 			<h2 class="ui header">
 				<i class="cogs icon"></i>

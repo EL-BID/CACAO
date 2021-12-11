@@ -21,17 +21,23 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{interpersonals.title}">Interpersonal Relationships</div>
+      </div>
+  
 		<h2 class="ui header">
 			<i class="people arrows icon"></i>
 			<div class="content" th:text="#{interpersonals.title}">Interpersonal Relationships</div>
 		</h2>
     		<div id="table" class="ui orange table"></div>
-		<div class="ui column right floated">
+		<div class="ui column right floated" sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<button class="ui primary button" id="add_interpersonal" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</button>
 			</div>
 		</div>
-        <div class="ui orange segment" id="view_form" style="display:none">
+        <div class="ui orange segment" id="view_form" style="display:none" sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')">
           <div class="ui orange inverted segment">
             <h3 class="ui header">
               <div class="content" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</div>
@@ -78,6 +84,7 @@
 <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
+[# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
 $('#select1').dropdown({
     apiSettings: {
        url: '/api/taxpayers/autocomplete?term={query}',
@@ -178,12 +185,6 @@ $('#add_interpersonal').click(function(event) {
 	$('#add_interpersonal').hide()
 })
 
-let typeLookup = { 
-  [# th:each="i : ${types}"] 
-  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
-  [/]
-}
-
 let sendDelete = function(id) {
 	$.ajax({
 	    url: [[@{/api/interpersonal/}]] + id,
@@ -232,6 +233,12 @@ let trashIcon = function(cell, formatterParams) {
        return ""
 	return "<i class='trash icon'></i>"
 }
+let typeLookup = { 
+  [# th:each="i : ${types}"] 
+  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+  [/]
+}
+[/]
 let table = new Tabulator('#table', {
 	index: 'id',
 	layout: "fitData", //fit columns to width of table (optional)
@@ -265,7 +272,9 @@ let table = new Tabulator('#table', {
 		{title: /*[[#{interpersonal.relationship.type}}*/ "Relationship Type", field:"relationshipType",
 		   formatter:"lookup", formatterParams: typeLookup},
 		{title: /*[[#{interpersonal.removed}]]}*/ "Removed", field:"removed" },
+		[# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
+		[/]
 	]
 })
 table.on('rowClick', function(e, row) {

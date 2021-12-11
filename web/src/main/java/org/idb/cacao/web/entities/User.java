@@ -153,6 +153,7 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@AFieldDescriptor(externalName = "user.kibana.space")
 	private String kibanaSpace;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Keyword)
 	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxpayerId;

@@ -14,9 +14,16 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="#{docs.history}" th:href="@{/docs_search}">All Uploads</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{doc.error.messages}">Doc Errors</div>
+      </div>
 		<h2 class="ui header">
 			<i class="archive icon"></i>
-			<div class="content" th:text="#{doc.error.messages}">All Uploads</div>
+			<div class="content" th:text="#{doc.error.messages}">Doc Errors</div>
 		</h2>
 		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">

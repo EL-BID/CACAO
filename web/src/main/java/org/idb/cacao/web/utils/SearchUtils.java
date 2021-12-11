@@ -230,7 +230,8 @@ public class SearchUtils {
 	public static List<Map<String, Object>> doSearchTopWithFilter(
 			final RestHighLevelClient elasticsearchClient, 
 			final Class<?> entity,
-			final String searchField,
+			final String searchField1,
+			final String searchField2,
 			String searchText,
 			
 			int size) throws IOException {
@@ -239,8 +240,12 @@ public class SearchUtils {
 		final SearchSourceBuilder builder = new SearchSourceBuilder().size(size);
 		if(searchText!=null && !searchText.isEmpty()) {
 			BoolQueryBuilder query = QueryBuilders.boolQuery();
-			query.should(new MatchQueryBuilder(searchField, searchText));
-			query.should(new MatchPhrasePrefixQueryBuilder(searchField, searchText));
+			query.should(new MatchQueryBuilder(searchField1, searchText));
+			query.should(new MatchPhrasePrefixQueryBuilder(searchField1, searchText));
+			if(searchField2!=null) {
+				query.should(new MatchQueryBuilder(searchField2, searchText));
+				query.should(new MatchPhrasePrefixQueryBuilder(searchField2, searchText));
+			}
 			builder.query(query);
 		}
 		SearchRequest searchRequest = new SearchRequest(indexName).source(builder);

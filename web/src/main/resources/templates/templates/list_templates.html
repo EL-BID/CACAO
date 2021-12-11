@@ -14,14 +14,17 @@
 		<br>
 	</div>
 	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{templates}">All Templates</div>
+        </div>
 		<h2 class="ui header">
 			<i class="file alternate outline icon"></i>
 			<div class="content" th:text="#{templates}">All Templates</div>
 		</h2>
-			<div id="app">
-				<div id="table" class="ui orange table"></div>
-			</div>
-		<div class="ui column right floated">
+		<div id="table" class="ui orange table"></div>
+		<div class="ui column right floated"  sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/templates/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{template.new}">New Template</span></a>
 			</div>
@@ -29,11 +32,13 @@
 	</div>
  
 <script th:nonce="${cspNonce}" th:inline="javascript">
+[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
 var editRow = function(e, cell) {
 	e.stopPropagation();
 	window.location.replace([[@{/templates/}]] +  cell.getRow().getIndex() + "/edit");
 }
 var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+[/]
 var tableData = /*[[${templates}]]*/ null;
 table = new Tabulator('#table', {
 	index: 'id',
@@ -47,7 +52,9 @@ table = new Tabulator('#table', {
 	//},			
 	//persistenceID:"docs_templates_persistence",	
 	columns:[ //Define Table Columns
+		[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
 		{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editRow, headerSort:false, width:45, responsive:0},
+		[/]
 		{title: /*[[#{template.name}]]*/ "Name", field:"name", responsive:0},
 		{title: /*[[#{template.group}]]*/ "Group", field:"group", responsive:3},
 		{title: /*[[#{template.version}]]*/ "Version", field:"version", responsive:1},

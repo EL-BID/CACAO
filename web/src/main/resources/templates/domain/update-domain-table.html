@@ -14,6 +14,16 @@
 		<br>
 	</div>
 	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="#{domain.tables.title}" th:href="@{/domaintables}">Domain Tables</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="${table.name}" th:href="@{/domaintables/{id}(id=${table.id})}"></a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="#{domain.table.update.title}">Update Domain Table</div>
+      </div>
+  
 		<h2 class="ui header">
 			<i class="table icon"></i>
 			<div class="content" th:text="#{domain.table.update.title}">Update Domain Table</div>

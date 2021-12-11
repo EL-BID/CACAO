@@ -127,11 +127,11 @@ public class TaxPayerAPIController {
 	 */
 	@Secured({"ROLE_TAXPAYER_READ"})
 	@GetMapping("/taxpayers/autocomplete")
-	@ApiOperation(value="Method used for returning taxpayer id that match a given term with their names. Useful for 'auto complete' fields")
+	@ApiOperation(value="Method used for returning taxpayer id and name that match a given term with their id or name. Useful for 'auto complete' fields")
 	public SearchResult<NameId> autocompleteTaxpayer(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<NameId> result;
 		try {
-			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, "taxPayerId", term.orElse(""), 10)
+			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, "taxPayerId", "name", term.orElse(""), 10)
 			    .stream()
 			    .map(t -> new NameId(t.get("name").toString(), t.get("taxPayerId").toString()))
 			    .collect(Collectors.toList());

@@ -54,7 +54,7 @@ public class DocumentStoreUIController {
 	@Autowired
 	private MessageSource messageSource;
 
-	@Secured({"ROLE_TAX_DECLARATION_READ"})
+	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@GetMapping("/docs")
 	public String getDocs(Model model) {
 		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
