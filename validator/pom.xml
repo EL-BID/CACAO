@@ -22,6 +22,25 @@
 	<dependencies>
 
 		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika</artifactId>
+			<version>2.1.0</version>
+			<type>pom</type>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>2.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers-standard-package</artifactId>
+			<version>2.1.0</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.idb.cacao.api</groupId>
 			<artifactId>CACAO_API</artifactId>
 			<version>${project.version}</version>
@@ -117,7 +136,7 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>			
+			</plugin>
 		</plugins>
 	</build>
 	<profiles>
