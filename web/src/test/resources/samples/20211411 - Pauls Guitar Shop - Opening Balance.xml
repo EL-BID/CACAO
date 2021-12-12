@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<OpeningBalance>
+  <TaxPayerId>123456</TaxPayerId>
+  <TaxYear>2021</TaxYear>
+  <Balance>
+    <AccountCode>1.1.1</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>1.2.1</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>1.3.1</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>2.1.1</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>2.3.2</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>3.5.2</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>4.1.1</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>4.1.2</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>5.1.2</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>5.1.3</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>5.1.4</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>5.2.1</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>5.2.2</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+  <Balance>
+    <AccountCode>6.1.2</AccountCode>
+    <InitialBalance>0.00 </InitialBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <InitialDate>1/1/21</InitialDate>
+  </Balance>
+</OpeningBalance>

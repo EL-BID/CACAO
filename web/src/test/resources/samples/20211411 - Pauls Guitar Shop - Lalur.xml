@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Lalur>
+  <TaxPayerId>123456</TaxPayerId>
+  <TaxYear>2021</TaxYear>
+  <Entry>
+    <AccountCode>3.2.1</AccountCode>
+    <FinalBalance>150.00 </FinalBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <Initial_Date>1/1/21</Initial_Date>
+    <Final_Date>12/31/21</Final_Date>
+  </Entry>
+  <Entry>
+    <AccountCode>3.2.2</AccountCode>
+    <FinalBalance>300.00 </FinalBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <Initial_Date>1/1/21</Initial_Date>
+    <Final_Date>12/31/21</Final_Date>
+  </Entry>
+  <Entry>
+    <AccountCode>3.2.3</AccountCode>
+    <FinalBalance>1,000.00 </FinalBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <Initial_Date>1/1/21</Initial_Date>
+    <Final_Date>12/31/21</Final_Date>
+  </Entry>
+  <Entry>
+    <AccountCode>3.5.1</AccountCode>
+    <FinalBalance>1,800.00 </FinalBalance>
+    <DebitCredit>Debit</DebitCredit>
+    <Initial_Date>1/1/21</Initial_Date>
+    <Final_Date>12/31/21</Final_Date>
+  </Entry>
+  <Entry>
+    <AccountCode>3.5.4</AccountCode>
+    <FinalBalance>380.00 </FinalBalance>
+    <DebitCredit>Credit</DebitCredit>
+    <Initial_Date>1/1/21</Initial_Date>
+    <Final_Date>12/31/21</Final_Date>
+  </Entry>
+</Lalur>
