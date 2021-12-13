@@ -116,17 +116,25 @@ let table = new Tabulator('#table', {
     ],
     data: fields
 })
-
+[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
 var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
 let editInput = function(e, cell) {
 	window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + cell.getRow().getData().format)
 }
 
+$('#newInput').dropdown({
+    onChange(value, text) {
+        window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+value)
+    }
+})
+[/]
 let table_inputs = new Tabulator('#table_inputs', {
     index: 'id',
     layout: "fitDataFill", //fit columns to width of table (optional)
     columns:[ //Define Table Columns
+    	[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
     	{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editInput, width:45, headerSort: false},
+    	[/]
         {title: /*[[#{doc.input.name}]]*/ "Name", field:"inputName", minWidth:200},
         {title: /*[[#{doc.input.format}]]*/ "Format", field:"format", minWidth:100}
     ],
@@ -139,11 +147,6 @@ let table_inputs = new Tabulator('#table_inputs', {
 //	window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + cell.getRow().getData().inputName)
 //})
 
-$('#newInput').dropdown({
-	onChange(value, text) {
-        window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+value)
-    }
-})
 
 $('#tab .item').tab()
 

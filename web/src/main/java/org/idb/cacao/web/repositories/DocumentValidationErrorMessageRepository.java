@@ -37,7 +37,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DocumentValidationErrorMessageRepository extends ElasticsearchRepository<DocumentValidationErrorMessage, String> {
 	
-	List<DocumentValidationErrorMessage> findByDocumentId(String documentId);
+	List<DocumentValidationErrorMessage> findByDocumentIdOrderByChangedTimeDesc(String documentId);
 	
 	default public <S extends DocumentValidationErrorMessage> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());

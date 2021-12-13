@@ -123,7 +123,7 @@ public class MessagesService {
 	 */
 	public List<DocumentValidationErrorMessage> findByDocumentId(String documentId) {
 		
-		List<DocumentValidationErrorMessage> messages = documentValidationErrorMessageRepository.findByDocumentId(documentId);
+		List<DocumentValidationErrorMessage> messages = documentValidationErrorMessageRepository.findByDocumentIdOrderByChangedTimeDesc(documentId);
 		
 		if ( messages == null )
 			return Collections.emptyList();

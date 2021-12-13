@@ -39,7 +39,7 @@ import org.springframework.stereotype.Repository;
 @Synchronizable(timestamp="changedTime",id="id")
 public interface DocumentSituationHistoryRepository extends ElasticsearchRepository<DocumentSituationHistory, String> {
 	
-	List<DocumentSituationHistory> findByDocumentId(String documentId);
+	List<DocumentSituationHistory> findByDocumentIdOrderByChangedTimeDesc(String documentId);
 	
 	default public <S extends DocumentSituationHistory> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());

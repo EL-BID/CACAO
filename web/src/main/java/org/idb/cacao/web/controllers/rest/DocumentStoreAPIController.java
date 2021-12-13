@@ -120,7 +120,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 
@@ -869,26 +868,14 @@ public class DocumentStoreAPIController {
 			}
 		}
 
-		AdvancedSearch filters = new AdvancedSearch().withFilter(new AdvancedSearch.QueryFilterTerm("documentId", documentId));
-		Optional<String> sortField = Optional.of("changedTime");
-		Optional<SortOrder> direction = Optional.of(SortOrder.DESC);
-
-		Page<DocumentSituationHistory> situations;
-
 		try {
-			situations = SearchUtils
-				.doSearch(
-					filters,
-					DocumentSituationHistory.class, elasticsearchClient,
-					Optional.empty()/* page */, Optional.empty()/* size */, sortField,
-					direction);
+			List<DocumentSituationHistory> situations = documentsSituationHistoryRepository.findByDocumentIdOrderByChangedTimeDesc(documentId);
+			return ResponseEntity.ok().body(situations);
 
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
-			situations = Page.empty();
+			return ResponseEntity.ok().body(Collections.emptyList());
 		}
-
-		return ResponseEntity.ok().body(situations.getContent());
 
 	}
 
@@ -949,7 +936,7 @@ public class DocumentStoreAPIController {
 			messages = SearchUtils
 				.doSearch(
 					filters.orElse(new AdvancedSearch()).clone()
-						.withFilter(new AdvancedSearch.QueryFilterTerm("documentId", documentId)),
+						.withFilter(new AdvancedSearch.QueryFilterList("documentId", documentId)),
 					DocumentValidationErrorMessage.class, elasticsearchClient, page, size, sortField,
 					direction);
 
