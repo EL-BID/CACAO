@@ -21,6 +21,7 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -28,15 +29,32 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.errors.InvalidFileException;
+import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.validator.fileformats.FileFormat;
+import org.idb.cacao.validator.fileformats.FileFormatFactory;
 import org.idb.cacao.validator.utils.JSONUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Implements {@link FileParser} interface to parse JSON files. <br>
+ * <br>
+ * 
+ * This parser take advantage of {@link CSVParser} by converting the json file into a csv file and using the csv parser.
+ *  
+ * @author Leon Silva
+ * 
+ * @since 15/11/2021
+ *
+ */
 public class JSONParser implements FileParser {
+
+	private static final Logger log = Logger.getLogger(CSVParser.class.getName());
 
 	private Path path;
 
@@ -45,6 +63,8 @@ public class JSONParser implements FileParser {
 	private Scanner scanner;
 	
 	private Iterator<Map<String, Object>> entries;
+
+	private CSVParser csvParser;
 
 	/*
 	 * (non-Javadoc)
@@ -80,6 +100,36 @@ public class JSONParser implements FileParser {
 	@Override
 	public void setDocumentInputSpec(DocumentInput inputSpec) {
 		this.documentInputSpec = inputSpec;
+	}
+
+
+	private String convertJsonToCsv(List<Map<String, Object>> records) {
+		String csvStr = "";
+		Iterator<Map<String, Object>> iterator = records.iterator();
+
+		String columns = null;
+
+		while(iterator.hasNext()) {
+			Map<String, Object> entry = iterator.next();
+
+			if (columns == null) {
+				columns = entry.keySet().toString();
+
+				if (columns != null) {
+					columns = columns.substring(1, columns.length() - 1);
+				}
+		
+				csvStr += columns + "\n";
+			}
+
+			String values = entry.values().toString();
+			values = values.substring(1, values.length() - 1);
+			csvStr += values + "\n";
+		}
+
+		System.out.print(csvStr);
+
+		return csvStr;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -125,6 +175,26 @@ public class JSONParser implements FileParser {
 			
 			List<Map<String, Object>> records = (List<Map<String, Object>>) result.get(mainKey);
 			entries = records.iterator();
+
+			String convertedCsv = this.convertJsonToCsv(records);
+
+			// [TODO] Adapt parsers to receive a string instead of file. For now, let's create a csv file and 
+			// pass to the csv parser
+			String jsonPath = this.getPath().toString();
+			Path csvPath = Path.of(jsonPath + ".csv");
+			
+			FileOutputStream outputStream = new FileOutputStream(csvPath.toFile());
+			outputStream.write(convertedCsv.getBytes("UTF-8"));
+
+			FileFormat fileFormat = FileFormatFactory.getFileFormat(DocumentFormat.CSV);
+			csvParser = (CSVParser) fileFormat.createFileParser();
+
+			// Initializes the CSVParser for processing
+			csvParser.setPath(csvPath);
+			csvParser.setDocumentInputSpec(this.getDocumentInputSpec());
+
+			// Let's start parsing the file contents
+			csvParser.start();
 			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -148,29 +218,8 @@ public class JSONParser implements FileParser {
 		if ( entries == null )
 			return null;
 
-
 		try {
-			
-			return new DataIterator() {
-				
-
-				@Override
-				public Map<String, Object> next() {
-					
-					return entries.next();
-				}
-
-				@Override
-				public boolean hasNext() {
-					return entries.hasNext();
-				}
-
-				@Override
-				public void close() {
-					scanner.close();
-				}
-			};
-
+			return csvParser.iterator();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
