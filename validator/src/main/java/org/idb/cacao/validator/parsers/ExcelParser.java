@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -135,7 +135,7 @@ public class ExcelParser implements FileParser {
 			if (workbook.getNumberOfSheets() < MINIMUM_NUMBER_OF_SHEETS)
 				workbook.createSheet("Sample");
 
-			Map<Integer, Sheet> sheetsByNumber = new LinkedHashMap<>();
+			Map<Integer, Sheet> sheetsByNumber = new HashMap<>();
 			Map<String, Sheet> sheetsByName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 			Map<Sheet, Integer> firstRowPerSheet = new IdentityHashMap<>();
 
@@ -285,7 +285,7 @@ public class ExcelParser implements FileParser {
 					
 					for (int r=0; r<MAXIMUM_NUMBER_OF_EMPTY_ROWS_TO_BREAK; r++) {
 					
-						toRet = new LinkedHashMap<>(); 
+						toRet = new HashMap<>(); 
 						
 						int count_fixed_fields = 0;
 						int count_variable_fields = 0;
@@ -330,7 +330,7 @@ public class ExcelParser implements FileParser {
 					
 					// If we got here, there is no data left
 					moved = true;
-					toRet = new LinkedHashMap<>();
+					toRet = new HashMap<>();
 
 				}
 

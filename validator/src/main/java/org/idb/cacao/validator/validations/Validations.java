@@ -19,7 +19,7 @@ import static org.idb.cacao.api.utils.ParserUtils.*;
 
 import java.time.OffsetDateTime;
 import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -445,7 +445,7 @@ public class Validations {
 			return;
 
 		// Keeps all needed domain tables in memory
-		Map<String, DomainTable> domainTables = new LinkedHashMap<>();
+		Map<String, DomainTable> domainTables = new HashMap<>();
 
 		// Check all records
 		parsedContents.stream().iterator().forEachRemaining(values -> {
@@ -530,7 +530,7 @@ public class Validations {
 	private synchronized DomainTable getDomainTable(DocumentField field, Map<String, DomainTable> domainTables) {
 
 		if (domainTables == null)
-			domainTables = new LinkedHashMap<>();
+			domainTables = new HashMap<>();
 
 		DomainTable table = domainTables.get(field.getFieldName());
 

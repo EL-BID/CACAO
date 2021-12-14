@@ -20,7 +20,6 @@
 	</properties>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>org.idb.cacao.api</groupId>
 			<artifactId>CACAO_API</artifactId>

@@ -22,7 +22,7 @@ package org.idb.cacao.validator.parsers;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -142,8 +142,8 @@ public class CSVParser implements FileParser {
 				String[] parts = readLine(firstLine);
 			
 				//Get original column positions
-				Map<String,Integer> columnPositions = new LinkedHashMap<>();
-				fieldPositions = new LinkedHashMap<>();
+				Map<String,Integer> columnPositions = new HashMap<>();
+				fieldPositions = new HashMap<>();
 				
 				for ( int i = 0; i < parts.length; i++ )
 					columnPositions.put(parts[i], i);
@@ -199,7 +199,7 @@ public class CSVParser implements FileParser {
 						
 						String[] parts = readLine(line);
 						
-						Map<String,Object> toRet = new LinkedHashMap<>();
+						Map<String,Object> toRet = new HashMap<>();
 						
 						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 							
