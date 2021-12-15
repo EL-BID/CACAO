@@ -520,7 +520,7 @@ public class ValidationContext {
 			return (String)value;
 		}
 		else {
-			return value.toString();
+			return value.toString().trim();
 		}
 	}
 

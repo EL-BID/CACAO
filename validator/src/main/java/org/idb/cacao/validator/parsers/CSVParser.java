@@ -21,7 +21,6 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Scanner;
@@ -129,35 +128,25 @@ public class CSVParser implements FileParser {
 			BOMInputStream bis = new BOMInputStream(fis);
 			String charset = bis.getBOMCharsetName();
 
-			start(bis, charset);
+			//Skips BOM if it exists
+			scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);
+			
+			tab = new TabulatedData(documentInputSpec);
+			
+			//Read first line and set field positions according with field mapping atributtes
+			String firstLine = scanner.nextLine();
+			if ( firstLine != null && !firstLine.isEmpty() ) {
+				
+				String[] parts = readLine(firstLine);
+			
+				tab.parseColumnNames(parts);
+			}
 			
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 		}	
 		
 	}	
-	
-	
-	/**
-	 * Trigger the start of the file processing using the provided InputStream. Every information needed for this task
-	 * should be set previously to this method call.
-	 */
-	public void start(InputStream input, String charset) throws IOException {
-		
-		//Skips BOM if it exists
-		scanner = (charset==null) ? new Scanner(input) : new Scanner(input, charset);
-		
-		tab = new TabulatedData(documentInputSpec);
-		
-		//Read first line and set field positions according with field mapping atributtes
-		String firstLine = scanner.nextLine();
-		if ( firstLine != null && !firstLine.isEmpty() ) {
-			
-			String[] parts = readLine(firstLine);
-		
-			tab.parseColumnNames(parts);
-		}
-	}
 	
 	@Override
 	public DataIterator iterator() {

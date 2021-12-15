@@ -55,6 +55,10 @@ import org.w3c.dom.NodeList;
 
 /**
  * Parser for a PDF Document. PDF must use PDF Forms.
+ * <br>
+ * IMPORTANT:	PDF files must implement PDF Forms standards.<br> 
+ * 				PDF Form fields cannot use "data binding" or "default value" properties.<br>
+ * 				PDF FORM fields cannot be "ListBox" or "ComboBox" types.<br>
  *
  * @author Rivelino Patrício
  * 

@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.validator.parsers.FileParser;
+import org.idb.cacao.validator.parsers.WordParser;
 
 /**
  * FileFormat for files associated to MS Word (e.g.: DOC, DOCX).
@@ -75,8 +76,7 @@ public class WordFileFormat implements FileFormat {
 	 */
 	@Override
 	public FileParser createFileParser() {
-		// TODO Auto-generated method stub
-		return null;
+		return new WordParser();
 	}
 
 }

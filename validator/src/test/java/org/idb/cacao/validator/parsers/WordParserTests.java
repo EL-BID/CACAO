@@ -48,19 +48,19 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 /**
- * Tests sample files in PDF format with the PDFParser implemented in VALIDATOR<br>
+ * Tests sample files in WOED format with the WORDParser implemented in VALIDATOR
  * 
  * @author Rivelino Patrício
- * 
- * @since 02/12/2021
  *
+ * @since 15/12/2021
  */
 @RunWith(JUnitPlatform.class)
-public class PDFParserTests {
+public class WordParserTests {
 	
 	private static ElasticsearchMockClient mockElastic;
 	
-	private static String[] resources = { "/samples/Chart of Accounts.pdf"};
+	private static String[] resources = { "/samples/20211411 - Pauls Guitar Shop - Chart of Accounts.docx",
+			"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts - 2 Tables.docx"};
 
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -89,8 +89,8 @@ public class PDFParserTests {
 		template.setFields(archetype.getRequiredFields());
 		
 		DocumentInput inputSpec = new DocumentInput();
-		inputSpec.setFormat(DocumentFormat.PDF);
-		inputSpec.setInputName("ChartOfAccounts PDF");
+		inputSpec.setFormat(DocumentFormat.DOC);
+		inputSpec.setInputName("ChartOfAccounts WORD");
 		template.addInput(inputSpec);
 		
 		inputSpec.addField(new DocumentInputFieldMapping()
@@ -99,7 +99,7 @@ public class PDFParserTests {
 
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(TaxYear.name())
-				.withColumnNameExpression("TaxPeriod"));
+				.withColumnNameExpression("TaxYear"));
 		
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(AccountCode.name())
@@ -121,10 +121,10 @@ public class PDFParserTests {
 				.withFieldName(AccountDescription.name())
 				.withColumnNameExpression("AccountDescription"));
 		
-		Resource sampleFile = new ClassPathResource(resources[0]);
+		Resource sampleFile = new ClassPathResource(resources[1]);
 		assertTrue(sampleFile.exists());
 		
-		try (PDFParser parser = new PDFParser()) {
+		try (WordParser parser = new WordParser()) {
 			
 			parser.setPath(sampleFile.getFile().toPath());
 			parser.setDocumentInputSpec(inputSpec);
