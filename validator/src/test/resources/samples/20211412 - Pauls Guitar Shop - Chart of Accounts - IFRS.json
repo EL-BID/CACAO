@@ -1,0 +1,17 @@
+﻿{
+"TaxPayerId": "123456",
+"TaxYear": "2021",
+"Data": [ {
+	"AccountCode": "1.1.1",
+	"AccountCategory": "1",
+	"AccountSubcategory": "1.10",
+	"AccountName": "Cash",
+	"AccountDescription": "Cash and Cash Equivalents"
+	},{
+	"AccountCode": "1.2.1",
+	"AccountCategory": "1",
+	"AccountSubcategory": "1.9",
+	"AccountName": "Accounts Receivable",
+	"AccountDescription": "Accounts, Notes And Loans Receivable"
+}]
+}

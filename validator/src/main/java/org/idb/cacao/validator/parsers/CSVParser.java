@@ -21,17 +21,15 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.input.BOMInputStream;
-import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentInput;
-import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -68,16 +66,13 @@ public class CSVParser implements FileParser {
 	 * Scanner to iterate over file lines
 	 */
 	private Scanner scanner;
-	
-	/**
-	 * Field positions relative to column positions
-	 */
-	private Map<String,Integer> fieldPositions;
-	
+		
 	/**
 	 * A parser to handle CSV lines
 	 */
 	private CsvParser csvParser;
+	
+	private TabulatedData tab;
 	
 	/*
 	 * (non-Javadoc)
@@ -130,48 +125,39 @@ public class CSVParser implements FileParser {
 		
 		try {
 			FileInputStream fis = new FileInputStream(path.toFile());
-			//Skips BOM if it exists
+			
 			BOMInputStream bis = new BOMInputStream(fis);
 			String charset = bis.getBOMCharsetName();
-			scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);
-			
-			//Read first line and set field positions according with field mapping atributtes
-			String firstLine = scanner.nextLine();
-			if ( firstLine != null && !firstLine.isEmpty() ) {
-				
-				String[] parts = readLine(firstLine);
-			
-				//Get original column positions
-				Map<String,Integer> columnPositions = new LinkedHashMap<>();
-				fieldPositions = new LinkedHashMap<>();
-				
-				for ( int i = 0; i < parts.length; i++ )
-					columnPositions.put(parts[i], i);
-				
-				//Check all field mappings and set it's corresponding column
-				for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
-					
-					if ( fieldMapping.getColumnIndex() != null && fieldMapping.getColumnIndex() >= 0 ) {
-						fieldPositions.put(fieldMapping.getFieldName(), fieldMapping.getColumnIndex());
-						continue;
-					}
-						
-					String expression = fieldMapping.getColumnNameExpression();
-					if ( expression != null && !expression.isEmpty() ) {							
-						Integer position = ValidationContext.matchExpression(columnPositions.entrySet(), Map.Entry::getKey, expression).map(Map.Entry::getValue).orElse(null);
-						if ( position != null )
-							fieldPositions.put(fieldMapping.getFieldName(), position);
-					}					
-					
-				}
-				
-			}
+
+			start(bis, charset);
 			
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 		}	
 		
 	}	
+	
+	
+	/**
+	 * Trigger the start of the file processing using the provided InputStream. Every information needed for this task
+	 * should be set previously to this method call.
+	 */
+	public void start(InputStream input, String charset) throws IOException {
+		
+		//Skips BOM if it exists
+		scanner = (charset==null) ? new Scanner(input) : new Scanner(input, charset);
+		
+		tab = new TabulatedData(documentInputSpec);
+		
+		//Read first line and set field positions according with field mapping atributtes
+		String firstLine = scanner.nextLine();
+		if ( firstLine != null && !firstLine.isEmpty() ) {
+			
+			String[] parts = readLine(firstLine);
+		
+			tab.parseColumnNames(parts);
+		}
+	}
 	
 	@Override
 	public DataIterator iterator() {
@@ -199,23 +185,7 @@ public class CSVParser implements FileParser {
 						
 						String[] parts = readLine(line);
 						
-						Map<String,Object> toRet = new LinkedHashMap<>();
-						
-						for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
-							
-							int position =  fieldPositions.getOrDefault(fieldMapping.getFieldName(), -1);
-							
-							if ( position < 0 ) {
-								toRet.put(fieldMapping.getFieldName(), null);
-							}
-							else {
-								toRet.put(fieldMapping.getFieldName(), parts.length > position ? parts[position] : null);
-							}
-							
-						}
-						
-						return toRet;
-						
+						return tab.parseLine(parts);
 					}
 					return null;
 				}

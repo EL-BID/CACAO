@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -173,7 +174,7 @@ public class XMLParser implements FileParser {
 			// [TODO] Adapt parsers to receive a string instead of file. For now, let's create a csv file and 
 			// pass to the csv parser
 			String jsonPath = this.getPath().toString();
-			Path csvPath = Path.of(jsonPath + ".csv");
+			Path csvPath = Paths.get(jsonPath + ".csv");
 			
 			FileOutputStream outputStream = new FileOutputStream(csvPath.toFile());
 			outputStream.write(convertedCsv.getBytes("UTF-8"));

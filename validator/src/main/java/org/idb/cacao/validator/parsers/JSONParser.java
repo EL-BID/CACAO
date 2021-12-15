@@ -20,8 +20,6 @@
 package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -29,14 +27,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.errors.InvalidFileException;
-import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
-import org.idb.cacao.validator.fileformats.FileFormat;
-import org.idb.cacao.validator.fileformats.FileFormatFactory;
 import org.idb.cacao.validator.utils.JSONUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,11 +56,9 @@ public class JSONParser implements FileParser {
 
 	private DocumentInput documentInputSpec;
 
-	private Scanner scanner;
-	
-	private Iterator<Map<String, Object>> entries;
+	private Iterator<Object[]> entries;
 
-	private CSVParser csvParser;
+	private TabulatedData tab;
 
 	/*
 	 * (non-Javadoc)
@@ -103,35 +97,6 @@ public class JSONParser implements FileParser {
 	}
 
 
-	private String convertJsonToCsv(List<Map<String, Object>> records) {
-		String csvStr = "";
-		Iterator<Map<String, Object>> iterator = records.iterator();
-
-		String columns = null;
-
-		while(iterator.hasNext()) {
-			Map<String, Object> entry = iterator.next();
-
-			if (columns == null) {
-				columns = entry.keySet().toString();
-
-				if (columns != null) {
-					columns = columns.substring(1, columns.length() - 1);
-				}
-		
-				csvStr += columns + "\n";
-			}
-
-			String values = entry.values().toString();
-			values = values.substring(1, values.length() - 1);
-			csvStr += values + "\n";
-		}
-
-		System.out.print(csvStr);
-
-		return csvStr;
-	}
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public void start() {
@@ -139,69 +104,46 @@ public class JSONParser implements FileParser {
 			return;
 		}
 
-		if ( scanner != null ) {
-			try {
-				scanner.close();
-			} catch (Exception e) {
-			}
-		}
-
 		try {
 			FileInputStream fis = new FileInputStream(path.toFile());
 			//Skips BOM if it exists
 			BOMInputStream bis = new BOMInputStream(fis);
 			String charset = bis.getBOMCharsetName();
-			scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);
-			
-			String jsonText = "";
 
-			while (scanner.hasNextLine()) {
-				jsonText += scanner.nextLine();
+			StringBuilder jsonText = new StringBuilder();
+
+			try (Scanner scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);) {
+
+				while (scanner.hasNextLine()) {
+					String line = scanner.nextLine();
+					if (line.trim().length()==0)
+						continue;
+					jsonText.append(line);
+				}
+			
 			}
+
+			final String json = jsonText.toString();
 			
-
-			scanner.close();
-
-			if (!JSONUtils.isJSONValid(jsonText)) {
+			if (!JSONUtils.isJSONValid(json)) {
 				throw new InvalidFileException("Invalid JSON file");
 			}
 
 			final Map<String,Object> result =
-					new ObjectMapper().readValue(jsonText, HashMap.class);
+					new ObjectMapper().readValue(json, HashMap.class);
+			
+			ReflexiveConverterToTable flattener = new ReflexiveConverterToTable();
+			flattener.parse(result);
+			List<Object[]> flattenedTable = flattener.getTable();
+			List<String> titles = flattener.getTitles();
 		
-			System.out.println(result);
+			tab = new TabulatedData(documentInputSpec);
 
-			Object mainKey = result.keySet().toArray()[0];
-			
-			List<Map<String, Object>> records = (List<Map<String, Object>>) result.get(mainKey);
-			entries = records.iterator();
+			entries = flattenedTable.iterator();
+			tab.parseColumnNames(titles.toArray());
 
-			String convertedCsv = this.convertJsonToCsv(records);
-
-			// [TODO] Adapt parsers to receive a string instead of file. For now, let's create a csv file and 
-			// pass to the csv parser
-			String jsonPath = this.getPath().toString();
-			Path csvPath = Path.of(jsonPath + ".csv");
-			
-			FileOutputStream outputStream = new FileOutputStream(csvPath.toFile());
-			outputStream.write(convertedCsv.getBytes("UTF-8"));
-
-			FileFormat fileFormat = FileFormatFactory.getFileFormat(DocumentFormat.CSV);
-			csvParser = (CSVParser) fileFormat.createFileParser();
-
-			// Initializes the CSVParser for processing
-			csvParser.setPath(csvPath);
-			csvParser.setDocumentInputSpec(this.getDocumentInputSpec());
-
-			// Let's start parsing the file contents
-			csvParser.start();
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 		}
 	}
 
@@ -218,19 +160,43 @@ public class JSONParser implements FileParser {
 		if ( entries == null )
 			return null;
 
-		try {
-			return csvParser.iterator();
+		try {			
+			
+			return new DataIterator() {
+				
+				@Override
+				public Map<String, Object> next() {
+					Object[] parts = entries.next();
+					
+					if ( parts != null ) {					
+						
+						return tab.parseLine(parts);
+					}
+					return null;
+				}
+				
+				@Override
+				public boolean hasNext() {					
+					return entries.hasNext();
+				}
+				
+				@Override
+				public void close() {
+									
+				}
+			}; 
+			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
 		}
-
+		
 		return null;
 	}
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
+		
+		entries = null;
 		
 	}
 
