@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.idb.cacao.api.ValidationContext;
@@ -54,8 +54,8 @@ public class TabulatedData {
 	public void parseColumnNames(Object[] parts) {
 		
 		//Get original column positions
-		Map<String,Integer> columnPositions = new LinkedHashMap<>();
-		fieldPositions = new LinkedHashMap<>();
+		Map<String,Integer> columnPositions = new HashMap<>();
+		fieldPositions = new HashMap<>();
 		
 		for ( int i = 0; i < parts.length; i++ )
 			columnPositions.put(ValidationContext.toString(parts[i]), i);
@@ -84,7 +84,7 @@ public class TabulatedData {
 	 */
 	public Map<String,Object> parseLine(Object[] parts) {
 		
-		Map<String,Object> toRet = new LinkedHashMap<>();
+		Map<String,Object> toRet = new HashMap<>();
 		
 		for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 			
