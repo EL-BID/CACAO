@@ -27,7 +27,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +142,7 @@ public class PDFParser implements FileParser {
 				}
 			}
 			
-			fieldComlunKeys = new LinkedHashMap<>();
+			fieldComlunKeys = new HashMap<>();
 			
 			//Check all field mappings and set it's corresponding column
 			for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
@@ -225,7 +225,7 @@ public class PDFParser implements FileParser {
 	 */
 	protected Map<String, Object> getNext(int index) {
 		
-		Map<String, Object> record = new LinkedHashMap<>();
+		Map<String, Object> record = new HashMap<>();
 		
 		for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 			

@@ -21,7 +21,7 @@ package org.idb.cacao.web.utils;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JLabel;
@@ -316,7 +316,7 @@ public class FieldProperties {
 		if ( clazz == null )
 			return Collections.emptyMap();
 		
-		Map<String,FieldProperties> toRet = new LinkedHashMap<>();
+		Map<String,FieldProperties> toRet = new HashMap<>();
 		
 		Field[] fields = clazz.getDeclaredFields();
 		
