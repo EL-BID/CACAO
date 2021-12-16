@@ -53,17 +53,15 @@ import org.idb.cacao.validator.fileformats.FileFormatFactory;
  */
 public class XMLParser implements FileParser {
 
-	private static final Logger log = Logger.getLogger(CSVParser.class.getName());
+	private static final Logger log = Logger.getLogger(JSONParser.class.getName());
 
 	private Path path;
 
-	private Scanner scanner;
-
 	private DocumentInput documentInputSpec;
 
-	private Iterator<Map<String, Object>> entries;
+	private Iterator<Object[]> entries;
 
-	private CSVParser csvParser;
+	private TabulatedData tab;
 
 	/*
 	 * (non-Javadoc)
@@ -101,97 +99,51 @@ public class XMLParser implements FileParser {
 		this.documentInputSpec = inputSpec;
 	}
 
-	private String convertXmlToCsv(List<Map<String, Object>> records) {
-		String csvStr = "";
-		Iterator<Map<String, Object>> iterator = records.iterator();
 
-		String columns = null;
-
-		while(iterator.hasNext()) {
-			Map<String, Object> entry = iterator.next();
-
-			if (columns == null) {
-				columns = entry.keySet().toString();
-
-				if (columns != null) {
-					columns = columns.substring(1, columns.length() - 1);
-				}
-		
-				csvStr += columns + "\n";
-			}
-
-			String values = entry.values().toString();
-			values = values.substring(1, values.length() - 1);
-			csvStr += values + "\n";
-		}
-
-		System.out.print(csvStr);
-
-		return csvStr;
-	}
-
+	@SuppressWarnings("unchecked")
 	@Override
 	public void start() {
-		if ( path == null || !path.toFile().exists() ) {		
-			return;			
-		}			
-		
-		if ( scanner != null ) {
-			try {
-				scanner.close();
-			} catch (Exception e) {
-			}
+		if ( path == null || !path.toFile().exists() ) {
+			return;
 		}
-		
+
 		try {
 			FileInputStream fis = new FileInputStream(path.toFile());
 			//Skips BOM if it exists
 			BOMInputStream bis = new BOMInputStream(fis);
 			String charset = bis.getBOMCharsetName();
-			scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);
-			
-			//Read first line and set field positions according with field mapping atributtes
-			String xmlText = "";
 
-			while (scanner.hasNextLine()) {
-				xmlText += scanner.nextLine();
-			}
+			StringBuilder xmlText = new StringBuilder();
+
+			try (Scanner scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);) {
+
+				while (scanner.hasNextLine()) {
+					String line = scanner.nextLine();
+					if (line.trim().length()==0)
+						continue;
+						xmlText.append(line);
+				}
 			
-			scanner.close();
+			}
+
+			final String xml = xmlText.toString();
 
 			final Map<String,Object> result =
-					new ObjectMapper().readValue(xmlText, HashMap.class);
+					new ObjectMapper().readValue(xml, HashMap.class);
+			
+			ReflexiveConverterToTable flattener = new ReflexiveConverterToTable();
+			flattener.parse(result);
+			List<Object[]> flattenedTable = flattener.getTable();
+			List<String> titles = flattener.getTitles();
 		
-			System.out.println(result);
+			tab = new TabulatedData(documentInputSpec);
 
-			Object mainKey = result.keySet().toArray()[0];
-			
-			List<Map<String, Object>> records = (List<Map<String, Object>>) result.get(mainKey);
-			entries = records.iterator();
-
-			String convertedCsv = this.convertXmlToCsv(records);
-
-			// [TODO] Adapt parsers to receive a string instead of file. For now, let's create a csv file and 
-			// pass to the csv parser
-			String jsonPath = this.getPath().toString();
-			Path csvPath = Paths.get(jsonPath + ".csv");
-			
-			FileOutputStream outputStream = new FileOutputStream(csvPath.toFile());
-			outputStream.write(convertedCsv.getBytes("UTF-8"));
-
-			FileFormat fileFormat = FileFormatFactory.getFileFormat(DocumentFormat.CSV);
-			csvParser = (CSVParser) fileFormat.createFileParser();
-
-			// Initializes the CSVParser for processing
-			csvParser.setPath(csvPath);
-			csvParser.setDocumentInputSpec(this.getDocumentInputSpec());
-
-			// Let's start parsing the file contents
-			csvParser.start();
+			entries = flattenedTable.iterator();
+			tab.parseColumnNames(titles.toArray());
 
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
-		}	
+		}
 	}
 
 	@Override
@@ -207,20 +159,45 @@ public class XMLParser implements FileParser {
 		if ( entries == null )
 			return null;
 
-		try {
-			return csvParser.iterator();
+		try {			
+			
+			return new DataIterator() {
+				
+				@Override
+				public Map<String, Object> next() {
+					Object[] parts = entries.next();
+					
+					if ( parts != null ) {					
+						
+						return tab.parseLine(parts);
+					}
+					return null;
+				}
+				
+				@Override
+				public boolean hasNext() {					
+					return entries.hasNext();
+				}
+				
+				@Override
+				public void close() {
+									
+				}
+			}; 
+			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
 		}
-
+		
 		return null;
 	}
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
+		
+		entries = null;
 		
 	}
+
 
 }
