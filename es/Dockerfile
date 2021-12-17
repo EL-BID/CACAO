@@ -1,4 +1,4 @@
-FROM elasticsearch:7.14.1
+FROM elasticsearch:7.16.1
 
 # container creator
 LABEL maintainer=gustavohbf@gmail.com
