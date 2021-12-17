@@ -178,7 +178,7 @@ public class LoginUIController {
 
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			submenu.withChild(new MenuItem(messages.getMessage("sysinfo", null, LocaleContextHolder.getLocale()),
-					"/sys_info",  "cogs"));
+					"/sys_info",  "info circle"));
 		}
 		
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ_ALL)) {

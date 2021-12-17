@@ -17,7 +17,7 @@
 		</h2>
         <div class="ui stackable cards">
           <a class="ui card" th:each="card : ${cards}" th:href="@{${card.link}}">
-            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon cogs" th:class="'massive icon ' + ${card.icon}"></i></div>
+            <div class="image center aligned" style="padding: 25px 5px 15px; color: black"><i class="massive icon cogs" th:class="'massive icon ' + ${card.icon}"></i></div>
             <div class="content center aligned">
               <div class="header" th:text="${card.name}" >Document Uploads</div>
             </div>
