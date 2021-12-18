@@ -156,7 +156,20 @@ public class ElasticsearchMockClient {
 
 		// Default: return cluster version information
 		this.mockServer.when(HttpRequest.request()).respond(toHttpResponse(
-				new JSONObject(map("name", "mock", "cluster_name", clusterName, "version", map("number", version)))));
+				new JSONObject(map("name", "mock", 
+						"cluster_name", clusterName, 
+						"cluster_uuid", UUID.randomUUID(),
+						"tagline", "You Know, for Search",
+						"version", 
+							map("number", version,
+								"build_flavor","default",
+								"build_type","docker",
+							    "build_hash", "66b55ebfa59c92c15db3f69a335d500018b3331e",
+							    "build_date", "2021-08-26T09:01:05.390870785Z",
+							    "build_snapshot", "false",
+							    "lucene_version", "8.9.0",
+							    "minimum_wire_compatibility_version", "6.8.0",
+							    "minimum_index_compatibility_version", "6.0.0-beta1")))));
 
 	}
 
@@ -164,7 +177,7 @@ public class ElasticsearchMockClient {
 	 * Wrap the JSON response into a HTTP response
 	 */
 	private HttpResponse toHttpResponse(final JSONObject data) {
-		return HttpResponse.response(data.toString()).withHeader("Content-Type", "application/json");
+		return HttpResponse.response(data.toString()).withHeader("Content-Type", "application/json").withHeader("X-Elastic-Product","Elasticsearch");
 	}
 
 	/**
@@ -207,6 +220,7 @@ public class ElasticsearchMockClient {
 				// fields.put("id", id);
 				fields.put("_id", id);
 				fields.put("_index", index_name);
+				fields.put("_version", 1);
 				mocked_index.getMapDocuments().put(id, fields);
 				JSONObject response = new JSONObject(map("_shards",
 						map("total", 1, "successful", 1, "skipped", 0, "failed", 0), "_index", index_name, "_type",
@@ -246,6 +260,7 @@ public class ElasticsearchMockClient {
 				
 				fields.put("_id", id);
 				fields.put("_index", index_name);
+				fields.put("_version", 1);
 				mocked_index.getMapDocuments().put(id, fields);
 				JSONObject response = new JSONObject(map("_shards",
 						map("total", 1, "successful", 1, "skipped", 0, "failed", 0), "_index", index_name, "_type",
@@ -274,7 +289,7 @@ public class ElasticsearchMockClient {
 					Map<?, ?> doc = mocked_index.getMapDocuments().get(id);
 					if (doc != null) {
 						return toHttpResponse(new JSONObject(
-								map("_index", index_name, "_type", "_doc", "_id", id, "found", true, "_source", doc)));
+								map("_index", index_name, "_type", "_doc", "_id", id, "found", true, "_source", doc, "_version", 1)));
 					}
 				}
 				return toHttpResponse(
