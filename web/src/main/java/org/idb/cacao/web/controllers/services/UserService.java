@@ -202,6 +202,7 @@ public class UserService {
 		User user = new User();
 		user.setLogin(email);
 		user.setName(full_name);
+		user.setProfile(UserProfile.DECLARANT);
 		try {
 			userRepository.save(user);
 		}
@@ -229,6 +230,7 @@ public class UserService {
 		User user = new User();
 		user.setLogin(email);
 		user.setName(full_name);
+		user.setProfile(UserProfile.DECLARANT);
 		try {
 			userRepository.save(user);
 		}

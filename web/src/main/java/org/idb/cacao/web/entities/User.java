@@ -243,6 +243,8 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	}
 	
 	public UserProfile getProfile() {
+		if (profile==null)
+			return UserProfile.DECLARANT;
 		return profile;
 	}
 
