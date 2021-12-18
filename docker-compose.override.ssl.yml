@@ -2,40 +2,25 @@ version: "3.8"
 services:
   es01:
     environment:
-      - network.host=es01
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=true
-      - xpack.security.transport.ssl.enabled=true
-      - xpack.security.http.ssl.key=certs/es01.key
-      - xpack.security.http.ssl.certificate=certs/es01.crt
-      - xpack.security.http.ssl.certificate_authorities=certs/ca.crt
-      - xpack.security.transport.ssl.key=certs/es01.key
-      - xpack.security.transport.ssl.certificate=certs/es01.crt
-      - xpack.security.transport.ssl.certificate_authorities=certs/ca.crt
+      - SEC_ENABLED=true
+      - SEC_SSL=true
+      - SEC_SSL_KEY=certs/es01.key
+      - SEC_SSL_CERT=certs/es01.crt
+      - SEC_SSL_CA=certs/ca.crt
   es02:
     environment:
-      - network.host=es02
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=true
-      - xpack.security.transport.ssl.enabled=true
-      - xpack.security.http.ssl.key=certs/es02.key
-      - xpack.security.http.ssl.certificate=certs/es02.crt
-      - xpack.security.http.ssl.certificate_authorities=certs/ca.crt
-      - xpack.security.transport.ssl.key=certs/es02.key
-      - xpack.security.transport.ssl.certificate=certs/es02.crt
-      - xpack.security.transport.ssl.certificate_authorities=certs/ca.crt
+      - SEC_ENABLED=true
+      - SEC_SSL=true
+      - SEC_SSL_KEY=certs/es02.key
+      - SEC_SSL_CERT=certs/es02.crt
+      - SEC_SSL_CA=certs/ca.crt
   es03:
     environment:
-      - network.host=es03
-      - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=true
-      - xpack.security.transport.ssl.enabled=true
-      - xpack.security.http.ssl.key=certs/es03.key
-      - xpack.security.http.ssl.certificate=certs/es03.crt
-      - xpack.security.http.ssl.certificate_authorities=certs/ca.crt
-      - xpack.security.transport.ssl.key=certs/es03.key
-      - xpack.security.transport.ssl.certificate=certs/es03.crt
-      - xpack.security.transport.ssl.certificate_authorities=certs/ca.crt
+      - SEC_ENABLED=true
+      - SEC_SSL=true
+      - SEC_SSL_KEY=certs/es03.key
+      - SEC_SSL_CERT=certs/es03.crt
+      - SEC_SSL_CA=certs/ca.crt
   kibana:
     environment:
       - SERVER_NAME=kibana
