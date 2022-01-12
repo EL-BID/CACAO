@@ -10,7 +10,21 @@ ___
 
 For running the web component locally at a development desktop with minimal setup, you should follow these steps:
 
-1. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up --build -d".
+1. Start ElasticSearch and Kibana with one of the following alternatives:
+
+1a. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up --build -d".
+
+OR
+
+1b. Download ElasticSearch (version 7.14.1) from the official download site (https://www.elastic.co/pt/downloads/elasticsearch)
+and also download Kibana (version 7.14.1) from the official download site (https://www.elastic.co/pt/downloads/kibana). The configuration file of ElasticSearch
+may be the same as the provided from the download. The configuration file of Kibana (kibana.yml) must be changed in order to include the following lines:
+
+    server.basePath: /kibana
+    server.rewriteBasePath: true
+    
+Start both ElasticSearch and Kibana using the local startup files (e.g. for Windows platform, use \bin\elasticsearch.bat from ElasticSearch installation directory
+for starting one node of ElasticSearch and use \bin\kibana.bat from Kibana installation directory for starting Kibana)
 
 2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 
