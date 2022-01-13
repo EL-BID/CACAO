@@ -176,6 +176,13 @@ public class LoginUIController {
 					"/config_email"));
 		}
 
+		if (hasPrivilege(roles, SystemPrivilege.SYNC_OPS)) {
+			submenu.withChild(new MenuItem(messages.getMessage("config.sync", null, LocaleContextHolder.getLocale()),
+					"/config_sync"));
+			submenu.withChild(
+					new MenuItem(messages.getMessage("sync", null, LocaleContextHolder.getLocale()), "/sync/current"));
+		}
+
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			submenu.withChild(new MenuItem(messages.getMessage("sysinfo", null, LocaleContextHolder.getLocale()),
 					"/sys_info",  "info circle"));

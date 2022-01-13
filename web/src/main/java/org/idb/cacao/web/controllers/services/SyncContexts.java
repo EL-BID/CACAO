@@ -31,16 +31,12 @@ public enum SyncContexts {
 	
 	ORIGINAL_FILES("/api/sync/original_files", false),
 	
-	TEMPLATE_FILES("/api/sync/template_files", false),
-	
-	SAMPLE_FILES("/api/sync/sample_files", false),
-
-	GENERIC_FILES("/api/sync/generic_files", false),
-
 	REPOSITORY_ENTITIES("/api/sync/base/", true),
 	
-	PARSED_DOCUMENTS("/api/sync/docs/", true),
-	
+	VALIDATED_DATA("/api/sync/validated/", true),
+
+	PUBLISHED_DATA("/api/sync/published/", true),
+
 	KIBANA_ASSETS("/api/sync/kibana", false);
 
 	private final String endpoint;
@@ -67,6 +63,22 @@ public enum SyncContexts {
 			return endpoint;
 		else
 			return endpoint+pathParameter;
+	}
+
+	/**
+	 * API endpoint for this context including some additional path indicating a variation in this contexts (unless this context doesn't requires one)
+	 * @param pathParameter1 First additional path component.
+	 * @param pathParameter2 Second additional path component.
+	 */
+	public String getEndpoint(String pathParameter1, String pathParameter2) {
+		if (!requestPath)
+			return endpoint;
+		StringBuilder sb = new StringBuilder(endpoint);
+		sb.append(pathParameter1);
+		if (!pathParameter1.endsWith("/") && !pathParameter2.startsWith("/"))
+			sb.append("/");
+		sb.append(pathParameter2);
+		return sb.toString();
 	}
 
 	/**

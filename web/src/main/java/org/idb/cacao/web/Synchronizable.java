@@ -36,7 +36,7 @@ public @interface Synchronizable {
 
 	/**
 	 * Must inform the name of the entity field where we store the 'timestamp' of the last modification ou creation
-	 * of objects. The field itself should be of type 'java.util.Date'.
+	 * of objects. The field itself should be of type 'java.util.Date' or type 'java.time.OffsetDateTime'
 	 * 
 	 * IMPORTANT: you must make sure that all operations in the application updates this field during 'save's
 	 */

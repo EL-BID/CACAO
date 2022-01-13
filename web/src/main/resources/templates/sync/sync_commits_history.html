@@ -1,0 +1,173 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="history icon"></i>
+			<div class="content" th:text="#{sync.commits.history}">Synchronization Commits History</div>
+		</h2>
+		<div class="ui middle aligned center aligned grid container">
+			<div th:if="${running!=null && running.isPresent()}">
+				<div class="ui warning message" th:text="#{error.sync.already.running(${running.get().getUser()},${running.get().getStartFormatted()})}"></div>
+			</div>
+			<div class="ui warning message warn_sync_running" th:text="#{sync.running}" style="display: none"></div>
+			<div th:if="${param.stopped}">
+				<div class="ui positive message" th:text="#{sync.stopped}"></div>
+			</div>
+			<table class="ui orange small table">
+				<thead class="full-width">
+					<tr>
+						<th th:text="#{sync.commits.endPoint}" />
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td th:text="${param.endpoint}" />
+					</tr>
+				</tbody>
+			</table>
+			<table class="ui orange small table">
+				<thead class="full-width">
+					<tr>
+						<th th:text="#{sync.commits.lastTimeRun}" />
+						<th th:text="#{sync.commits.lastTimeStart}" />
+						<th th:text="#{sync.commits.lastTimeEnd}" />
+						<th th:text="#{sync.commits.master}" />
+						<th th:text="#{sync.commits.countObjects}" />
+						<th th:text="#{sync.commits.successful}" />
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="tx, iStat : ${commits.content}" th:style="${iStat.odd}? 'font-weight: bold;'">
+						<td th:text="${#dates.format(tx.timeRun, 'dd-MM-yyyy HH:mm:ss')}" />
+						<td th:text="${#dates.format(tx.timeStart, 'dd-MM-yyyy HH:mm:ss')}" />
+						<td th:text="${#dates.format(tx.timeEnd, 'dd-MM-yyyy HH:mm:ss')}" />
+						<td th:text="${tx.master}" />
+						<td th:text="${#numbers.formatDecimal(tx.countObjects,1,'DEFAULT',0,'DEFAULT')}" />
+						<td th:text="${tx.successful}?#{yes}:#{no}" />
+					</tr>
+				</tbody>
+				<tfoot class="full-width">
+					<tr>
+						<th></th>
+						<th colspan="4">
+							<div class="ui right floated primary labeled icon">
+								<a href="#" class="ui button btn_sync_now">
+									<i class="linkify icon"></i>
+									<span th:text="#{sync.now}">Synchronize now</span>
+								</a>
+							</div>
+						</th>
+						<th>
+							<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel">
+						</th>
+					</tr>
+				</tfoot>
+			</table>
+			<div th:replace="fragments/pagination :: pages (page=${commits},endpoint=@{/sync/history(endpoint=${param.endpoint})})"></div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<div class="ui modal" id="modal_choose_sync_start">
+		<div class="header" th:text="#{sync}">Synchronization</div>
+		<div class="image content">
+			<div class="image">
+				<i class="question circle icon"></i>
+			</div>
+			<div class="description" th:text="#{sync.choose.start}">Question</div>
+		</div>
+		<div class="actions">
+			<div class="ui approve button" th:text="#{sync.choose.start.from_zero}">From start</div>
+			<div class="ui deny button" th:text="#{sync.choose.start.from_last}">From last</div>
+		</div>
+	</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+$('.btn_sync_now').click(function(){
+	  var dlg = $('#modal_confirm')
+	  dlg.find('.description').html([[#{sync.now.confirm.endpoint(${param.endpoint})}]])
+	  dlg.modal({
+		  closable:false,
+		  onApprove: function(){
+			  /*[# th:if="${previous_sync}"]*/
+			  var dlg2 = $('#modal_choose_sync_start')
+			  dlg2.modal({
+				  clossable:false,
+				  onApprove: function() {
+					  // user wants to SYNC from start
+					  requestSync(/*fromStart*/true);
+				  },
+				  onDeny: function() {
+					// user wants to SYNC from last
+					  requestSync(/*fromStart*/false);
+				  }
+			  })
+			  dlg2.modal('show');
+			  /*[/]*/
+			  /*[# th:unless="${previous_sync}"]*/
+			  requestSync(/*fromStart*/true);
+			  /*[/]*/
+		  }
+	  })
+	  dlg.modal('show');
+  });
+function requestSync(fromStart) {
+	 $.ajax({
+		    url: [[@{/api/sync/now}]],
+		    type: 'POST',
+		    dataType: 'json',
+		    contentType: 'application/json',
+		    data: JSON.stringify({'fromStart':fromStart, 'endpoints':[[${param.endpoint}]]}),
+		    cache: false,    
+			success: function(result) {
+				var msg = result.message
+				if ("OK"==msg) {
+					$('#modal_successful').find('.description').html([[#{sync.started}]])
+					$('#modal_successful').modal('show')
+					$('.warn_sync_running').show()
+					doPoll();
+				}
+				else {
+					$('#modal_failed').find('.description').html(msg)
+					$('#modal_failed').modal('show')
+					console.log("ERROR : "+ msg);							
+				}
+			},
+			error: function(e) {
+				var msg = e.responseText.replace(/\n/g, "<br />");
+				$('#modal_failed').find('.description').html(msg)
+				$('#modal_failed').modal('show')
+				console.log("ERROR : "+ msg);
+			}
+		});			 			  	
+}
+function doPoll(){
+    $.get([[@{/api/sync/running}]], function(data) {
+    	if ('RUNNING'==data) {
+    		setTimeout(doPoll,1000);
+    	}
+    	else if ('STOPPED'==data) {
+    		window.location.replace([[@{/sync/history(stopped=true,endpoint=${param.endpoint})}]])
+    	}
+    	else {
+    		$('.warn_sync_running').hide()
+    	}
+    });
+}
+$('#cancel').click(function(){
+	  go_to_location_keeping_state([[@{/sync/current}]]) 
+})
+</script>
+	<script th:replace="fragments/state :: functions">VIEW STATE</script>
+</body>
+</html>

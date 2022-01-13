@@ -60,9 +60,14 @@ public class GenericDataPublisher {
 	private static final Logger log = Logger.getLogger(GenericDataPublisher.class.getName());
 
 	/**
+	 * The field name to be used by default as date/time filter of published data
+	 */
+	private static final String dashboardTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
+	
+	/**
 	 * The field name for date/time of published data
 	 */
-	private static final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
+	private static final String publishedTimestamp = PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName();
 
 	/**
 	 * The field name for taxpayer ID in published data
@@ -148,6 +153,7 @@ public class GenericDataPublisher {
 						}
 					}
 
+					normalizedRecord.put(dashboardTimestamp, timestamp);
 					normalizedRecord.put(publishedTimestamp, timestamp);
 					normalizedRecord.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord.put(publishedtaxPeriodNumber, taxPeriodNumber);

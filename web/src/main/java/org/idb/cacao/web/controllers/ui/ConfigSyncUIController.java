@@ -62,7 +62,7 @@ public class ConfigSyncUIController {
 		if (config.getApiToken()!=null && config.getApiToken().trim().length()>0)
 			config.setApiToken(UNCHANGED_PASSWORD);	// never reveal password (not even the encrypted one)
 		model.addAttribute("config", config);
-		return "config_sync";
+		return "sync/config_sync";
 	}
 
 	@Secured("ROLE_SYNC_OPS")

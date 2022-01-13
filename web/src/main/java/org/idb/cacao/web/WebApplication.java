@@ -25,12 +25,18 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
+import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.web.controllers.rest.SyncAPIController;
+import org.idb.cacao.web.controllers.services.ConfigSyncService;
 import org.idb.cacao.web.controllers.services.DomainTableService;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.KibanaSpacesService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
+import org.idb.cacao.web.controllers.services.SyncAPIService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
+import org.idb.cacao.web.entities.ConfigSync;
+import org.idb.cacao.web.entities.SyncPeriodicity;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -65,6 +71,15 @@ public class WebApplication {
 	private ResourceMonitorService resourceMonitorService;
 	
 	@Autowired
+	private SyncAPIController syncAPIController;
+	
+	@Autowired
+	private SyncAPIService syncAPIService;
+
+	@Autowired
+	private ConfigSyncService configSyncService;
+
+	@Autowired
 	private DomainTableService domainTableService;	
 	
 	@Autowired
@@ -73,6 +88,9 @@ public class WebApplication {
 	@Autowired
 	private Environment env;
 	
+	@Autowired
+	private FileSystemStorageService fileSystemStorageService;
+
 	/**
 	 * This is the entrypoint for the entire web application
 	 */
@@ -124,6 +142,13 @@ public class WebApplication {
 	 */
 	public void startupCode() {
 		userService.assertInitialSetup();		
+		
+		try {
+			log.log(Level.INFO, "Root directory for incoming files: "+fileSystemStorageService.getRootLocation().toFile().getAbsolutePath());
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
 
 		try {
 			if ("true".equalsIgnoreCase(env.getProperty("resource.monitor"))) {
@@ -149,6 +174,25 @@ public class WebApplication {
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error during synchronization of Kibana spaces with ElasticSearch indices", ex);
+		}
+
+		try {
+			if ("true".equalsIgnoreCase(env.getProperty("initialize.null.timestamps.at.start"))) {
+				syncAPIController.initializeNullTimestamps();
+			}
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
+
+		try {
+			ConfigSync config_sync = configSyncService.getActiveConfig();
+			if (config_sync!=null && !SyncPeriodicity.NONE.equals(config_sync.getPeriodicity())) {
+				syncAPIService.scheduleSyncThread();
+			}
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during SYNC scheduled initialization", ex);
 		}
 
 	}

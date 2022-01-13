@@ -390,7 +390,7 @@ public class MonthlyBalanceSheetProcessor {
 				final Optional<Map<String,Object>> accountInformation = (lookupChartOfAccounts==null) ? Optional.empty() : lookupChartOfAccounts.getUnchecked(account);
 				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
-				normalizedRecord_BS.put("doc_"+publishedTimestamp, timestamp);
+				normalizedRecord_BS.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, monthNumber, 1));
 				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
 				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
@@ -530,7 +530,7 @@ public class MonthlyBalanceSheetProcessor {
 				final Optional<Map<String,Object>> accountInformation = (lookupChartOfAccounts==null) ? Optional.empty() :lookupChartOfAccounts.getUnchecked(account);
 				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
-				normalizedRecord_BS.put("doc_"+publishedTimestamp, timestamp);
+				normalizedRecord_BS.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, month, 1));
 				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
 				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
