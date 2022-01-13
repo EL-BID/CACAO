@@ -400,3 +400,48 @@ It should respond with a JSON content with some information about the Kibana def
     docker-compose up -d proxy
     
 ### Test access to Kontaktu using your browser
+
+___
+
+## Troubleshooting
+
+### "502 Bad Gateway" error at web browser
+
+If this error appears whenever trying to access the server using a web browser, it may be a problem with the 'proxy' component or with the 'web' component'.
+
+1) Check if the 'web' component is running
+
+Use the following command to check if the 'web' component is running. 
+
+    docker-compose ps web
+    
+If the service is running, it should output something like this:
+
+    Name    Command     State   Ports
+    ---------------------------------
+    web    ./setup.sh   Up
+
+If the 'web' component is not running, start it using this command line:
+
+    docker-compose up -d web
+    
+2) Check if the 'proxy' can reach the 'web' component
+
+Use the following command to check if the 'web' component is reachable from the proxy component
+
+    docker exec -it proxy curl -I http://web:8080
+    
+The above command should output a couple of lines, starting with this one:
+
+    HTTP/1.1 200
+    
+In case of error (e.g. 'Connection refused'), try to fix this by starting any missing components.
+
+    docker-compose up -d
+
+3) If all the components are running, try to reload the proxy service
+
+For some reason the 'proxy' internal process may be stale. Try to reload the process with this command:
+
+    docker exec -it proxy /usr/sbin/nginx -c /config/nginx/nginx.conf -s reload
+    
