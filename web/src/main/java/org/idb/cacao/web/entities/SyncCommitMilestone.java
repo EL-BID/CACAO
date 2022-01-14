@@ -44,7 +44,7 @@ public class SyncCommitMilestone implements Serializable, Cloneable {
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
 	@Id   
-	private long id;
+	private String id;
 
 	/**
 	 * Committed endpoint
@@ -71,11 +71,11 @@ public class SyncCommitMilestone implements Serializable, Cloneable {
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime lastTimeEnd;
 
-	public long getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(long id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 

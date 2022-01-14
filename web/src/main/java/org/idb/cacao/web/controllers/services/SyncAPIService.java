@@ -350,7 +350,7 @@ public class SyncAPIService {
 		
 		// Expects to find files with this name pattern inside ZIP
 		// Let's reject anything else for safety (e.g. 'man in the middle attack' or compromised master would serve malicious files) 
-		final Pattern pattern_name_entry = Pattern.compile("^[\\/]?(\\d{4})[\\/](\\d{2})[\\/](\\d+\\-\\.[A-Za-z]+)$");
+		final Pattern pattern_name_entry = Pattern.compile("^(?>original)?[\\/]?(\\d{4})[\\/](\\d{2})[\\/]([\\d+\\-A-Za-z]+)$");
 
 		LongAdder counter = new LongAdder();
 		LongAdder sum_bytes = new LongAdder();

@@ -93,12 +93,14 @@ import org.idb.cacao.web.controllers.services.SyncThread;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.ConfigSync;
 import org.idb.cacao.web.entities.SyncCommitHistory;
+import org.idb.cacao.web.entities.SyncCommitMilestone;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.InvalidParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.SyncCommitHistoryRepository;
+import org.idb.cacao.web.repositories.SyncCommitMilestoneRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
@@ -195,6 +197,9 @@ public class SyncAPIController {
 	
 	@Autowired
 	private SyncCommitHistoryRepository syncHistoryRepository;
+
+	@Autowired
+	private SyncCommitMilestoneRepository syncMilestoneRepository;
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -1450,7 +1455,7 @@ public class SyncAPIController {
 	@JsonView(Views.Public.class)
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value="/sync/history", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Method used for listing current stats of synchronizable resources using pagination")
+	@ApiOperation(value="Method used for listing history of synchronization operations using pagination")
 	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, @RequestParam("page") Optional<Integer> page,
 			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
 		int currentPage = page.orElse(1);
@@ -1466,7 +1471,27 @@ public class SyncAPIController {
 		PaginationData<SyncCommitHistory> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
 		return result;
 	}
-	
+
+	@JsonView(Views.Public.class)
+	@Secured({"ROLE_SYNC_OPS"})
+	@GetMapping(value="/sync/milestone", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Method used for listing current stats of synchronizable resources using pagination")
+	public PaginationData<SyncCommitMilestone> getSyncMilestone(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
+		int currentPage = page.orElse(1);
+		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
+		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
+		Page<SyncCommitMilestone> commits;
+		if (filters.isPresent() && !filters.get().isEmpty()) {
+			commits = searchCommitMilestone(filters, page, size);
+		} else {
+			commits = searchPage(() -> syncMilestoneRepository
+					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("endPoint").ascending())));
+		}
+		PaginationData<SyncCommitMilestone> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
+		return result;
+	}
+
     /**
      * Search SyncCommitHistory objects using AdvancedSearch filters
      */
@@ -1476,6 +1501,21 @@ public class SyncAPIController {
 			Optional<Integer> size) {
 		try {
 			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, Optional.of("endPoint"), Optional.of(SortOrder.ASC));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
+    /**
+     * Search SyncCommitMilestone objects using AdvancedSearch filters
+     */
+	@Transactional(readOnly=true)
+	public Page<SyncCommitMilestone> searchCommitMilestone(Optional<AdvancedSearch> filters,
+			Optional<Integer> page, 
+			Optional<Integer> size) {
+		try {
+			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitMilestone.class, elasticsearchClient, page, size, Optional.of("endPoint"), Optional.of(SortOrder.ASC));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
