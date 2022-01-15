@@ -65,8 +65,8 @@
 		<div class="description" th:text="#{sync.choose.start}">Question</div>
 	</div>
 	<div class="actions">
-		<div class="ui approve button" th:text="#{sync.choose.start.from_zero}">From start</div>
-		<div class="ui deny button" th:text="#{sync.choose.start.from_last}">From last</div>
+		<div class="ui approve button" th:text="#{sync.choose.start.from.zero}">From start</div>
+		<div class="ui deny button" th:text="#{sync.choose.start.from.last}">From last</div>
 	</div>
 </div>
 	
@@ -87,6 +87,19 @@ let table = new Tabulator('#table', {
 		ajaxURL: /*[[@{/api/sync/history(endpoint=${param.endpoint})}]]*/ "/api/sync/history", //set url for ajax request
 	paginationSize: 5,
 	ajaxContentType: "json",
+	sortMode: "remote",
+	headerFilterLiveFilterDelay:700,
+	ajaxURLGenerator: function(url, config, params ){
+		p= new URLSearchParams()
+		p.set('page', params.page)
+		p.set('size', params.size)
+		p.set('filter', JSON.stringify(params.filter))
+		if(params.sort.length>0) {
+			p.set('sortby', params.sort[0].field)
+			p.set('sortorder', params.sort[0].dir)
+		}
+		return url + '&' + p.toString()
+	},
 	paginationSizeSelector:[10, 25, 50],
 	locale:'xx',
 	langs:{

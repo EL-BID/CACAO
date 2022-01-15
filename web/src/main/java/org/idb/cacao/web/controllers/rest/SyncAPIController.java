@@ -1458,26 +1458,30 @@ public class SyncAPIController {
 	@ApiOperation(value="Method used for listing history of synchronization operations using pagination")
 	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, @RequestParam("endpoint") Optional<String> endpoint,
 			@RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
+			@RequestParam("size") Optional<Integer> size, 
+			@RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy,
+			@RequestParam("sortorder") Optional<String> sortOrder) {
 		int currentPage = page.orElse(1);
 		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
+		Sort.Direction direction = sortOrder.orElse("desc").equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<SyncCommitHistory> commits;
 		if (endpoint!=null && endpoint.isPresent()) {
 			if (filters.isPresent() && !filters.get().isEmpty()) {
 				Optional<AdvancedSearch> filters_with_endpoint = Optional.of(filters.get().clone().withFilter("endpoint", endpoint.get()));
-				commits = searchCommitHistory(filters_with_endpoint, page, size);
+				commits = searchCommitHistory(filters_with_endpoint, page, size, sortBy, sortOrder);
 			} else {
 				commits = searchPage(() -> syncHistoryRepository
-						.findByEndPoint(endpoint.get(), PageRequest.of(currentPage - 1, pageSize, Sort.by("timeRun").descending())));
+						.findByEndPoint(endpoint.get(), PageRequest.of(currentPage - 1, pageSize, Sort.by(direction, sortBy.orElse("timeRun")))));
 			}			
 		}
 		else {
 			if (filters.isPresent() && !filters.get().isEmpty()) {
-				commits = searchCommitHistory(filters, page, size);
+				commits = searchCommitHistory(filters, page, size, sortBy, sortOrder);
 			} else {
 				commits = searchPage(() -> syncHistoryRepository
-						.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("timeRun").descending())));
+						.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by(sortBy.orElse("timeRun")).descending())));
 			}
 		}
 		PaginationData<SyncCommitHistory> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
@@ -1489,16 +1493,20 @@ public class SyncAPIController {
 	@GetMapping(value="/sync/milestone", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing current stats of synchronizable resources using pagination")
 	public PaginationData<SyncCommitMilestone> getSyncMilestone(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
+			@RequestParam("size") Optional<Integer> size, 
+			@RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy,
+			@RequestParam("sortorder") Optional<String> sortOrder) {
 		int currentPage = page.orElse(1);
 		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
+		Sort.Direction direction = sortOrder.orElse("asc").equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<SyncCommitMilestone> commits;
 		if (filters.isPresent() && !filters.get().isEmpty()) {
-			commits = searchCommitMilestone(filters, page, size);
+			commits = searchCommitMilestone(filters, page, size, sortBy, sortOrder);
 		} else {
 			commits = searchPage(() -> syncMilestoneRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("endPoint").ascending())));
+					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by(direction, sortBy.orElse("endPoint")))));
 		}
 		PaginationData<SyncCommitMilestone> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
 		return result;
@@ -1510,9 +1518,13 @@ public class SyncAPIController {
 	@Transactional(readOnly=true)
 	public Page<SyncCommitHistory> searchCommitHistory(Optional<AdvancedSearch> filters,
 			Optional<Integer> page, 
-			Optional<Integer> size) {
+			Optional<Integer> size,
+			Optional<String> sortBy,
+			Optional<String> sortOrder) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, Optional.of("timeRun"), Optional.of(SortOrder.DESC));
+			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, 
+					Optional.of(sortBy.orElse("timeRun")), 
+					Optional.of(sortOrder.orElse("desc").equals("asc") ? SortOrder.ASC : SortOrder.DESC));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -1525,9 +1537,13 @@ public class SyncAPIController {
 	@Transactional(readOnly=true)
 	public Page<SyncCommitMilestone> searchCommitMilestone(Optional<AdvancedSearch> filters,
 			Optional<Integer> page, 
-			Optional<Integer> size) {
+			Optional<Integer> size,
+			Optional<String> sortBy,
+			Optional<String> sortOrder) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitMilestone.class, elasticsearchClient, page, size, Optional.of("endPoint"), Optional.of(SortOrder.ASC));
+			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitMilestone.class, elasticsearchClient, page, size, 
+					Optional.of(sortBy.orElse("endPoint")), 
+					Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
