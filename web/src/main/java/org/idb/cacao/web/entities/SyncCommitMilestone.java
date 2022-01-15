@@ -28,8 +28,11 @@ import java.time.OffsetDateTime;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 
+import org.idb.cacao.api.Views;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
+
+import com.fasterxml.jackson.annotation.JsonView;
 
 /**
  * Sync commit tracking information (for subscribers/slaves)
@@ -43,12 +46,14 @@ public class SyncCommitMilestone implements Serializable, Cloneable {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
+	@JsonView(Views.Public.class)
 	@Id   
 	private String id;
 
 	/**
 	 * Committed endpoint
 	 */
+	@JsonView(Views.Public.class)
 	@Field(type=Keyword)
 	@NotNull
 	private String endPoint;
@@ -56,18 +61,21 @@ public class SyncCommitMilestone implements Serializable, Cloneable {
 	/**
 	 * Date/time of last SYNC
 	 */
+	@JsonView(Views.Public.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime lastTimeRun;
 	
 	/**
 	 * Date/time of start of the period of last SYNC
 	 */
+	@JsonView(Views.Public.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime lastTimeStart;
 
 	/**
 	 * Date/time of end of the period of last SYNC
 	 */
+	@JsonView(Views.Public.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime lastTimeEnd;
 

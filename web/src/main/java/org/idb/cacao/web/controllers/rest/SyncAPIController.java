@@ -1456,17 +1456,29 @@ public class SyncAPIController {
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value="/sync/history", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing history of synchronization operations using pagination")
-	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, @RequestParam("page") Optional<Integer> page,
+	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, @RequestParam("endpoint") Optional<String> endpoint,
+			@RequestParam("page") Optional<Integer> page,
 			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
 		int currentPage = page.orElse(1);
 		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
 		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
 		Page<SyncCommitHistory> commits;
-		if (filters.isPresent() && !filters.get().isEmpty()) {
-			commits = searchCommitHistory(filters, page, size);
-		} else {
-			commits = searchPage(() -> syncHistoryRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("endPoint").ascending())));
+		if (endpoint!=null && endpoint.isPresent()) {
+			if (filters.isPresent() && !filters.get().isEmpty()) {
+				Optional<AdvancedSearch> filters_with_endpoint = Optional.of(filters.get().clone().withFilter("endpoint", endpoint.get()));
+				commits = searchCommitHistory(filters_with_endpoint, page, size);
+			} else {
+				commits = searchPage(() -> syncHistoryRepository
+						.findByEndPoint(endpoint.get(), PageRequest.of(currentPage - 1, pageSize, Sort.by("timeRun").descending())));
+			}			
+		}
+		else {
+			if (filters.isPresent() && !filters.get().isEmpty()) {
+				commits = searchCommitHistory(filters, page, size);
+			} else {
+				commits = searchPage(() -> syncHistoryRepository
+						.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("timeRun").descending())));
+			}
 		}
 		PaginationData<SyncCommitHistory> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
 		return result;
@@ -1500,7 +1512,7 @@ public class SyncAPIController {
 			Optional<Integer> page, 
 			Optional<Integer> size) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, Optional.of("endPoint"), Optional.of(SortOrder.ASC));
+			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, Optional.of("timeRun"), Optional.of(SortOrder.DESC));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

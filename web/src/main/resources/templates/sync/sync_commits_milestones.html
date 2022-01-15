@@ -59,7 +59,7 @@
 <script th:nonce="${cspNonce}" th:inline="javascript">
 let searchIcon = function(cell, formatterParams){ return "<i class='search icon'></i>"};
 let detailsRow = function(e, cell) {
-  window.location.replace([[@{/sync/history}]] +  "?endpoint=" + cell.getRow().getIndex());
+  window.location.replace([[@{/sync/history}]] +  "?endpoint=" + cell.getRow().getData().endPoint);
 }
 let dateFormatter = function(cell, formatterParams, onRendered) {
 	var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
@@ -105,11 +105,6 @@ let table = new Tabulator('#table', {
 		{formatter:searchIcon, width:45, cellClick: detailsRow, headerSort:false}
 		[/]
 	]
-})
-table.on('rowClick', function(e, row) {
-    if( e.target.classList.contains('search')) {
-        return
-    }
 })
 </script>
 <script th:nonce="${cspNonce}" th:inline="javascript">

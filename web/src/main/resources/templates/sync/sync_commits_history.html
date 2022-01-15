@@ -1,9 +1,13 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
-<head th:replace="fragments/page_fragments :: header">
-<!-- Although the entire head will be replaced, its necessary to establish the charset
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+	
 </head>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
@@ -11,88 +15,108 @@
 		<br>
 	</div>
 	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <a class="section" th:text="#{sync}" th:href="@{/sync/current}">SYNC</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="${param.endpoint}">EndPoint</div>
+        </div>
 		<h2 class="ui header">
 			<i class="history icon"></i>
 			<div class="content" th:text="#{sync.commits.history}">Synchronization Commits History</div>
 		</h2>
-		<div class="ui middle aligned center aligned grid container">
-			<div th:if="${running!=null && running.isPresent()}">
-				<div class="ui warning message" th:text="#{error.sync.already.running(${running.get().getUser()},${running.get().getStartFormatted()})}"></div>
+		<div th:if="${running!=null && running.isPresent()}">
+			<div class="ui warning message" th:text="#{error.sync.already.running(${running.get().getUser()},${running.get().getStartFormatted()})}"></div>
+		</div>
+		<div class="ui warning message warn_sync_running" th:text="#{sync.running}" style="display: none"></div>
+		<div th:if="${param.stopped}">
+			<div class="ui positive message" th:text="#{sync.stopped}"></div>
+		</div>
+		<table class="ui orange small table">
+			<thead class="full-width">
+				<tr>
+					<th th:text="#{sync.commits.endPoint}" />
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td th:text="${param.endpoint}" />
+				</tr>
+			</tbody>
+		</table>
+   		<div id="table" class="ui orange table"></div>
+		<div class="ui column right floated" sec:authorize="hasRole('ROLE_SYNC_OPS')">
+			<div class="ui right floated primary labeled icon">
+				<a href="#" class="ui blue button btn_sync_now"><i class="linkify icon"></i><span th:text="#{sync.now}">Synchronize now</span></a>
 			</div>
-			<div class="ui warning message warn_sync_running" th:text="#{sync.running}" style="display: none"></div>
-			<div th:if="${param.stopped}">
-				<div class="ui positive message" th:text="#{sync.stopped}"></div>
-			</div>
-			<table class="ui orange small table">
-				<thead class="full-width">
-					<tr>
-						<th th:text="#{sync.commits.endPoint}" />
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td th:text="${param.endpoint}" />
-					</tr>
-				</tbody>
-			</table>
-			<table class="ui orange small table">
-				<thead class="full-width">
-					<tr>
-						<th th:text="#{sync.commits.lastTimeRun}" />
-						<th th:text="#{sync.commits.lastTimeStart}" />
-						<th th:text="#{sync.commits.lastTimeEnd}" />
-						<th th:text="#{sync.commits.master}" />
-						<th th:text="#{sync.commits.countObjects}" />
-						<th th:text="#{sync.commits.successful}" />
-					</tr>
-				</thead>
-				<tbody>
-					<tr th:each="tx, iStat : ${commits.content}" th:style="${iStat.odd}? 'font-weight: bold;'">
-						<td th:text="${#dates.format(tx.timeRun, 'dd-MM-yyyy HH:mm:ss')}" />
-						<td th:text="${#dates.format(tx.timeStart, 'dd-MM-yyyy HH:mm:ss')}" />
-						<td th:text="${#dates.format(tx.timeEnd, 'dd-MM-yyyy HH:mm:ss')}" />
-						<td th:text="${tx.master}" />
-						<td th:text="${#numbers.formatDecimal(tx.countObjects,1,'DEFAULT',0,'DEFAULT')}" />
-						<td th:text="${tx.successful}?#{yes}:#{no}" />
-					</tr>
-				</tbody>
-				<tfoot class="full-width">
-					<tr>
-						<th></th>
-						<th colspan="4">
-							<div class="ui right floated primary labeled icon">
-								<a href="#" class="ui button btn_sync_now">
-									<i class="linkify icon"></i>
-									<span th:text="#{sync.now}">Synchronize now</span>
-								</a>
-							</div>
-						</th>
-						<th>
-							<input type="button" class="ui button" th:value="#{back}" value="Back" id="cancel">
-						</th>
-					</tr>
-				</tfoot>
-			</table>
-			<div th:replace="fragments/pagination :: pages (page=${commits},endpoint=@{/sync/history(endpoint=${param.endpoint})})"></div>
 		</div>
 	</div>
-	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
-	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
-	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
-	<div class="ui modal" id="modal_choose_sync_start">
-		<div class="header" th:text="#{sync}">Synchronization</div>
-		<div class="image content">
-			<div class="image">
-				<i class="question circle icon"></i>
-			</div>
-			<div class="description" th:text="#{sync.choose.start}">Question</div>
+	
+<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+<div class="ui modal" id="modal_choose_sync_start">
+	<div class="header" th:text="#{sync}">Synchronization</div>
+	<div class="image content">
+		<div class="image">
+			<i class="question circle icon"></i>
 		</div>
-		<div class="actions">
-			<div class="ui approve button" th:text="#{sync.choose.start.from_zero}">From start</div>
-			<div class="ui deny button" th:text="#{sync.choose.start.from_last}">From last</div>
-		</div>
+		<div class="description" th:text="#{sync.choose.start}">Question</div>
 	</div>
-	<script th:nonce="${cspNonce}" th:inline="javascript">
+	<div class="actions">
+		<div class="ui approve button" th:text="#{sync.choose.start.from_zero}">From start</div>
+		<div class="ui deny button" th:text="#{sync.choose.start.from_last}">From last</div>
+	</div>
+</div>
+	
+<script th:nonce="${cspNonce}" th:inline="javascript">
+let dateFormatter = function(cell, formatterParams, onRendered) {
+	var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
+	if(newDate.isValid) {
+		return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
+	}
+	return cell.getValue()
+}
+	
+let table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitData", //fit columns to width of table (optional)
+    pagination: true,
+	paginationMode: "remote", //enable remote pagination
+		ajaxURL: /*[[@{/api/sync/history(endpoint=${param.endpoint})}]]*/ "/api/sync/history", //set url for ajax request
+	paginationSize: 5,
+	ajaxContentType: "json",
+	paginationSizeSelector:[10, 25, 50],
+	locale:'xx',
+	langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },    
+	columns:[ //Define Table Columns
+		{title: /*[[#{sync.commits.lastTimeRun}}*/ "Last time run", field:"timeRun", formatter: dateFormatter },
+		{title: /*[[#{sync.commits.lastTimeStart}}*/ "Last time start", field:"timeStart", formatter: dateFormatter },
+		{title: /*[[#{sync.commits.lastTimeEnd}}*/ "Last time end", field:"timeEnd", formatter: dateFormatter },
+		{title: /*[[#{sync.commits.master}}*/ "Server address", field:"master", hozAlign:"left" },
+		{title: /*[[#{sync.commits.countObjects}}*/ "Count", field:"countObjects" },
+		{title: /*[[#{sync.commits.successful}}*/ "Successful?", field:"successful", formatter:"tickCross", headerSort:false }
+	]
+})
+</script>
+<script th:nonce="${cspNonce}" th:inline="javascript">
 $('.btn_sync_now').click(function(){
 	  var dlg = $('#modal_confirm')
 	  dlg.find('.description').html([[#{sync.now.confirm.endpoint(${param.endpoint})}]])
@@ -164,10 +188,6 @@ function doPoll(){
     	}
     });
 }
-$('#cancel').click(function(){
-	  go_to_location_keeping_state([[@{/sync/current}]]) 
-})
 </script>
-	<script th:replace="fragments/state :: functions">VIEW STATE</script>
 </body>
 </html>

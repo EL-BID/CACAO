@@ -54,6 +54,7 @@ public class SyncCommitHistory implements Serializable {
 	@Id   
 	private String id;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Keyword)
 	private String master;
 
@@ -73,9 +74,11 @@ public class SyncCommitHistory implements Serializable {
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime timeEnd;
 	
+	@JsonView(Views.Public.class)
 	@Field(type=Long)
 	private Long countObjects;
 	
+	@JsonView(Views.Public.class)
 	@Field(type=Boolean)
 	private Boolean successful;
 
