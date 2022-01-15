@@ -927,7 +927,7 @@ public class SyncAPIService {
 	@Transactional(readOnly=true)
 	public long getStartForNextSync(String endPoint, long fallback) {
 		Optional<SyncCommitMilestone> existent_milestone = syncCommitMilestoneRepository.findByEndPoint(endPoint);
-		return existent_milestone.map(SyncCommitMilestone::getLastTimeEnd).map(OffsetDateTime::toEpochSecond).orElse(fallback);
+		return existent_milestone.map(SyncCommitMilestone::getLastTimeEnd).map(off->off.toInstant().toEpochMilli()).orElse(fallback);
 	}
 	
 	/**
