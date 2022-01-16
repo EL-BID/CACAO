@@ -19,19 +19,14 @@
  *******************************************************************************/
 package org.idb.cacao.web.conf;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Optional;
 
-import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.io.Resource;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
