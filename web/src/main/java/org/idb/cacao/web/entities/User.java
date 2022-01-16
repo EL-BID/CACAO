@@ -379,12 +379,4 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 		this.confirmPassword = confirmPassword;
 	}
 	
-	public OffsetDateTime getChangedTime() {
-		return changedTime;
-	}
-
-	public void setChangedTime(OffsetDateTime changedTime) {
-		this.changedTime = changedTime;
-	}	
-	
 }

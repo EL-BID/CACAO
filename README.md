@@ -10,7 +10,21 @@ ___
 
 For running the web component locally at a development desktop with minimal setup, you should follow these steps:
 
-1. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up --build -d".
+1. Start ElasticSearch and Kibana with one of the following alternatives:
+
+1a. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up --build -d".
+
+OR
+
+1b. Download ElasticSearch (version 7.14.1) from the official download site (https://www.elastic.co/pt/downloads/elasticsearch)
+and also download Kibana (version 7.14.1) from the official download site (https://www.elastic.co/pt/downloads/kibana). The configuration file of ElasticSearch
+may be the same as the provided from the download. The configuration file of Kibana (kibana.yml) must be changed in order to include the following lines:
+
+    server.basePath: /kibana
+    server.rewriteBasePath: true
+    
+Start both ElasticSearch and Kibana using the local startup files (e.g. for Windows platform, use \bin\elasticsearch.bat from ElasticSearch installation directory
+for starting one node of ElasticSearch and use \bin\kibana.bat from Kibana installation directory for starting Kibana)
 
 2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 
@@ -386,3 +400,48 @@ It should respond with a JSON content with some information about the Kibana def
     docker-compose up -d proxy
     
 ### Test access to Kontaktu using your browser
+
+___
+
+## Troubleshooting
+
+### "502 Bad Gateway" error at web browser
+
+If this error appears whenever trying to access the server using a web browser, it may be a problem with the 'proxy' component or with the 'web' component'.
+
+1) Check if the 'web' component is running
+
+Use the following command to check if the 'web' component is running. 
+
+    docker-compose ps web
+    
+If the service is running, it should output something like this:
+
+    Name    Command     State   Ports
+    ---------------------------------
+    web    ./setup.sh   Up
+
+If the 'web' component is not running, start it using this command line:
+
+    docker-compose up -d web
+    
+2) Check if the 'proxy' can reach the 'web' component
+
+Use the following command to check if the 'web' component is reachable from the proxy component
+
+    docker exec -it proxy curl -I http://web:8080
+    
+The above command should output a couple of lines, starting with this one:
+
+    HTTP/1.1 200
+    
+In case of error (e.g. 'Connection refused'), try to fix this by starting any missing components.
+
+    docker-compose up -d
+
+3) If all the components are running, try to reload the proxy service
+
+For some reason the 'proxy' internal process may be stale. Try to reload the process with this command:
+
+    docker exec -it proxy /usr/sbin/nginx -c /config/nginx/nginx.conf -s reload
+    

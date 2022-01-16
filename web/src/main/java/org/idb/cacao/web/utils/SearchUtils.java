@@ -702,6 +702,7 @@ public class SearchUtils {
 			}
 			this.mapper = new ObjectMapper();
 			this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			this.mapper.registerModule(new JavaTimeModule());
 			this.entity = entity;
 			
 			if (searchResponse==null) {

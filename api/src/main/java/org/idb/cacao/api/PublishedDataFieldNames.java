@@ -29,9 +29,14 @@ package org.idb.cacao.api;
 public enum PublishedDataFieldNames {
 	
 	/**
-	 * Date/time the ETL phase started
+	 * Date/time to be used by default at dashboards with published data
 	 */
 	TIMESTAMP("timestamp"),
+
+	/**
+	 * Date/time the ETL phase started
+	 */
+	ETL_TIMESTAMP("doc_timestamp"),
 
 	/**
 	 * TaxPayer ID. Must match the same information stored

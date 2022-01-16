@@ -39,7 +39,7 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
+@Synchronizable(timestamp="timestamp",id="id")
 public interface UserRepository extends ElasticsearchRepository<User, String> {
 	
 	/**

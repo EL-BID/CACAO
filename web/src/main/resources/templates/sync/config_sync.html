@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="sync icon"></i>
+			<div class="content" th:text="#{config.sync}">Server SYNC configuration</div>
+		</h2>
+		<div class="ui middle aligned center aligned grid container">
+			<div class="ui orange fluid segment">
+				<form action="#" th:action="@{/config_sync}" th:object="${config}" method="post">
+					<div class="row">
+						<div class="ui form">
+							<h4 class="ui header" style="margin-bottom: 0px;">
+								<div class="content" th:text="#{config.sync.master}">Sync Master</div>
+							</h4>
+							<input type="text" th:field="*{master}" class="form-control" id="master" th:placeholder="#{config.sync.master}" readonly>
+							<span th:if="${#fields.hasErrors('master')}" th:errors="*{master}" class="ui warning message"></span>
+						</div>
+						<div class="ui form">
+							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em;">
+								<div class="content" th:text="#{config.sync.token}">apiToken</div>
+							</h4>
+							<input type="password" th:field="*{apiToken}" class="form-control" id="apiToken" placeholder="Token" th:placeholder="#{config.sync.token}" readonly>
+							<span th:if="${#fields.hasErrors('apiToken')}" th:errors="*{apiToken}" class="ui warning message"></span>
+						</div>
+						<div class="ui form">
+							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em;">
+								<div class="content" th:text="#{config.sync.schedule}">Sync Schedule</div>
+							</h4>
+							<select th:field="*{periodicity}" class="ui fluid dropdown" disabled>
+								<option th:each="i : ${T(org.idb.cacao.web.entities.SyncPeriodicity).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+							</select>
+						</div>
+						<div class="ui form hourOfDay">
+							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em;">
+								<div class="content" th:text="#{config.sync.hourOfDay}">Hour of Day</div>
+							</h4>
+							<input type="number" th:field="*{hourOfDay}" class="form-control" id="hourOfDay" placeholder="Hour of Day" th:placeholder="#{config.sync.hourOfDay}" min="0" max="23"
+								readonly>
+							<span th:if="${#fields.hasErrors('hourOfDay')}" th:errors="*{hourOfDay}" class="ui warning message"></span>
+						</div>
+						<div class="ui form dayOfWeek">
+							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em;">
+								<div class="content" th:text="#{config.sync.dayOfWeek}">Day of Week</div>
+							</h4>
+							<select th:field="*{dayOfWeek}" class="ui fluid dropdown" disabled>
+								<option th:each="i : ${T(org.idb.cacao.web.entities.DayOfWeek).values()}" th:value="${i.name()}" th:text="#{${i}}"></option>
+							</select>
+						</div>
+					</div>
+					<div class="row">
+						<div class="ui segment">
+							<input type="button" class="ui green button" th:value="#{edit}" value="Edit" id="edit">
+							<input type="submit" class="ui blue button" th:value="#{save}" value="Save" id="save" style="display: none">
+							<input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel" style="display: none">
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+  $("#periodicity").change(function(){
+	  if ($(this).val()=='DAILY') {
+		  $('.hourOfDay').show()
+		  $('.dayOfWeek').hide()
+	  }
+	  else if ($(this).val()=='WEEKLY') {
+		  $('.hourOfDay').show()
+		  $('.dayOfWeek').show()
+	  }
+	  else {
+		  $('.hourOfDay').hide()
+		  $('.dayOfWeek').hide()
+	  }
+  })
+  $("#periodicity").trigger('change')
+  $('#edit').click(function(event){
+	  $('#edit').hide();
+	  $('#save').show();
+	  $('#cancel').show();
+	  $('form').find("input").prop("readonly",false)
+	  $('form').find("select").prop("disabled",false)
+  });
+  $('form').submit(function(event){
+	 event.preventDefault();
+	 if ($('#periodicity').val()=='DAILY' || $('#periodicity').val()=='WEEKLY') {
+		 var hourOfDay = $('#hourOfDay').val();
+		 if (!hourOfDay && hourOfDay!='0') {
+			$('#modal_failed').find('.description').html([[#{config.sync.hourOfDay.missing}]])
+			$('#modal_failed').modal('show')
+			return false;
+		 }
+	 }
+	 if ($('#periodicity').val()=='WEEKLY') {
+		 var dayOfWeek = $('#dayOfWeek').val();
+		 if (!dayOfWeek) {
+			$('#modal_failed').find('.description').html([[#{config.sync.dayOfWeek.missing}]])
+			$('#modal_failed').modal('show')
+			return false;			 
+		 }
+	 }	 
+	 var form_as_obj = {};
+	 $.each($('form').serializeArray(),
+	     function(i, v) {
+		 form_as_obj[v.name] = v.value;
+	     });	 
+	  var dlg = $('#modal_confirm')
+	  dlg.find('.description').html([[#{config.sync.confirm}]])
+	  dlg.modal({
+		  closable:false,
+		  onApprove: function(){
+			 $.ajax({
+				    url: $('form')[0].action,
+				    type: 'PUT',
+				    dataType: 'json',
+				    contentType: 'application/json',
+				    data: JSON.stringify(form_as_obj),
+				    cache: false,    
+					success: function(result) {
+						var msg = result.message
+						if ("OK"==msg) {
+							$('#modal_successful').modal('show')
+							setTimeout(function(){
+								window.location.replace([[@{/config_sync}]])
+							}, 2000);
+						}
+						else {
+							$('#modal_failed').find('.description').html(msg)
+							$('#modal_failed').modal('show')
+							console.log("ERROR : "+ msg);							
+						}
+					},
+					error: function(e) {
+						var msg = e.responseText.replace(/\n/g, "<br />");
+						$('#modal_failed').find('.description').html(msg)
+						$('#modal_failed').modal('show')
+						console.log("ERROR : "+ msg);
+					}
+				});			 
+		  }
+		})
+	  dlg.modal('show');
+  });
+  $('#cancel').click(function(){
+	  window.location.replace([[@{/config_sync}]]) 
+  })
+</script>
+</body>
+</html>

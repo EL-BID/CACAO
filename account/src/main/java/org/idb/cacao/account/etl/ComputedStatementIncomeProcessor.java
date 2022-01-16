@@ -295,7 +295,7 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 			
 			String rowId_SCI = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInStatement.incrementAndGet());
 			Map<String,Object> normalizedRecord_SCI = new HashMap<>();
-			normalizedRecord_SCI.put("doc_"+publishedTimestamp, timestamp);
+			normalizedRecord_SCI.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 			normalizedRecord_SCI.put(publishedTimestamp, timestampForView);
 			normalizedRecord_SCI.put(publishedTaxpayerId, taxPayerId);
 			normalizedRecord_SCI.put(publishedtaxPeriodNumber, taxPeriodNumber);

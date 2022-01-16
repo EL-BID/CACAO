@@ -27,10 +27,12 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Long;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
+import org.idb.cacao.api.Views;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -48,27 +50,35 @@ public class SyncCommitHistory implements Serializable {
 	 * ID's are being generated automatically.
 	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
+	@JsonView(Views.Public.class)
 	@Id   
 	private String id;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Keyword)
 	private String master;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Keyword)
 	private String endPoint;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime timeRun;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime timeStart;
 
+	@JsonView(Views.Public.class)
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
     private OffsetDateTime timeEnd;
 	
+	@JsonView(Views.Public.class)
 	@Field(type=Long)
 	private Long countObjects;
 	
+	@JsonView(Views.Public.class)
 	@Field(type=Boolean)
 	private Boolean successful;
 

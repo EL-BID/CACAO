@@ -632,7 +632,7 @@ public class AccountingLoader {
 							normalizedRecord_GL.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
 						}
 					}
-					normalizedRecord_GL.put("doc_"+publishedTimestamp, timestamp);
+					normalizedRecord_GL.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 					normalizedRecord_GL.put(publishedTimestamp, date);
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
@@ -738,7 +738,7 @@ public class AccountingLoader {
 		final Optional<Map<String,Object>> accountCreditedInfo = (flow.hasCreditedManyAccountCodes()) ? Optional.empty() : lookupChartOfAccounts.getUnchecked(flow.getCreditedAccountCode());
 		String rowId_DAF = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInAccountingFlows.incrementAndGet());
 		Map<String,Object> normalizedRecord_DAF = new HashMap<>();
-		normalizedRecord_DAF.put("doc_"+publishedTimestamp, timestamp);
+		normalizedRecord_DAF.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 		normalizedRecord_DAF.put(publishedTimestamp, flow.getDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
 		normalizedRecord_DAF.put(publishedTaxpayerId, taxPayerId);
 		normalizedRecord_DAF.put(publishedtaxPeriodNumber, taxPeriodNumber);
