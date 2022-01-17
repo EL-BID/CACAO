@@ -140,7 +140,12 @@ public class AuditTrail implements Serializable, Cloneable {
 	private String controllerMethod;
 
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@AFieldDescriptor(externalName = "audit.log.auth.method")
 	private AuthenticationMethod authMethod;
 

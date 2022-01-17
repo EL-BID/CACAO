@@ -99,7 +99,12 @@ public class Interpersonal implements Serializable, Cloneable {
 	/**
 	 * Relationship type: what 'person1' *is* for 'person2'
 	 */
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@Enumerated(EnumType.STRING)
 	@NotNull
 	@JsonView(Views.Authority.class)

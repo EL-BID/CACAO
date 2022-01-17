@@ -164,7 +164,12 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	
 	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
-	@Field(type=Keyword)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@AFieldDescriptor(externalName = "doc.situation")
 	private DocumentSituation situation; 
 

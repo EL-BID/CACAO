@@ -20,6 +20,7 @@
 package org.idb.cacao.api.templates;
 
 import static org.springframework.data.elasticsearch.annotations.FieldType.Integer;
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Nested;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
@@ -35,6 +36,8 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 
 /**
  * Possible choices for 'input' of a DocumentTemplate.<BR>
@@ -71,7 +74,12 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	 * The file format related to this input option
 	 */
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@NotNull
 	private DocumentFormat format;
 	

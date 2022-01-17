@@ -32,6 +32,7 @@ import org.idb.cacao.web.controllers.services.DomainTableService;
 import org.idb.cacao.web.controllers.services.KeyStoreService;
 import org.idb.cacao.web.controllers.services.KibanaSpacesService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
+import org.idb.cacao.web.controllers.services.SanitizationService;
 import org.idb.cacao.web.controllers.services.SyncAPIService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
@@ -75,6 +76,9 @@ public class WebApplication {
 	
 	@Autowired
 	private SyncAPIService syncAPIService;
+
+	@Autowired
+	private SanitizationService sanitizationService;
 
 	@Autowired
 	private ConfigSyncService configSyncService;
@@ -145,6 +149,15 @@ public class WebApplication {
 		
 		try {
 			log.log(Level.INFO, "Root directory for incoming files: "+fileSystemStorageService.getRootLocation().toFile().getAbsolutePath());
+		}
+		catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
+
+		try {
+			if ("true".equalsIgnoreCase(env.getProperty("compatibilize.indices.at.start"))) {
+				sanitizationService.compatibilizeIndicesMappings();
+			}
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);

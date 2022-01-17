@@ -29,6 +29,8 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
 import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 
 /**
  * Recognized fields for a document template. This is related to a 'DocumentTemplate'
@@ -63,14 +65,24 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 	 * Field mapping in case this field has a special meaning for specific CACAO features
 	 */
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	private FieldMapping fieldMapping;
 	
 	/**
 	 * Field type (for validating incoming files accordingly)
 	 */
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	private FieldType fieldType;
 	
 	/**
