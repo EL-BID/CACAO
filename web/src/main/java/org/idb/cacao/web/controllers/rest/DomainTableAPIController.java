@@ -1,10 +1,7 @@
 package org.idb.cacao.web.controllers.rest;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -14,19 +11,25 @@ import java.util.logging.Logger;
 import javax.validation.Valid;
 
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.Views;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.DomainTableService;
+import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DomainTableRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
+import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,10 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
-import org.springframework.core.env.Environment;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -72,9 +72,6 @@ public class DomainTableAPIController {
 	
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
-	
-	@Autowired
-	private Environment env;
 
 	/**
 	 * Method used for returning domain tables that match a given term. Useful for 'auto complete' fields (such as the domain table field
@@ -113,24 +110,33 @@ public class DomainTableAPIController {
 
 	@GetMapping("/domaintables")
 	@ApiOperation(value="Method used for listing domain tables using pagination")
-	public PaginationData<DomainTable> getDomainTables(
-			Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
-		int currentPage = page.orElse(1);
-		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
-		Page<DomainTable> tables;
-		if (filters.isPresent() && !filters.get().isEmpty()) {
-			tables = domainTableService.searchDomainTables(filters, page, size);
-		} else {
-			tables = searchPage(() -> domainTableRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("name").ascending())));
-		}
-		PaginationData<DomainTable> result = new PaginationData<>(tables.getTotalPages(), tables.getContent());
-		return result;
+	public PaginationData<DomainTable> getDomainTableWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
 
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+		Page<DomainTable> docs;
+		Optional<String> sortField = Optional.of(sortBy.orElse("name"));
+		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
+		try {
+			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DomainTable.class, elasticsearchClient, page, size, 
+					sortField, direction);
+
+		}
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error while searching for all documents", ex);
+			docs = Page.empty();
+		}		
+		PaginationData<DomainTable> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
+		return result;
 	}
-	
+
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @DeleteMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing domain table",response=DomainTable.class)

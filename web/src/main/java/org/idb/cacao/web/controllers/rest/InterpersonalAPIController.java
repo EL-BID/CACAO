@@ -108,24 +108,30 @@ public class InterpersonalAPIController {
 	@JsonView(Views.Authority.class)
 	@GetMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing interpersonal relationships using pagination")
-	public PaginationData<Interpersonal> getTaxpayers(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
-		int currentPage = page.orElse(1);
-		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
-		Page<Interpersonal> interpersonals;
-		if (filters.isPresent() && !filters.get().isEmpty()) {
-			try {
-				interpersonals = SearchUtils.doSearch(filters.get().wiredTo(messageSource), Interpersonal.class, elasticsearchClient, 
-						page, size, Optional.of("personId1"), Optional.of(SortOrder.ASC));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		} else {
-			interpersonals = searchPage(() -> interpersonalRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("personId1").ascending())));
+	public PaginationData<Interpersonal> getUsersWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+		Page<Interpersonal> docs;
+		Optional<String> sortField = Optional.of(sortBy.orElse("personId1"));
+		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
+		try {
+			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), Interpersonal.class, elasticsearchClient, page, size, 
+					sortField, direction);
+
 		}
-		PaginationData<Interpersonal> result = new PaginationData<>(interpersonals.getTotalPages(), interpersonals.getContent());
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error while searching for all documents", ex);
+			docs = Page.empty();
+		}		
+		PaginationData<Interpersonal> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
 		return result;
 	}
 	
