@@ -1,12 +1,15 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
-<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
-	<!-- Although the entire head will be replaced, its necessary to establish the charset
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<head
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
-	<script src="/js/tabulator.min.js"></script>
-	<script src="/js/luxon.min.js"><</script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui"
+	href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
 </head>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
@@ -16,33 +19,51 @@
 	<div class="ui container">
 		<h2 class="ui header">
 			<i class="people arrows icon"></i>
-			<div class="content" th:text="#{taxpayers.general.view.vertical.analysis}">Show vertical analysis</div>
+			<div class="content" th:text="#{taxpayers.general.view.vertical.analysis}">Show
+				vertical analysis</div>
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
-            <form action="#" name="form" id="form" th:action="@{/vertical-analysis-data}" class="ui form" method="post">
-              <div class="ui field" id="search1">
-                <label th:text="#{taxpayer.name}">TaxPayer name</label>
-                <div class="ui search selection dropdown" id="select">
-                    <input id="taxpayer" type="hidden" name="personId">
-                    <div class="default text" th:text="#{select}">Select</div>
-                    <i class="dropdown icon"></i>
-                    <div class="menu"></div>
-                </div>
-              </div>             
-             
-            <div class="row">
-              <input type="submit" class="ui blue button"  th:value="#{search}" value="Search"> 
-            </div>             
-            </form>
-		    </div>
-		    <div id="table" class="ui orange table"></div>
+				<form action="#" name="form" id="form"
+					th:action="@{/vertical-analysis-data}" class="ui form" method="post">
+					<div class="ui field" id="search1">
+						<label th:text="#{taxpayer.name}">TaxPayer name</label>
+						<div class="ui search selection dropdown" id="select">
+							<input id="taxpayer" type="hidden" name="personId">
+							<div class="default text" th:text="#{select}">Select</div>
+							<i class="dropdown icon"></i>
+							<div class="menu"></div>
+						</div>
+					</div>
+
+					<div class="ui calendar field" id="finalDate">
+					<label th:text="#{date}">Date</label>
+						<div class="ui input left icon">
+							<i class="calendar icon"></i>							
+							<input type="text" placeholder="Date" id="date">
+						</div>
+					</div>
+
+					<div class="row">
+						<input type="submit" class="ui blue button" th:value="#{search}"
+							value="Search">
+					</div>
+				</form>
+			</div>
+			<div id="table" class="ui orange table"></div>
 		</div>
 	</div>
-	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
-	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
 
-<script th:nonce="${cspNonce}" th:inline="javascript">
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+
+	$('#finalDate').calendar({
+		  type: 'month'
+		});
+	
 $('#select').dropdown({
      apiSettings: {
         url: '/api/taxpayers/autocomplete?term={query}',
@@ -65,6 +86,8 @@ $('#select').dropdown({
     clearable: true
 })
 
+document.getElementById("table").style.display = 'none'; 
+
   $(document)
     .ready(function() {
       $('.ui.form')
@@ -75,40 +98,61 @@ $('#select').dropdown({
                 rules: [
                   {
                     type   : 'empty',
-                    prompt : [[#{payee_missing_taxpayer_id}]]
+                    prompt : [[#{taxpayer.missing.taxpayer.id}]]
                   }
                 ]
               }
           },
           onSuccess: (function(event,fields){
         		 event.preventDefault();
-        		 var form_as_obj = {};
-        		 $.each($('form').serializeArray(),
-        		     function(i, v) {
-        			 form_as_obj[v.name] = v.value;
-        		     });
-        		 console.log(form_as_obj);
-        		 $.ajax({
-        			    url: $('form')[0].action,
-        			    type: 'POST',
-        			    dataType: 'json',
-        			    contentType: 'application/json',
-        			    data: JSON.stringify(form_as_obj),        			    
-        			    cache: false,    
-        				success: function(result) {
-        				},
-        				error: function(e) {
-        					var msg = e.responseText.replace(/\n/g, "<br />");
-        					$('#modal_failed').find('.description').html(msg)
-        					$('#modal_failed').modal('show')
-        					console.log("ERROR : "+msg);
-        				}
-        			});			 
+        		 table.replaceData();
+        		 document.getElementById("table").style.display = 'block';
           })
         })
       ;
     })
-  ;
+  ;  
+  
+let table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitData", //fit columns to width of table (optional)
+    pagination: false,
+	paginationMode: "remote", //enable remote pagination
+	ajaxURL: /*[[@{/api/generalview/vertical-analysis}]]*/ "/api/generalview/vertical-analysis", //set url for ajax request
+	ajaxURLGenerator: function(url, config, params ){
+		console.log(config)
+		console.log(params)
+		p = new URLSearchParams()
+		p.set('taxpayerId', document.getElementById("taxpayer").value)
+		p.set('finalDate', $('#finalDate').calendar('get date'))
+		console.log(url + '?' + p.toString())		
+		return url + '?' + p.toString()
+	},
+	ajaxContentType: "json",
+	rowFormatter:function(row){
+	    var data = row.getData();
+	    if(data.level == "1"){
+	        row.getElement().style.backgroundColor = "#719beb"; //apply css change to row element
+	        row.getElement().style.fontWeight = "bold";
+	    }	
+	    else if(data.level == "2"){
+	        row.getElement().style.backgroundColor = "#a7c1f2"; //apply css change to row element
+	    }
+	    else if(data.level == "3"){
+	        row.getElement().style.backgroundColor = "#dfe6f2"; //apply css change to row element
+	    }
+	},	
+	columns:[ //Define Table Columns
+		{title: /*[[#{account.level}}*/ "Level", field:"level", hozAlign:"center", headerSort:false},
+		{title: /*[[#{account.category}}*/ "Category", field:"category", hozAlign:"center", headerSort:false },
+		{title: /*[[#{account.subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"center", headerSort:false},
+		{title: /*[[#{account.code}}*/ "Code", field:"code", headerSort:false},
+		{title: /*[[#{account.description}]]}*/ "Description", field:"description", headerSort:false },
+		{title: /*[[#{account.finalBalance}]]}*/ "Balance", field:"finalBalance", hozAlign:"right", headerSort:false },
+		{title: /*[[#{account.percentage}]]}*/ "Percentage", field:"percentage", hozAlign:"right", headerSort:false }	
+	]
+})
+
 </script>
 </body>
 </html>

@@ -1,0 +1,114 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="people arrows icon"></i>
+			<div class="content" th:text="#{taxpayers.general.view.vertical.analysis}">Show vertical analysis</div>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+            <form action="#" name="form" id="form" th:action="@{/vertical-analysis-data}" class="ui form" method="post">
+              <div class="ui field" id="search1">
+                <label th:text="#{taxpayer.name}">TaxPayer name</label>
+                <div class="ui search selection dropdown" id="select">
+                    <input id="taxpayer" type="hidden" name="personId">
+                    <div class="default text" th:text="#{select}">Select</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu"></div>
+                </div>
+              </div>             
+             
+            <div class="row">
+              <input type="submit" class="ui blue button"  th:value="#{search}" value="Search"> 
+            </div>             
+            </form>
+		    </div>
+		    <div id="table" class="ui orange table"></div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+
+<script th:nonce="${cspNonce}" th:inline="javascript">
+
+$('#select').dropdown({
+     apiSettings: {
+        url: '/api/taxpayers/autocomplete?term={query}',
+        method: 'GET',
+        //dataType: 'text',
+        cache: false,
+        onResponse: function(result) {
+             results = []
+             $.each(result.results, function(index, item) {
+                 results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+             })
+             result.results = results
+             return result
+        },
+     },
+     onChange: function(value) {
+        
+    },
+    action: 'activate',
+    clearable: true
+})
+
+  $(document)
+    .ready(function() {
+      $('.ui.form')
+        .form({
+          fields: {
+        	  taxpayer: {
+                identifier  : 'taxpayer',
+                rules: [
+                  {
+                    type   : 'empty',
+                    prompt : [[#{taxpayer.missing.taxpayer.id}]]
+                  }
+                ]
+              }
+          },
+          onSuccess: (function(event,fields){
+        		 event.preventDefault();
+        		 var form_as_obj = {};
+        		 $.each($('form').serializeArray(),
+        		     function(i, v) {
+        			 form_as_obj[v.name] = v.value;
+        		     });
+        		 console.log(form_as_obj);
+        		 window.location.replace($('form')[0].action + '?taxpayerId=' + document.getElementById("taxpayer").value);
+        		 $.ajax({
+        			 	url: $('form')[0].action + '?taxpayerId=' + document.getElementById("taxpayer").value,
+        			    type: 'GET',
+        			    cache: false,    
+        				success: function(result) {
+        					
+        				},
+        				error: function(e) {
+        					var msg = e.responseText.replace(/\n/g, "<br />");
+        					$('#modal_failed').find('.description').html(msg)
+        					$('#modal_failed').modal('show')
+        					console.log("ERROR : "+msg);
+        				}
+        			});			 
+          })
+        })
+      ;
+    })
+  ;
+</script>
+</body>
+</html>

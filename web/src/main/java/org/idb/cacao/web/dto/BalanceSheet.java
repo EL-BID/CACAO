@@ -36,6 +36,8 @@ public class BalanceSheet implements Serializable {
 	
 	private String taxPayerId;
 	
+	private String taxPayerName;
+	
 	private OffsetDateTime initialDate;
 	
 	private OffsetDateTime finalDate;
@@ -51,6 +53,14 @@ public class BalanceSheet implements Serializable {
 
 	public void setTaxPayerId(String taxPayerId) {
 		this.taxPayerId = taxPayerId;
+	}
+
+	public String getTaxPayerName() {
+		return taxPayerName;
+	}
+
+	public void setTaxPayerName(String taxPayerName) {
+		this.taxPayerName = taxPayerName;
 	}
 
 	public OffsetDateTime getInitialDate() {

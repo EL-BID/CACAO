@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletResponse;
 
 import org.idb.cacao.web.controllers.services.TaxPayerGeneralViewService;
+import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -77,8 +78,10 @@ public class TaxPayerGeneralViewUIController {
 	}
 	
 	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
-	@PostMapping(value= {"/vertical-analysis-data"})
-	public void getVerticalAnalysisData(HttpServletResponse response, @PathVariable("personId") String personId) {
+	@GetMapping(value= {"/vertical-analysis-data"})
+	public String getVerticalAnalysisData(HttpServletResponse response, Model model, 
+			@RequestParam("taxpayerId") String taxpayerId,
+			@RequestParam("finalDate") String finalDate) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -88,14 +91,14 @@ public class TaxPayerGeneralViewUIController {
     		throw new UserNotFoundException();
 		
 		// Parse the 'templateName' informed at request path
-		if (personId==null || personId.trim().length()==0) {
+		if (taxpayerId==null || taxpayerId.trim().length()==0) {
 			throw new MissingParameter("personId");
 		}
-		try {
-			response.sendRedirect("/api/generalview/verticalanalysis?personId=" + personId);
-		} catch (IOException e) {
-			log.log(Level.SEVERE, "Error while redirecting for show vertical analysis for taxpayer with id " + personId, e);
-		}
+		
+		BalanceSheet balance = taxPayerGeneralViewService.getBalance(taxpayerId);
+		model.addAttribute("balance", balance);
+		
+		return "taxpayersgeneralview/view-vertical-analysis-data";
 
 	}	
 

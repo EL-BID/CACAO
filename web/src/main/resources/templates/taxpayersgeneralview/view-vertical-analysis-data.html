@@ -20,6 +20,11 @@
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
+              <div class="ui field">
+                <label th:text="#{taxpayer.name}">TaxPayer name</label>
+                <div class="ui" id="select">
+                    <input id="taxpayer" name="personId" readonly>
+                </div>			
 		    </div>
 		    <div id="table" class="ui orange table"></div>
 		</div>
@@ -27,7 +32,9 @@
 
 <script th:nonce="${cspNonce}" th:inline="javascript">
 
-let balance = /*[[${balance}]]*/ null; 
+let balance = /*[[${balance}]]*/ null;
+
+document.getElementById("taxpayer").value = balance.taxPayerName;
 
 let table = new Tabulator('#table', {
 	index: 'id',
