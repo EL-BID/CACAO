@@ -112,7 +112,12 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	
 	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
-	@Field(type=Keyword)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@NotNull
 	@AFieldDescriptor(externalName = "user.profile")
 	private UserProfile profile;	

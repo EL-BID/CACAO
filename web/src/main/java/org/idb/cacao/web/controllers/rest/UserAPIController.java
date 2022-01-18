@@ -19,8 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,26 +30,29 @@ import java.util.stream.StreamSupport;
 
 import javax.validation.Valid;
 
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.Views;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
+import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
+import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -94,25 +95,36 @@ public class UserAPIController {
 	private UserService userService;
 	
 	@Autowired
-	private Environment env;
-
+	private RestHighLevelClient elasticsearchClient;
+	
 	@JsonView(Views.Public.class)
 	@Secured({"ROLE_USER_READ"})
 	@GetMapping(value="/users", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing users using pagination")
-	public PaginationData<User> getUsers(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
-		int currentPage = page.orElse(1);
-		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
-		Page<User> users;
-		if (filters.isPresent() && !filters.get().isEmpty()) {
-			users = userService.searchUsers(filters, page, size);
-		} else {
-			users = searchPage(() -> userRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("name").ascending())));
+	public PaginationData<User> getUsersWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+		Page<User> docs;
+		Optional<String> sortField = Optional.of(sortBy.orElse("name"));
+		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
+		try {
+			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), User.class, elasticsearchClient, page, size, 
+					sortField, direction);
+
 		}
-		PaginationData<User> result = new PaginationData<>(users.getTotalPages(), users.getContent());
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error while searching for all documents", ex);
+			docs = Page.empty();
+		}		
+		PaginationData<User> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
 		return result;
 	}
 	

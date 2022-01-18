@@ -527,6 +527,11 @@ public class MonthlyBalanceSheetProcessor {
 					}
 				}
 				
+				final String monthName = Month.of(month).getDisplayName(
+			        TextStyle.SHORT, 
+			        Locale.getDefault()
+			    );
+
 				final Optional<Map<String,Object>> accountInformation = (lookupChartOfAccounts==null) ? Optional.empty() :lookupChartOfAccounts.getUnchecked(account);
 				String rowId_BS = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInBalanceSheet.incrementAndGet());
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
@@ -539,7 +544,7 @@ public class MonthlyBalanceSheetProcessor {
 					normalizedRecord_BS.put(publishedTemplateVersion, gl.getTemplateVersion());
 				}
 				normalizedRecord_BS.put(publishedYear, year);
-				normalizedRecord_BS.put(publishedMonth, month);
+				normalizedRecord_BS.put(publishedMonth, monthName);
 				normalizedRecord_BS.put(balanceAccountCode, account);
 				normalizedRecord_BS.put(openingBalanceInitial, Math.abs(previous_final_balance.doubleValue()));
 				normalizedRecord_BS.put(openingBalanceMonthlyDC, (previous_final_balance.doubleValue()>=0) ? "D" : "C");

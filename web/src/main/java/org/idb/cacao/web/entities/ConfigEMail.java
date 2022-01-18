@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
@@ -32,6 +33,8 @@ import javax.validation.constraints.NotNull;
 import org.idb.cacao.api.AFieldDescriptor;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 
 /**
  * JavaMail Configuration
@@ -66,7 +69,12 @@ public class ConfigEMail implements Serializable, Cloneable {
 	
 	@Enumerated(EnumType.STRING)
 	@NotNull
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@AFieldDescriptor(externalName = "email.smtp.protocol", width = 80)
 	private EmailProtocol protocol;
 	

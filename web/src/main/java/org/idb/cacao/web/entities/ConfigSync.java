@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
@@ -30,6 +31,8 @@ import javax.validation.constraints.Size;
 
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.InnerField;
+import org.springframework.data.elasticsearch.annotations.MultiField;
 
 /**
  * ConfigSync Configuration (for subscribers/slaves)
@@ -56,7 +59,12 @@ public class ConfigSync implements Serializable, Cloneable {
 	private String apiToken;
 
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	private SyncPeriodicity periodicity;
 
 	/**
@@ -69,7 +77,12 @@ public class ConfigSync implements Serializable, Cloneable {
 	 * Day of week is only considered when periodicity = SyncPeriodicity.WEEKLY
 	 */
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	private DayOfWeek dayOfWeek;
 
 	public long getId() {
