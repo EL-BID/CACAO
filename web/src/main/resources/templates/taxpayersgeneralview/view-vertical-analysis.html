@@ -50,7 +50,7 @@
 					</div>
 				</form>
 			</div>
-			<div id="table" class="ui orange table"></div>
+			<div id="table" class="ui orange table" style="display: none"></div>
 		</div>
 	</div>
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
@@ -132,24 +132,36 @@ let table = new Tabulator('#table', {
 	rowFormatter:function(row){
 	    var data = row.getData();
 	    if(data.level == "1"){
-	        row.getElement().style.backgroundColor = "#719beb"; //apply css change to row element
+	        row.getElement().style.backgroundColor = "#FFA500"; //apply css change to row element
 	        row.getElement().style.fontWeight = "bold";
 	    }	
 	    else if(data.level == "2"){
-	        row.getElement().style.backgroundColor = "#a7c1f2"; //apply css change to row element
+	        row.getElement().style.backgroundColor = "#FFB52E"; //apply css change to row element
 	    }
 	    else if(data.level == "3"){
-	        row.getElement().style.backgroundColor = "#dfe6f2"; //apply css change to row element
+	        row.getElement().style.backgroundColor = "#FFC55C"; //apply css change to row element
 	    }
 	},	
 	columns:[ //Define Table Columns
 		{title: /*[[#{account.level}}*/ "Level", field:"level", hozAlign:"center", headerSort:false},
-		{title: /*[[#{account.category}}*/ "Category", field:"category", hozAlign:"center", headerSort:false },
-		{title: /*[[#{account.subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"center", headerSort:false},
+		//{title: /*[[#{account.categoryCode}}*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
+		{title: /*[[#{account.category}}*/ "Category", field:"category", hozAlign:"left", headerSort:false },
+		//{title: /*[[#{account.subcategoryCode}}*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
+		{title: /*[[#{account.subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
 		{title: /*[[#{account.code}}*/ "Code", field:"code", headerSort:false},
-		{title: /*[[#{account.description}]]}*/ "Description", field:"description", headerSort:false },
-		{title: /*[[#{account.finalBalance}]]}*/ "Balance", field:"finalBalance", hozAlign:"right", headerSort:false },
-		{title: /*[[#{account.percentage}]]}*/ "Percentage", field:"percentage", hozAlign:"right", headerSort:false }	
+		{title: /*[[#{account.name}]]}*/ "Name", field:"name", headerSort:false },
+		{title: /*[[#{account.finalBalance}]]}*/ "Balance", field:"finalBalance", hozAlign:"right", headerSort:false, formatter:"money", formatterParams:{
+		    decimal:",",
+		    thousand:".",
+		    symbol:"$",
+		    symbolAfter:"p",
+		    precision:0} },
+		{title: /*[[#{account.percentage}]]}*/ "Percentage", field:"percentage", hozAlign:"right", headerSort:false, formatter:"money", formatterParams:{
+		    decimal:",",
+		    thousand:".",
+		    symbol:"%",
+		    symbolAfter:"p",
+		    precision:2} },	
 	]
 })
 

@@ -19,29 +19,14 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.idb.cacao.web.controllers.services.TaxPayerGeneralViewService;
-import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.entities.User;
-import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Controller class for all endpoints related to 'gerenal view' from tax payers
@@ -51,17 +36,6 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @Controller
 public class TaxPayerGeneralViewUIController {
-
-	private static final Logger log = Logger.getLogger(TaxPayerGeneralViewUIController.class.getName());
-
-    @Autowired
-    private MessageSource messages;
-
-	@Autowired
-	private Environment env;
-
-	@Autowired
-	private TaxPayerGeneralViewService taxPayerGeneralViewService;
 	
 	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
 	@GetMapping(value= {"/vertical-analysis"})
@@ -75,31 +49,6 @@ public class TaxPayerGeneralViewUIController {
     		throw new UserNotFoundException();
 		
         return "taxpayersgeneralview/view-vertical-analysis";
-	}
-	
-	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
-	@GetMapping(value= {"/vertical-analysis-data"})
-	public String getVerticalAnalysisData(HttpServletResponse response, Model model, 
-			@RequestParam("taxpayerId") String taxpayerId,
-			@RequestParam("finalDate") String finalDate) {
-		
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		throw new UserNotFoundException();
-    	User user = UserUtils.getUser(auth);
-    	if (user==null)
-    		throw new UserNotFoundException();
-		
-		// Parse the 'templateName' informed at request path
-		if (taxpayerId==null || taxpayerId.trim().length()==0) {
-			throw new MissingParameter("personId");
-		}
-		
-		BalanceSheet balance = taxPayerGeneralViewService.getBalance(taxpayerId);
-		model.addAttribute("balance", balance);
-		
-		return "taxpayersgeneralview/view-vertical-analysis-data";
-
 	}	
 
 }

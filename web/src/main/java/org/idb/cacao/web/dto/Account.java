@@ -20,6 +20,9 @@
 package org.idb.cacao.web.dto;
 
 import java.io.Serializable;
+import java.util.Map;
+
+import org.apache.commons.collections4.comparators.ComparableComparator;
 
 /**
  * A representation of a specific account with balance
@@ -27,27 +30,39 @@ import java.io.Serializable;
  * @author Rivelino Patrício
  *
  */
-public class Account implements Serializable {
-	
+public class Account implements Serializable, Comparable<Account> {
+
 	private static final long serialVersionUID = 1L;
-	
+
 	private int level;
+
+	private String categoryCode;
 	
 	private String category;
+
+	private String subcategoryCode;
 	
 	private String subcategory;
-	
+
 	private String code;
-	
-	private String description;
-	
+
+	private String name;
+
 	private double initialBalance;
-	
+
 	private double finalBalance;
 	
+	private String initialBalanceType;
+
+	private String finalBalanceType;
+
 	private double percentage;
 
 	public Account() {
+	}
+
+	public Account(Map<String, Object> values) {
+		System.out.println(values.toString());
 	}
 
 	public int getLevel() {
@@ -56,6 +71,22 @@ public class Account implements Serializable {
 
 	public void setLevel(int level) {
 		this.level = level;
+	}
+
+	public String getCategoryCode() {
+		return categoryCode;
+	}
+
+	public void setCategoryCode(String categoryCode) {
+		this.categoryCode = categoryCode;
+	}
+
+	public String getSubcategoryCode() {
+		return subcategoryCode;
+	}
+
+	public void setSubcategoryCode(String subcategoryCode) {
+		this.subcategoryCode = subcategoryCode;
 	}
 
 	public String getCategory() {
@@ -82,12 +113,12 @@ public class Account implements Serializable {
 		this.code = code;
 	}
 
-	public String getDescription() {
-		return description;
+	public String getName() {
+		return name;
 	}
 
-	public void setDescription(String description) {
-		this.description = description;
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public double getInitialBalance() {
@@ -113,5 +144,68 @@ public class Account implements Serializable {
 	public void setPercentage(double percentage) {
 		this.percentage = percentage;
 	}
-	
+
+	public String getInitialBalanceType() {
+		return initialBalanceType;
+	}
+
+	public void setInitialBalanceType(String initialBalanceType) {
+		this.initialBalanceType = initialBalanceType;
+	}
+
+	public String getFinalBalanceType() {
+		return finalBalanceType;
+	}
+
+	public void setFinalBalanceType(String finalBalanceType) {
+		this.finalBalanceType = finalBalanceType;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public int compareTo(Account ref) {
+		int comp = 0;
+		
+		if (this==ref) {
+			return comp;
+		}
+
+		if (ref == null) {
+			return +1;
+		}
+		
+		if ( categoryCode == null )
+			return -1;
+		
+		if ( ref.categoryCode == null )
+			return +1;		
+		
+		comp = ComparableComparator.INSTANCE.compare(categoryCode, ref.categoryCode);		
+		if (comp != 0)
+			return comp;
+
+		if ( subcategoryCode == null )
+			return -1;
+		
+		if ( ref.subcategoryCode == null )
+			return +1;
+		
+		comp = ComparableComparator.INSTANCE.compare(subcategoryCode, ref.subcategoryCode);
+		if (comp != 0)
+			return comp;
+		
+		if ( code == null )
+			return -1;
+		
+		if ( ref.code == null )
+			return +1;		
+
+		comp = ComparableComparator.INSTANCE.compare(code, ref.code);
+		if (comp != 0)
+			return comp;
+		
+		return 0;
+		
+	}
+
 }
