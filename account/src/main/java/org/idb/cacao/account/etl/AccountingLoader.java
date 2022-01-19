@@ -537,7 +537,7 @@ public class AccountingLoader {
 			});
 			
 			// Computes monthly balance sheets
-			final MonthlyBalanceSheetProcessor balanceSheetProc = new MonthlyBalanceSheetProcessor(context, ob, timestamp);
+			final MonthlyBalanceSheetProcessor balanceSheetProc = new MonthlyBalanceSheetProcessor(context, account_standard, ob, timestamp);
 			balanceSheetProc.setDocumentUploadedForGeneralLedger(gl);
 			balanceSheetProc.setCountRecordsOverall(countRecordsOverall);
 			balanceSheetProc.setDeclarantInformation(declarantInformation);

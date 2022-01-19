@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.format.TextStyle;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -36,11 +37,15 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.elasticsearch.action.index.IndexRequest;
+import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
+import org.idb.cacao.account.elements.AccountCategory;
+import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.BalanceSheet;
 import org.idb.cacao.account.etl.AccountingLoader.AccountingFieldNames;
 import org.idb.cacao.api.DocumentSituation;
@@ -109,6 +114,11 @@ public class MonthlyBalanceSheetProcessor {
 	private static final String openingBalanceInitial = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name());
 
 	/**
+	 * The field name for published data regarding the initial balance amount for each Monthly Balance Sheet, with sign corresponding to the debit/credit nature of the account
+	 */
+	private static final String openingBalanceWithSign = IndexNamesUtils.formatFieldName("InitialBalanceWithSign");
+
+	/**
 	 * The field name for validated data regarding the 'D/C' indication of initial balance amount
 	 */
 	private static final String openingBalanceDC = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.DebitCredit.name());
@@ -144,9 +154,19 @@ public class MonthlyBalanceSheetProcessor {
 	private static final String closingBalanceMonthlyDC = IndexNamesUtils.formatFieldName(AccountingFieldNames.FinalBalanceDebitCredit.name());
 
 	/**
+	 * The field name for published data regarding the closing balance amount for each Monthly Balance Sheet, with sign corresponding to the debit/credit nature of the account
+	 */
+	private static final String closingBalanceWithSign = IndexNamesUtils.formatFieldName("FinalBalanceWithSign");
+
+	/**
 	 * The number of book entries for each Monthly Balance Sheet
 	 */
 	private static final String bookEntries = IndexNamesUtils.formatFieldName(AccountingFieldNames.BookEntries.name());
+	
+	/**
+	 * The category code related to the account informed in each Monthly Balance Sheet
+	 */
+	private static final String accountCategory = IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name());
 
 	/**
 	 * Ignores differences lesser than half of a cent	
@@ -189,6 +209,11 @@ public class MonthlyBalanceSheetProcessor {
 	
 	private final LoadDataStrategy loader;
 	
+	/**
+	 * Codes at domain table of categories of accounts that has debit nature (i.e.: positive means debit)
+	 */
+	private final Set<String> categoriesWithDebitNature;
+	
 	private LongAdder countRecordsOverall;
 
 	private DocumentUploaded gl;
@@ -205,6 +230,7 @@ public class MonthlyBalanceSheetProcessor {
 	private Consumer<String> collectWarnings;
 
 	public MonthlyBalanceSheetProcessor(final ETLContext context,
+			final AccountStandard accountStandard,
 			final DocumentUploaded ob,
 			final OffsetDateTime timestamp) {
 		this.previousMonth = new AtomicInteger(0);
@@ -222,6 +248,11 @@ public class MonthlyBalanceSheetProcessor {
 			context.addAlert(ob, alert);
 			context.setOutcomeSituation(ob, DocumentSituation.PENDING);
 		};
+		this.categoriesWithDebitNature = 
+		Arrays.stream(AccountCategory.values())
+			.filter(AccountCategory::isDebitNature)
+			.map(c->c.getNumber(accountStandard))
+			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 	}
 	
 	public void setDocumentUploadedForGeneralLedger(DocumentUploaded gl) {
@@ -362,7 +393,7 @@ public class MonthlyBalanceSheetProcessor {
 	 * @param informedBalancedSheetsAccountsAndMonths Keeps track of all informed balance sheets
 	 * @param loader Object used for writing the results
 	 */
-	private static void addRecordToMonthlyBalanceSheet(
+	private void addRecordToMonthlyBalanceSheet(
 			final DocumentUploaded gl,
 			final Set<String> accountsForBalanceSheets,
 			final int yearMonth,
@@ -410,8 +441,15 @@ public class MonthlyBalanceSheetProcessor {
 				normalizedRecord_BS.put(bookEntries, computedBalanceSheet.getCountEntries());
 				if (declarantInformation.isPresent())
 					normalizedRecord_BS.putAll(declarantInformation.get());
-				if (accountInformation.isPresent())
+				if (accountInformation.isPresent()) {
 					normalizedRecord_BS.putAll(accountInformation.get());
+					addBalanceWithSign(openingBalanceWithSign, accountInformation.get(), Math.abs(computedBalanceSheet.getInitialValue()), computedBalanceSheet.isInitialValueDebit(),
+							categoriesWithDebitNature,
+							normalizedRecord_BS);
+					addBalanceWithSign(closingBalanceWithSign, accountInformation.get(), Math.abs(computedBalanceSheet.getFinalValue()), computedBalanceSheet.isFinalValueDebit(),
+							categoriesWithDebitNature,
+							normalizedRecord_BS);
+				}
 				loader.add(new IndexRequest(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET)
 					.id(rowId_BS)
 					.source(normalizedRecord_BS));
@@ -426,7 +464,7 @@ public class MonthlyBalanceSheetProcessor {
 	/**
 	 * Feed information about missing periods or missing accounts in Monthly Balance Sheets.
 	 */
-	private static void fillMissingMonthlyBalanceSheet(
+	private void fillMissingMonthlyBalanceSheet(
 			final DocumentUploaded gl,
 			final Set<String> accountsForBalanceSheets,
 			final String taxPayerId,
@@ -555,8 +593,15 @@ public class MonthlyBalanceSheetProcessor {
 				normalizedRecord_BS.put(bookEntries, 0);
 				if (declarantInformation.isPresent())
 					normalizedRecord_BS.putAll(declarantInformation.get());
-				if (accountInformation.isPresent())
+				if (accountInformation.isPresent()) {
 					normalizedRecord_BS.putAll(accountInformation.get());
+					addBalanceWithSign(openingBalanceWithSign, accountInformation.get(), Math.abs(previous_final_balance.doubleValue()), (previous_final_balance.doubleValue()>=0),
+							categoriesWithDebitNature,
+							normalizedRecord_BS);
+					addBalanceWithSign(closingBalanceWithSign, accountInformation.get(), Math.abs(previous_final_balance.doubleValue()), (previous_final_balance.doubleValue()>=0),
+							categoriesWithDebitNature,
+							normalizedRecord_BS);
+				}
 				loader.add(new IndexRequest(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET)
 					.id(rowId_BS)
 					.source(normalizedRecord_BS));
@@ -593,5 +638,28 @@ public class MonthlyBalanceSheetProcessor {
 					}
 				}
 			});
+	}
+	
+	/**
+	 * Write to generic record 'normalizedRecord' a field with the name provided by 'fieldName' with
+	 * the value provided by 'value' and with the signal provided by 'isDebit' and the category informed
+	 * in 'accountInformation'
+	 */
+	private static void addBalanceWithSign(
+			final String fieldName,
+			final Map<String,Object> accountInformation,
+			final double value,
+			final boolean isDebit,
+			final Set<String> categoriesWithDebitNature,
+			final Map<String, Object> normalizedRecord
+			) {		
+		if (accountInformation==null || accountInformation.isEmpty())
+			return;
+		String category = ValidationContext.toString(accountInformation.get(accountCategory));
+		if (category==null)
+			return;
+		boolean isCategoryDebitNature = categoriesWithDebitNature.contains(category);
+		double valueWithSign = (isCategoryDebitNature==isDebit) ? value : -value;
+		normalizedRecord.put(fieldName, valueWithSign);
 	}
 }

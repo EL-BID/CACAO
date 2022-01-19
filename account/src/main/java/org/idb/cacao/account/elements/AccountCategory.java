@@ -40,20 +40,22 @@ import org.springframework.context.i18n.LocaleContextHolder;
  */
 public enum AccountCategory {
 
-	ASSET("account.category.asset", 				/*GAAP*/"1", /*IFRS*/"1"),
-	LIABILITY("account.category.liability", 		/*GAAP*/"2", /*IFRS*/"3"),
-	EQUITY("account.category.equity", 				/*GAAP*/"3", /*IFRS*/"2"),
-	REVENUE("account.category.revenue", 			/*GAAP*/"4", /*IFRS*/"4"),
-	EXPENSE("account.category.expense", 			/*GAAP*/"5", /*IFRS*/"5"),
-	INTERCOMPANY("account.category.intercompany", 	/*GAAP*/"7", /*IFRS*/"7"),
-	OTHER("account.category.other", 				/*GAAP*/"X", /*IFRS*/"X");
+	ASSET("account.category.asset", 				/*isDebitNature*/true,	/*GAAP*/"1", /*IFRS*/"1"),
+	LIABILITY("account.category.liability", 		/*isDebitNature*/false,	/*GAAP*/"2", /*IFRS*/"3"),
+	EQUITY("account.category.equity", 				/*isDebitNature*/false,	/*GAAP*/"3", /*IFRS*/"2"),
+	REVENUE("account.category.revenue", 			/*isDebitNature*/false,	/*GAAP*/"4", /*IFRS*/"4"),
+	EXPENSE("account.category.expense", 			/*isDebitNature*/true,	/*GAAP*/"5", /*IFRS*/"5"),
+	INTERCOMPANY("account.category.intercompany", 	/*isDebitNature*/true,	/*GAAP*/"7", /*IFRS*/"7"),
+	OTHER("account.category.other", 				/*isDebitNature*/true,	/*GAAP*/"X", /*IFRS*/"X");
 	
 	private final String display;
 	private final String gaapNumber;
 	private final String ifrsNumber;
+	private final boolean isDebitNature;
 	
-	AccountCategory(String display, String gaapNumber, String ifrsNumber) {
+	AccountCategory(String display, boolean isDebitNature, String gaapNumber, String ifrsNumber) {
 		this.display = display;
+		this.isDebitNature = isDebitNature;
 		this.gaapNumber = gaapNumber;
 		this.ifrsNumber = ifrsNumber;
 	}
@@ -63,6 +65,10 @@ public enum AccountCategory {
 		return display;
 	}
 	
+	public boolean isDebitNature() {
+		return isDebitNature;
+	}
+
 	public String getGaapNumber() {
 		return gaapNumber;
 	}
