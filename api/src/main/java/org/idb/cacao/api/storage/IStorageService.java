@@ -57,6 +57,11 @@ public interface IStorageService {
 	Path find(String filename);
 	
 	/**
+	 * Returns a specific location to store a file
+	 */
+	Path getLocation(String subDir);
+
+	/**
 	 * Deletes the file from the storage
 	 */
 	default boolean delete(String filename) {

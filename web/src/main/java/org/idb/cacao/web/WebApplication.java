@@ -155,7 +155,8 @@ public class WebApplication {
 		}
 
 		try {
-			if ("true".equalsIgnoreCase(env.getProperty("compatibilize.indices.at.start"))) {
+			if ((!ControllerUtils.isJUnitTest() && !ControllerUtils.hasMockES())
+					&& "true".equalsIgnoreCase(env.getProperty("compatibilize.indices.at.start"))) {
 				sanitizationService.compatibilizeIndicesMappings();
 			}
 		}

@@ -23,9 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -65,10 +69,17 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.ResizeRequest;
 import org.elasticsearch.client.indices.ResizeResponse;
 import org.elasticsearch.common.unit.TimeValue;
+import org.idb.cacao.api.DocumentSituation;
+import org.idb.cacao.api.DocumentSituationHistory;
+import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.api.templates.DocumentFormat;
+import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.idb.cacao.web.controllers.rest.AdminAPIController;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
@@ -79,12 +90,22 @@ import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.HttpUtils;
+import org.idb.cacao.web.utils.generators.FileGenerator;
+import org.idb.cacao.web.utils.generators.FileGenerators;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
 
 /**
  * Service methods for administrative operations
@@ -129,6 +150,9 @@ public class AdminService {
     
     @Autowired
     private KibanaSpacesService kibanaSpacesService;
+
+	@Autowired
+	private FileUploadedProducer fileUploadedProducer;
 
     private RestTemplate restTemplate;
 
@@ -203,7 +227,10 @@ public class AdminService {
 		
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
-			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications.")),
+			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
+			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. Must inform the template name."),
+			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
+			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10000.")),
 		
 		UPDATE_INDEX_PATTERN(AdminService::updateIndexPattern,
 				"Updates the index pattern mapping in Kibana according to the index fields in ElasticSearch",
@@ -699,8 +726,128 @@ public class AdminService {
 
 		}
 		
+		if (cmdLine.hasOption("d")) {
+			// Add sample data (documents) according to provided template name
+			String template_name = cmdLine.getOptionValue("d");
+			if (template_name.trim().length()==0)
+				report.append("Missing template name with 'd' option!");
+			else {
+				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
+				long limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : 10_000;
+				service.createSampleDocuments(template_name.trim(), limit_docs, limit_records, report);
+			}
+		}
+		
 		return report.toString();
 		
+	}
+	
+	/**
+	 * Creates sample documents with random data according to the provided template
+	 */
+	private void createSampleDocuments(String template_name, int limit_docs, long limit_records, StringBuilder report) throws Exception {
+		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
+		if (templates_versions==null || templates_versions.isEmpty()) {
+			report.append("Could not find a template with name: ").append(template_name).append("\n");
+			return;
+		}
+		
+		DocumentTemplate template;
+		
+		if (templates_versions.size()>1) {
+			// In case of multiple versions, use the last one
+			template = templates_versions.stream()
+					.filter(t->t.getInputs()!=null && !t.getInputs().isEmpty())
+					.sorted(Comparator.comparing(DocumentTemplate::getTemplateCreateTime).reversed())
+					.findFirst().get();
+		}
+		else {
+			template = templates_versions.get(0);
+		}
+		
+		List<DocumentInput> inputFormats = template.getInputs();
+		if (inputFormats==null || inputFormats.isEmpty()) {
+			report.append("Template ").append(template.getName()).append(" version ").append(template.getVersion()).append(" has no input fields definitions!\n");
+			return;			
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
+		String remoteIpAddr = (reqAttr instanceof ServletRequestAttributes) ? ((ServletRequestAttributes)reqAttr).getRequest().getRemoteAddr() : null;
+		
+		long seed = UUID.randomUUID().getLeastSignificantBits() ^ UUID.randomUUID().getMostSignificantBits();
+		
+		DocumentInput input_format = inputFormats.stream().filter(i->DocumentFormat.XLS.equals(i.getFormat())).findFirst().orElse(null);
+		if (input_format!=null) {
+			DocumentFormat format = input_format.getFormat();
+			FileGenerator gen = FileGenerators.getFileGenerator(format);
+			gen.setRandomSeed(seed);
+			gen.setDocumentTemplate(template);
+			gen.setDocumentInputSpec(input_format);
+			gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
+			for (int i=0; i<limit_docs; i++) {
+				String subDir = fileSystemStorageService.getSubDir();
+				Path location = fileSystemStorageService.getLocation(subDir);
+				
+				String fileId = UUID.randomUUID().toString();
+
+				final OffsetDateTime timestamp = DateTimeUtils.now();
+
+				Path destinationFile = location.resolve(Paths.get(fileId)).normalize().toAbsolutePath();
+				
+				String originalFilename;
+
+				try {
+					gen.setPath(destinationFile);
+					gen.start();
+					originalFilename = gen.getOriginalFileName();
+					for (long j=0; j<limit_records; j++) {
+						gen.addRandomRecord();
+					}
+				}
+				finally {
+					gen.close();
+				}
+				
+				String fileHash = Files.asByteSource(destinationFile.toFile()).hash(Hashing.sha256()).toString();
+				
+				// Keep this information in history of all uploads
+				DocumentUploaded regUpload = new DocumentUploaded();
+				regUpload.setTemplateName(template.getName());
+				regUpload.setTemplateVersion(template.getVersion());
+				regUpload.setFileId(fileId);
+				regUpload.setFilename(originalFilename);
+				regUpload.setSubDir(subDir);
+				regUpload.setTimestamp(timestamp);
+				regUpload.setIpAddress(remoteIpAddr);
+				regUpload.setHash(fileHash);
+				regUpload.setSituation(DocumentSituation.RECEIVED);
+				if (auth != null) {
+					regUpload.setUser(String.valueOf(auth.getName()));
+				}
+				DocumentUploaded savedInfo = documentUploadedRepository.saveWithTimestamp(regUpload);
+
+				DocumentSituationHistory situationHistory = new DocumentSituationHistory();
+				situationHistory.setDocumentId(savedInfo.getId());
+				situationHistory.setDocumentFilename(savedInfo.getFilename());
+				situationHistory.setTemplateName(savedInfo.getTemplateName());
+				situationHistory.setSituation(DocumentSituation.RECEIVED);
+				situationHistory.setTimestamp(timestamp);
+
+				documentSituationHistoryRepository.saveWithTimestamp(situationHistory);
+				
+				// Generates an event at KAFKA in order to start the validation phase over this file
+
+				FileUploadedEvent event = new FileUploadedEvent();
+				event.setFileId(savedInfo.getId());
+				fileUploadedProducer.fileUploaded(event);
+
+			}
+			report.append("Created ").append(limit_docs).append(" documents with random data of format ").append(format.name()).append(" for template ").append(template.getName()).append(" version ").append(template.getVersion()).append("\n");
+			return;
+		}
+		
+		report.append("No implementation for random data generator of format ").append(inputFormats.get(0).getFormat().name()).append("\n");
 	}
 	
 	/**

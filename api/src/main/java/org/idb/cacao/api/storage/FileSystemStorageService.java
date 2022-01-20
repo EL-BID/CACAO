@@ -124,7 +124,8 @@ public class FileSystemStorageService implements IStorageService {
 	 * 
 	 * @return	Specific location for store a file
 	 */
-	private Path getLocation(String subDir) {
+	@Override
+	public Path getLocation(String subDir) {
 		if ( subDir == null || subDir.isEmpty() )
 			return rootLocation;
 		
