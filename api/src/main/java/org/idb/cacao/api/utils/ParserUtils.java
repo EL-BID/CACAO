@@ -26,6 +26,7 @@ import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -64,6 +65,7 @@ public class ParserUtils {
     public static final Pattern pYM = Pattern.compile("^(?>20\\d{2})[/\\-](?>0\\d|10|11|12|\\d)$"); //E.g.: yyyy/MM OR yyyy-MM
     public static final Pattern pMonthYear = Pattern.compile("^([A-Za-z.\\xA8-\\xFE]{3,12})[\\/-](20\\d{2})$"); //E.g.: MARCH/yyyy OR MAR-yyyy
     public static final Pattern pYearMonth = Pattern.compile("^(20\\d{2})[\\\\/-]([A-Za-z.\\xA8-\\xFE]{3,12})$"); //E.g.: yyyy/MARCH OR yyyy-MAR
+    public static final Pattern pDMDY = Pattern.compile("^([A-Za-z.\\\\xA8-\\\\xFE]{3}) ([A-Za-z.\\\\xA8-\\\\xFE]{3}) (\\d{2}) (\\d{4})$"); //E.g.: Tue Feb 01 2022
     
     /**
      * Maximum length for a field name to be considered as 'proper field name'
@@ -496,9 +498,54 @@ public class ParserUtils {
 		if ( monthValue == null )
 			return null;
 		
-		System.out.println("IN: " + value);
-		System.out.println("OUT: " + year + "-" + String.format("%02d", monthValue.intValue()) ); 
+		//System.out.println("IN: " + value);
+		//System.out.println("OUT: " + year + "-" + String.format("%02d", monthValue.intValue()) ); 
 		return year + "-" + String.format("%02d", monthValue.intValue()); 
+	}
+	
+	/**
+	 * Parse a month in format MONTH_NAME/YEAR OU YEAR/MONTH_NAME 
+	 * and returns a {@link YearMonth}
+	 * @param value	A month name and year
+	 * @return	A year/month value
+	 */
+	public static YearMonth parseYearMonth(String value) {
+		
+		if ( value == null || value.isEmpty() )
+			return null;
+		
+		value = getYearMonth(value);
+		
+		if (value == null )
+			return null;
+		
+		int year = Integer.valueOf(value.substring(0,4));
+		int month = parseMonth(value.substring(5));
+		
+		return YearMonth.of(year, month);
+		
+	}
+	
+	/**
+	 * Parse a month in format "Tue Feb 01 2022" and returns a {@link YearMonth}
+	 * @param value	A month name and year
+	 * @return	A year/month value
+	 */	
+	public static YearMonth parseDayMonthDayYear(String value) {
+		
+		if ( value == null || value.isEmpty() )
+			return null;
+		
+		Matcher m = pDMDY.matcher(value);
+		if ( !m.find() )
+			return null;
+		
+		int year = Integer.valueOf(m.group(4));
+		String monthName = m.group(2);
+		int month = parseMonth(monthName);
+		
+		return YearMonth.of(year, month); 		
+		
 	}
 	
 	/**

@@ -21,14 +21,12 @@ package org.idb.cacao.api.utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.context.MessageSource;
@@ -94,17 +92,6 @@ public class StringUtils {
 		}
     	
     };    
-
-	/**
-	 * Format dates
-	 * E.g.: 01/01/2010
-	 */
-    private static final ThreadLocal<Pattern> flexible_date = new ThreadLocal<Pattern>() {
-		@Override
-		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{1,2})[/\\\\\\-\\.]?(\\d{1,2})[/\\\\\\-\\.]?(\\d{2,4})$");
-		}
-	};
 
 	/**
 	 * E.g.: 01/Jan/2010
@@ -223,114 +210,6 @@ public class StringUtils {
 		catch (Throwable ex) {
 			return null;
 		}		
-	}
-
-    /**
-     * Parse a text as a date, considering different possible formats.
-     */
-	public static Date parseFlexibleDate(String date) {
-		if (date == null)
-			return null;
-		date = date.trim();
-		if (date.length() == 4 && date.matches("^\\d+$"))
-			return null; // could be just an year
-		Matcher m;
-		m = flexible_date.get().matcher(date);
-		if (!m.find()) {
-			date = Normalizer.normalize(date, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", "") // e.g.: Março => Marco
-			.trim();
-			m = flexible_date2.get().matcher(date);
-			boolean found = m.find();
-			if (!found) {
-				m = flexible_date4.get().matcher(date);
-				found = m.find();
-			}
-
-			int dia, ano;
-			if (found) {
-				dia = Integer.valueOf(m.group(1)).intValue();
-				ano = Integer.valueOf(m.group(3)).intValue();
-				if (ano < 1000)
-					ano += 2000;
-			} else {
-				m = flexible_date6.get().matcher(date);
-				found = m.find();
-				if (found) {
-					dia = Integer.valueOf(m.group(3)).intValue();
-					ano = Integer.valueOf(m.group(1)).intValue();
-				} else {
-					m = flexible_date7.get().matcher(date);
-					found = m.find();
-					if (found) {
-						dia = Integer.valueOf(m.group(3)).intValue();
-						ano = Integer.valueOf(m.group(1)).intValue();
-					} else {
-						dia = 0;
-						ano = 0;
-					}
-				}
-			}
-
-			if (found) {
-				// Evita considerar algo que tenha apenas um caractere de
-				// separação (ex: 01/2010 não pode ser confundido com 01/20/10).
-				boolean sep1 = m.end(1) < m.start(2);
-				boolean sep2 = m.end(2) < m.start(3);
-				if (sep1 != sep2)
-					return null;
-
-				String mes_str = m.group(2).trim().toUpperCase();
-				int mes = 0;
-				if (Character.isDigit(mes_str.charAt(0))) {
-					try {
-						mes = Integer.parseInt(mes_str);
-					}
-					catch (Throwable e){ }
-				}
-				else if (mes_str.startsWith("JAN"))
-					mes = 1;
-				else if (mes_str.startsWith("FEV"))
-					mes = 2;
-				else if (mes_str.startsWith("MAR"))
-					mes = 3;
-				else if (mes_str.startsWith("ABR"))
-					mes = 4;
-				else if (mes_str.startsWith("MAI"))
-					mes = 5;
-				else if (mes_str.startsWith("JUN"))
-					mes = 6;
-				else if (mes_str.startsWith("JUL"))
-					mes = 7;
-				else if (mes_str.startsWith("AGO"))
-					mes = 8;
-				else if (mes_str.startsWith("SET"))
-					mes = 9;
-				else if (mes_str.startsWith("OUT"))
-					mes = 10;
-				else if (mes_str.startsWith("NOV"))
-					mes = 11;
-				else if (mes_str.startsWith("DEZ"))
-					mes = 12;
-				if (mes != 0) {
-					return toDate(dia, mes, ano);
-				}
-			}
-			return null;
-		}
-		// Evita considerar algo que tenha apenas um caractere de separação (ex:
-		// 01/2010 não pode ser confundido com 01/20/10).
-		boolean sep1 = m.end(1) < m.start(2);
-		boolean sep2 = m.end(2) < m.start(3);
-		if (sep1 != sep2)
-			return null;
-		int dia = Integer.valueOf(m.group(1)).intValue();
-		int mes = Integer.valueOf(m.group(2)).intValue();
-		if (mes == 0)
-			return null; 
-		int ano = Integer.valueOf(m.group(3)).intValue();
-		if (ano < 1000)
-			ano += 2000;
-		return toDate(dia, mes, ano);
 	}
 
 	public static Date toDate(int day, int month, int year) {

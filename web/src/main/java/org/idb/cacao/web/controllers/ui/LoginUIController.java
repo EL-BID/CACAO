@@ -153,6 +153,14 @@ public class LoginUIController {
 			menu.add(new MenuItem(messages.getMessage("taxpayers.title", null, LocaleContextHolder.getLocale()),
 					"/taxpayers", "address book outline"));
 		}
+		
+		MenuItem submenu = new MenuItem(messages.getMessage("taxpayers.general.view", null, LocaleContextHolder.getLocale()));
+		menu.add(submenu);
+		//TODO Create specifics roles for this view
+		if (hasPrivilege(roles, SystemPrivilege.TAXPAYER_WRITE)) {
+			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.general.view.vertical.analysis", null, LocaleContextHolder.getLocale()),
+					"/vertical-analysis"));
+		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {
 			menu.add(new MenuItem(messages.getMessage("interpersonals.title", null, LocaleContextHolder.getLocale()),
@@ -169,7 +177,7 @@ public class LoginUIController {
 					"/domaintables", "table"));
 		}
 
-		MenuItem submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
+		submenu = new MenuItem(messages.getMessage("config.menu", null, LocaleContextHolder.getLocale()));
 		menu.add(submenu);
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_SYSTEM_MAIL)) {
 			submenu.withChild(new MenuItem(messages.getMessage("config.email", null, LocaleContextHolder.getLocale()),
