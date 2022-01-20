@@ -50,7 +50,9 @@
 					</div>
 				</form>
 			</div>
-			<div id="table" class="ui orange table" style="display: none"></div>
+			<div id="showtable"  style="display: none">
+				<div id="table" class="ui orange table"></div>
+			</div>
 		</div>
 	</div>
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
@@ -61,7 +63,10 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 
 	$('#finalDate').calendar({
-		  type: 'month'
+		  type: 'month',
+		     onChange: function(value) {
+		    	 $("#showtable").hide()   
+		     },
 		});
 	
 $('#select').dropdown({
@@ -80,13 +85,11 @@ $('#select').dropdown({
         },
      },
      onChange: function(value) {
-        
-    },
+    	 $("#showtable").hide()   
+     },
     action: 'activate',
     clearable: true
 })
-
-document.getElementById("table").style.display = 'none'; 
 
   $(document)
     .ready(function() {
@@ -104,9 +107,10 @@ document.getElementById("table").style.display = 'none';
               }
           },
           onSuccess: (function(event,fields){
-        		 event.preventDefault();
-        		 table.replaceData();
-        		 document.getElementById("table").style.display = 'block';
+       		 event.preventDefault();
+       		 table.replaceData();
+       		 $("#showtable").show()	 
+       		 //document.getElementById("table").style.display = 'block';
           })
         })
       ;
@@ -116,8 +120,9 @@ document.getElementById("table").style.display = 'none';
 let table = new Tabulator('#table', {
 	index: 'id',
 	layout: "fitData", //fit columns to width of table (optional)
-    pagination: false,
-	paginationMode: "remote", //enable remote pagination
+    pagination: true,
+	paginationMode: "local", //enable local pagination
+	paginationSize: 10,
 	ajaxURL: /*[[@{/api/generalview/vertical-analysis}]]*/ "/api/generalview/vertical-analysis", //set url for ajax request
 	ajaxURLGenerator: function(url, config, params ){
 		console.log(config)
@@ -129,6 +134,25 @@ let table = new Tabulator('#table', {
 		return url + '?' + p.toString()
 	},
 	ajaxContentType: "json",
+	locale:'xx',
+	langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
+	paginationSizeSelector:[10, 25, 50],	
 	rowFormatter:function(row){
 	    var data = row.getData();
 	    if(data.level == "1"){
