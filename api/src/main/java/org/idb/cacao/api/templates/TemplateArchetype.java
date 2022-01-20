@@ -117,4 +117,26 @@ public interface TemplateArchetype {
 	default public List<String> getRelatedPublishedDataIndices() {
 		return Collections.emptyList();
 	}
+	
+	/**
+	 * Returns indication that this archetype has a custom implementation for the provided document template
+	 * and document format.
+	 */
+	default public boolean hasCustomGenerator(DocumentTemplate template, DocumentFormat format) {
+		return false;
+	}
+	
+	/**
+	 * Returns a custom implementation for generating random data according to a given template and file format.
+	 * @param template Template that serves as a blueprint for data generation
+	 * @param format File format chosen to generate data
+	 * @param seed Initial seed for random data generation
+	 * @param records The expected total number of records to generate with this custom generator. Negative number means the total number is undefined, so the implementation
+	 * may decide when to stop generating new records.
+	 * @return Returns implementation for generating data. Returns NULL if there is no custom implementation for data generation. Throws exception in
+	 * case of incompatible parameters.
+	 */
+	default public CustomDataGenerator getCustomGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) throws Exception {
+		return null;
+	}
 }

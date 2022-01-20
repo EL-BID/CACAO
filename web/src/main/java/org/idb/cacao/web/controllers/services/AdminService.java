@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -33,6 +34,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -74,9 +77,12 @@ import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
@@ -98,6 +104,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestAttributes;
@@ -229,8 +236,9 @@ public class AdminService {
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
 			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. Must inform the template name."),
+			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
-			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10000.")),
+			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
 		
 		UPDATE_INDEX_PATTERN(AdminService::updateIndexPattern,
 				"Updates the index pattern mapping in Kibana according to the index fields in ElasticSearch",
@@ -733,8 +741,9 @@ public class AdminService {
 				report.append("Missing template name with 'd' option!");
 			else {
 				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
-				long limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : 10_000;
-				service.createSampleDocuments(template_name.trim(), limit_docs, limit_records, report);
+				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
+				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
+				service.createSampleDocuments(template_name.trim(), limit_docs, fixed_limit_records, seedWord, report);
 			}
 		}
 		
@@ -745,7 +754,7 @@ public class AdminService {
 	/**
 	 * Creates sample documents with random data according to the provided template
 	 */
-	private void createSampleDocuments(String template_name, int limit_docs, long limit_records, StringBuilder report) throws Exception {
+	private void createSampleDocuments(String template_name, int limit_docs, long fixed_limit_records, String seedWord, StringBuilder report) throws Exception {
 		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
 		if (templates_versions==null || templates_versions.isEmpty()) {
 			report.append("Could not find a template with name: ").append(template_name).append("\n");
@@ -771,17 +780,32 @@ public class AdminService {
 			return;			
 		}
 		
+		Optional<TemplateArchetype> archetype =
+				(template.getArchetype() != null && template.getArchetype().trim().length() > 0)
+			? TemplateArchetypes.getArchetype(template.getArchetype())
+			: Optional.empty();
+
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
 		String remoteIpAddr = (reqAttr instanceof ServletRequestAttributes) ? ((ServletRequestAttributes)reqAttr).getRequest().getRemoteAddr() : null;
 		
-		long seed = UUID.randomUUID().getLeastSignificantBits() ^ UUID.randomUUID().getMostSignificantBits();
+		long seed;
+		if (seedWord==null || seedWord.trim().length()==0)
+			seed = UUID.randomUUID().getLeastSignificantBits() ^ UUID.randomUUID().getMostSignificantBits();
+		else {
+			seed = ByteBuffer.wrap(new BCryptPasswordEncoder(11).encode(seedWord).getBytes()).asLongBuffer().get();
+		}
+		
+		// Let's use this for generating SEED per document
+		Random genSeed = new Random(seed);
 		
 		DocumentInput input_format = inputFormats.stream().filter(i->DocumentFormat.XLS.equals(i.getFormat())).findFirst().orElse(null);
 		if (input_format!=null) {
 			DocumentFormat format = input_format.getFormat();
+			
+			boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
+
 			FileGenerator gen = FileGenerators.getFileGenerator(format);
-			gen.setRandomSeed(seed);
 			gen.setDocumentTemplate(template);
 			gen.setDocumentInputSpec(input_format);
 			gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
@@ -797,15 +821,41 @@ public class AdminService {
 				
 				String originalFilename;
 
+				gen.setRandomSeed(genSeed.nextLong());
+				
+				CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, fixed_limit_records, gen.getRandomSeed()) : null;
+
+				long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
+						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
+						: fixed_limit_records;
+
 				try {
 					gen.setPath(destinationFile);
 					gen.start();
-					originalFilename = gen.getOriginalFileName();
+					if (custom_gen!=null) {
+						custom_gen.start();
+						originalFilename = Optional.ofNullable(custom_gen.getFileName()).orElseGet(gen::getOriginalFileName);
+					}
+					else {
+						originalFilename = gen.getOriginalFileName();
+					}
+					
 					for (long j=0; j<limit_records; j++) {
-						gen.addRandomRecord();
+						if (custom_gen!=null) {
+							Map<String,Object> record = custom_gen.nextRecord();
+							if (record==null)
+								break;
+							gen.addRecord(record);
+						}
+						else {
+							gen.addRandomRecord();
+						}
 					}
 				}
 				finally {
+					if (custom_gen!=null) {
+						custom_gen.close();
+					}
 					gen.close();
 				}
 				
