@@ -58,6 +58,26 @@ public interface FileGenerator extends Closeable {
 	public void setRandomSeed(long seed);
 	
 	/**
+	 * If not NULL, use this for taxpayer identification
+	 */
+	public String getFixedTaxpayerId();
+
+	/**
+	 * If not NULL, use this for taxpayer identification
+	 */
+	public void setFixedTaxpayerId(String fixedTaxpayerId);
+
+	/**
+	 * If not NULL, use this for tax YEAR
+	 */
+	public Number getFixedYear();
+
+	/**
+	 * If not NULL, use this for tax YEAR
+	 */
+	public void setFixedYear(Number fixedYear);
+
+	/**
 	 * Template of document to be generated
 	 */
 	public DocumentTemplate getDocumentTemplate();

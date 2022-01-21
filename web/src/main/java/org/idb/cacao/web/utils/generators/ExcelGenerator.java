@@ -56,6 +56,7 @@ import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.utils.RandomDataGenerator;
 import org.idb.cacao.api.utils.RandomDataGenerator.DomainTableRepository;
 
@@ -98,6 +99,10 @@ public class ExcelGenerator implements FileGenerator {
 	private int firstRowOfData = -1;
 	
 	private int rowOfColumnHeaders = -1;
+	
+	private String fixedTaxpayerId;
+	
+	private Number fixedYear;
 
 	/*
 	 * (non-Javadoc)
@@ -187,6 +192,42 @@ public class ExcelGenerator implements FileGenerator {
 	@Override
 	public void setDomainTableRepository(DomainTableRepository domainTableRepository) {
 		this.domainTableRepository = domainTableRepository;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.web.utils.generators.FileGenerator#getFixedTaxpayerId()
+	 */
+	@Override
+	public String getFixedTaxpayerId() {
+		return fixedTaxpayerId;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.web.utils.generators.FileGenerator#getFixedTaxpayerId()
+	 */
+	@Override
+	public void setFixedTaxpayerId(String fixedTaxpayerId) {
+		this.fixedTaxpayerId = fixedTaxpayerId;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.web.utils.generators.FileGenerator#getFixedTaxpayerId()
+	 */
+	@Override
+	public Number getFixedYear() {
+		return fixedYear;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.web.utils.generators.FileGenerator#getFixedTaxpayerId()
+	 */
+	@Override
+	public void setFixedYear(Number fixedYear) {
+		this.fixedYear = fixedYear;
 	}
 
 	public int getFirstRowOfData() {
@@ -286,6 +327,8 @@ public class ExcelGenerator implements FileGenerator {
 		randomGenerator.setDomainTableRepository(domainTableRepository);
 
 		FilenameGenerator filenameGenerator = new FilenameGenerator(randomGenerator);
+		filenameGenerator.setFixedTaxpayerId(fixedTaxpayerId);
+		filenameGenerator.setFixedYear(fixedYear);
 		
 		for (DocumentField field: fieldsOrderedByName) {
 			
@@ -382,7 +425,13 @@ public class ExcelGenerator implements FileGenerator {
 			if (!mapFieldNamesToColumnPositions.containsKey(field.getFieldName()))
 				continue;
 			
-			Object value = randomGenerator.nextRandom(field);
+			Object value;
+			if (FieldMapping.TAXPAYER_ID.equals(field.getFieldMapping()) && fixedTaxpayerId!=null)
+				value = fixedTaxpayerId;
+			else if (FieldMapping.TAX_YEAR.equals(field.getFieldMapping()) && fixedYear!=null)
+				value = fixedYear;
+			else
+				value = randomGenerator.nextRandom(field);
 			if (value==null) {
 				continue; // unsupported field type won't be generated
 			}

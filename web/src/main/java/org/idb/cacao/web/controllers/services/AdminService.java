@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -104,7 +105,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestAttributes;
@@ -793,7 +793,7 @@ public class AdminService {
 		if (seedWord==null || seedWord.trim().length()==0)
 			seed = UUID.randomUUID().getLeastSignificantBits() ^ UUID.randomUUID().getMostSignificantBits();
 		else {
-			seed = ByteBuffer.wrap(new BCryptPasswordEncoder(11).encode(seedWord).getBytes()).asLongBuffer().get();
+			seed = ByteBuffer.wrap(Hashing.sha256().hashString(seedWord, StandardCharsets.UTF_8).asBytes()).asLongBuffer().get();
 		}
 		
 		// Let's use this for generating SEED per document
@@ -821,19 +821,25 @@ public class AdminService {
 				
 				String originalFilename;
 
-				gen.setRandomSeed(genSeed.nextLong());
+				long doc_seed = genSeed.nextLong();
+				gen.setRandomSeed(doc_seed);
 				
-				CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, fixed_limit_records, gen.getRandomSeed()) : null;
+				CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
 
 				long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
 						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
 						: fixed_limit_records;
 
 				try {
-					gen.setPath(destinationFile);
-					gen.start();
 					if (custom_gen!=null) {
 						custom_gen.start();
+						gen.setFixedTaxpayerId(custom_gen.getTaxpayerId());
+						gen.setFixedYear(custom_gen.getTaxYear());
+					}
+					gen.setPath(destinationFile);
+					gen.start();
+					
+					if (custom_gen!=null) {
 						originalFilename = Optional.ofNullable(custom_gen.getFileName()).orElseGet(gen::getOriginalFileName);
 					}
 					else {

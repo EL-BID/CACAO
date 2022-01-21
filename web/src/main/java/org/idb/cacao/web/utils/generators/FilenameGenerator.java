@@ -39,6 +39,10 @@ public class FilenameGenerator {
 	private final Map<String, FieldMapping> regexForFilename;
 	
 	private long seed;
+	
+	private String fixedTaxpayerId;
+	
+	private Number fixedYear;
 
 	public FilenameGenerator(RandomDataGenerator randomGenerator) {
 		this.randomGenerator = randomGenerator;
@@ -51,6 +55,22 @@ public class FilenameGenerator {
 		regexForFilename.put(filenameExpression, fm);
 	}
 	
+	public String getFixedTaxpayerId() {
+		return fixedTaxpayerId;
+	}
+
+	public void setFixedTaxpayerId(String fixedTaxpayerId) {
+		this.fixedTaxpayerId = fixedTaxpayerId;
+	}
+
+	public Number getFixedYear() {
+		return fixedYear;
+	}
+
+	public void setFixedYear(Number fixedYear) {
+		this.fixedYear = fixedYear;
+	}
+
 	public boolean isEmpty() {
 		return regexForFilename.isEmpty();
 	}
@@ -141,8 +161,11 @@ public class FilenameGenerator {
 			}
 			String r = generex.random();
 			if (FieldMapping.TAX_YEAR.equals(fm)) {
-				int year = randomGenerator.nextRandomYear();
+				int year = (fixedYear!=null) ? fixedYear.intValue() : randomGenerator.nextRandomYear();
 				r = r.replaceFirst("\\d{4}", String.valueOf(year));
+			}
+			if (FieldMapping.TAXPAYER_ID.equals(fm) && fixedTaxpayerId!=null && fixedTaxpayerId.trim().length()>0) {
+				r = r.replaceFirst("\\d+", fixedTaxpayerId);
 			}
 			return r;
 		}

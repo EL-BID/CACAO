@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.api.utils;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
@@ -197,17 +198,42 @@ public class RandomDataGenerator {
 		return random.nextInt(intUpperBound);
 	}
 
+	public Number nextRandomNumberFixedLength(int length) {
+		char[] digits = new char[length];
+		for (int i=0; i<digits.length; i++) {
+			if (i==0) {
+				digits[i] = (char) ( '1' + random.nextInt(9) );				
+			}
+			else {
+				digits[i] = (char) ( '0' + random.nextInt(10) );
+			}
+		}
+		if (length<5)
+			return new Short(new String(digits));
+		if (length<10)
+			return new Integer(new String(digits));
+		if (length<19)
+			return new Long(new String(digits));
+		return new BigInteger(new String(digits));
+	}
+
 	public Number nextRandomDecimal() {
+		// Approaches a normal distribution (roughly)
+		double r = nextRandomGauss();
+		// Turn into a lognormal distribution (more closely related to monetary values)
+		double v = Math.exp(numericLognormalMed + r*numericLognormalVar);
+		v = Math.floor(v*100.0)/100.0; // keeps only 2 decimal places
+		return v;
+	}
+	
+	public double nextRandomGauss() {
 		// Approaches a normal distribution (roughly)
 		double r = random.nextDouble()*2.0 - 1.0;	// [-1.0 - 1.0]
 		r *= random.nextDouble()*2.0 - 1.0;	// [-1.0 - 1.0]
 		r *= random.nextDouble()*2.0 - 1.0;	// [-1.0 - 1.0]
 		r *= random.nextDouble()*2.0 - 1.0;	// [-1.0 - 1.0]
 		r *= random.nextDouble()*2.0 - 1.0;	// [-1.0 - 1.0]
-		// Turn into a lognormal distribution (more closely related to monetary values)
-		double v = Math.exp(numericLognormalMed + r*numericLognormalVar);
-		v = Math.floor(v*100.0)/100.0; // keeps only 2 decimal places
-		return v;
+		return r;
 	}
 	
 	public Boolean nextRandomBoolean() {

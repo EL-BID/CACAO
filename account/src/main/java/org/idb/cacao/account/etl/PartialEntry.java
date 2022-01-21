@@ -17,51 +17,40 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.api.templates;
-
-import java.io.Closeable;
-import java.util.Map;
+package org.idb.cacao.account.etl;
 
 /**
- * This is a generic interface for providing a custom implementation for generating random data to be used 
- * as 'samples' of a given template and file format.
+ * Auxiliary class for storing temporarily information regarding book entries. Each counterpart will
+ * have one 'PartialEntry' object.
  * 
  * @author Gustavo Figueiredo
- *
  */
-public interface CustomDataGenerator extends Closeable {
+public class PartialEntry {
 	
 	/**
-	 * Returns some internally generated 'filename' to be used as 'original filename'. Returns NULL if the filename
-	 * may be any arbitrary name.
+	 * The account that was credited or debited
 	 */
-	default public String getFileName() {
-		return null;
-	}
+	private final String account;
 	
 	/**
-	 * Returns some internally generated 'taxpayer ID' to be used for identification of the generated data. Returns NULL if
-	 * the taxpayer ID may be any arbitrary number
+	 * The amount credited or debited
 	 */
-	default public String getTaxpayerId() {
-		return null;
-	}
-
-	/**
-	 * Returns some internally generated 'tax year' to be used for identification of the generated data. Returns NULL if
-	 * the year may be any arbitrary number
-	 */
-	default public Number getTaxYear() {
-		return null;
+	private final double amount;
+	
+	public PartialEntry(String account, Number amount) {
+		this.account = account;
+		this.amount = Math.abs(amount.doubleValue());
 	}
 
-	/**
-	 * Method called at the start of the procedure. Should initialize internal state.
-	 */
-	default public void start() { }
+	public String getAccount() {
+		return account;
+	}
+
+	public double getAmount() {
+		return amount;
+	}
 	
-	/**
-	 * Method called for each generated record. NULL means there is no more record to generate.
-	 */
-	public Map<String,Object> nextRecord();
+	public String toString () {
+		return String.format("%s: %d", account, amount);
+	}
 }
