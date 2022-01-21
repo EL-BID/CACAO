@@ -3,10 +3,15 @@ package org.idb.cacao.account.validations;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import com.google.common.hash.Hashing;
+
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Random;
 
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
@@ -156,4 +161,70 @@ public class AccountDataGeneratorTests {
 		}
 
 	}
+	
+	/**
+	 * Test generation of General Ledger
+	 */
+	@Test
+	public void testGenGeneralLedger2() throws Exception {
+		
+		DocumentTemplate template = new DocumentTemplate();
+		template.setFields(new GeneralLedgerArchetype().getRequiredFields());
+		template.setArchetype(GeneralLedgerArchetype.NAME);
+    	long seed = ByteBuffer.wrap(Hashing.sha256().hashString("TESTE", StandardCharsets.UTF_8).asBytes()).asLongBuffer().get();
+
+		// Let's use this for generating SEED per document
+		Random genSeed = new Random(seed);
+
+		for (int i=0; i<2; i++) {
+
+			long doc_seed = genSeed.nextLong();
+
+			AccountDataGenerator gen = new AccountDataGenerator(template, DocumentFormat.XLS, doc_seed, /*records*/10_000);
+			gen.start();
+			try {
+				double total_debit = 0;
+				double total_credit = 0;
+				long count_records = 0;
+				LocalDate prev_date = null;
+				while (true) {
+					Map<String,Object> record = gen.nextRecord();
+					if (record==null)
+						break;
+					//System.out.println("GL: "+record);
+					LocalDate date = (LocalDate)record.get(GeneralLedgerArchetype.FIELDS_NAMES.Date.name());
+					assertNotNull(date, "Missing entry date");
+					if (prev_date==null) {
+						prev_date = date;
+					}
+					else if (!prev_date.equals(date)) {
+						assertEquals(total_debit, total_credit, /*tolerance*/0.01, "Total debits should equal total credits each day (doc "+i+", seed "+doc_seed+")!");
+						total_debit = total_credit = 0;
+						prev_date = date;
+					}
+					Number amount = (Number)record.get(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name());
+					assertNotNull(amount, "Missing entry amount");
+					String dc = (String)record.get(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name());
+					assertNotNull(dc, "Missing D/C indication");
+					assertTrue("D".equals(dc) || "C".equals(dc), "Wrong value for DebitCredit: "+dc);
+					if ("D".equals(dc)) {
+						total_debit += amount.doubleValue();
+					}
+					else {
+						total_credit += amount.doubleValue();
+					}
+					assertTrue(count_records<10_000, "Unexpected number of records created (doc "+i+", seed "+doc_seed+")!");
+					count_records++;
+				}
+				assertEquals(10_000, count_records, "Unexpected number of records created (doc "+i+", seed "+doc_seed+")!");
+				assertEquals(total_debit, total_credit, /*tolerance*/0.01, "Total debits should equal total credits each day (doc "+i+", seed "+doc_seed+")!");
+			}
+			finally {
+				gen.close();
+			}
+			
+		}
+
+	}
+	
 }

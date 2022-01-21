@@ -269,6 +269,8 @@ public class AccountDataGenerator implements CustomDataGenerator {
 					long recordsRemaining = records - recordsAccumulated;
 					int recordsAtDay = (recordsRemaining<=2) ? (int)recordsRemaining 
 						: (int)Math.max(2, (long)Math.ceil(randomDataGenerator.nextRandomGauss() * recordsPerDayAverage + recordsPerDayAverage));
+					if (recordsAtDay>recordsRemaining)
+						recordsAtDay = (int)recordsRemaining;
 					if (recordsRemaining-recordsAtDay==1) {
 						recordsAtDay++;
 					}
