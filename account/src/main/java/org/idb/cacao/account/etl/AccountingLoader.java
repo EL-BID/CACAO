@@ -174,10 +174,15 @@ public class AccountingLoader {
 		Year,
 		
 		/**
-		 * Month indication (for Monthly Balance Sheets and Daily Accounting Flows)
+		 * Month name indication (for Monthly Balance Sheets and Daily Accounting Flows)
 		 */
 		Month,
 		
+		/**
+		 * Month number indication (for Monthly Balance Sheets and Daily Accounting Flows)
+		 */
+		MonthNumber,
+
 		/**
 		 * Credited account code (for Daily Accounting Flows)
 		 */
@@ -236,9 +241,14 @@ public class AccountingLoader {
 	private static final String publishedYear = IndexNamesUtils.formatFieldName(AccountingFieldNames.Year.name());
 
 	/**
-	 * The field name for indication of Month for each Monthly Balance Sheet
+	 * The field name for name indication of Month for each Monthly Balance Sheet
 	 */
 	private static final String publishedMonth = IndexNamesUtils.formatFieldName(AccountingFieldNames.Month.name());
+
+	/**
+	 * The field name for number indication of Month for each Monthly Balance Sheet
+	 */
+	private static final String publishedMonthNumber = IndexNamesUtils.formatFieldName(AccountingFieldNames.MonthNumber.name());
 
 	/**
 	 * The field name for taxpayer ID in published data
@@ -746,6 +756,7 @@ public class AccountingLoader {
 		normalizedRecord_DAF.put(publishedTemplateVersion, gl.getTemplateVersion());
 		normalizedRecord_DAF.put(publishedYear, year);
 		normalizedRecord_DAF.put(publishedMonth, month);
+		normalizedRecord_DAF.put(publishedMonthNumber, monthNumber);
 		normalizedRecord_DAF.put(ledgerDate, ValidationContext.toDate(flow.getDate()));
 		normalizedRecord_DAF.put(creditedAccount, flow.getCreditedAccountCode());
 		normalizedRecord_DAF.put(debitedAccount, flow.getDebitedAccountCode());

@@ -104,9 +104,14 @@ public class MonthlyBalanceSheetProcessor {
 	private static final String publishedYear = IndexNamesUtils.formatFieldName(AccountingFieldNames.Year.name());
 
 	/**
-	 * The field name for indication of Month for each Monthly Balance Sheet
+	 * The field name for name indication of Month for each Monthly Balance Sheet
 	 */
 	private static final String publishedMonth = IndexNamesUtils.formatFieldName(AccountingFieldNames.Month.name());
+
+	/**
+	 * The field name for number indication of Month for each Monthly Balance Sheet
+	 */
+	private static final String publishedMonthNumber = IndexNamesUtils.formatFieldName(AccountingFieldNames.MonthNumber.name());
 
 	/**
 	 * The field name for published data regarding the initial balance amount for each Monthly Balance Sheet
@@ -431,6 +436,7 @@ public class MonthlyBalanceSheetProcessor {
 				}
 				normalizedRecord_BS.put(publishedYear, year);
 				normalizedRecord_BS.put(publishedMonth, month);
+				normalizedRecord_BS.put(publishedMonthNumber, monthNumber);
 				normalizedRecord_BS.put(balanceAccountCode, account);
 				normalizedRecord_BS.put(openingBalanceInitial, Math.abs(computedBalanceSheet.getInitialValue()));
 				normalizedRecord_BS.put(openingBalanceMonthlyDC, (computedBalanceSheet.isInitialValueDebit()) ? "D" : "C");
@@ -583,6 +589,7 @@ public class MonthlyBalanceSheetProcessor {
 				}
 				normalizedRecord_BS.put(publishedYear, year);
 				normalizedRecord_BS.put(publishedMonth, monthName);
+				normalizedRecord_BS.put(publishedMonthNumber, month);
 				normalizedRecord_BS.put(balanceAccountCode, account);
 				normalizedRecord_BS.put(openingBalanceInitial, Math.abs(previous_final_balance.doubleValue()));
 				normalizedRecord_BS.put(openingBalanceMonthlyDC, (previous_final_balance.doubleValue()>=0) ? "D" : "C");

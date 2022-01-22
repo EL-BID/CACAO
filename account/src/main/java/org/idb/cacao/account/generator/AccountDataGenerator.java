@@ -30,14 +30,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.collections4.ListUtils;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
+import org.idb.cacao.account.elements.AccountCategory;
 import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.etl.PartialEntry;
 import org.idb.cacao.api.templates.CustomDataGenerator;
@@ -80,6 +84,10 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	private final Map<String, Double> accountBalance;
 	
 	private final Map<String, String> accountDescriptions;
+	
+	private final Set<String> revenueAccounts;
+	
+	private final Set<String> expenseAccounts;
 
 	private AccountStandard standard;
 
@@ -118,6 +126,16 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				/*mergeFunction*/(a,b)->a, 
 				/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 		
+		this.revenueAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountCategory.REVENUE.equals(a.getCategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
+		this.expenseAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountCategory.EXPENSE.equals(a.getCategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
 		if (chartOfAccounts
 			|| openingBalance) {
 			
@@ -408,21 +426,33 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			// Choose random debits and random credits in such a way the total debited amount equals the total credited amount
 			double totalDebitsAmount = 0;
 			List<String> choosableAccounts = new ArrayList<>(accountDescriptions.keySet());
+			List<String> revenueAccounts = new ArrayList<>(this.revenueAccounts);
+			List<String> expenseAccounts = new ArrayList<>(this.expenseAccounts);
+			List<String> choosableAccountsForDebit = ListUtils.subtract(choosableAccounts,revenueAccounts); // Accounts that may use for DEBIT (any account except REVENUE)
+			List<String> choosableAccountsForCredit = ListUtils.subtract(choosableAccounts,expenseAccounts); // Accounts that may use for CREDIT (any account except EXPENSE)
+			// Choose DEBIT entries
 			for (int i=0; i<transactionDebits; i++) {
 				double amount = randomDataGenerator.nextRandomDecimal().doubleValue();
 				amount = Math.floor(amount * 100.0) / 100.0; // round to 2 decimals
-				String account = chooseDebitedAccount(amount, choosableAccounts);
+				String account = chooseDebitedAccount(amount, choosableAccountsForDebit);
+				if (account==null)
+					account = expenseAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(expenseAccounts.size()));
 				PartialEntry entry = new PartialEntry(account, amount);
 				nextDebits.add(entry);
 				choosableAccounts.remove(account);
+				choosableAccountsForDebit.remove(account);
 				totalDebitsAmount += amount;
 			}
+			// Choose CREDIT entries
 			if (transactionCredits==1) {
 				double amount = totalDebitsAmount;
-				String account = chooseCreditedAccount(amount, choosableAccounts);
+				String account = chooseCreditedAccount(amount, choosableAccountsForCredit);
+				if (account==null)
+					account = revenueAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(revenueAccounts.size()));
 				PartialEntry entry = new PartialEntry(account, amount);
 				nextCredits.add(entry);
 				choosableAccounts.remove(account);
+				choosableAccountsForCredit.remove(account);
 			}
 			else {
 				int[] grade = IntStream.range(0, transactionCredits).map(i->1+randomDataGenerator.getRandomGenerator().nextInt(10)).toArray();
@@ -440,10 +470,13 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						value = totalDebitsAmount * proportion;
 						value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
 					}
-					String account = chooseCreditedAccount(value, choosableAccounts);
+					String account = chooseCreditedAccount(value, choosableAccountsForCredit);
+					if (account==null)
+						account = revenueAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(revenueAccounts.size()));
 					PartialEntry entry = new PartialEntry(account, value);
 					nextCredits.add(entry);
 					choosableAccounts.remove(account);
+					choosableAccountsForCredit.remove(account);
 					accumulated += value;
 				}
 			}
