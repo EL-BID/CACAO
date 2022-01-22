@@ -40,6 +40,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -124,6 +128,11 @@ import com.google.common.io.Files;
 public class AdminService {
 
 	private static final Logger log = Logger.getLogger(AdminService.class.getName());
+	
+	/**
+	 * Default number of parallel threads to be used for generating documents with random data
+	 */
+	private static final int DEFAULT_PARALLELISM_FOR_DATA_GENERATOR = 10;
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -796,6 +805,9 @@ public class AdminService {
 			seed = ByteBuffer.wrap(Hashing.sha256().hashString(seedWord, StandardCharsets.UTF_8).asBytes()).asLongBuffer().get();
 		}
 		
+		int parallelism = DEFAULT_PARALLELISM_FOR_DATA_GENERATOR;
+        ExecutorService executor = (limit_docs>1) ? Executors.newFixedThreadPool(parallelism) : null;
+
 		// Let's use this for generating SEED per document
 		Random genSeed = new Random(seed);
 		
@@ -803,102 +815,125 @@ public class AdminService {
 		if (input_format!=null) {
 			DocumentFormat format = input_format.getFormat();
 			
-			boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
+			final boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
 
-			FileGenerator gen = FileGenerators.getFileGenerator(format);
-			gen.setDocumentTemplate(template);
-			gen.setDocumentInputSpec(input_format);
-			gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
 			for (int i=0; i<limit_docs; i++) {
 				String subDir = fileSystemStorageService.getSubDir();
-				Path location = fileSystemStorageService.getLocation(subDir);
+				final Path location = fileSystemStorageService.getLocation(subDir);
 				
-				String fileId = UUID.randomUUID().toString();
+				final String fileId = UUID.randomUUID().toString();
 
 				final OffsetDateTime timestamp = DateTimeUtils.now();
 
-				Path destinationFile = location.resolve(Paths.get(fileId)).normalize().toAbsolutePath();
+				final Path destinationFile = location.resolve(Paths.get(fileId)).normalize().toAbsolutePath();
 				
-				String originalFilename;
-
-				long doc_seed = genSeed.nextLong();
-				gen.setRandomSeed(doc_seed);
+				final long doc_seed = genSeed.nextLong();
 				
-				CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
+				final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
 
-				long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
+				final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
 						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
 						: fixed_limit_records;
 
-				try {
-					if (custom_gen!=null) {
-						custom_gen.start();
-						gen.setFixedTaxpayerId(custom_gen.getTaxpayerId());
-						gen.setFixedYear(custom_gen.getTaxYear());
-					}
-					gen.setPath(destinationFile);
-					gen.start();
+	        	Callable<Object> procedure = ()->{
+
+	    			final FileGenerator gen = FileGenerators.getFileGenerator(format);
+	    			gen.setDocumentTemplate(template);
+	    			gen.setDocumentInputSpec(input_format);
+	    			gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
+					gen.setRandomSeed(doc_seed);
+
+					final String originalFilename;
 					
-					if (custom_gen!=null) {
-						originalFilename = Optional.ofNullable(custom_gen.getFileName()).orElseGet(gen::getOriginalFileName);
-					}
-					else {
-						originalFilename = gen.getOriginalFileName();
-					}
-					
-					for (long j=0; j<limit_records; j++) {
+					try {
 						if (custom_gen!=null) {
-							Map<String,Object> record = custom_gen.nextRecord();
-							if (record==null)
-								break;
-							gen.addRecord(record);
+							custom_gen.start();
+							gen.setFixedTaxpayerId(custom_gen.getTaxpayerId());
+							gen.setFixedYear(custom_gen.getTaxYear());
+						}
+						gen.setPath(destinationFile);
+						gen.start();
+						
+						if (custom_gen!=null) {
+							originalFilename = Optional.ofNullable(custom_gen.getFileName()).orElseGet(gen::getOriginalFileName);
 						}
 						else {
-							gen.addRandomRecord();
+							originalFilename = gen.getOriginalFileName();
+						}
+						
+						for (long j=0; j<limit_records; j++) {
+							if (custom_gen!=null) {
+								Map<String,Object> record = custom_gen.nextRecord();
+								if (record==null)
+									break;
+								gen.addRecord(record);
+							}
+							else {
+								gen.addRandomRecord();
+							}
 						}
 					}
-				}
-				finally {
-					if (custom_gen!=null) {
-						custom_gen.close();
+					finally {
+						if (custom_gen!=null) {
+							custom_gen.close();
+						}
+						gen.close();
 					}
-					gen.close();
+				
+					String fileHash = Files.asByteSource(destinationFile.toFile()).hash(Hashing.sha256()).toString();
+					
+					// Keep this information in history of all uploads
+					DocumentUploaded regUpload = new DocumentUploaded();
+					regUpload.setTemplateName(template.getName());
+					regUpload.setTemplateVersion(template.getVersion());
+					regUpload.setFileId(fileId);
+					regUpload.setFilename(originalFilename);
+					regUpload.setSubDir(subDir);
+					regUpload.setTimestamp(timestamp);
+					regUpload.setIpAddress(remoteIpAddr);
+					regUpload.setHash(fileHash);
+					regUpload.setSituation(DocumentSituation.RECEIVED);
+					if (auth != null) {
+						regUpload.setUser(String.valueOf(auth.getName()));
+					}
+					DocumentUploaded savedInfo = documentUploadedRepository.saveWithTimestamp(regUpload);
+	
+					DocumentSituationHistory situationHistory = new DocumentSituationHistory();
+					situationHistory.setDocumentId(savedInfo.getId());
+					situationHistory.setDocumentFilename(savedInfo.getFilename());
+					situationHistory.setTemplateName(savedInfo.getTemplateName());
+					situationHistory.setSituation(DocumentSituation.RECEIVED);
+					situationHistory.setTimestamp(timestamp);
+	
+					documentSituationHistoryRepository.saveWithTimestamp(situationHistory);
+					
+					// Generates an event at KAFKA in order to start the validation phase over this file
+	
+					FileUploadedEvent event = new FileUploadedEvent();
+					event.setFileId(savedInfo.getId());
+					fileUploadedProducer.fileUploaded(event);
+					
+					return null;
+	        	};
+	        	
+	        	if (executor==null)
+	        		procedure.call();
+	        	else
+	        		executor.submit(procedure);
+
+			} // LOOP over number of documents
+			
+			if (executor!=null) {
+		        executor.shutdown();
+		        try {
+					boolean ok = executor.awaitTermination(1, TimeUnit.HOURS);
+					if (!ok)
+						log.log(Level.WARNING,"Too much time waiting for termination of generation of "+limit_docs+" documents of template "+template.getName());
+				} catch (InterruptedException e) {
+		        	log.log(Level.WARNING,"Interrupted data generation", e);
 				}
-				
-				String fileHash = Files.asByteSource(destinationFile.toFile()).hash(Hashing.sha256()).toString();
-				
-				// Keep this information in history of all uploads
-				DocumentUploaded regUpload = new DocumentUploaded();
-				regUpload.setTemplateName(template.getName());
-				regUpload.setTemplateVersion(template.getVersion());
-				regUpload.setFileId(fileId);
-				regUpload.setFilename(originalFilename);
-				regUpload.setSubDir(subDir);
-				regUpload.setTimestamp(timestamp);
-				regUpload.setIpAddress(remoteIpAddr);
-				regUpload.setHash(fileHash);
-				regUpload.setSituation(DocumentSituation.RECEIVED);
-				if (auth != null) {
-					regUpload.setUser(String.valueOf(auth.getName()));
-				}
-				DocumentUploaded savedInfo = documentUploadedRepository.saveWithTimestamp(regUpload);
-
-				DocumentSituationHistory situationHistory = new DocumentSituationHistory();
-				situationHistory.setDocumentId(savedInfo.getId());
-				situationHistory.setDocumentFilename(savedInfo.getFilename());
-				situationHistory.setTemplateName(savedInfo.getTemplateName());
-				situationHistory.setSituation(DocumentSituation.RECEIVED);
-				situationHistory.setTimestamp(timestamp);
-
-				documentSituationHistoryRepository.saveWithTimestamp(situationHistory);
-				
-				// Generates an event at KAFKA in order to start the validation phase over this file
-
-				FileUploadedEvent event = new FileUploadedEvent();
-				event.setFileId(savedInfo.getId());
-				fileUploadedProducer.fileUploaded(event);
-
 			}
+
 			report.append("Created ").append(limit_docs).append(" documents with random data of format ").append(format.name()).append(" for template ").append(template.getName()).append(" version ").append(template.getVersion()).append("\n");
 			return;
 		}

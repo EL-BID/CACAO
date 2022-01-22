@@ -119,6 +119,10 @@ public class SanitizationService {
 			// Ignore migration from   {type=text, fields={keyword={ignore_above=256, type=keyword}}}  to  {type=keyword}
 			return true; // don't migrate!
 		}
+		if (isNestedKeyword(field_definition_expected)) {
+			// Ignore migration from nested fields
+			return true; // don't migrate!
+		}
 		return false; // migrate!
 	}
 	
@@ -138,6 +142,22 @@ public class SanitizationService {
 		return true;
 	}
 	
+	/**
+	 * Returns TRUE if the field defition is something like this: 
+	 *  {type=nested}
+	 */
+	private static boolean isNestedKeyword(Map<?,?> field_definition) {
+		if (field_definition==null || field_definition.isEmpty())
+			return false;
+		Object type = field_definition.get("type");
+		if (!"nested".equals(type))
+			return false;
+		Object fields = field_definition.get("fields");
+		if (fields!=null)
+			return false;
+		return true;
+	}
+
 	/**
 	 * Returns TRUE if the field defition is something like this: 
 	 *  {type=text, fields={keyword={type=keyword}}}
