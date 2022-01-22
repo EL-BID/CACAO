@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Sidebar Menu -->
+	<th:block th:unless="${logged_area}">
+		<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+	</th:block>
+	<div class="pusher">
+		<!-- Public Menu -->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+			<!-- Fix to avoid overlap from the menu -->
+			<div class="ui large aligned">
+				<div class="row">
+					<br>
+					<br>
+					<br>
+				</div>
+			</div>
+		</th:block>
+		<br>
+		<div class="ui container">
+			<div th:switch="${#locale.language}">
+				<!-- Case language is set to English -->
+				<div th:case="en">
+					<div class="ui middle aligned center container">
+						<h2 class="ui header">
+							<i class="book icon"></i>
+							<div class="content" th:text="#{menu.usermanual}">User's Manual</div>
+						</h2>
+						<div class="ui orange segment">
+							<div th:replace="usermanual/contents_en :: content"></div>
+						</div>
+					</div>
+				</div>
+				<!-- Case language is set to Spanish -->
+				<div th:case="es">
+					<div class="ui middle aligned center container">
+						<h2 class="ui header">
+							<i class="book icon"></i>
+							<div class="content" th:text="#{menu.usermanual}">User's Manual</div>
+						</h2>
+						<div class="ui orange segment">
+							<div th:replace="usermanual/contents_es :: content"></div>
+						</div>
+					</div>
+				</div>
+				<br>
+			</div>
+		</div>
+		<!-- Footer -->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: footer"></div>
+		</th:block>
+	</div>
+	<!-- Language Javascript -->
+	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+	
+	<script src="/js/toastui-jquery-editor-viewer.min.js"></script>
+ 	<script th:nonce="${cspNonce}">
+		$('.markdown').each(function() {
+			var initialValue = $(this).text()
+			$(this).toastuiEditor({
+				height : '500px',
+				viewer : true,
+				initialValue : initialValue
+			});
+		})
+	</script> 
+	
+	<script th:nonce="${cspNonce}">
+	$('.ui.accordion')
+	.accordion();
+	;
+	</script>
+</body>
+</html>
