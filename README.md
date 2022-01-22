@@ -403,6 +403,56 @@ It should respond with a JSON content with some information about the Kibana def
 
 ___
 
+## Generating random (sample) data
+
+In order to test the application without actual data, you may use some CACAO features for randomly generating data according to built-in templates or any other custom templates.
+
+These features must be performed using a SYSTEM ADMINISTRATOR profile. They should NOT be used under a PRODUCTION environment, because they may replace existing actual data. 
+
+Every command line shown here must be executed using the 'System operations' menu. Just type in the command line using the CACAO command prompt and press ENTER. Check the result panel for the produced messages.
+
+### Deleting all previous data
+
+If you want to start the CACAO fresh new, type in this command. It will delete all previous templates, validated document and published data.
+
+    delete -a
+    
+There are other forms of the command line 'delete' that may be used for deleting only part of data. Use 'help delete' for more information about these options.
+
+If you want to create 'default templates' according to built-in archetypes, type in this command.
+
+    samples -t
+    
+The previous command line will create a couple of 'templates' and all the needed 'domain tables'.
+
+If you want to create some 'documents' with random data simulating files being uploaded by different taxpayers, use the command 'samples' with the command option '--doc', followed by the name of the template for which you want to generate files. Usually you will also inform the number of documents to generate using the command line option '--limit_docs' and an initial 'random seed' using the command line option '--seed'.
+
+For example, the following command line will generate 10 different documents conforming to the built-in template 'General Ledger' using the text 'TEST' as a seed (any word may be used as a 'seed').
+
+    samples --docs "General Ledger" --limit_docs 10 --seed "TEST"
+    
+If you execute the same command line with the same seed, it will generate documents with the exact same contents as before. If you use a different seed, the command will produce different contents. The 'seed' is important for producing the same contents at different environments. It's also important to produce documents with different template using the same 'seed' in order to garantee consistence accross different templates.
+
+For example, the following command line will generate 10 different documents conforming to the built-in template 'Chart of Accounts' using the same text 'TEST' as a seed, so that these documents will have consistency with the previously generated documents of 'General Ledger' template.
+
+    samples --docs "Chart of Accounts" --limit_docs 10 --seed "TEST"
+ 
+For completeness, the accounting data should also include 'Opening Balance'. The following command line will generate 10 different documents conforming to the built-in template 'Opening Balance' using the same text 'TEST' as a seed.
+
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST"
+    
+Just to recap, the following command lines (each one entered alone) will start over a new environment will random data ready to be used.
+
+    delete -a
+    samples -t
+    samples --docs "Chart Of Accounts" --limit_docs 10 --seed "TEST"
+    samples --docs "General Ledger" --limit_docs 10 --seed "TEST"
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST"
+    
+You may generate different amounts of documents and may use different texts as 'seed' for producing different data. Use the command 'help samples' for more information about the command line options.
+
+___
+
 ## Troubleshooting
 
 ### "502 Bad Gateway" error at web browser
