@@ -29,6 +29,7 @@
 <title th:text="#{app.name}">Application Title</title>
 <link rel="stylesheet" type="text/css" class="ui" href="/css/semantic.min.css">
 <link rel="stylesheet" type="text/css" class="ui" href="/css/jquery-ui.min.css">
+<link rel="stylesheet" type="text/css" class="ui" href="/css/toastui-editor.min.css">
 <link rel="icon" type="image/ico" href="/images/favicon.ico">
 <th:block th:if="${more_links}">
 	<th:block th:replace="${more_links}" />
@@ -342,6 +343,7 @@ select[readonly] {
 	<div class="ui vertical inverted sidebar menu dontprint" th:fragment="publicSidebarMenu">
 		<a class="item" th:text="#{menu.homepage}" th:href="@{/}">homepage</a>
 		<a class="item" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
+		<a class="item" th:text="#{menu.usermanual}" th:href="@{/usermanual}">user manual</a>
 		<a class="item startbtn" th:text="#{app.start}">Start</a>
 	</div>
 	<!-- Public Menu -->
@@ -352,6 +354,7 @@ select[readonly] {
 			</a>
 			<a class="item hideable" th:text="#{menu.homepage}" th:href="@{/}">homepage</a>
 			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
+			<a class="item hideable" th:text="#{menu.usermanual}" th:href="@{/usermanual}">usermanual</a>
 			<div class="right item">
 				<a class="ui item startbtn hideable" th:text="#{app.start}">start</a>
 				<div class="ui dropdown item chooselang">
@@ -405,6 +408,7 @@ select[readonly] {
 				<span th:text="#{app.name}">Application Title</span>
 			</a>
 			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}" th:target="${target_frame}" target="">institutional</a>
+			<a class="item hideable" th:text="#{menu.usermanual}" th:href="@{/usermanual}" th:target="${target_frame}" target="">user's manual</a>
 			<div class="ui right simple dropdown item hideable">
 				<div sec:authentication="name"></div>
 				<i class="dropdown icon"></i>
