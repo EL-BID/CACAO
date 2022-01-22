@@ -245,6 +245,7 @@ public class AdminService {
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
 			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. Must inform the template name."),
+			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
@@ -749,10 +750,34 @@ public class AdminService {
 			if (template_name.trim().length()==0)
 				report.append("Missing template name with 'd' option!");
 			else {
+				boolean background = cmdLine.hasOption("bg");
 				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
 				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
 				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
-				service.createSampleDocuments(template_name.trim(), limit_docs, fixed_limit_records, seedWord, report);
+				if (background) {
+					new Thread("SampleDocuments") {
+						{
+							setDaemon(true);
+						}
+						public void run() {
+							StringBuilder bg_report = new StringBuilder();
+							bg_report.append("Report for background process of creation of ").append(limit_docs).append(" documents with random data for template ").append(template_name).append("\n");
+							try {
+								service.createSampleDocuments(template_name.trim(), limit_docs, fixed_limit_records, seedWord, bg_report);
+							}
+							catch (Throwable ex) {
+								log.log(Level.SEVERE, "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()), ex);
+							}
+							finally {
+								log.log(Level.INFO, bg_report.toString());
+							}
+						}
+					}.start();
+					report.append("Creating ").append(limit_docs).append(" documents with random data for template ").append(template_name).append(" at background\n");
+				}
+				else {
+					service.createSampleDocuments(template_name.trim(), limit_docs, fixed_limit_records, seedWord, report);
+				}
 			}
 		}
 		
