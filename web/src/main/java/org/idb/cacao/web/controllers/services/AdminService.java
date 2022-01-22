@@ -869,6 +869,8 @@ public class AdminService {
 				final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
 						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
 						: fixed_limit_records;
+				
+				final Integer partition = (limit_docs>1) ? i : null;
 
 	        	Callable<Object> procedure = ()->{
 
@@ -946,7 +948,7 @@ public class AdminService {
 	
 					FileUploadedEvent event = new FileUploadedEvent();
 					event.setFileId(savedInfo.getId());
-					fileUploadedProducer.fileUploaded(event);
+					fileUploadedProducer.fileUploaded(event, partition);
 					
 					return null;
 	        	};

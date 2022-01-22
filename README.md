@@ -445,13 +445,19 @@ For completeness, the accounting data should also include 'Opening Balance'. The
 
     samples --docs "Opening Balance" --limit_docs 10 --seed "TEST"
     
+In each of the previous commands (those ones starting with 'samples --docs') you may include the '-bg' parameter to avoid waiting for conclusion. For example:
+     
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST" -bg
+    
+The previous command will start creating the 10 documents of template 'Opening Balance' in background. So it will be possible to execute other commands to start creating other kinds of documents at the same time. 
+    
 Just to recap, the following command lines (each one entered alone) will start over a new environment will random data ready to be used.
 
     delete -a
     samples -t
-    samples --docs "Chart Of Accounts" --limit_docs 10 --seed "TEST"
-    samples --docs "General Ledger" --limit_docs 10 --seed "TEST"
-    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST"
+    samples --docs "Chart Of Accounts" --limit_docs 10 --seed "TEST" -bg
+    samples --docs "General Ledger" --limit_docs 10 --seed "TEST" -bg
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST" -bg
     
 You may generate different amounts of documents and may use different texts as 'seed' for producing different data. Use the command 'help samples' for more information about the command line options.
 

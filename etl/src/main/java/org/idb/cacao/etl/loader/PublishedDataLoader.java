@@ -45,8 +45,18 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 
 	private RestHighLevelClient elasticsearchClient;
 	
+	private String timeout;
+	
 	public PublishedDataLoader(RestHighLevelClient elasticsearchClient) {
 		this.elasticsearchClient = elasticsearchClient;
+	}
+
+	public String getTimeout() {
+		return timeout;
+	}
+
+	public void setTimeout(String timeout) {
+		this.timeout = timeout;
 	}
 
 	/*
@@ -80,6 +90,8 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 	@Override
 	public void start() {
 		request = new BulkRequest();
+		if (timeout!=null)
+			request.timeout(timeout);
 	}
 
 	/*
