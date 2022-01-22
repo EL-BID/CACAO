@@ -419,11 +419,15 @@ If you want to start the CACAO fresh new, type in this command. It will delete a
     
 There are other forms of the command line 'delete' that may be used for deleting only part of data. Use 'help delete' for more information about these options.
 
+### Generating built-in templates
+
 If you want to create 'default templates' according to built-in archetypes, type in this command.
 
     samples -t
     
 The previous command line will create a couple of 'templates' and all the needed 'domain tables'.
+
+### Generating documents with random data
 
 If you want to create some 'documents' with random data simulating files being uploaded by different taxpayers, use the command 'samples' with the command option '--doc', followed by the name of the template for which you want to generate files. Usually you will also inform the number of documents to generate using the command line option '--limit_docs' and an initial 'random seed' using the command line option '--seed'.
 
