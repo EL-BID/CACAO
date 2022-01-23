@@ -399,7 +399,7 @@ It should respond with a JSON content with some information about the Kibana def
 ### Start Proxy node
     docker-compose up -d proxy
     
-### Test access to Kontaktu using your browser
+### Test access to CACAO using your browser
 
 ___
 

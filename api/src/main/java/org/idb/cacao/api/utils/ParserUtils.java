@@ -65,7 +65,7 @@ public class ParserUtils {
     public static final Pattern pYM = Pattern.compile("^(?>20\\d{2})[/\\-](?>0\\d|10|11|12|\\d)$"); //E.g.: yyyy/MM OR yyyy-MM
     public static final Pattern pMonthYear = Pattern.compile("^([A-Za-z.\\xA8-\\xFE]{3,12})[\\/-](20\\d{2})$"); //E.g.: MARCH/yyyy OR MAR-yyyy
     public static final Pattern pYearMonth = Pattern.compile("^(20\\d{2})[\\\\/-]([A-Za-z.\\xA8-\\xFE]{3,12})$"); //E.g.: yyyy/MARCH OR yyyy-MAR
-    public static final Pattern pDMDY = Pattern.compile("^([A-Za-z.\\\\xA8-\\\\xFE]{3}) ([A-Za-z.\\\\xA8-\\\\xFE]{3}) (\\d{2}) (\\d{4})$"); //E.g.: Tue Feb 01 2022
+    public static final Pattern pDMDY = Pattern.compile("^([A-Za-z.\\\\xA8-\\\\xFE]{3}) ([A-Za-z.\\\\xA8-\\\\xFE]{3}) (\\d{2}) (\\d{4})"); //E.g.: Tue Feb 01 2022
     
     /**
      * Maximum length for a field name to be considered as 'proper field name'

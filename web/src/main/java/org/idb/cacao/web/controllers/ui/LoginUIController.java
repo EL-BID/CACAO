@@ -158,8 +158,8 @@ public class LoginUIController {
 		menu.add(submenu);
 		//TODO Create specifics roles for this view
 		if (hasPrivilege(roles, SystemPrivilege.TAXPAYER_WRITE)) {
-			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.general.view.vertical.analysis", null, LocaleContextHolder.getLocale()),
-					"/vertical-analysis"));
+			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.general.view.analysis", null, LocaleContextHolder.getLocale()),
+					"/horizontal_vertical_analysis"));
 		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {

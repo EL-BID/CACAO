@@ -1,0 +1,276 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<head
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui"
+	href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="stream icon"></i>
+			<div class="content" th:text="#{taxpayers.general.view.analysis}">Show Analysis</div>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form action="#" name="form" id="form"
+					th:action="@{/vertical-analysis-data}" class="ui form" method="post">
+					<div class="ui field" id="search1">
+						<label th:text="#{taxpayer.name}">TaxPayer name</label>
+						<div class="ui search selection dropdown" id="select">
+							<input id="taxpayer" type="hidden" name="personId">
+							<div class="default text" th:text="#{select}">Select</div>
+							<i class="dropdown icon"></i>
+							<div class="menu"></div>
+						</div>
+					</div>
+
+					<div class="ui field" id="type">
+						<label th:text="#{taxpayers.general.view.analysis.type}">Analysis Type</label> 
+						<select class="ui dropdown" id="analysisType">
+							<option value="1" th:text="#{taxpayers.general.view.analysis.type.vertical}">Vertical</option>
+							<option value="2" th:text="#{taxpayers.general.view.analysis.type.horizontal}">Horizontal</option>
+							<option value="3" th:text="#{taxpayers.general.view.analysis.type.booth}">Booth</option>
+						</select>
+					</div>
+
+					<div class="ui calendar field" id="finalDate">
+						<label th:text="#{base.period}">Base Period</label>
+						<div class="ui input left icon">
+							<i class="calendar icon"></i> <input type="text"
+								th:placeholder="#{base.period}" id="date">
+						</div>
+					</div>
+
+					<div class="ui field" id="periodicity">
+						<label th:text="#{taxpayers.general.view.periodicity}">Date</label> <select
+							class="ui dropdown" id="period">
+							<option value="1" th:text="#{periodicity.one.month.before}">1
+								month before</option>
+							<option value="2" th:text="#{periodicity.three.months.before}">3
+								months before</option>
+							<option value="3" th:text="#{periodicity.six.months.before}">6
+								months before</option>
+							<option value="4" th:text="#{periodicity.twelve.months.before}">12
+								months before</option>
+							<option value="11" th:text="#{periodicity.one.year.before}">1
+								year before</option>
+							<option value="12" th:text="#{periodicity.two.years.before}">2
+								years before</option>
+							<option value="13" th:text="#{periodicity.three.years.before}">3
+								years before</option>
+							<option value="14" th:text="#{periodicity.four.years.before}">4
+								years before</option>
+							<option value="15" th:text="#{periodicity.five.years.before}">5
+								years before</option>
+							<option value="21" th:text="#{periodicity.one.month.after}">1
+								month after</option>
+							<option value="22" th:text="#{periodicity.three.months.after}">3
+								months after</option>
+							<option value="23" th:text="#{periodicity.six.months.after}">6
+								months after</option>
+							<option value="24" th:text="#{periodicity.twelve.months.after}">12
+								months after</option>
+							<option value="31" th:text="#{periodicity.one.year.after}">1
+								year after</option>
+							<option value="32" th:text="#{periodicity.two.years.after}">2
+								years after</option>
+							<option value="33" th:text="#{periodicity.three.years.after}">3
+								years after</option>
+							<option value="34" th:text="#{periodicity.four.years.after}">4
+								years after</option>
+							<option value="35" th:text="#{periodicity.five.years.after}">5
+								years after</option>
+						</select>
+					</div>
+
+					<div class="ui field checkbox" id="showZeroBalanceAccount">
+						<input type="checkbox" tabindex="0" name="zeroBalance" id="zeroBalance">
+						<label th:text="#{show.zero.balance.accounts}">Show accounts with
+							ZERO balance</label>
+					</div>
+
+					<div class="row">
+						<input type="submit" class="ui blue button" th:value="#{search}"
+							value="Search">
+					</div>
+				</form>
+			</div>
+			<div id="showtable" style="display: none">
+				<div id="table" class="ui orange table"></div>
+			</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		$('#finalDate').calendar({
+			  type: 'month',
+			     onChange: function(value) {
+			    	 $("#showtable").hide()   
+			     },
+			});
+		
+		$('#select').dropdown({
+			apiSettings: {
+	        	url: '/api/taxpayers/autocomplete?term={query}',
+	        	method: 'GET',
+	        	//dataType: 'text',
+	        	cache: false,
+	        	onResponse: function(result) {
+					results = []
+	            	$.each(result.results, function(index, item) {
+	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+					})
+					result.results = results
+					return result
+	        	},
+	     	},
+	     	onChange: function(value) {
+				$("#showtable").hide()   
+	     	},
+	    	action: 'activate',
+	    	clearable: true
+		})
+	
+		$(document).ready(function() {
+			$('.ui.form').form({
+				fields: {
+					taxpayer: {
+	                	identifier  : 'taxpayer',
+	                	rules: [{
+	                    	type   : 'empty',
+	                    	prompt : [[#{taxpayer.missing.taxpayer.id}]]
+	                  	}]
+	              	}
+	          	},
+				onSuccess: (function(event,fields){
+					event.preventDefault();					
+					updateColumns();					
+					table.replaceData();
+					$("#showtable").show()
+	          	})
+	        });
+	    });
+		
+		//Remove all value columns 		
+		function removePreviousColumns() {
+			var cols = table.getColumns();
+			for ( i = 5; i < cols.length; i++ ) {
+				cols[i].delete();
+			}			
+		}
+		
+		//Add value columns according with selected parameters
+		function updateVisibleColumns() {
+			
+			for (let i = 0; i < columnsFormat.length; ++i) {
+				
+				let data = columnsFormat[i];
+				console.log(data);
+				table.addColumn({title: data[0], field: data[1], hozAlign: data[2], headerSort: data[3] == "false" ? false : true, 
+						formatter: data[4], 
+						formatterParams: { 
+							decimal: data[5], thousand: data[6], symbol: data[7], symbolAfter: 
+								data[8] == "false" ? false : true, precision: data[9]} 
+						}, 
+						false, data[1]);			    
+			}			
+			
+		}	
+		
+		var columnsFormat = {};		
+		
+		function updateColumns() {
+			$.get('/api/generalview/analysis-view-columns', 
+					{ finalDate: $('#finalDate').calendar('get date'), 
+			    	  comparisonPeriods: $('#period').val(),
+			    	  analysisType: $('#analysisType').val() } ,  // data to submit
+			    function (data, status, xhr) {
+			    	columnsFormat = data;
+			        removePreviousColumns();
+					updateVisibleColumns();			        
+			    }
+			);	
+		}
+	  
+		let table = new Tabulator('#table', {
+			index: 'id',
+			layout: "fitData", //fit columns to width of table (optional)
+		    pagination: true,
+			paginationMode: "local", //enable local pagination
+			paginationSize: 10,
+			ajaxURL: /*[[@{/api/generalview/horizontal-analysis}]]*/ "/api/generalview/horizontal-analysis", //set url for ajax request
+			ajaxURLGenerator: function(url, config, params ){
+				console.log(config)
+				console.log(params)
+				p = new URLSearchParams()
+				p.set('taxpayerId', document.getElementById("taxpayer").value)
+				p.set('finalDate', $('#finalDate').calendar('get date'))
+				p.set('zeroBalance', $('#zeroBalance').is(":checked"))
+				p.set('comparisonPeriods', $('#period').val())
+				p.set('analysisType', $('#analysisType').val())
+				console.log(url + '?' + p.toString())		
+				return url + '?' + p.toString()
+			},
+			ajaxContentType: "json",
+			locale:'xx',
+			langs:{
+		        "xx":{
+		            "pagination":{
+		                "first":/*[[#{pagination.first.button}]]*/ "First",
+		                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+		                "last":/*[[#{pagination.last.button}]]*/ "Last",
+		                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+		                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+		                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+		                "next":/*[[#{pagination.next.button}]]*/ "Next",
+		                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+		                "all":/*[[#{pagination.all}]]*/ "All",
+		                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+		            }
+		        }
+		    },
+			paginationSizeSelector:[10, 25, 50],	
+			rowFormatter:function(row){
+			    var data = row.getData();
+			    if(data.level == "1"){
+			        row.getElement().style.backgroundColor = "#FFA500"; //apply css change to row element
+			        row.getElement().style.fontWeight = "bold";
+			    }	
+			    else if(data.level == "2"){
+			        row.getElement().style.backgroundColor = "#FFB52E"; //apply css change to row element
+			    }
+			    else if(data.level == "3"){
+			        row.getElement().style.backgroundColor = "#FFC55C"; //apply css change to row element
+			    }
+			},	
+			columns:[ //Define Table Columns
+				{title: /*[[#{level}}*/ "Level", field:"level", hozAlign:"center", headerSort:false},
+				//{title: /*[[#{categoryCode}}*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
+				{title: /*[[#{category}}*/ "Category", field:"category", hozAlign:"left", headerSort:false },
+				//{title: /*[[#{subcategoryCode}}*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
+				{title: /*[[#{subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
+				{title: /*[[#{code}}*/ "Code", field:"code", headerSort:false},
+				{title: /*[[#{name}]]}*/ "Name", field:"name", headerSort:false },	
+			]
+		})
+
+	</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package org.idb.cacao.web.controllers.services;
 
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +23,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.dto.Account;
 import org.idb.cacao.web.dto.BalanceSheet;
@@ -49,19 +49,16 @@ public class TaxPayerGeneralViewService {
 	/**
 	 * Retrieves and return a balanece sheet for a given taxpayer and period (month and year) 
 	 * @param taxpayerId	Taxpayer for select a balance sheet
-	 * @param year			Year of balance sheet
-	 * @param month			Month of balance sheet
+	 * @param period		Year and month of balance sheet
+	 * @param fetchZeroBalance	If true, fetches and return accounts with ZERO balance
 	 * @return		A balance sheet with it's accounts
 	 */
-	public BalanceSheet getBalance(String taxpayerId, int year, String month) {
+	public BalanceSheet getBalance(String taxpayerId, YearMonth period, boolean fetchZeroBalance) {
 
 		BalanceSheet balance = new BalanceSheet();
-		balance.setTaxPayerId("1234567");
-		balance.setTaxPayerName("Taxpayer name");
-		balance.setInitialDate(DateTimeUtils.now());
-		balance.setFinalDate(DateTimeUtils.now());
+		balance.setTaxPayerId(taxpayerId);
 
-		balance.setAccounts(getAccounts(taxpayerId,year,month));
+		balance.setAccounts(getAccounts(taxpayerId,period,fetchZeroBalance));
 
 		return balance;
 
@@ -70,7 +67,7 @@ public class TaxPayerGeneralViewService {
 	/**
 	 * Build the query object used by {@link #getAccounts(String, int, String)}
 	 */
-	private SearchRequest searchBalance(final String taxpayerId, final int year, final String month) {
+	private SearchRequest searchBalance(final String taxpayerId, YearMonth period) {
 		
 		// Index over 'balance sheet monthly' objects
 		SearchRequest searchRequest = new SearchRequest(BALANCE_SHEET_INDEX);
@@ -85,10 +82,10 @@ public class TaxPayerGeneralViewService {
 		//query = query.must(subquery);
 
 		// Filter for year
-		query = query.must(new TermQueryBuilder("year", year));
+		query = query.must(new TermQueryBuilder("year", period.getYear()));
 
 		// Filter for Month
-		query = query.must(new TermQueryBuilder("month.keyword", month.toLowerCase()));
+		query = query.must(new TermQueryBuilder("month_number", period.getMonthValue()));
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = //Aggregates by first field
@@ -99,7 +96,7 @@ public class TaxPayerGeneralViewService {
 							.subAggregation(AggregationBuilders.terms("byAccount").size(10_000).field("account_code.keyword")
 								.subAggregation(AggregationBuilders.terms("byAccountName").size(10_000).field("account_name.keyword")
 									.subAggregation(AggregationBuilders.terms("byFinalBalenceDebitCredit").size(10_000).field("final_balance_debit_credit.keyword")
-										.subAggregation(AggregationBuilders.sum("finalBalance").field("final_balance"))
+										.subAggregation(AggregationBuilders.sum("finalBalance").field("final_balance_with_sign"))
 									)
 								)
 							)
@@ -124,12 +121,13 @@ public class TaxPayerGeneralViewService {
 	 * @param taxpayerId
 	 * @param year
 	 * @param month
+	 * @param fetchZeroBalance	If true, fetches and return accounts with ZERO balance
 	 * @return	A {@link List} of {@link Account}
 	 */
-	public List<Account> getAccounts(final String taxpayerId, final int year, final String month) {
+	public List<Account> getAccounts(final String taxpayerId, YearMonth period, boolean fetchZeroBalance) {
 
 		//Create a search request
-		SearchRequest searchRequest = searchBalance(taxpayerId, year, month);
+		SearchRequest searchRequest = searchBalance(taxpayerId, period);
 
 		//Execute a search
 		SearchResponse sresp = null;
@@ -142,7 +140,7 @@ public class TaxPayerGeneralViewService {
 		List<Account> accounts = new LinkedList<>();
 
 		if (sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No accounts found for taxPayer " + taxpayerId + " for period " + month + "/" + year);			
+			log.log(Level.INFO, "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());			
 			return Collections.emptyList(); // No balance sheet found
 		} else {
 			
@@ -207,19 +205,25 @@ public class TaxPayerGeneralViewService {
 											continue;										
 										
 										Sum balance = balanceTypeBucket.getAggregations().get("finalBalance");
-										double balanceValue = balance.getValue();
-										
-										//Add each account
-										Account account = new Account();
-										account.setCategoryCode(category);
-										account.setCategory(categoryName);
-										account.setSubcategoryCode(subcategory);
-										account.setSubcategory(subcategoryName);
-										account.setCode(accountCode);
-										account.setName(accountName);
-										account.setFinalBalance(balanceValue);
-										account.setLevel(3);
-										accounts.add(account);
+								
+										if ( balance != null ) {											
+											double balanceValue = balance.getValue();
+											
+											if ( !fetchZeroBalance && balanceValue == 0d )
+												continue;
+											
+											//Add each account
+											Account account = new Account();
+											account.setCategoryCode(category);
+											account.setCategory(categoryName);
+											account.setSubcategoryCode(subcategory);
+											account.setSubcategory(subcategoryName);
+											account.setCode(accountCode);
+											account.setName(accountName);
+											account.setBalance(balanceValue);
+											account.setLevel(3);
+											accounts.add(account);
+										}										
 										
 									} //Loop over balance_final_debit_credit
 									
@@ -253,7 +257,7 @@ public class TaxPayerGeneralViewService {
 		
 		//Group all categories
 		Map<String,Map<String,Double>> result = accounts.stream().collect(Collectors.groupingBy(account -> 
-			account.getCategoryCode(), Collectors.groupingBy(account -> account.getCategory(), Collectors.summingDouble(account->account.getFinalBalance()))));
+			account.getCategoryCode(), Collectors.groupingBy(account -> account.getCategory(), Collectors.summingDouble(account->account.getBalance()))));
 		
 		Map<String,Double> categoriesSum = new HashMap<>();
 		
@@ -264,10 +268,10 @@ public class TaxPayerGeneralViewService {
 			account.setLevel(1);			
 			account.setCategoryCode(entry.getKey());
 			account.setCategory(new ArrayList<>(entry.getValue().keySet()).get(0));
-			account.setFinalBalance(new ArrayList<>(entry.getValue().values()).get(0));
+			account.setBalance(new ArrayList<>(entry.getValue().values()).get(0));
 			account.setPercentage(100);			
 			accounts.add(account);			
-			categoriesSum.put(account.getCategoryCode(), account.getFinalBalance());
+			categoriesSum.put(account.getCategoryCode(), account.getBalance());
 			
 		}
 		
@@ -279,7 +283,7 @@ public class TaxPayerGeneralViewService {
 								Collectors.groupingBy(account -> account.getCategory(), 
 										Collectors.groupingBy(account -> account.getSubcategoryCode(), 
 												Collectors.groupingBy(account -> account.getSubcategory(),										
-														Collectors.summingDouble(account->account.getFinalBalance()))))));
+														Collectors.summingDouble(account->account.getBalance()))))));
 	
 		Map<String,Double> subcategoriesSum = new HashMap<>();
 	
@@ -304,7 +308,7 @@ public class TaxPayerGeneralViewService {
 						account.setCategory(categoryName);						
 						account.setSubcategoryCode(subcategoryCode);
 						account.setSubcategory(entry4.getKey());
-						account.setFinalBalance(entry4.getValue());
+						account.setBalance(entry4.getValue());
 						double total = categoriesSum.get(categoryCode);
 						double percent = (entry4.getValue() * 100) / total;
 						if ( Double.isNaN(percent) )
@@ -324,7 +328,7 @@ public class TaxPayerGeneralViewService {
 		accounts.stream().filter(a->a.getLevel() > 2).forEach(account->{
 			
 			double total = categoriesSum.get(account.getCategoryCode());			
-			double percent = (account.getFinalBalance() * 100) / total;
+			double percent = (account.getBalance() * 100) / total;
 			if ( Double.isNaN(percent) )
 				account.setPercentage(0);
 			else
@@ -332,6 +336,65 @@ public class TaxPayerGeneralViewService {
 			
 		});
 		
+	}
+
+	public List<Map<String, Object>> getMapOfAccounts(String taxpayerId, YearMonth period, boolean fetchZeroBalance,
+			List<YearMonth> additionalPeriods) {
+		
+		BalanceSheet balanceP0 = getBalance(taxpayerId,period,fetchZeroBalance);
+		
+		if ( balanceP0 == null || balanceP0.getAccounts() == null || balanceP0.getAccounts().isEmpty() )
+			return Collections.emptyList();
+		
+		Map<String,Map<String,Object>> accountsToRet = new HashMap<>();
+		
+		for ( Account account : balanceP0.getAccounts() ) {		
+			String key = account.getKey();
+			Map<String,Object> accountData = account.getAccountData();
+			accountData.put("B0",account.getBalance());
+			accountData.put("V0", account.getPercentage()); //Vertical analysis for base period
+			accountsToRet.put(key, accountData);			
+		}
+		
+		
+		int i = 1;
+		for ( YearMonth p : additionalPeriods ) {			
+		
+			BalanceSheet balance = getBalance(taxpayerId,p,fetchZeroBalance);
+			
+			if ( balance == null || balance.getAccounts() == null || balance.getAccounts().isEmpty() )
+				continue;
+			
+			String prefix = "B" + i;
+			String prefixVerticalAnalysis =  "V" +  i;
+			String prefixHorizontalAnalysis =  "H" +  i;
+			
+			for ( Account account : balance.getAccounts() ) {		
+				String key = account.getKey();
+				Map<String,Object> accountData = accountsToRet.get(key);
+				
+				if ( accountData == null ) {
+					accountData = account.getAccountData();					
+					accountsToRet.put(key, accountData);
+				}					
+					
+				accountData.put(prefix , account.getBalance()); //Balance for period
+				accountData.put(prefixVerticalAnalysis , account.getPercentage()); //Vertical analysis for period
+				double balanceBasePeriod = accountData.get("B0") == null ? 0 : (double)accountData.get("B0"); 
+				double percentage = balanceBasePeriod == 0d ? 0 : (account.getBalance() * 100 / balanceBasePeriod);
+				accountData.put(prefixHorizontalAnalysis , percentage); //Horizontal analysis for period
+							
+			}
+			
+			i++;
+			
+		}
+		
+		List<String> accountKeys = new ArrayList<>(accountsToRet.keySet());
+		accountKeys.sort(null);
+		List<Map<String, Object>> accounts = new ArrayList<>(accountKeys.size());
+		accountKeys.forEach(key->accounts.add(accountsToRet.get(key)));
+		return accounts;
 	}
 
 }

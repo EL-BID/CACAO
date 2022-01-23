@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class TaxPayerGeneralViewUIController {
 	
 	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
-	@GetMapping(value= {"/vertical-analysis"})
+	@GetMapping(value= {"/horizontal_vertical_analysis"})
 	public String getVerticalAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -48,7 +48,7 @@ public class TaxPayerGeneralViewUIController {
     	if (user==null)
     		throw new UserNotFoundException();
 		
-        return "taxpayersgeneralview/view-vertical-analysis";
+        return "taxpayersgeneralview/horizontal_vertical_analysis";
 	}	
-
+	
 }

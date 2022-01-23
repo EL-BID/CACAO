@@ -20,6 +20,7 @@
 package org.idb.cacao.web.dto;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections4.comparators.ComparableComparator;
@@ -48,14 +49,10 @@ public class Account implements Serializable, Comparable<Account> {
 
 	private String name;
 
-	private double initialBalance;
-
-	private double finalBalance;
+	private double balance;
 	
-	private String initialBalanceType;
-
-	private String finalBalanceType;
-
+	private String balanceType;
+	
 	private double percentage;
 
 	public Account() {
@@ -121,20 +118,20 @@ public class Account implements Serializable, Comparable<Account> {
 		this.name = name;
 	}
 
-	public double getInitialBalance() {
-		return initialBalance;
+	public double getBalance() {
+		return balance;
 	}
 
-	public void setInitialBalance(double initialBalance) {
-		this.initialBalance = initialBalance;
+	public void setBalance(double balance) {
+		this.balance = balance;
 	}
 
-	public double getFinalBalance() {
-		return finalBalance;
+	public String getBalanceType() {
+		return balanceType;
 	}
 
-	public void setFinalBalance(double finalBalance) {
-		this.finalBalance = finalBalance;
+	public void setBalanceType(String balanceType) {
+		this.balanceType = balanceType;
 	}
 
 	public double getPercentage() {
@@ -143,22 +140,6 @@ public class Account implements Serializable, Comparable<Account> {
 
 	public void setPercentage(double percentage) {
 		this.percentage = percentage;
-	}
-
-	public String getInitialBalanceType() {
-		return initialBalanceType;
-	}
-
-	public void setInitialBalanceType(String initialBalanceType) {
-		this.initialBalanceType = initialBalanceType;
-	}
-
-	public String getFinalBalanceType() {
-		return finalBalanceType;
-	}
-
-	public void setFinalBalanceType(String finalBalanceType) {
-		this.finalBalanceType = finalBalanceType;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -206,6 +187,27 @@ public class Account implements Serializable, Comparable<Account> {
 		
 		return 0;
 		
+	}
+
+	public String getKey() {
+		return categoryCode + "_" 
+				+ ( subcategoryCode == null ? "0" : subcategoryCode ) 
+				+ "_" + ( code == null ? "0" : code );
+	}
+
+	public Map<String, Object> getAccountData() {
+		Map<String,Object> accountData = new HashMap<>();
+		
+		accountData.put("level",level);
+		accountData.put("categoryCode",categoryCode);
+		accountData.put("category",category);
+		accountData.put("subcategoryCode",subcategoryCode);		
+		accountData.put("subcategory",subcategory);
+		accountData.put("code",code);
+		accountData.put("name",name);		
+		accountData.put("balanceType",balanceType);
+		
+		return accountData;
 	}
 
 }
