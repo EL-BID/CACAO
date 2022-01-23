@@ -139,7 +139,7 @@ public class TaxPayerGeneralViewService {
 
 		List<Account> accounts = new LinkedList<>();
 
-		if (sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());			
 			return Collections.emptyList(); // No balance sheet found
 		} else {
