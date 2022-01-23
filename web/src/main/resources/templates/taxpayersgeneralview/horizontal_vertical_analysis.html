@@ -19,7 +19,8 @@
 	<div class="ui container">
 		<h2 class="ui header">
 			<i class="stream icon"></i>
-			<div class="content" th:text="#{taxpayers.general.view.analysis}">Show Analysis</div>
+			<div class="content" th:text="#{taxpayers.general.view.analysis}">Show
+				Analysis</div>
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
@@ -36,10 +37,12 @@
 					</div>
 
 					<div class="ui field" id="type">
-						<label th:text="#{taxpayers.general.view.analysis.type}">Analysis Type</label> 
-						<select class="ui dropdown" id="analysisType">
-							<option value="1" th:text="#{taxpayers.general.view.analysis.type.vertical}">Vertical</option>
-							<option value="2" th:text="#{taxpayers.general.view.analysis.type.horizontal}">Horizontal</option>
+						<label th:text="#{taxpayers.general.view.analysis.type}">Analysis
+							Type</label> <select class="ui dropdown" id="analysisType">
+							<option value="1"
+								th:text="#{taxpayers.general.view.analysis.type.vertical}">Vertical</option>
+							<option value="2"
+								th:text="#{taxpayers.general.view.analysis.type.horizontal}">Horizontal</option>
 							<option value="3" th:text="#{taxpayers.general.view.analysis.type.booth}">Booth</option>
 						</select>
 					</div>
@@ -119,11 +122,19 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		$('#finalDate').calendar({
-			  type: 'month',
-			     onChange: function(value) {
-			    	 $("#showtable").hide()   
-			     },
-			});
+		  type: 'month',
+		     onChange: function(value) {
+		    	 $("#showtable").hide()   
+		     },
+		});
+		
+		$('#analysisType').on('change', function() {
+			$("#showtable").hide()   
+	     });	
+		
+		$('#period').on('change', function() {
+			$("#showtable").hide()   
+	     });
 		
 		$('#select').dropdown({
 			apiSettings: {
@@ -161,8 +172,10 @@
 				onSuccess: (function(event,fields){
 					event.preventDefault();					
 					updateColumns();					
-					table.replaceData();
-					$("#showtable").show()
+					table.replaceData()
+						.then(function(){
+							$("#showtable").show()	
+						})					
 	          	})
 	        });
 	    });
