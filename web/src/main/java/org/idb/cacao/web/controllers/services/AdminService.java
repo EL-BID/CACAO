@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.Year;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -84,16 +85,20 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.CustomDataGenerator;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.RandomDataGenerator;
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.idb.cacao.web.controllers.rest.AdminAPIController;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
@@ -101,6 +106,7 @@ import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.idb.cacao.web.repositories.DomainTableRepository;
+import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
@@ -173,6 +179,9 @@ public class AdminService {
 
 	@Autowired
 	private FileUploadedProducer fileUploadedProducer;
+	
+	@Autowired
+	private TaxpayerRepository taxPayerRepository;
 
     private RestTemplate restTemplate;
 
@@ -252,9 +261,10 @@ public class AdminService {
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
-			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. Must inform the template name."),
+			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. The template name must be informed with this option, following this parameter indication. The taxpayer ID is also created randomly and the corresponding taxpayer record is created accordingly if absent."),
 			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
+			new Option("y","year",true, "Informs the year to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
 		
@@ -762,6 +772,7 @@ public class AdminService {
 				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
 				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
 				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
+				int year = (cmdLine.hasOption("y")) ? Integer.parseInt(cmdLine.getOptionValue("y")) : Year.now().getValue() - 1;
 				
 				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 				RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
@@ -776,7 +787,7 @@ public class AdminService {
 							StringBuilder bg_report = new StringBuilder();
 							bg_report.append("Report for background process of creation of ").append(limit_docs).append(" documents with random data for template ").append(template_name).append("\n");
 							try {
-								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, bg_report);
+								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, bg_report);
 							}
 							catch (Throwable ex) {
 								log.log(Level.SEVERE, "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()), ex);
@@ -789,7 +800,7 @@ public class AdminService {
 					report.append("Creating ").append(limit_docs).append(" documents with random data for template ").append(template_name).append(" at background\n");
 				}
 				else {
-					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, report);
+					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, report);
 				}
 			}
 		}
@@ -802,7 +813,7 @@ public class AdminService {
 	 * Creates sample documents with random data according to the provided template
 	 */
 	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String template_name, int limit_docs, 
-			long fixed_limit_records, String seedWord, StringBuilder report) throws Exception {
+			long fixed_limit_records, String seedWord, int year, StringBuilder report) throws Exception {
 		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
 		if (templates_versions==null || templates_versions.isEmpty()) {
 			report.append("Could not find a template with name: ").append(template_name).append("\n");
@@ -869,7 +880,10 @@ public class AdminService {
 				final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
 						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
 						: fixed_limit_records;
-				
+
+				final List<DocumentField> taxPayerIdFields = template.getFieldsOfType(FieldMapping.TAXPAYER_ID);
+				final int num_digits_for_taxpayer_id = (taxPayerIdFields.isEmpty()) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdFields.iterator().next().getMaxLength()).orElse(10)));
+
 				final Integer partition = (limit_docs>1) ? i : null;
 
 	        	Callable<Object> procedure = ()->{
@@ -882,12 +896,25 @@ public class AdminService {
 
 					final String originalFilename;
 					
+					String taxpayerId = null;
+					
 					try {
 						if (custom_gen!=null) {
+							if (year!=0)
+								custom_gen.setTaxYear(year);
 							custom_gen.start();
-							gen.setFixedTaxpayerId(custom_gen.getTaxpayerId());
+							taxpayerId = custom_gen.getTaxpayerId();
 							gen.setFixedYear(custom_gen.getTaxYear());
 						}
+						else {
+							if (year!=0)
+								gen.setFixedYear(year);
+						}
+						if (taxpayerId==null || taxpayerId.trim().length()==0) {
+							RandomDataGenerator randomDataGenerator = new RandomDataGenerator(doc_seed);
+							taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id).toString();
+						}
+						gen.setFixedTaxpayerId(taxpayerId);
 						gen.setPath(destinationFile);
 						gen.start();
 						
@@ -915,6 +942,19 @@ public class AdminService {
 							custom_gen.close();
 						}
 						gen.close();
+					}
+					
+					if (taxpayerId!=null && taxpayerId.trim().length()>0) {
+						Optional<Taxpayer> txp = taxPayerRepository.findByTaxPayerId(taxpayerId);
+						if (!txp.isPresent()) {
+							// Creates a new taxpayer with random name
+							RandomDataGenerator randomDataGenerator = new RandomDataGenerator(doc_seed);
+							String name = randomDataGenerator.nextPersonName();
+							Taxpayer new_txp = new Taxpayer();
+							new_txp.setName(name);
+							new_txp.setTaxPayerId(taxpayerId);
+							taxPayerRepository.saveWithTimestamp(new_txp);
+						}
 					}
 				
 					String fileHash = Files.asByteSource(destinationFile.toFile()).hash(Hashing.sha256()).toString();

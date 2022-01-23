@@ -99,6 +99,8 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	
 	private int year;
 	
+	private int providedYear;
+	
 	private int[] transactionsPerDay;
 	
 	private int currentDay;
@@ -174,7 +176,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	public void start() {
 		recordsCreated = 0;
 		
-		year = randomDataGenerator.nextRandomYear();
+		year = (providedYear==0) ? randomDataGenerator.nextRandomYear() : providedYear;
 		
 		int num_digits_for_taxpayer_id = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
 		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
@@ -322,13 +324,25 @@ public class AccountDataGenerator implements CustomDataGenerator {
 		return (taxpayerId==null) ? null : taxpayerId.toString();
 	}
 
+	@Override
+	public void setTaxYear(Number year) {
+		if (year==null || year.intValue()==0) {
+			providedYear = 0;
+		}
+		else {
+			providedYear = year.intValue();
+			if (this.year!=0)
+				this.year = providedYear;
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.CustomDataGenerator#getTaxYear()
 	 */
 	@Override
 	public Number getTaxYear() {
-		return (year==0) ? null : year;
+		return (year==0) ? ( (providedYear==0) ? null : providedYear ) : year;
 	}
 
 	/*

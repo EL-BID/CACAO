@@ -46,6 +46,12 @@ public interface CustomDataGenerator extends Closeable {
 	default public String getTaxpayerId() {
 		return null;
 	}
+	
+	/**
+	 * Define the fixed 'tax year' to be used with data generated. If NULL, the year may be any arbitrary number. Should be
+	 * defined before calling the 'start' method. If the year is not defined, the year may be any arbitrary number.
+	 */
+	default public void setTaxYear(Number year) { }
 
 	/**
 	 * Returns some internally generated 'tax year' to be used for identification of the generated data. Returns NULL if

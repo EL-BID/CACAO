@@ -19,6 +19,10 @@
  *******************************************************************************/
 package org.idb.cacao.api.utils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,6 +79,17 @@ public class RandomDataGenerator {
 	private DomainTableRepository domainTableRepository;
 	
 	private Map<Pair<String,String>,String[]> domainTableValues;
+	
+	private static final String FEMALE_NAMES_FILE = "/names/dist.female.first.txt";
+	private static final String MALE_NAMES_FILE = "/names/dist.male.first.txt";
+	private static final String SURNAMES_FILE = "/names/dist.all.last.txt";
+	
+	private static TreeMap<Float, String> surnames;
+
+	private static TreeMap<Float, String> females;
+
+	private static TreeMap<Float, String> males;
+
 	
 	/**
 	 * This generic interface provides means for returning a DomainTable given its name and version
@@ -303,4 +319,88 @@ public class RandomDataGenerator {
 		return domainValues[random.nextInt(domainValues.length)];
 		
 	}
+	
+	/**
+	 * Returns a random person name using some common first names and surnames.
+	 */
+	public String nextPersonName() {
+		assertPersonNamesMaps();
+        String first_name = pickName(random.nextBoolean() ? females : males);
+        String surname = pickName(surnames);
+        return String.join(" ", first_name, surname);
+	}
+	
+	/**
+	 * Load the names into memory as needed. Do it only once per JVM. Thread-safe.
+	 */
+	private static void assertPersonNamesMaps() {
+		if (surnames!=null)
+			return;
+		synchronized (RandomDataGenerator.class) {
+			if (surnames!=null)
+				return;
+			TreeMap<Float, String> surnames, females, males;
+		    try {
+		        surnames = loadNames(SURNAMES_FILE);
+		    }
+		    catch (IOException e) {
+		    	surnames = new TreeMap<>();
+		    }
+		    try {
+		        females = loadNames(FEMALE_NAMES_FILE);
+		    }
+		    catch (IOException e) {
+		    	females = new TreeMap<>();
+		    }
+		    try {
+		        males = loadNames(MALE_NAMES_FILE);
+		    }
+		    catch (IOException e) {
+		    	males = new TreeMap<>();
+		    }
+		    RandomDataGenerator.males = males;
+		    RandomDataGenerator.females = females;
+		    RandomDataGenerator.surnames = surnames;
+		}
+	}
+
+	/**
+	 * Loads names from internal text file. The keys are provided by the name's cumulative frequency.
+	 * This code was copied from org.ajbrown.namemachine.NameGenerator source code (Apache License 2.0) 
+	 */
+	private static TreeMap<Float, String> loadNames(final String file) throws IOException {
+	    TreeMap<Float, String> names = new TreeMap<>();
+	    InputStream is = RandomDataGenerator.class.getResourceAsStream(file);
+
+	    try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+	    	String line = reader.readLine();
+	    	while (line != null) {
+	    		String[] fields = line.split("\\s+");
+	    		names.put(Float.parseFloat(fields[2]), fields[0]);
+	    		line = reader.readLine();
+	    	}
+	    }
+
+	    return names;
+	}
+
+	/**
+	 * Pick a name from the specified TreeMap based on a random number.
+	 * This code was copied from org.ajbrown.namemachine.NameGenerator source code (Apache License 2.0) 
+	 */
+	private String pickName(final TreeMap<Float, String> map) {
+		assert !map.isEmpty();
+
+	    Float key = null;
+	    while (key == null) {
+	      try {
+	        key = map.ceilingKey(random.nextFloat() * 100);
+	      }
+	      catch (NullPointerException ignored) {
+	        //Do nothing.
+	      }
+	    }
+
+	    return map.get(key);
+	}	
 }
