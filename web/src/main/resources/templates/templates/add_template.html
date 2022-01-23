@@ -104,7 +104,8 @@ let createTable = function() {
 	pagination: true,
 	paginationMode: "remote", //enable remote pagination
 	ajaxURL: /*[[@{/api/templates}]]*/ "/api/templates", //set url for ajax request
-	paginationSize: 5,
+	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
 	ajaxContentType: "json",
 	filterMode:"remote",
 	sortMode: "remote",

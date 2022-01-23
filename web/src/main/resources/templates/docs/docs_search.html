@@ -68,8 +68,9 @@ let table = new Tabulator('#table', {
 	layout: "fitDataFill", //fit columns to width of table (optional)
     pagination: true,
 	paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/docs_search}]]*/ "/api/docs_seach", //set url for ajax request
-	paginationSize: 5,
+	ajaxURL: /*[[@{/api/docs_search}]]*/ "/api/docs_seach", //set url for ajax request
+	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
 	ajaxContentType: "json",
 	filterMode:"remote",
 	sortMode: "remote",
@@ -86,7 +87,6 @@ let table = new Tabulator('#table', {
 		}
 		return url + '?' + p.toString()
 	},
-    paginationSizeSelector:[10, 25, 50],
     locale:'xx',
     langs:{
         "xx":{

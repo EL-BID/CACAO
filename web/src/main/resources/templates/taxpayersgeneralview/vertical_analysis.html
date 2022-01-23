@@ -121,7 +121,8 @@
 			layout: "fitData", //fit columns to width of table (optional)
 		    pagination: true,
 			paginationMode: "local", //enable local pagination
-			paginationSize: 10,
+			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
 			ajaxURL: /*[[@{/api/generalview/vertical-analysis}]]*/ "/api/generalview/vertical-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
@@ -151,8 +152,7 @@
 		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
 		            }
 		        }
-		    },
-			paginationSizeSelector:[10, 25, 50],	
+		    },				
 			rowFormatter:function(row){
 			    var data = row.getData();
 			    if(data.level == "1"){
