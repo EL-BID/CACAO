@@ -61,6 +61,14 @@ public class UserUIController {
 
 		return "legal/institutional";
 	}
+	
+	@GetMapping("/usermanual")
+	public String showUsermanual(Model model) {
+
+		ControllerUtils.tagLoggedArea(model);
+
+		return "usermanual/usermanual";
+	}
 
 
 	@Secured({ "ROLE_USER_READ" })

@@ -33,6 +33,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,9 +63,12 @@ import org.apache.commons.cli.ParseException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.DeleteRecordsOptions;
+import org.apache.kafka.clients.admin.DeleteRecordsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.RecordsToDelete;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -218,7 +222,11 @@ public class AdminService {
 				"Returns information about KAFKA",
 				new Option("m","metrics",false, "Collects metrics about KAFKA"),
 				new Option("c","consumers",false, "Returns information about consumers of KAFKA (groups, topics, partitions and offsets)"),
-				new Option("t","topics",false, "Returns information about topics of KAFKA (topics, partitions and offsets)")),
+				new Option("t","topics",false, "Returns information about topics of KAFKA (topics, partitions and offsets)"),
+				new Option("d","delete",true, "Deletes messages from KAFKA topics. The option parameter must be one of the following: the text 'all' for deleting all topics and all partitions, "
+						+ "or some expression of format 'topic-name:partition-number:max-offset' for informing a specific topic, specific partition number and a maximum offset in partition (will delete all offsets below this number). "
+						+ "You may also inform the expression 'topic-name:partition-number' for deleting all messages from the given partition. "
+						+ "You may also inform the expression 'topic-name' for deleting all messages for all partitions of the give topic.")),
 		
 		KIBANA(AdminService::kibana,
 			"Performs some operations on KIBANA",
@@ -245,6 +253,7 @@ public class AdminService {
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
 			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. Must inform the template name."),
+			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
@@ -749,10 +758,39 @@ public class AdminService {
 			if (template_name.trim().length()==0)
 				report.append("Missing template name with 'd' option!");
 			else {
+				boolean background = cmdLine.hasOption("bg");
 				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
 				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
 				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
-				service.createSampleDocuments(template_name.trim(), limit_docs, fixed_limit_records, seedWord, report);
+				
+				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+				RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
+				String remoteIpAddr = (reqAttr instanceof ServletRequestAttributes) ? ((ServletRequestAttributes)reqAttr).getRequest().getRemoteAddr() : null;
+
+				if (background) {
+					new Thread("SampleDocuments") {
+						{
+							setDaemon(true);
+						}
+						public void run() {
+							StringBuilder bg_report = new StringBuilder();
+							bg_report.append("Report for background process of creation of ").append(limit_docs).append(" documents with random data for template ").append(template_name).append("\n");
+							try {
+								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, bg_report);
+							}
+							catch (Throwable ex) {
+								log.log(Level.SEVERE, "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()), ex);
+							}
+							finally {
+								log.log(Level.INFO, bg_report.toString());
+							}
+						}
+					}.start();
+					report.append("Creating ").append(limit_docs).append(" documents with random data for template ").append(template_name).append(" at background\n");
+				}
+				else {
+					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, report);
+				}
 			}
 		}
 		
@@ -763,7 +801,8 @@ public class AdminService {
 	/**
 	 * Creates sample documents with random data according to the provided template
 	 */
-	private void createSampleDocuments(String template_name, int limit_docs, long fixed_limit_records, String seedWord, StringBuilder report) throws Exception {
+	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String template_name, int limit_docs, 
+			long fixed_limit_records, String seedWord, StringBuilder report) throws Exception {
 		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
 		if (templates_versions==null || templates_versions.isEmpty()) {
 			report.append("Could not find a template with name: ").append(template_name).append("\n");
@@ -794,10 +833,6 @@ public class AdminService {
 			? TemplateArchetypes.getArchetype(template.getArchetype())
 			: Optional.empty();
 
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
-		String remoteIpAddr = (reqAttr instanceof ServletRequestAttributes) ? ((ServletRequestAttributes)reqAttr).getRequest().getRemoteAddr() : null;
-		
 		long seed;
 		if (seedWord==null || seedWord.trim().length()==0)
 			seed = UUID.randomUUID().getLeastSignificantBits() ^ UUID.randomUUID().getMostSignificantBits();
@@ -834,6 +869,8 @@ public class AdminService {
 				final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
 						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
 						: fixed_limit_records;
+				
+				final Integer partition = (limit_docs>1) ? i : null;
 
 	        	Callable<Object> procedure = ()->{
 
@@ -911,7 +948,7 @@ public class AdminService {
 	
 					FileUploadedEvent event = new FileUploadedEvent();
 					event.setFileId(savedInfo.getId());
-					fileUploadedProducer.fileUploaded(event);
+					fileUploadedProducer.fileUploaded(event, partition);
 					
 					return null;
 	        	};
@@ -1080,6 +1117,7 @@ public class AdminService {
 		StringBuilder report = new StringBuilder();
 		
 		if (cmdLine.hasOption("m")) {
+			// Show KAFKA metrics
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 				
 				Map<String,String> metrics =
@@ -1097,6 +1135,7 @@ public class AdminService {
 		}
 		
 		if (cmdLine.hasOption("c")) {
+			// Show information about KAFKA consumers
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
 				report.append(String.format("%-10s\t%-20s\t%s\t%s\n","group","topic","part","offset"));
@@ -1114,6 +1153,7 @@ public class AdminService {
 		}
 
 		if (cmdLine.hasOption("t")) {
+			// Show information about KAFKA topics
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
 				report.append(String.format("%-20s\t%s\t%s\n","topic","part","offset"));
@@ -1138,6 +1178,77 @@ public class AdminService {
 			}
 		}
 
+		if (cmdLine.hasOption("d")) {
+			// Delete KAFKA messages
+			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
+				Map<TopicPartition, RecordsToDelete> recordsToDelete = new HashMap<>();
+				String arg = cmdLine.getOptionValue("d").trim();
+				boolean all_topics = "all".equalsIgnoreCase(arg);
+				if (all_topics) {
+					ListTopicsResult topics_info = kafkaAdminClient.listTopics();
+					for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topics_info.names().get()).all().get().entrySet()) {
+						String topic = tp_entry.getKey();
+						Map<TopicPartition,OffsetSpec> requestInfo = 
+							tp_entry.getValue().partitions().stream()
+							.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+							.collect(Collectors.toMap(Function.identity(), 
+									(e)->OffsetSpec.latest()));
+						Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
+						for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
+							int part = tp_info.partition();
+							ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
+							long offset = (offset_info==null) ? -1 : offset_info.offset();
+							if (offset<=0)
+								continue;
+							report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
+							recordsToDelete.put(new TopicPartition(topic, part), RecordsToDelete.beforeOffset(offset));
+						}
+					}
+				}
+				else {
+					String[] parts = arg.split(":");
+					String topic = parts[0];
+					for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(Collections.singleton(topic)).all().get().entrySet()) {
+						Map<TopicPartition,OffsetSpec> requestInfo;
+						if (parts.length>1) {
+							int part = Integer.parseInt(parts[1]);
+							requestInfo = Collections.singletonMap(new TopicPartition(topic,part), OffsetSpec.latest());
+						}
+						else {
+							requestInfo = 
+								tp_entry.getValue().partitions().stream()
+								.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+								.collect(Collectors.toMap(Function.identity(), 
+										(e)->OffsetSpec.latest()));
+						}
+						if (parts.length>2) {
+							long offset = Long.parseLong(parts[2]);
+							for (Map.Entry<TopicPartition,OffsetSpec> tp_info: requestInfo.entrySet()) {
+								int part = tp_info.getKey().partition();
+								report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
+								recordsToDelete.put(new TopicPartition(topic, part), RecordsToDelete.beforeOffset(offset));
+							}
+						}
+						else {
+							Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
+							for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
+								int part = tp_info.partition();
+								ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
+								long offset = (offset_info==null) ? -1 : offset_info.offset();
+								if (offset<=0)
+									continue;
+								report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
+								recordsToDelete.put(new TopicPartition(topic, part), RecordsToDelete.beforeOffset(offset));
+							}
+						}
+					}
+				}
+                DeleteRecordsResult result = kafkaAdminClient.deleteRecords(recordsToDelete, new DeleteRecordsOptions());
+                result.all().get();
+                report.append("Records deleted!");
+			}
+		}
+		
 		return report.toString();
 	}
 	

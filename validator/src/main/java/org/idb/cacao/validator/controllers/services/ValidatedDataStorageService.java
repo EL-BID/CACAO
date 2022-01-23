@@ -37,6 +37,7 @@ import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -52,6 +53,9 @@ public class ValidatedDataStorageService {
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
+
+	@Value("${spring.elasticsearch.rest.connection-timeout}")
+	private String elasticSearchConnectionTimeout;
 
 	/**
 	 * Bulk loads validated data into ElasticSearch index
@@ -94,6 +98,7 @@ public class ValidatedDataStorageService {
 
 		} // LOOP over parsed data records
 		
+		request.timeout(elasticSearchConnectionTimeout);
 		request.setRefreshPolicy(RefreshPolicy.NONE);
 		try {
 			elasticsearchClient.bulk(request,

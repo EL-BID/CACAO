@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.elasticsearch.client.RestHighLevelClient;
+import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.templates.TemplateArchetype;
@@ -62,6 +63,11 @@ public class KibanaSpacesService {
 
 	private static final Logger log = Logger.getLogger(KibanaSpacesService.class.getName());
 	
+	/**
+	 * The field name to be used by default as date/time filter of published data
+	 */
+	private static final String dashboardTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
+
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 
@@ -304,7 +310,7 @@ public class KibanaSpacesService {
 		// Creates an index pattern at Kibana for representing this index
 		KibanaIndexPattern new_index_pattern = new KibanaIndexPattern();
 		new_index_pattern.setTitle(indexPatternTitle);
-		new_index_pattern.setTimeFieldName(ValidatedDataFieldNames.TIMESTAMP.getFieldName());
+		new_index_pattern.setTimeFieldName(dashboardTimestamp);
 		
 		String index_pattern_id;
 		try {

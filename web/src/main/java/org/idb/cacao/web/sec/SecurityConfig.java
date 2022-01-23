@@ -156,7 +156,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         		
         		// ALLOW FIRST PAGE
         		"/", "/index*", "/login*", "/privacy*", "/terms*", "/license*",
-        		"/institutional*",  
+        		"/institutional*","/usermanual*",  
         		"/forgetPassword*", "/resetPassword*", "/savePassword*", "/updatePassword*")
             
             .permitAll()

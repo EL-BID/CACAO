@@ -52,6 +52,7 @@ import org.idb.cacao.etl.repositories.DomainTableRepository;
 import org.idb.cacao.etl.repositories.TaxpayerRepository;
 import org.idb.cacao.etl.repositories.DocumentValidationErrorMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -95,6 +96,9 @@ public class FileValidatedConsumerService {
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 	
+	@Value("${spring.elasticsearch.rest.connection-timeout}")
+	private String elasticSearchConnectionTimeout;
+
 	@Autowired
 	private TaxpayerRepository taxpayerRepository;
 
@@ -167,6 +171,7 @@ public class FileValidatedConsumerService {
 			System.out.println("Template: " + doc.getTemplateName());
 						
 			final PublishedDataLoader publishedDataLoader = new PublishedDataLoader(elasticsearchClient);
+			publishedDataLoader.setTimeout(elasticSearchConnectionTimeout);
 			etlContext.setLoadDataStrategy(publishedDataLoader);
 
 			// Unless we have a specific ETL procedure, we shall perform the 'general purpose' ETL
