@@ -63,7 +63,7 @@ public class TaxPayerGeneralViewAPIController {
 	
 	private static final int VERTICAL = 1;
 	private static final int HORIZONTAL = 2;
-	private static final int BOOTH = 3;
+	private static final int BOTH = 3;
 
 	@Autowired
 	private TaxPayerGeneralViewService taxPayerGeneralViewService;
@@ -241,14 +241,14 @@ public class TaxPayerGeneralViewAPIController {
 			String[] data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "$", "true", "0" };
 			columns.add(data);
 			
-			if ( analysisType == VERTICAL || analysisType == BOOTH ) { //Vertical OR booth
+			if ( analysisType == VERTICAL || analysisType == BOTH ) { //Vertical OR both
 				title = getTitle(p, comparisonPeriods, simpleFormat) + vertical;
 				field = "V" + i;
 				data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "%", "true", "2" };
 				columns.add(data);	
 			}
 			
-			if ( i > 0 && ( analysisType == HORIZONTAL || analysisType == BOOTH ) ) { //Horizontal OR booth
+			if ( i > 0 && ( analysisType == HORIZONTAL || analysisType == BOTH ) ) { //Horizontal OR both
 				title = getTitle(p, comparisonPeriods, simpleFormat) + horizontal;
 				field = "H" + i;
 				data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "%", "true", "2" };

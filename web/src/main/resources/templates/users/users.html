@@ -95,12 +95,13 @@ let table = new Tabulator('#table', {
 	layout: "fitData", //fit columns to width of table (optional)
     pagination: true,
 	paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
-	paginationSize: 5,
-	ajaxContentType: "json",
+	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
     filterMode:"remote",
     sortMode: "remote",
     headerFilterLiveFilterDelay:700,
+    ajaxContentType: "json",
+	ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
     ajaxURLGenerator: function(url, config, params ){
         console.log(config)
         console.log(params)
@@ -114,7 +115,6 @@ let table = new Tabulator('#table', {
         }
         return url + '?' + p.toString()
     },
-	paginationSizeSelector:[10, 25, 50],
 	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 	locale:'xx',
 	langs:{

@@ -146,7 +146,8 @@ var table = new Tabulator('#table', {
     layout: "fitColumns", //fit columns to width of table (optional)
     responsiveLayout: "collapse",
     pagination: true,
-    paginationSize: 5,
+    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
     columns:[ //Define Table Columns
         {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200"},
         {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
