@@ -317,6 +317,11 @@ public class FileUploadedConsumerService {
 				}
 			}
 
+			if (log.isLoggable(Level.INFO)) {
+				log.log(Level.INFO, "Finished validation of a message with documentId " + documentId + ", stored file: "+filePath.getFileName()+", original file: "
+					+doc.getFilename()+", template: "+doc.getTemplateName()+", taxpayer: "+doc.getTaxPayerId()+", year: "+doc.getTaxYear());
+			}
+
 			// Stores validated data at Elastic Search
 			validatedDataStorageService.storeValidatedData(validationContext);
 

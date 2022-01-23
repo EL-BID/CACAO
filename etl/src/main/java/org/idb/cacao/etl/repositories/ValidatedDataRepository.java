@@ -32,6 +32,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -149,11 +150,15 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 			QueryBuilder query) throws Exception {
 		final String indexName = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
     	SearchRequest searchRequest = new SearchRequest(indexName);
-    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-    			.query(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name()+".keyword", fileId));
+    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
-        searchSourceBuilder.query(query);
+        
+        BoolQueryBuilder composite_query = new BoolQueryBuilder();
+        composite_query.must(QueryBuilders.termQuery(ValidatedDataFieldNames.FILE_ID.name()+".keyword", fileId));
+        composite_query.must(query);        
+        searchSourceBuilder.query(composite_query);
+        
     	searchRequest.source(searchSourceBuilder);
     	SearchResponse resp = null;
 		try {

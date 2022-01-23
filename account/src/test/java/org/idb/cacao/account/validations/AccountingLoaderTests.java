@@ -193,9 +193,9 @@ public class AccountingLoaderTests {
 		assertEquals("C", record.get(IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name())));
 		
 		// Check 'derived' fields (due to denormalization)
-		assertEquals("JOHN SMITH LLC", record.get(IndexNamesUtils.formatFieldName("TaxPayerName")));
-		assertEquals("Elm Street 24th", record.get(IndexNamesUtils.formatFieldName("TaxPayerAddress")));
-		assertEquals("Small business", record.get(IndexNamesUtils.formatFieldName("TaxPayerQualifier1")));
+		assertEquals("JOHN SMITH LLC", record.get(IndexNamesUtils.formatFieldName("TaxpayerName")));
+		assertEquals("Elm Street 24th", record.get(IndexNamesUtils.formatFieldName("TaxpayerAddress")));
+		assertEquals("Small business", record.get(IndexNamesUtils.formatFieldName("TaxpayerQualifier1")));
 		assertEquals("Cash and Cash Equivalents", record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())));
 		assertEquals(ASSET.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())));
 		assertEquals(ASSET.toString(), record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountCategoryName.name())));

@@ -166,10 +166,11 @@ public class FileValidatedConsumerService {
 			
 			Path filePath = fileSystemStorageService.find(fullPath);
 			
-			System.out.println("File: " + filePath.getFileName());
-			System.out.println("Original file: " + doc.getFilename());
-			System.out.println("Template: " + doc.getTemplateName());
-						
+			if (log.isLoggable(Level.INFO)) {
+				log.log(Level.INFO, "Received a message with documentId " + documentId + ", stored file: "+filePath.getFileName()+", original file: "
+					+doc.getFilename()+", template: "+doc.getTemplateName()+", taxpayer: "+doc.getTaxPayerId()+", year: "+doc.getTaxYear());
+			}
+
 			final PublishedDataLoader publishedDataLoader = new PublishedDataLoader(elasticsearchClient);
 			publishedDataLoader.setTimeout(elasticSearchConnectionTimeout);
 			etlContext.setLoadDataStrategy(publishedDataLoader);

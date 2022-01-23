@@ -176,11 +176,11 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	public void start() {
 		recordsCreated = 0;
 		
-		year = (providedYear==0) ? randomDataGenerator.nextRandomYear() : providedYear;
-		
 		int num_digits_for_taxpayer_id = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
 		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
-		
+
+		year = (providedYear==0) ? randomDataGenerator.nextRandomYear() : providedYear;
+
 		if (openingBalance || generalLedger) {
 			
 			// Define initial balance for accounts

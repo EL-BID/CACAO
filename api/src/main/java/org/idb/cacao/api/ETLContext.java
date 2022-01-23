@@ -446,21 +446,21 @@ public class ETLContext {
 			return Collections.emptyMap();
 		Map<String,Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		if (taxpayer.getName()!=null && taxpayer.getName().trim().length()>0)
-			map.put("TaxPayerName",taxpayer.getName().trim());
+			map.put("TaxpayerName",taxpayer.getName().trim());
 		if (taxpayer.getAddress()!=null && taxpayer.getAddress().trim().length()>0)
-			map.put("TaxPayerAddress",taxpayer.getAddress().trim());
+			map.put("TaxpayerAddress",taxpayer.getAddress().trim());
 		if (taxpayer.getZipCode()!=null && taxpayer.getZipCode().trim().length()>0)
-			map.put("TaxPayerZipCode",taxpayer.getZipCode().trim());
+			map.put("TaxpayerZipCode",taxpayer.getZipCode().trim());
 		if (taxpayer.getQualifier1()!=null && taxpayer.getQualifier1().trim().length()>0)
-			map.put("TaxPayerQualifier1",taxpayer.getQualifier1().trim());
+			map.put("TaxpayerQualifier1",taxpayer.getQualifier1().trim());
 		if (taxpayer.getQualifier2()!=null && taxpayer.getQualifier2().trim().length()>0)
-			map.put("TaxPayerQualifier2",taxpayer.getQualifier2().trim());
+			map.put("TaxpayerQualifier2",taxpayer.getQualifier2().trim());
 		if (taxpayer.getQualifier3()!=null && taxpayer.getQualifier3().trim().length()>0)
-			map.put("TaxPayerQualifier3",taxpayer.getQualifier3().trim());
+			map.put("TaxpayerQualifier3",taxpayer.getQualifier3().trim());
 		if (taxpayer.getQualifier4()!=null && taxpayer.getQualifier4().trim().length()>0)
-			map.put("TaxPayerQualifier4",taxpayer.getQualifier4().trim());
+			map.put("TaxpayerQualifier4",taxpayer.getQualifier4().trim());
 		if (taxpayer.getQualifier5()!=null && taxpayer.getQualifier5().trim().length()>0)
-			map.put("TaxPayerQualifier5",taxpayer.getQualifier5().trim());
+			map.put("TaxpayerQualifier5",taxpayer.getQualifier5().trim());
 		return map;
 	}
 

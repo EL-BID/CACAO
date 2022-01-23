@@ -142,7 +142,7 @@ public class AdminService {
 	/**
 	 * Default number of parallel threads to be used for generating documents with random data
 	 */
-	private static final int DEFAULT_PARALLELISM_FOR_DATA_GENERATOR = 10;
+	private static final int DEFAULT_PARALLELISM_FOR_DATA_GENERATOR = 4;
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -224,6 +224,7 @@ public class AdminService {
 				new Option("u","uploads",false, "Deletes all upload records and uploaded files."),
 				new Option("v","validated",false, "Deletes all validated records."),
 				new Option("p","published",false, "Deletes all published (denormalized) views."),
+				new Option("txp","taxpayers",false, "Deletes all taxpayers (their names and other information in registry)."),
 				new Option("kp","kibana_patterns",false, "Deletes all index patterns related to CACAO from all spaces of Kibana."),
 				new Option("a","all",false, "Deletes all data from ElasticSearch (corresponds to all the other options, except Kibana)")),
 
@@ -265,6 +266,7 @@ public class AdminService {
 			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
 			new Option("y","year",true, "Informs the year to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
+			new Option("thr","threads",true, "Number of parallel threads for generating random data (does not apply to validator/ETL phases). This parameter is only considered together with 'docs' parameter. If not informed, use "+DEFAULT_PARALLELISM_FOR_DATA_GENERATOR+" parallel threads."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
 		
@@ -773,6 +775,7 @@ public class AdminService {
 				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
 				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
 				int year = (cmdLine.hasOption("y")) ? Integer.parseInt(cmdLine.getOptionValue("y")) : Year.now().getValue() - 1;
+				int threads = (cmdLine.hasOption("thr")) ? Integer.parseInt(cmdLine.getOptionValue("thr")) : DEFAULT_PARALLELISM_FOR_DATA_GENERATOR;
 				
 				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 				RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
@@ -787,7 +790,7 @@ public class AdminService {
 							StringBuilder bg_report = new StringBuilder();
 							bg_report.append("Report for background process of creation of ").append(limit_docs).append(" documents with random data for template ").append(template_name).append("\n");
 							try {
-								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, bg_report);
+								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, bg_report, threads);
 							}
 							catch (Throwable ex) {
 								log.log(Level.SEVERE, "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()), ex);
@@ -800,7 +803,7 @@ public class AdminService {
 					report.append("Creating ").append(limit_docs).append(" documents with random data for template ").append(template_name).append(" at background\n");
 				}
 				else {
-					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, report);
+					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, report, threads);
 				}
 			}
 		}
@@ -813,7 +816,7 @@ public class AdminService {
 	 * Creates sample documents with random data according to the provided template
 	 */
 	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String template_name, int limit_docs, 
-			long fixed_limit_records, String seedWord, int year, StringBuilder report) throws Exception {
+			long fixed_limit_records, String seedWord, int year, StringBuilder report, int threads) throws Exception {
 		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
 		if (templates_versions==null || templates_versions.isEmpty()) {
 			report.append("Could not find a template with name: ").append(template_name).append("\n");
@@ -851,8 +854,7 @@ public class AdminService {
 			seed = ByteBuffer.wrap(Hashing.sha256().hashString(seedWord, StandardCharsets.UTF_8).asBytes()).asLongBuffer().get();
 		}
 		
-		int parallelism = DEFAULT_PARALLELISM_FOR_DATA_GENERATOR;
-        ExecutorService executor = (limit_docs>1) ? Executors.newFixedThreadPool(parallelism) : null;
+        ExecutorService executor = (limit_docs>1) ? Executors.newFixedThreadPool(threads) : null;
 
 		// Let's use this for generating SEED per document
 		Random genSeed = new Random(seed);
@@ -875,18 +877,18 @@ public class AdminService {
 				
 				final long doc_seed = genSeed.nextLong();
 				
-				final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
-
-				final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
-						: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
-						: fixed_limit_records;
-
 				final List<DocumentField> taxPayerIdFields = template.getFieldsOfType(FieldMapping.TAXPAYER_ID);
 				final int num_digits_for_taxpayer_id = (taxPayerIdFields.isEmpty()) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdFields.iterator().next().getMaxLength()).orElse(10)));
 
 				final Integer partition = (limit_docs>1) ? i : null;
 
 	        	Callable<Object> procedure = ()->{
+
+					final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
+
+					final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
+							: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
+							: fixed_limit_records;
 
 	    			final FileGenerator gen = FileGenerators.getFileGenerator(format);
 	    			gen.setDocumentTemplate(template);
@@ -1357,6 +1359,13 @@ public class AdminService {
 			
 			int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/true);
 			report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+		}
+
+		if (cmdLine.hasOption("txp") || cmdLine.hasOption("a")) {
+			// Deletes all taxpayers. Recreates domain tables automatically.
+			long count_taxpayers = service.taxPayerRepository.count();
+			service.taxPayerRepository.deleteAll();
+			report.append("Deleted ").append(count_taxpayers).append(" taxpayers from database.\n");			
 		}
 
 		if (cmdLine.hasOption("u") || cmdLine.hasOption("a")) {
