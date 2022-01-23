@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.services.TaxPayerGeneralViewService;
 import org.idb.cacao.web.dto.BalanceSheet;
@@ -270,8 +271,8 @@ public class TaxPayerGeneralViewAPIController {
 	 * @return	A formatted {@link String} that represents a header for a column
 	 */
 	private String getTitle(YearMonth period, int comparisonPeriods, DateTimeFormatter simpleformat) {
-		if ( comparisonPeriods < 10 || ( comparisonPeriods > 20 && comparisonPeriods < 30 ) ) {//Monthly periods 
-			return simpleformat.format(period).toUpperCase(LocaleContextHolder.getLocale());
+		if ( comparisonPeriods < 10 || ( comparisonPeriods > 20 && comparisonPeriods < 30 ) ) {//Monthly periods
+			return StringUtils.capitalize(simpleformat.format(period));
 		}
 		return String.valueOf(period.getYear());
 	}	
