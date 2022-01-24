@@ -20,7 +20,7 @@
 			<div th:if="${message!=null}" class="ui warning message" th:text="${message}">Warning</div>
 			<h2 class="ui header">
 				<i class="cogs icon"></i>
-				<div class="content" th:text="#{admin.shell}">System Operations</div>
+				<span class="content" th:text="#{admin.shell}">System Operations</span>
 			</h2>
 			<div class="ui orange segment">
 			
@@ -45,7 +45,7 @@
 						<div class="ui form">
 							<p />
 							<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase; margin-top: 1em;">
-								<div class="content" th:text="#{admin.shell.history}">Command history</div>
+								<span class="content" th:text="#{admin.shell.history}">Command history</span>
 							</h4>
 							<div class="ui message history" style="height:400px; overflow-y: scroll"></div>							
 						</div>
@@ -58,6 +58,7 @@
 			
 			</div>
 		</div>
+	</div>
 <script th:nonce="${cspNonce}" th:inline="javascript">
   $('#back').click(function(){
 	  window.history.back(); 

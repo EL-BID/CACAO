@@ -29,7 +29,7 @@
   
 		<h2 class="ui header">
 			<i class="people arrows icon"></i>
-			<div class="content" th:text="#{interpersonals.title}">Interpersonal Relationships</div>
+			<span class="content" th:text="#{interpersonals.title}">Interpersonal Relationships</span>
 		</h2>
     		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated" sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')">
@@ -40,7 +40,7 @@
         <div class="ui orange segment" id="view_form" style="display:none" sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')">
           <div class="ui orange inverted segment">
             <h3 class="ui header">
-              <div class="content" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</div>
+              <span class="content" th:text="#{interpersonal.add.title}">New Interpersonal Relationship</span>
             </h3>
           </div>
           <form action="#" name="form" id="form" class="ui form" method="post">

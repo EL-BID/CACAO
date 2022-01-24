@@ -17,10 +17,14 @@
 		<br>
 	</div>
 	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{taxpayers.general.view.analysis}">Horizontal and Vertical Analysis</div>
+        </div>	
 		<h2 class="ui header">
 			<i class="stream icon"></i>
-			<div class="content" th:text="#{taxpayers.general.view.analysis}">Show
-				Analysis</div>
+			<span class="content" th:text="#{taxpayers.general.view.analysis}">Horizontal and Vertical Analysis</span>			
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
@@ -262,15 +266,15 @@
 		    },				
 			rowFormatter:function(row){
 			    var data = row.getData();
-			    if(data.level == "1"){
-			        row.getElement().style.backgroundColor = "#FFA500"; //apply css change to row element
+			    if(data.level == "1"){			    	
+			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.1')}]]*/ "#FFA500"; //apply css change to row element
 			        row.getElement().style.fontWeight = "bold";
 			    }	
 			    else if(data.level == "2"){
-			        row.getElement().style.backgroundColor = "#FFB52E"; //apply css change to row element
+			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.2')}]]*/ "#FFB52E"; //apply css change to row element
 			    }
 			    else if(data.level == "3"){
-			        row.getElement().style.backgroundColor = "#FFC55C"; //apply css change to row element
+			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.3')}]]*/ "#FFC55C"; //apply css change to row element
 			    }
 			},	
 			columns:[ //Define Table Columns

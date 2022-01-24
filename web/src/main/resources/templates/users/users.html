@@ -22,7 +22,7 @@
         </div>
 		<h2 class="ui header">
 			<i class="users icon"></i>
-			<div class="content" th:text="#{users.title}">Users</div>
+			<span class="content" th:text="#{users.title}">Users</span>
 		</h2>
        <div id="table" class="ui orange table"></div>
 		<div class="ui column right floated" sec:authorize="hasRole('ROLE_USER_WRITE')">

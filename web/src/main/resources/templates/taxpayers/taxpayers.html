@@ -23,7 +23,7 @@
   
 		<h2 class="ui header">
 			<i class="users icon"></i>
-			<div class="content" th:text="#{taxpayers.title}">Taxpayers</div>
+			<span class="content" th:text="#{taxpayers.title}">Taxpayers</span>
 		</h2>
     		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')">
