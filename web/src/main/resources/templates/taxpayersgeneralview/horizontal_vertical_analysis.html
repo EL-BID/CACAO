@@ -263,7 +263,8 @@
 		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
 		            }
 		        }
-		    },				
+		    },	
+		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table		
 			rowFormatter:function(row){
 			    var data = row.getData();
 			    if(data.level == "1"){			    	
@@ -278,13 +279,13 @@
 			    }
 			},	
 			columns:[ //Define Table Columns
-				{title: /*[[#{level}}*/ "Level", field:"level", hozAlign:"center", headerSort:false},
-				//{title: /*[[#{categoryCode}}*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
-				{title: /*[[#{category}}*/ "Category", field:"category", hozAlign:"left", headerSort:false },
-				//{title: /*[[#{subcategoryCode}}*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
-				{title: /*[[#{subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
-				{title: /*[[#{code}}*/ "Code", field:"code", headerSort:false},
-				{title: /*[[#{name}]]}*/ "Name", field:"name", headerSort:false },	
+				{title: /*[[#{account.level}]]*/ "Level", field:"level", hozAlign:"center", headerSort:false},
+				//{title: /*[[#{account.categoryCode}]]*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
+				{title: /*[[#{account.category}]]*/ "Category", field:"category", hozAlign:"left", headerSort:false },
+				//{title: /*[[#{account.subcategoryCode}]]*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
+				{title: /*[[#{account.subcategory}]]*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
+				{title: /*[[#{account.code}]]*/ "Code", field:"code", headerSort:false},
+				{title: /*[[#{account.name}]]*/ "Name", field:"name", headerSort:false },	
 			]
 		})
 
