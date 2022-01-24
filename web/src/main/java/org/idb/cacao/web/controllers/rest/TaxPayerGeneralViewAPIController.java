@@ -31,7 +31,6 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.services.TaxPayerGeneralViewService;
-import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
@@ -71,39 +70,9 @@ public class TaxPayerGeneralViewAPIController {
 	@Autowired
 	private MessageSource messageSource;	
 	
-	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
-	@GetMapping(value= {"/generalview/vertical-analysis"})
-	public ResponseEntity<Object> getVerticalAnalysis(@RequestParam("taxpayerId") String taxpayerId,
-			@RequestParam("finalDate") String finalDate, @RequestParam("zeroBalance") String zeroBalance) {
-		
-		if ( taxpayerId == null ) {
-			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
-			return ResponseEntity.ok().body(Collections.emptyList());
-		}
-		
-		if ( finalDate == null || finalDate.length() < 15 ) {
-			log.log(Level.WARNING, "Missing or invalid parameter 'finalDate'");
-			return ResponseEntity.ok().body(Collections.emptyList());
-		}
-
-		YearMonth period = ParserUtils.parseDayMonthDayYear(finalDate);
-		
-		boolean fetchZeroBalance = ( zeroBalance == null ? false : "true".equalsIgnoreCase(zeroBalance) );
-		
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		throw new UserNotFoundException();
-    	User user = UserUtils.getUser(auth);
-    	if (user==null)
-    		throw new UserNotFoundException();
-    	
-    	BalanceSheet balance = taxPayerGeneralViewService.getBalance(taxpayerId,period,fetchZeroBalance);
-	
-    	return ResponseEntity.ok().body(balance.getAccounts());    	
-	}
-	
-	@GetMapping(value= {"/generalview/horizontal-analysis"})
-	public ResponseEntity<Object> getHorizontalAnalysis(@RequestParam("taxpayerId") String taxpayerId,
+	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})	
+	@GetMapping(value= {"/generalview/vertical-horizontal-analysis"})
+	public ResponseEntity<Object> getVerticalHorizontalAnalysis(@RequestParam("taxpayerId") String taxpayerId,
 			@RequestParam("finalDate") String finalDate, @RequestParam("zeroBalance") String zeroBalance, 
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
 		

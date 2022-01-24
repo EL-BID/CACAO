@@ -228,7 +228,7 @@
 			paginationMode: "local", //enable local pagination
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
-			ajaxURL: /*[[@{/api/generalview/horizontal-analysis}]]*/ "/api/generalview/horizontal-analysis", //set url for ajax request
+			ajaxURL: /*[[@{/api/generalview/vertical-horizontal-analysis}]]*/ "/api/generalview/vertical-horizontal-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)

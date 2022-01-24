@@ -71,15 +71,10 @@ public class TaxPayerGeneralViewService {
 		
 		// Index over 'balance sheet monthly' objects
 		SearchRequest searchRequest = new SearchRequest(BALANCE_SHEET_INDEX);
-
-		// Filter by timestamp (only consider recent months for uploads)
+		
+		// Filter by taxpayerId
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-
-		// Filter by taxpayer Id (depends on user profile and UI advanced filters)
-		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-		subquery = subquery.should(new TermQueryBuilder("taxPayerId.keyword", taxpayerId));
-		subquery = subquery.minimumShouldMatch(1);
-		//query = query.must(subquery);
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", period.getYear()));
@@ -95,9 +90,7 @@ public class TaxPayerGeneralViewService {
 						.subAggregation(AggregationBuilders.terms("bySubCategoryName").size(10_000).field("account_subcategory_name.keyword")
 							.subAggregation(AggregationBuilders.terms("byAccount").size(10_000).field("account_code.keyword")
 								.subAggregation(AggregationBuilders.terms("byAccountName").size(10_000).field("account_name.keyword")
-									.subAggregation(AggregationBuilders.terms("byFinalBalenceDebitCredit").size(10_000).field("final_balance_debit_credit.keyword")
-										.subAggregation(AggregationBuilders.sum("finalBalance").field("final_balance_with_sign"))
-									)
+									.subAggregation(AggregationBuilders.sum("finalBalance").field("final_balance_with_sign"))
 								)
 							)
 						)
@@ -111,7 +104,6 @@ public class TaxPayerGeneralViewService {
 		searchSourceBuilder.size(0);
 
 		searchRequest.source(searchSourceBuilder);
-
 
 		return searchRequest;
 	}
@@ -196,36 +188,26 @@ public class TaxPayerGeneralViewService {
 									if (accountName == null || accountName.isEmpty())
 										continue;
 									
-									Terms debitCredit = accountNameBucket.getAggregations().get("byFinalBalenceDebitCredit");
-
-									for (Terms.Bucket balanceTypeBucket : debitCredit.getBuckets()) {
-
-										String balanceType = balanceTypeBucket.getKeyAsString();
-										if (balanceType == null || balanceType.isEmpty())
-											continue;										
+									Sum balance = accountNameBucket.getAggregations().get("finalBalance");
+							
+									if ( balance != null ) {											
+										double balanceValue = balance.getValue();
 										
-										Sum balance = balanceTypeBucket.getAggregations().get("finalBalance");
-								
-										if ( balance != null ) {											
-											double balanceValue = balance.getValue();
-											
-											if ( !fetchZeroBalance && balanceValue == 0d )
-												continue;
-											
-											//Add each account
-											Account account = new Account();
-											account.setCategoryCode(category);
-											account.setCategory(categoryName);
-											account.setSubcategoryCode(subcategory);
-											account.setSubcategory(subcategoryName);
-											account.setCode(accountCode);
-											account.setName(accountName);
-											account.setBalance(balanceValue);
-											account.setLevel(3);
-											accounts.add(account);
-										}										
+										if ( !fetchZeroBalance && balanceValue == 0d )
+											continue;
 										
-									} //Loop over balance_final_debit_credit
+										//Add each account
+										Account account = new Account();
+										account.setCategoryCode(category);
+										account.setCategory(categoryName);
+										account.setSubcategoryCode(subcategory);
+										account.setSubcategory(subcategoryName);
+										account.setCode(accountCode);
+										account.setName(accountName);
+										account.setBalance(balanceValue);
+										account.setLevel(3);
+										accounts.add(account);
+									}										
 									
 								} //Loop over account_name
 								
