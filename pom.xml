@@ -26,6 +26,7 @@
 		<module>api</module>
 		<module>mock_es</module>
 		<module>account</module>
+		<module>eureka</module>
 		<module>web</module>
 		<module>validator</module>
 		<module>etl</module>

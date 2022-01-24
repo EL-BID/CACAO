@@ -52,6 +52,20 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- This dependency goes for the 'auto discovery service capability' provided by Netflix's Eureka.
+			This application is itself a client and a service registered at Eureka -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+			<version>3.0.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.servlet</groupId>
+					<artifactId>servlet-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
 	</dependencies>
 
 	<build>

@@ -51,6 +51,8 @@ import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
@@ -85,6 +87,9 @@ public class SystemUIController {
 	private RestHighLevelClient elasticsearchClient;
 	
     private RestTemplate restTemplate;
+    
+    @Autowired
+    private DiscoveryClient discoveryClient;
 
 	@Autowired
 	public SystemUIController(RestTemplateBuilder builder) {
@@ -107,9 +112,9 @@ public class SystemUIController {
 		
 		collectInfoForWebComponent(info);
 		
-		collectInfoForETLComponent(info);
-		
 		collectInfoForValidatorComponent(info);
+
+		collectInfoForETLComponent(info);		
 		
 		collectInfoForElasticSearch(info);
 		
@@ -127,7 +132,7 @@ public class SystemUIController {
 	public void collectInfoForWebComponent(MenuItem collect) {
 		
 		ComponentSystemInformation info = sysInfoService.collectInfoForComponent();
-		collectInfoForComponent(info, "sysinfo.web.app", collect);
+		collectInfoForComponent(info, text("sysinfo.web.app"), collect);
 		
 	}
 	
@@ -136,22 +141,40 @@ public class SystemUIController {
 	 */
 	public void collectInfoForETLComponent(MenuItem collect) {
 		
-		String url = String.format("http://%s:%s/api/sys_info", 
-				env.getProperty("etl.host"), 
-				env.getProperty("etl.port"));
-
-		ResponseEntity<ComponentSystemInformation> responseEntity;
-		try {
-			responseEntity = restTemplate.getForEntity(new URI(url), ComponentSystemInformation.class);
-		} catch (RestClientException | URISyntaxException e) {
+		List<ServiceInstance> registered_services = discoveryClient.getInstances("CACAO_ETL");
+		
+		if (registered_services.isEmpty()) {
 			MenuItem info_app = new MenuItem(text("sysinfo.etl.app")).withActive(false);
 			collect.addChild(info_app);
-			info_app.withChild(text("error.internal.server", e.getMessage()));
+			info_app.withChild(text("sysinfo.services.none", "ETL"));
 			return;
 		}
+
+		MenuItem info_app = new MenuItem(text("sysinfo.etl.app")).withActive(false);
+		collect.addChild(info_app);
+
+		for (ServiceInstance serv: registered_services) {
 		
-		ComponentSystemInformation info = responseEntity.getBody();
-		collectInfoForComponent(info, "sysinfo.etl.app", collect);
+			String url = String.format("http://%s:%d/api/sys_info", 
+					serv.getHost(), 
+					serv.getPort());
+			
+			String instanceName = String.format("%s:%d", serv.getHost(), serv.getPort());
+	
+			ResponseEntity<ComponentSystemInformation> responseEntity;
+			try {
+				responseEntity = restTemplate.getForEntity(new URI(url), ComponentSystemInformation.class);
+			} catch (RestClientException | URISyntaxException e) {
+				MenuItem info_host = new MenuItem(instanceName).withActive(false);
+				info_app.addChild(info_host);
+				info_host.withChild(text("error.internal.server", e.getMessage()));
+				continue;
+			}
+			
+			ComponentSystemInformation info = responseEntity.getBody();
+			collectInfoForComponent(info, instanceName, info_app);
+			
+		}
 		
 	}
 
@@ -160,22 +183,40 @@ public class SystemUIController {
 	 */
 	public void collectInfoForValidatorComponent(MenuItem collect) {
 		
-		String url = String.format("http://%s:%s/api/sys_info", 
-				env.getProperty("validator.host"), 
-				env.getProperty("validator.port"));
+		List<ServiceInstance> registered_services = discoveryClient.getInstances("CACAO_VALIDATOR");
 		
-		ResponseEntity<ComponentSystemInformation> responseEntity;
-		try {
-			responseEntity = restTemplate.getForEntity(new URI(url), ComponentSystemInformation.class);
-		} catch (RestClientException | URISyntaxException e) {
+		if (registered_services.isEmpty()) {
 			MenuItem info_app = new MenuItem(text("sysinfo.validator.app")).withActive(false);
 			collect.addChild(info_app);
-			info_app.withChild(text("error.internal.server", e.getMessage()));
+			info_app.withChild(text("sysinfo.services.none", "Validator"));
 			return;
 		}
-		
-		ComponentSystemInformation info = responseEntity.getBody();
-		collectInfoForComponent(info, "sysinfo.validator.app", collect);
+
+		MenuItem info_app = new MenuItem(text("sysinfo.validator.app")).withActive(false);
+		collect.addChild(info_app);
+
+		for (ServiceInstance serv: registered_services) {
+
+			String url = String.format("http://%s:%d/api/sys_info", 
+					serv.getHost(), 
+					serv.getPort());
+			
+			String instanceName = String.format("%s:%d", serv.getHost(), serv.getPort());
+
+			ResponseEntity<ComponentSystemInformation> responseEntity;
+			try {
+				responseEntity = restTemplate.getForEntity(new URI(url), ComponentSystemInformation.class);
+			} catch (RestClientException | URISyntaxException e) {
+				MenuItem info_host = new MenuItem(instanceName).withActive(false);
+				info_app.addChild(info_host);
+				info_host.withChild(text("error.internal.server", e.getMessage()));
+				continue;
+			}
+			
+			ComponentSystemInformation info = responseEntity.getBody();
+			collectInfoForComponent(info, instanceName, info_app);
+			
+		}
 		
 	}
 
@@ -183,12 +224,12 @@ public class SystemUIController {
 	/**
 	 * Transforms information collected about some component into 'MenuItem' structure for UI
 	 */
-	public void collectInfoForComponent(ComponentSystemInformation info, String messageKey, MenuItem collect) {
+	public void collectInfoForComponent(ComponentSystemInformation info, String menuItem, MenuItem collect) {
 		
 		NumberFormat numbers = NumberFormat.getInstance(LocaleContextHolder.getLocale());
 		NumberFormat decimals = new DecimalFormat("#,##0.00", new DecimalFormatSymbols (LocaleContextHolder.getLocale()));
 
-		MenuItem info_web_app = new MenuItem(text(messageKey)).withActive(false);
+		MenuItem info_web_app = new MenuItem(menuItem).withActive(false);
 		collect.addChild(info_web_app);
 		
 		MenuItem java_version = new MenuItem(text("sysinfo.java.os.version")).withActive(false)

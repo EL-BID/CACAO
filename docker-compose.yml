@@ -18,6 +18,22 @@ services:
       network: host      
     depends_on:
       - api
+  eureka:
+    container_name: eureka
+    build:
+      args:
+        - USE_PROXY
+      context: ./
+      dockerfile: ./eureka/Dockerfile
+      network: host      
+    environment:
+      - PORT=8761
+      - "WEB_JVM_OPTS=-Xmx512m"
+#    ports:
+#      - "8761:8761"
+    volumes:
+      - logdir_eureka:/var/log
+    restart: always
   web:
     container_name: web
     build:
@@ -39,6 +55,7 @@ services:
       - es03
       - kibana
       - kafka
+      - eureka
     volumes:
       - logdir_web:/var/log
       - web_settings:/home/usr/app/.cacao
@@ -67,6 +84,7 @@ services:
       - es02
       - es03
       - kafka
+      - eureka
     volumes:
       - logdir_validator:/var/log
       - ./app_config_validator:/app_config.properties:ro
@@ -94,6 +112,7 @@ services:
       - es02
       - es03
       - kafka
+      - eureka
     volumes:
       - logdir_etl:/var/log
       - ./app_config_etl:/app_config.properties:ro
@@ -269,6 +288,8 @@ volumes:
   logdir_validator:
     driver: local
   logdir_etl:
+    driver: local
+  logdir_eureka
     driver: local
   file-storage:
     driver: local
