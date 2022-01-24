@@ -1,88 +1,100 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org"
-  th:with="lang=${#locale.language}" th:lang="${lang}">
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
 <head
-  th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
 <!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel="stylesheet" type="text/css" class="ui"
-  href="/css/tabulator_semantic-ui.min.css">
+	href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"><</script>
 </head>
 <body>
-  <!-- Fix to avoid overlap from the Menu -->
-  <div>
-    <br>
-  </div>
-  <div class="ui container">
-    <div class="ui breadcrumb">
-      <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
-      <div class="divider"> / </div>
-      <a class="section" th:text="#{templates.title}" th:href="@{/templates}">Templates</a>
-      <div class="divider"> / </div>
-      <div class="active section" th:text="${template.name}">Document Template</div>
-    </div>
-    
-    <h2 class="ui header">
-      <i class="file alternate outline icon"></i>
-      <div class="content" th:text="#{template.title}">Document Template</div>
-    </h2>
-    <div class="ui container">
-      <div class="ui orange segment">
-        <form action="#" name="form" id="form" class="ui form" th:object="${template}">
-          <div class="fields">
-            <div class="ten wide field">
-              <label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label> 
-              <input type="text" th:value="*{name}" class="form-control" readonly>
-            </div>
-            <div class="six wide field">
-              <label th:text="#{template.version}" style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
-              <input type="text" th:value="*{version}" class="form-control" readonly> 
-            </div>
-          </div>
-          <div class="fields">
-            <div class="five wide field">
-              <label th:text="#{template.periodicity}" style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
-              <input type="text" th:value="#{${template.periodicity}}" class="form-control" readonly>
-            </div>
-            <div class="eleven wide field">
-              <label th:text="#{template.group}" style="margin-bottom: 0px; text-transform: uppercase;">"Group</label>
-              <input type="text" th:value="*{group}" class="form-control" readonly>
-            </div>
-          </div>
-          <div class="row">
-              <i th:if="${template.required}" class="green check icon"></i>
-              <i th:if="${!template.required}" class="red times icon"></i>
-              <label th:text="#{template.required}">Required</label>
-          </div>
-        </form>
-      </div>
-      <div class="ui secondary pointing menu" id="tab">
-        <div class="item" data-tab="tab-fields" th:text="#{template.fields.title}">Template Fields</div>
-        <div class="item" data-tab="tab-inputs" th:text="#{doc.inputs.title}">Document Inputs</div>
-      </div>
-      <div class="ui tab" data-tab="tab-fields">
- 
-      <div id="table" class="ui compact table"></div>
-          
-      </div>
-      <div class="ui tab" data-tab="tab-inputs">
-         <div id="table_inputs" class="ui compact table"></div>
-         <div class="ui dropdown blue button" id="newInput"><span th:text="#{doc.input.new}">>New Input</span><i class="dropdown icon"></i>
-           <div class="menu">
-             <div class="item" th:each="i : ${formats}"
-                  th:attr="data-value=${i.name()}" th:text="${i.toString()}">
-           </div>
-         </div>
-       </div>
-    </div>
-  </div>
-  <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
-  <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
-  <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
-<script th:nonce="${cspNonce}" th:inline="javascript">
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<div class="ui breadcrumb">
+			<a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+			<div class="divider">/</div>
+			<a class="section" th:text="#{templates.title}" th:href="@{/templates}">Templates</a>
+			<div class="divider">/</div>
+			<div class="active section" th:text="${template.name}">Document
+				Template</div>
+		</div>
+
+		<h2 class="ui header">
+			<i class="file alternate outline icon"></i> <span class="content"
+				th:text="#{template.title}">Document Template</span>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form action="#" name="form" id="form" class="ui form"
+					th:object="${template}">
+					<div class="fields">
+						<div class="ten wide field">
+							<label th:text="#{template.name}"
+								style="margin-bottom: 0px; text-transform: uppercase;">Declaration
+								Name</label> <input type="text" th:value="*{name}" class="form-control" readonly>
+						</div>
+						<div class="six wide field">
+							<label th:text="#{template.version}"
+								style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
+							<input type="text" th:value="*{version}" class="form-control" readonly>
+						</div>
+					</div>
+					<div class="fields">
+						<div class="five wide field">
+							<label th:text="#{template.periodicity}"
+								style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
+							<input type="text" th:value="#{${template.periodicity}}"
+								class="form-control" readonly>
+						</div>
+						<div class="eleven wide field">
+							<label th:text="#{template.group}"
+								style="margin-bottom: 0px; text-transform: uppercase;">"Group</label> <input
+								type="text" th:value="*{group}" class="form-control" readonly>
+						</div>
+					</div>
+					<div class="row">
+						<i th:if="${template.required}" class="green check icon"></i> <i
+							th:if="${!template.required}" class="red times icon"></i> <label
+							th:text="#{template.required}">Required</label>
+					</div>
+				</form>
+			</div>
+			<div class="ui secondary pointing menu" id="tab">
+				<div class="item" data-tab="tab-fields" th:text="#{template.fields.title}">Template
+					Fields</div>
+				<div class="item" data-tab="tab-inputs" th:text="#{doc.inputs.title}">Document
+					Inputs</div>
+			</div>
+			<div class="ui tab" data-tab="tab-fields">
+
+				<div id="table" class="ui compact table"></div>
+
+			</div>
+			<div class="ui tab" data-tab="tab-inputs">
+				<div id="table_inputs" class="ui compact table"></div>
+				<div class="ui dropdown blue button" id="newInput">
+					<span th:text="#{doc.input.new}">>New Input</span><i class="dropdown icon"></i>
+					<div class="menu">
+						<div class="item" th:each="i : ${formats}"
+							th:attr="data-value=${i.name()}" th:text="${i.toString()}"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
 let fields = [[${template.fields}]] || []
 
 let processForm = function(event, fields) {

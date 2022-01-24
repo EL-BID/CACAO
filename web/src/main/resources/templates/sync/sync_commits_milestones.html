@@ -22,7 +22,7 @@
         </div>
 		<h2 class="ui header">
 			<i class="history icon"></i>
-			<div class="content" th:text="#{sync.commits.milestones}">Synchronization Commit Milestones</div>
+			<span class="content" th:text="#{sync.commits.milestones}">Synchronization Commit Milestones</span>
 		</h2>
 		<div th:if="${running!=null && running.isPresent()}">
 			<div class="ui warning message" th:text="#{error.sync.already.running(${running.get().getUser()},${running.get().getStartFormatted()})}"></div>

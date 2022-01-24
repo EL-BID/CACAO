@@ -13,7 +13,7 @@
 	<div class="ui container">
 		<h2 class="ui header">
 			<i class="envelope icon"></i>
-			<div class="content" th:text="#{config.email}">Server e-mail configuration</div>
+			<span class="content" th:text="#{config.email}">Server e-mail configuration</span>
 		</h2>
 		<div class="ui middle aligned center aligned grid container">
 			<div class="ui orange fluid segment">
@@ -21,28 +21,28 @@
 					<div class="row">
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.supportEmail}">Support EMail</div>
+								<span class="content" th:text="#{config.email.supportEmail}">Support EMail</span>
 							</h4>
 							<input type="text" th:field="*{supportEmail}" class="form-control" id="supportEmail" th:placeholder="#{config.email.supportEmail}" readonly>
 							<span th:if="${#fields.hasErrors('supportEmail')}" th:errors="*{supportEmail}" class="ui warning message"></span>
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.host}">Host</div>
+								<span class="content" th:text="#{config.email.host}">Host</span>
 							</h4>
 							<input type="text" th:field="*{host}" class="form-control" id="host" placeholder="Host" th:placeholder="#{config.email.host}" readonly>
 							<span th:if="${#fields.hasErrors('host')}" th:errors="*{host}" class="ui warning message"></span>
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.port}">Port</div>
+								<span class="content" th:text="#{config.email.port}">Port</span>
 							</h4>
 							<input type="text" th:field="*{port}" class="form-control" id="port" placeholder="Port" th:placeholder="#{config.email.port}" readonly>
 							<span th:if="${#fields.hasErrors('port')}" th:errors="*{port}" class="ui warning message"></span>
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.protocol}">Protocol</div>
+								<span class="content" th:text="#{config.email.protocol}">Protocol</span>
 							</h4>
 							<select th:field="*{protocol}" class="ui fluid dropdown" disabled>
 								<option th:each="i : ${T(org.idb.cacao.web.entities.ConfigEMail.EmailProtocol).values()}" th:value="${i.name()}" th:text="${i.toString()}"></option>
@@ -50,21 +50,21 @@
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.username}">username</div>
+								<span class="content" th:text="#{config.email.username}">username</span>
 							</h4>
 							<input type="text" th:field="*{username}" class="form-control" id="username" placeholder="Username" th:placeholder="#{config.email.username}" readonly>
 							<span th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="ui warning message"></span>
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.password}">password</div>
+								<span class="content" th:text="#{config.email.password}">password</span>
 							</h4>
 							<input type="password" th:field="*{password}" class="form-control" id="password" placeholder="Password" th:placeholder="#{config.email.password}" readonly>
 							<span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="ui warning message"></span>
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.auth}">Authentication</div>
+								<span class="content" th:text="#{config.email.auth}">Authentication</span>
 							</h4>
 							<select th:field="*{auth}" class="ui fluid dropdown" disabled>
 								<option th:value="true" th:text="#{yes}">
@@ -73,7 +73,7 @@
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.tls}">TLS</div>
+								<span class="content" th:text="#{config.email.tls}">TLS</span>
 							</h4>
 							<select th:field="*{tls}" class="ui fluid dropdown" disabled>
 								<option th:value="true" th:text="#{yes}">
@@ -82,7 +82,7 @@
 						</div>
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px; margin-top: 1em; text-transform: uppercase;">
-								<div class="content" th:text="#{config.email.timeout}">Timeout</div>
+								<span class="content" th:text="#{config.email.timeout}">Timeout</span>
 							</h4>
 							<input type="text" th:field="*{timeout}" class="form-control" id="timeout" placeholder="Timeout" th:placeholder="#{config.email.timeout}" readonly>
 							<span th:if="${#fields.hasErrors('timeout')}" th:errors="*{timeout}" class="ui warning message"></span>

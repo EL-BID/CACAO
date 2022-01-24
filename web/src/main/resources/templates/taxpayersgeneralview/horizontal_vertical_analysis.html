@@ -17,10 +17,14 @@
 		<br>
 	</div>
 	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{taxpayers.general.view.analysis}">Horizontal and Vertical Analysis</div>
+        </div>	
 		<h2 class="ui header">
 			<i class="stream icon"></i>
-			<div class="content" th:text="#{taxpayers.general.view.analysis}">Show
-				Analysis</div>
+			<span class="content" th:text="#{taxpayers.general.view.analysis}">Horizontal and Vertical Analysis</span>			
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
@@ -259,28 +263,29 @@
 		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
 		            }
 		        }
-		    },				
+		    },	
+		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table		
 			rowFormatter:function(row){
 			    var data = row.getData();
-			    if(data.level == "1"){
-			        row.getElement().style.backgroundColor = "#FFA500"; //apply css change to row element
+			    if(data.level == "1"){			    	
+			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.1')}]]*/ "#FFA500"; //apply css change to row element
 			        row.getElement().style.fontWeight = "bold";
 			    }	
 			    else if(data.level == "2"){
-			        row.getElement().style.backgroundColor = "#FFB52E"; //apply css change to row element
+			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.2')}]]*/ "#FFB52E"; //apply css change to row element
 			    }
 			    else if(data.level == "3"){
-			        row.getElement().style.backgroundColor = "#FFC55C"; //apply css change to row element
+			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.3')}]]*/ "#FFC55C"; //apply css change to row element
 			    }
 			},	
 			columns:[ //Define Table Columns
-				{title: /*[[#{level}}*/ "Level", field:"level", hozAlign:"center", headerSort:false},
-				//{title: /*[[#{categoryCode}}*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
-				{title: /*[[#{category}}*/ "Category", field:"category", hozAlign:"left", headerSort:false },
-				//{title: /*[[#{subcategoryCode}}*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
-				{title: /*[[#{subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
-				{title: /*[[#{code}}*/ "Code", field:"code", headerSort:false},
-				{title: /*[[#{name}]]}*/ "Name", field:"name", headerSort:false },	
+				{title: /*[[#{account.level}]]*/ "Level", field:"level", hozAlign:"center", headerSort:false},
+				//{title: /*[[#{account.categoryCode}]]*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
+				{title: /*[[#{account.category}]]*/ "Category", field:"category", hozAlign:"left", headerSort:false },
+				//{title: /*[[#{account.subcategoryCode}]]*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
+				{title: /*[[#{account.subcategory}]]*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
+				{title: /*[[#{account.code}]]*/ "Code", field:"code", headerSort:false},
+				{title: /*[[#{account.name}]]*/ "Name", field:"name", headerSort:false },	
 			]
 		})
 

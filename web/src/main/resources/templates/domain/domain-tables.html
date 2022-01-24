@@ -6,7 +6,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
 	<script src="/js/tabulator.min.js"></script>
-	<script src="/js/luxon.min.js"><</script>
+	<script src="/js/luxon.min.js"></script>
 	
 </head>
 <body>
@@ -23,7 +23,7 @@
   
 		<h2 class="ui header">
 			<i class="table icon"></i>
-			<div class="content" th:text="#{domain.tables.title}">Domain Tables</div>
+			<span class="content" th:text="#{domain.tables.title}">Domain Tables</span>
 		</h2>
 		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated" sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')">
