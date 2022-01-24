@@ -22,7 +22,7 @@
         <div class="active section" th:text="#{doc.error.messages}">Doc Errors</div>
       </div>
 		<h2 class="ui header">
-			<i class="archive icon"></i>
+			<i class="warning sign icon"></i>
 			<div class="content" th:text="#{doc.error.messages}">Doc Errors</div>
 		</h2>
 		<div id="table" class="ui orange table"></div>
@@ -49,7 +49,8 @@
 		layout:"fitDataFill",		
 	    pagination: true,
 		paginationMode: "remote", //enable remote pagination
-		paginationSize: 5,		    
+		paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+		paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],		    
 		ajaxURL: /*[[@{/api/doc/errors}]]*/ "/api/doc/errors", //set url for ajax request
 		ajaxURLGenerator: function(url, config, params ){
 			console.log(config)

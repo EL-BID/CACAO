@@ -70,7 +70,12 @@ public class DomainEntry implements Serializable, Cloneable, Comparable<DomainEn
 	@NotBlank
 	@NotNull
 	@NotEmpty
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	private DomainLanguage language;
 
 	/**

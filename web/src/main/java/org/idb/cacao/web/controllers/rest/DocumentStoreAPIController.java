@@ -20,7 +20,6 @@
 package org.idb.cacao.web.controllers.rest;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -47,7 +46,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -71,7 +69,6 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
-import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.idb.cacao.web.controllers.dto.PaginationData;
@@ -90,11 +87,9 @@ import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -156,18 +151,10 @@ public class DocumentStoreAPIController {
 	 */
 	public static final String FIELD_DOC_RECTIFIED = "rectified";
 
-	/**
-	 * Name of indexed field with date/time of record creation or update
-	 */
-	public static final String FIELD_DOC_TIMESTAMP = "timestamp";
-
 	public static final int MAX_RESULTS_PER_REQUEST = 10_000;
 
 	@Autowired
 	private MessageSource messageSource;
-
-	@Autowired
-	private ApplicationContext app;
 
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
@@ -531,51 +518,6 @@ public class DocumentStoreAPIController {
 				log.log(Level.SEVERE, "Could not rollback", ex);
 			}
 		}
-	}
-
-	/**
-	 * Downloads original file given the id stored in ElasticSearch
-	 */
-	@Secured({"ROLE_TAX_DECLARATION_READ"})
-	@GetMapping(value = "/doc_contents/{id}/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads original file given the id stored in ElasticSearch")
-	public FileSystemResource getFile(@PathVariable("id") String id, HttpServletResponse response) throws Exception {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null)
-			throw new UserNotFoundException();
-		User user = userService.getUser(auth);
-
-		Optional<DocumentUploaded> refDoc = documentsUploadedRepository.findById(id);
-		if (!refDoc.isPresent()) {
-			throw new DocumentNotFoundException();
-		}
-
-
-		boolean readAll = canReadAll(auth);
-		
-		if (!readAll && refDoc.get().getUser() != null) {
-			if (!refDoc.get().getUser().equalsIgnoreCase(String.valueOf(auth.getName()))
-					&& !userService.isUserAuthorizedForSubject(user, refDoc.get().getTaxPayerId()))
-				throw new InsufficientPrivilege();
-		}
-
-		// Locate file in file repository
-
-		String filename = refDoc.get().getFilename();
-		if (filename == null || filename.trim().length() == 0) {
-			throw new FileNotFoundException("");
-		}
-
-		OffsetDateTime timestamp = refDoc.get().getTimestamp();
-
-		IncomingFileStorage fileStorage = app.getBean(IncomingFileStorage.class);
-		File file = fileStorage.getOriginalFile(filename, timestamp);
-		if (file == null || !file.exists()) {
-			throw new FileNotFoundException(filename);
-		}
-
-		response.setHeader("Content-Disposition", "attachment; filename=" + file.getName());
-		return new FileSystemResource(file);
 	}
 
 	/**

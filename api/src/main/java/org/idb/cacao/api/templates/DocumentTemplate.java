@@ -137,7 +137,12 @@ public class DocumentTemplate implements Serializable, Cloneable {
 	private OffsetDateTime changedTime;
 	
 	@Enumerated(EnumType.STRING)
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	private Periodicity periodicity;
 
 	/**

@@ -83,17 +83,35 @@ var trashIcon = function(cell, formatterParams){ return "<i class='trash icon'><
 [/]
 this.table = new Tabulator('#table', {
     index: 'id',
-    layout: "fitDataFill",
+    layout: "fitData",
     pagination: true,
     paginationMode: "remote", //enable remote pagination
     ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request
-    paginationSize: 5,
+    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
     ajaxContentType: "json",
+    filterMode:"remote",
+    sortMode: "remote",
+    headerFilterLiveFilterDelay:700,
+    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+    ajaxURLGenerator: function(url, config, params ){
+        console.log(config)
+        console.log(params)
+        p= new URLSearchParams()
+        p.set('page', params.page)
+        p.set('size', params.size)
+        p.set('filter', JSON.stringify(params.filter))
+        if(params.sort.length>0) {
+            p.set('sortby', params.sort[0].field)
+            p.set('sortorder', params.sort[0].dir)
+        }
+        return url + '?' + p.toString()
+    },
     responsiveLayout: "collapse",
     columns:[ //Define Table Columns
-        {title: /*{{#domain.table.name}}*/ "Name", field:"name", responsive:0},
-        {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left", responsive:1 },
-        {title: /*{{#domain.table.group}}*/ "Group", field:"group", responsive:2},
+        {title: /*{{#domain.table.name}}*/ "Name", field:"name", minWidth: 140},
+        {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left", minWidth: 100 },
+        {title: /*{{#domain.table.group}}*/ "Group", field:"group", minWidth: 140},
         [# sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')"]
         {formatter:editIcon, width:50, cellClick: editRow, headerSort:false, responsive:0},
         {formatter:trashIcon, width:50, cellClick: deleteRow, headerSort:false, responsive:0}
@@ -105,6 +123,17 @@ table.on('rowClick', function(e, row) {
         return
     }
     window.location.replace([[@{/domaintables/}]] + row.getIndex());
+})
+let showHeaderFilter = false
+table.on("tableBuilt", function(){
+  $('#filter').click( function() {
+      showHeaderFilter = !showHeaderFilter
+      table.getHeaderFilters().forEach( t => table.setHeaderFilterValue(t.field, ''))
+      let cols = ['name', 'version', 'group']
+      cols.forEach( name =>
+        table.updateColumnDefinition(name, { headerFilter: showHeaderFilter})
+      )
+  })
 })
 </script>
 </body>

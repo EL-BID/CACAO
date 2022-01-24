@@ -112,7 +112,12 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	
 	@JsonView(Views.Public.class)
 	@Enumerated(EnumType.STRING)
-	@Field(type=Keyword)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@NotNull
 	@AFieldDescriptor(externalName = "user.profile")
 	private UserProfile profile;	
@@ -243,6 +248,8 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	}
 	
 	public UserProfile getProfile() {
+		if (profile==null)
+			return UserProfile.DECLARANT;
 		return profile;
 	}
 
@@ -376,13 +383,5 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	public void setConfirmPassword(String confirmPassword) {
 		this.confirmPassword = confirmPassword;
 	}
-	
-	public OffsetDateTime getChangedTime() {
-		return changedTime;
-	}
-
-	public void setChangedTime(OffsetDateTime changedTime) {
-		this.changedTime = changedTime;
-	}	
 	
 }

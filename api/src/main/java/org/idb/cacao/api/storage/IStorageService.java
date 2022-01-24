@@ -26,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 import org.springframework.core.io.Resource;
 
@@ -55,6 +57,11 @@ public interface IStorageService {
 	Path find(String filename);
 	
 	/**
+	 * Returns a specific location to store a file
+	 */
+	Path getLocation(String subDir);
+
+	/**
 	 * Deletes the file from the storage
 	 */
 	default boolean delete(String filename) {
@@ -81,6 +88,24 @@ public interface IStorageService {
 	 * @return Return the number of files deleted
 	 */
 	int deleteAll();
+	
+	/**
+	 * Lists all original files stored in a time range
+	 * @param startingTimestamp Starting date/time (in unix epoch)
+	 * @param endingTimestamp Ending date/time (in unix epoch)
+	 * @param interrupt If different than NULL, the provided function may return TRUE if it should interrupt
+	 * @param consumer Callback for each file
+	 */
+	public void listOriginalFiles(
+			final long startingTimestamp, 
+			final long endingTimestamp, 
+			final BooleanSupplier interrupt,
+			final Consumer<File> consumer) throws IOException;
+	
+	/**
+	 * Returns the root location for all the subdirectories containing original files
+	 */
+	public Path getRootLocation();
 	
 	/**
 	 * 

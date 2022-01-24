@@ -22,6 +22,7 @@ package org.idb.cacao.web.conf;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 
 import javax.net.ssl.SSLContext;
 
@@ -30,6 +31,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -57,6 +59,9 @@ public class ElasticSearchConfiguration {
 
 	@Autowired
 	private Environment env;
+
+	@Value("${spring.elasticsearch.rest.connection-timeout}")
+	private String elasticSearchConnectionTimeout;
 
 	/**
 	 * Bean for usage of ElasticSearch REST API directly
@@ -94,6 +99,9 @@ public class ElasticSearchConfiguration {
 		if (username!=null && username.trim().length()>0) {
 			clientConfigurationBuilder.withBasicAuth(username, password);
 		}
+
+		clientConfigurationBuilder.withConnectTimeout(Duration.parse("PT"+elasticSearchConnectionTimeout.toUpperCase()));
+		clientConfigurationBuilder.withSocketTimeout(Duration.parse("PT"+elasticSearchConnectionTimeout.toUpperCase()));
 
 		ClientConfiguration clientConfiguration = clientConfigurationBuilder.build();
 		

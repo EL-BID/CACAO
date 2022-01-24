@@ -1,5 +1,6 @@
 package org.idb.cacao.validator.parsers;
 
+import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
@@ -14,9 +15,9 @@ import org.junit.runner.RunWith;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.util.Map;
+import java.util.Scanner;
 
 import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory;
 import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode;
@@ -45,24 +46,26 @@ public class JSONParserTests {
         Resource sampleFile = new ClassPathResource("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts - IFRS.json");
         assertTrue(sampleFile.exists());
 
-        BufferedReader br = new BufferedReader(new FileReader(sampleFile.getFile()));
+		FileInputStream fis = new FileInputStream(sampleFile.getFile());
+		//Skips BOM if it exists
+		BOMInputStream bis = new BOMInputStream(fis);
+		String charset = bis.getBOMCharsetName();
 
-        try {
-            StringBuilder sb = new StringBuilder();
-            String line = br.readLine();
+		StringBuilder jsonContent = new StringBuilder();
 
-            while (line != null) {
-                sb.append(line);
-                sb.append(System.lineSeparator());
-                line = br.readLine();
-            }
-            String jsonContent = sb.toString();
+		try (Scanner scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);) {
 
-            assertTrue(FileFormatFactory.getFileFormat(DocumentFormat.JSON).matchFilename(sampleFile.getFilename()));
-            assertTrue(JSONUtils.isJSONValid(jsonContent));
-        } finally {
-            br.close();
-        }
+			while (scanner.hasNextLine()) {
+				String line = scanner.nextLine();
+				if (line.trim().length()==0)
+					continue;
+				jsonContent.append(line);
+			}
+		
+		}
+
+        assertTrue(FileFormatFactory.getFileFormat(DocumentFormat.JSON).matchFilename(sampleFile.getFilename()));
+        assertTrue(JSONUtils.isJSONValid(jsonContent.toString()));
 
     }
 

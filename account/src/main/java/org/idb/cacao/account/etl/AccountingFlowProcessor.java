@@ -502,40 +502,4 @@ public class AccountingFlowProcessor {
 			acumulated.addAmount(flow.getAmount());
 		}
 	}
-	
-	/**
-	 * Auxiliary class for storing temporarily information regarding book entries. Each counterpart will
-	 * have one 'PartialEntry' object.
-	 * 
-	 * @author Gustavo Figueiredo
-	 */
-	private static class PartialEntry {
-		
-		/**
-		 * The account that was credited or debited
-		 */
-		private final String account;
-		
-		/**
-		 * The amount credited or debited
-		 */
-		private final double amount;
-		
-		PartialEntry(String account, Number amount) {
-			this.account = account;
-			this.amount = Math.abs(amount.doubleValue());
-		}
-
-		public String getAccount() {
-			return account;
-		}
-
-		public double getAmount() {
-			return amount;
-		}
-		
-		public String toString () {
-			return String.format("%s: %d", account, amount);
-		}
-	}
 }

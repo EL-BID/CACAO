@@ -402,7 +402,11 @@ public class ExcelParser implements FileParser {
 		
 		if ( CellType.FORMULA.equals(type) ) { 
 			try {
-				return cell.getStringCellValue();
+				String formatted = cell.getStringCellValue();
+				if ("#REF!".equals(formatted)) {
+					return null;
+				}
+				return formatted;
 			} catch (Exception e) {
 				return null;
 			}

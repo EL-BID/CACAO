@@ -24,7 +24,7 @@
 			<i class="users icon"></i>
 			<div class="content" th:text="#{users.title}">Users</div>
 		</h2>
-    		<div id="table" class="ui orange table"></div>
+       <div id="table" class="ui orange table"></div>
 		<div class="ui column right floated" sec:authorize="hasRole('ROLE_USER_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/users/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
@@ -95,10 +95,27 @@ let table = new Tabulator('#table', {
 	layout: "fitData", //fit columns to width of table (optional)
     pagination: true,
 	paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
-	paginationSize: 5,
-	ajaxContentType: "json",
-	paginationSizeSelector:[10, 25, 50],
+	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+    filterMode:"remote",
+    sortMode: "remote",
+    headerFilterLiveFilterDelay:700,
+    ajaxContentType: "json",
+	ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
+    ajaxURLGenerator: function(url, config, params ){
+        console.log(config)
+        console.log(params)
+        p= new URLSearchParams()
+        p.set('page', params.page)
+        p.set('size', params.size)
+        p.set('filter', JSON.stringify(params.filter))
+        if(params.sort.length>0) {
+            p.set('sortby', params.sort[0].field)
+            p.set('sortorder', params.sort[0].dir)
+        }
+        return url + '?' + p.toString()
+    },
+	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 	locale:'xx',
 	langs:{
         "xx":{
@@ -118,10 +135,11 @@ let table = new Tabulator('#table', {
         }
     },
 	columns:[ //Define Table Columns
-		{title: /*[[#{user.name}}*/ "Name", field:"name"},
-		{title: /*[[#{user.login}}*/ "Login", field:"login", hozAlign:"left" },
-		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup },
-		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxpayerId"},
+		{title: /*[[#{user.name}}*/ "Name", field:"name", minWidth: 140},
+		{title: /*[[#{user.login}}*/ "Login", field:"login", hozAlign:"left", minWidth: 140 },
+		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup, 
+		      minWidth: 100},
+		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxpayerId", minWidth: 100},
 		[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
 		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
@@ -134,6 +152,23 @@ table.on('rowClick', function(e, row) {
     }
     //window.location.replace([[@{/users/}]] + row.getIndex());
 })
+
+let showHeaderFilter = false
+table.on("tableBuilt", function(){
+  $('#filter').click( function() {
+	  showHeaderFilter = !showHeaderFilter
+	  table.getHeaderFilters().forEach( t => table.setHeaderFilterValue(t.field, ''))
+	  let cols = ['name', 'login', 'taxpayerId']
+	  cols.forEach( name =>
+  	    table.updateColumnDefinition(name, { headerFilter: showHeaderFilter})
+  	  )
+  	  if(showHeaderFilter)
+  		table.updateColumnDefinition('profile', { headerFilter: 'select', headerFilterParams: { values: profileLookup } })
+  	  else
+  		table.updateColumnDefinition('profile', { headerFilter: false })
+  })
+})
+
 </script>
 </body>
 </html>

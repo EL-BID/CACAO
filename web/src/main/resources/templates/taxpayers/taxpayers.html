@@ -89,11 +89,28 @@ let table = new Tabulator('#table', {
 	layout: "fitData", //fit columns to width of table (optional)
     pagination: true,
 	paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/taxpayers}]]*/ "/api/taxpayers", //set url for ajax request
-	paginationSize: 5,
+	ajaxURL: /*[[@{/api/taxpayers}]]*/ "/api/taxpayers", //set url for ajax request
+	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
 	ajaxContentType: "json",
-	paginationSizeSelector:[10, 25, 50],
-	locale:'xx',
+    filterMode:"remote",
+    sortMode: "remote",
+    headerFilterLiveFilterDelay:700,
+    ajaxURLGenerator: function(url, config, params ){
+        console.log(config)
+        console.log(params)
+        p= new URLSearchParams()
+        p.set('page', params.page)
+        p.set('size', params.size)
+        p.set('filter', JSON.stringify(params.filter))
+        if(params.sort.length>0) {
+            p.set('sortby', params.sort[0].field)
+            p.set('sortorder', params.sort[0].dir)
+        }
+        return url + '?' + p.toString()
+    },	
+	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+    locale:'xx',
 	langs:{
         "xx":{
             "pagination":{
@@ -112,8 +129,8 @@ let table = new Tabulator('#table', {
         }
     },
 	columns:[ //Define Table Columns
-		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxPayerId"},
-		{title: /*[[#{taxpayer.name}}*/ "Name", field:"name" },
+		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxPayerId", minWidth: 100},
+		{title: /*[[#{taxpayer.name}}*/ "Name", field:"name", minWidth: 140},
 		[# sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')"]
 		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
@@ -125,6 +142,18 @@ table.on('rowClick', function(e, row) {
         return
     }
     window.location.replace([[@{/taxpayers/}]] + row.getIndex());
+})
+
+let showHeaderFilter = false
+table.on("tableBuilt", function(){
+  $('#filter').click( function() {
+      showHeaderFilter = !showHeaderFilter
+      table.getHeaderFilters().forEach( t => table.setHeaderFilterValue(t.field, ''))
+      let cols = ['taxPayerId', 'name']
+      cols.forEach( name =>
+        table.updateColumnDefinition(name, { headerFilter: showHeaderFilter})
+      )
+  })
 })
 </script>
 </body>

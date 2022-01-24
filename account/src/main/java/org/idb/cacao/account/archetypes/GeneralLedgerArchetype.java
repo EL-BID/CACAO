@@ -23,10 +23,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.idb.cacao.account.etl.AccountingLoader;
+import org.idb.cacao.account.generator.AccountDataGenerator;
 import org.idb.cacao.account.validations.GeneralLedgerValidations;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentFormat;
+import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
@@ -189,4 +193,29 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 				AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER,
 				AccountingLoader.INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME);
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#hasCustomGenerator(org.idb.cacao.api.templates.DocumentTemplate, org.idb.cacao.api.templates.DocumentFormat)
+	 */
+	@Override
+	public boolean hasCustomGenerator(DocumentTemplate template, DocumentFormat format) {
+		return ChartOfAccountsArchetype.NAME.equalsIgnoreCase(template.getArchetype())
+			|| OpeningBalanceArchetype.NAME.equalsIgnoreCase(template.getArchetype())
+			|| GeneralLedgerArchetype.NAME.equalsIgnoreCase(template.getArchetype());
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.TemplateArchetype#getCustomGenerator(org.idb.cacao.api.templates.DocumentTemplate, org.idb.cacao.api.templates.DocumentFormat, long, long)
+	 */
+	@Override
+	public CustomDataGenerator getCustomGenerator(DocumentTemplate template, DocumentFormat format, long seed,
+			long records) throws Exception {
+		if (hasCustomGenerator(template, format))
+			return new AccountDataGenerator(template, format, seed, records);
+		else
+			return null;
+	}
+
 }

@@ -10,7 +10,21 @@ ___
 
 For running the web component locally at a development desktop with minimal setup, you should follow these steps:
 
-1. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up --build -d".
+1. Start ElasticSearch and Kibana with one of the following alternatives:
+
+1a. Start a node of ElasticSearch (version 7.14.1) with docker-compose-dev.yml. Run "docker-compose -f docker-compose-dev.yml up --build -d".
+
+OR
+
+1b. Download ElasticSearch (version 7.14.1) from the official download site (https://www.elastic.co/pt/downloads/elasticsearch)
+and also download Kibana (version 7.14.1) from the official download site (https://www.elastic.co/pt/downloads/kibana). The configuration file of ElasticSearch
+may be the same as the provided from the download. The configuration file of Kibana (kibana.yml) must be changed in order to include the following lines:
+
+    server.basePath: /kibana
+    server.rewriteBasePath: true
+    
+Start both ElasticSearch and Kibana using the local startup files (e.g. for Windows platform, use \bin\elasticsearch.bat from ElasticSearch installation directory
+for starting one node of ElasticSearch and use \bin\kibana.bat from Kibana installation directory for starting Kibana)
 
 2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 
@@ -348,6 +362,11 @@ Take note of login and passwords for all user accounts that were generated (most
 
 ### Exit shell from es01
 
+### Test arbitrary HTTP call to the ElasticSearch with user/password. Change the {password} below with the actual password that has been generated
+    docker exec -it es01 curl -k https://es01:9200 -u elastic:{password}
+
+It should respond with a JSON content with some information, including something like this: "tagline" : "You Know, for Search"
+
 ### Add to .env file at the host the password that was generated for 'kibana' user. Change the {password} below with the actual password that has been generated
     echo KIBANA_PASSWORD={password} >> .env
  
@@ -356,6 +375,11 @@ Take note of login and passwords for all user accounts that were generated (most
  
 ### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
     docker exec -it kibana tail -f /usr/share/kibana/logs/kibana.log
+    
+### Test arbitrary HTTP call to the Kibana with user/password. Change the {password} below with the actual password that has been generated
+    docker exec -it kibana curl -k https://kibana:5601/kibana/api/spaces/space -u elastic:{password}
+    
+It should respond with a JSON content with some information about the Kibana default 'space', among others.
     
 ### Include all permissions to the Application (replace {elastic password here} with the password generated in previous step for user account 'elastic')
     echo 'es.user=elastic' | tee -a app_config_web app_config_etl app_config_validator
@@ -375,4 +399,109 @@ Take note of login and passwords for all user accounts that were generated (most
 ### Start Proxy node
     docker-compose up -d proxy
     
-### Test access to Kontaktu using your browser
+### Test access to CACAO using your browser
+
+___
+
+## Generating random (sample) data
+
+In order to test the application without actual data, you may use some CACAO features for randomly generating data according to built-in templates or any other custom templates.
+
+These features must be performed using a SYSTEM ADMINISTRATOR profile. They should NOT be used under a PRODUCTION environment, because they may replace existing actual data. 
+
+Every command line shown here must be executed using the 'System operations' menu. Just type in the command line using the CACAO command prompt and press ENTER. Check the result panel for the produced messages.
+
+### Deleting all previous data
+
+If you want to start the CACAO fresh new, type in this command. It will delete all previous templates, validated document and published data.
+
+    delete -a
+    
+There are other forms of the command line 'delete' that may be used for deleting only part of data. Use 'help delete' for more information about these options.
+
+### Generating built-in templates
+
+If you want to create 'default templates' according to built-in archetypes, type in this command.
+
+    samples -t
+    
+The previous command line will create a couple of 'templates' and all the needed 'domain tables'.
+
+### Generating documents with random data
+
+If you want to create some 'documents' with random data simulating files being uploaded by different taxpayers, use the command 'samples' with the command option '--doc', followed by the name of the template for which you want to generate files. Usually you will also inform the number of documents to generate using the command line option '--limit_docs' and an initial 'random seed' using the command line option '--seed'.
+
+For example, the following command line will generate 10 different documents conforming to the built-in template 'General Ledger' using the text 'TEST' as a seed (any word may be used as a 'seed').
+
+    samples --docs "General Ledger" --limit_docs 10 --seed "TEST"
+    
+If you execute the same command line with the same seed, it will generate documents with the exact same contents as before. If you use a different seed, the command will produce different contents. The 'seed' is important for producing the same contents at different environments. It's also important to produce documents with different template using the same 'seed' in order to garantee consistence accross different templates.
+
+For example, the following command line will generate 10 different documents conforming to the built-in template 'Chart of Accounts' using the same text 'TEST' as a seed, so that these documents will have consistency with the previously generated documents of 'General Ledger' template.
+
+    samples --docs "Chart of Accounts" --limit_docs 10 --seed "TEST"
+ 
+For completeness, the accounting data should also include 'Opening Balance'. The following command line will generate 10 different documents conforming to the built-in template 'Opening Balance' using the same text 'TEST' as a seed.
+
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST"
+    
+In each of the previous commands (those ones starting with 'samples --docs') you may include the '-bg' parameter to avoid waiting for conclusion. For example:
+     
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST" -bg
+    
+The previous command will start creating the 10 documents of template 'Opening Balance' in background. So it will be possible to execute other commands to start creating other kinds of documents at the same time. 
+    
+Just to recap, the following command lines (each one entered alone) will start over a new environment will random data ready to be used.
+
+    delete -a
+    samples -t
+    samples --docs "Chart Of Accounts" --limit_docs 10 --seed "TEST" -bg
+    samples --docs "General Ledger" --limit_docs 10 --seed "TEST" -bg
+    samples --docs "Opening Balance" --limit_docs 10 --seed "TEST" -bg
+    
+You may generate different amounts of documents and may use different texts as 'seed' for producing different data. Use the command 'help samples' for more information about the command line options.
+
+___
+
+## Troubleshooting
+
+### "502 Bad Gateway" error at web browser
+
+If this error appears whenever trying to access the server using a web browser, it may be a problem with the 'proxy' component or with the 'web' component'.
+
+1) Check if the 'web' component is running
+
+Use the following command to check if the 'web' component is running. 
+
+    docker-compose ps web
+    
+If the service is running, it should output something like this:
+
+    Name    Command     State   Ports
+    ---------------------------------
+    web    ./setup.sh   Up
+
+If the 'web' component is not running, start it using this command line:
+
+    docker-compose up -d web
+    
+2) Check if the 'proxy' can reach the 'web' component
+
+Use the following command to check if the 'web' component is reachable from the proxy component
+
+    docker exec -it proxy curl -I http://web:8080
+    
+The above command should output a couple of lines, starting with this one:
+
+    HTTP/1.1 200
+    
+In case of error (e.g. 'Connection refused'), try to fix this by starting any missing components.
+
+    docker-compose up -d
+
+3) If all the components are running, try to reload the proxy service
+
+For some reason the 'proxy' internal process may be stale. Try to reload the process with this command:
+
+    docker exec -it proxy /usr/sbin/nginx -c /config/nginx/nginx.conf -s reload
+    

@@ -1,0 +1,200 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<head
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui"
+	href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<h2 class="ui header">
+			<i class="stream icon"></i>
+			<div class="content" th:text="#{taxpayers.general.view.vertical.analysis}">Show
+				vertical analysis</div>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form action="#" name="form" id="form"
+					th:action="@{/vertical-analysis-data}" class="ui form" method="post">
+					<div class="ui field" id="search1">
+						<label th:text="#{taxpayer.name}">TaxPayer name</label>
+						<div class="ui search selection dropdown" id="select">
+							<input id="taxpayer" type="hidden" name="personId">
+							<div class="default text" th:text="#{select}">Select</div>
+							<i class="dropdown icon"></i>
+							<div class="menu"></div>
+						</div>
+					</div>
+
+					<div class="ui calendar field" id="finalDate">
+						<label th:text="#{base.period}">Base Period</label>
+						<div class="ui input left icon">
+							<i class="calendar icon"></i> <input type="text" th:placeholder="#{base.period}"
+								id="date">
+						</div>
+					</div>
+
+					<div class="ui field checkbox" id="showZeroBalanceAccount">
+						<input type="checkbox" tabindex="0" name="zeroBalance" id="zeroBalance">
+						<label th:text="#{show.zero.balance.accounts}">Show accounts with
+							ZERO balance</label>
+					</div>
+
+					<div class="row">
+						<input type="submit" class="ui blue button" th:value="#{search}"
+							value="Search">
+					</div>
+				</form>
+			</div>
+			<div id="showtable" style="display: none">
+				<div id="table" class="ui orange table"></div>
+			</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+
+		$('#finalDate').calendar({
+			  type: 'month',
+			     onChange: function(value) {
+			    	 $("#showtable").hide()   
+			     },
+			});
+		
+		$('#select').dropdown({
+			apiSettings: {
+	        	url: '/api/taxpayers/autocomplete?term={query}',
+	        	method: 'GET',
+	        	//dataType: 'text',
+	        	cache: false,
+	        	onResponse: function(result) {
+					results = []
+	            	$.each(result.results, function(index, item) {
+	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+					})
+					result.results = results
+					return result
+	        	},
+	     	},
+	     	onChange: function(value) {
+				$("#showtable").hide()   
+	     	},
+	    	action: 'activate',
+	    	clearable: true
+		})
+	
+		$(document).ready(function() {
+			$('.ui.form').form({
+				fields: {
+					taxpayer: {
+	                	identifier  : 'taxpayer',
+	                	rules: [{
+	                    	type   : 'empty',
+	                    	prompt : [[#{taxpayer.missing.taxpayer.id}]]
+	                  	}]
+	              	}
+	          	},
+				onSuccess: (function(event,fields){
+					event.preventDefault();
+					table.replaceData();
+					$("#showtable").show()
+	          	})
+	        });
+	    });  
+	  
+		let table = new Tabulator('#table', {
+			index: 'id',
+			layout: "fitData", //fit columns to width of table (optional)
+		    pagination: true,
+			paginationMode: "local", //enable local pagination
+			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+			ajaxURL: /*[[@{/api/generalview/vertical-analysis}]]*/ "/api/generalview/vertical-analysis", //set url for ajax request
+			ajaxURLGenerator: function(url, config, params ){
+				console.log(config)
+				console.log(params)
+				p = new URLSearchParams()
+				p.set('taxpayerId', document.getElementById("taxpayer").value)
+				p.set('finalDate', $('#finalDate').calendar('get date'))
+				p.set('zeroBalance', $('#zeroBalance').is(":checked"))
+				console.log(url + '?' + p.toString())		
+				return url + '?' + p.toString()
+			},
+			ajaxContentType: "json",
+			locale:'xx',
+			langs:{
+		        "xx":{
+		            "pagination":{
+		                "first":/*[[#{pagination.first.button}]]*/ "First",
+		                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+		                "last":/*[[#{pagination.last.button}]]*/ "Last",
+		                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+		                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+		                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+		                "next":/*[[#{pagination.next.button}]]*/ "Next",
+		                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+		                "all":/*[[#{pagination.all}]]*/ "All",
+		                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+		            }
+		        }
+		    },				
+			rowFormatter:function(row){
+			    var data = row.getData();
+			    if(data.level == "1"){
+			        row.getElement().style.backgroundColor = "#FFA500"; //apply css change to row element
+			        row.getElement().style.fontWeight = "bold";
+			    }	
+			    else if(data.level == "2"){
+			        row.getElement().style.backgroundColor = "#FFB52E"; //apply css change to row element
+			    }
+			    else if(data.level == "3"){
+			        row.getElement().style.backgroundColor = "#FFC55C"; //apply css change to row element
+			    }
+			},	
+			columns:[ //Define Table Columns
+				{title: /*[[#{account.level}}*/ "Level", field:"level", hozAlign:"center", headerSort:false},
+				//{title: /*[[#{account.categoryCode}}*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
+				{title: /*[[#{account.category}}*/ "Category", field:"category", hozAlign:"left", headerSort:false },
+				//{title: /*[[#{account.subcategoryCode}}*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
+				{title: /*[[#{account.subcategory}}*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
+				{title: /*[[#{account.code}}*/ "Code", field:"code", headerSort:false},
+				{title: /*[[#{account.name}]]}*/ "Name", field:"name", headerSort:false },
+				{title: /*[[#{account.balance.get(0)}]]}*/ "Balance", field:"balance", hozAlign:"right", headerSort:false, formatter:"money", formatterParams:{
+				    decimal:",",
+				    thousand:".",
+				    symbol:"$",
+				    symbolAfter:"p",
+				    precision:0} },
+				{title: /*[[#{account.percentage}]]}*/ "Percentage", field:"percentage", hozAlign:"right", headerSort:false, formatter:"money", formatterParams:{
+				    decimal:",",
+				    thousand:".",
+				    symbol:"%",
+				    symbolAfter:"p",
+				    precision:2} },
+			    {title: /*[[#{account.balance.get(1)}]]}*/ "Balance", field:"balance", hozAlign:"right", headerSort:false, formatter:"money", formatterParams:{
+				    decimal:",",
+				    thousand:".",
+				    symbol:"$",
+				    symbolAfter:"p",
+				    precision:0} },				    
+			]
+		})
+
+	</script>
+</body>
+</html>

@@ -23,15 +23,29 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.Year;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -50,9 +64,12 @@ import org.apache.commons.cli.ParseException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.DeleteRecordsOptions;
+import org.apache.kafka.clients.admin.DeleteRecordsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.RecordsToDelete;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -65,26 +82,51 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.ResizeRequest;
 import org.elasticsearch.client.indices.ResizeResponse;
 import org.elasticsearch.common.unit.TimeValue;
+import org.idb.cacao.api.DocumentSituation;
+import org.idb.cacao.api.DocumentSituationHistory;
+import org.idb.cacao.api.DocumentUploaded;
+import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.api.templates.CustomDataGenerator;
+import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentFormat;
+import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldMapping;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.RandomDataGenerator;
+import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
 import org.idb.cacao.web.controllers.rest.AdminAPIController;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.idb.cacao.web.repositories.DomainTableRepository;
+import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.HttpUtils;
+import org.idb.cacao.web.utils.generators.FileGenerator;
+import org.idb.cacao.web.utils.generators.FileGenerators;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
 
 /**
  * Service methods for administrative operations
@@ -96,6 +138,11 @@ import org.springframework.web.client.RestTemplate;
 public class AdminService {
 
 	private static final Logger log = Logger.getLogger(AdminService.class.getName());
+	
+	/**
+	 * Default number of parallel threads to be used for generating documents with random data
+	 */
+	private static final int DEFAULT_PARALLELISM_FOR_DATA_GENERATOR = 4;
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -129,6 +176,12 @@ public class AdminService {
     
     @Autowired
     private KibanaSpacesService kibanaSpacesService;
+
+	@Autowired
+	private FileUploadedProducer fileUploadedProducer;
+	
+	@Autowired
+	private TaxpayerRepository taxPayerRepository;
 
     private RestTemplate restTemplate;
 
@@ -171,6 +224,7 @@ public class AdminService {
 				new Option("u","uploads",false, "Deletes all upload records and uploaded files."),
 				new Option("v","validated",false, "Deletes all validated records."),
 				new Option("p","published",false, "Deletes all published (denormalized) views."),
+				new Option("txp","taxpayers",false, "Deletes all taxpayers (their names and other information in registry)."),
 				new Option("kp","kibana_patterns",false, "Deletes all index patterns related to CACAO from all spaces of Kibana."),
 				new Option("a","all",false, "Deletes all data from ElasticSearch (corresponds to all the other options, except Kibana)")),
 
@@ -178,7 +232,11 @@ public class AdminService {
 				"Returns information about KAFKA",
 				new Option("m","metrics",false, "Collects metrics about KAFKA"),
 				new Option("c","consumers",false, "Returns information about consumers of KAFKA (groups, topics, partitions and offsets)"),
-				new Option("t","topics",false, "Returns information about topics of KAFKA (topics, partitions and offsets)")),
+				new Option("t","topics",false, "Returns information about topics of KAFKA (topics, partitions and offsets)"),
+				new Option("d","delete",true, "Deletes messages from KAFKA topics. The option parameter must be one of the following: the text 'all' for deleting all topics and all partitions, "
+						+ "or some expression of format 'topic-name:partition-number:max-offset' for informing a specific topic, specific partition number and a maximum offset in partition (will delete all offsets below this number). "
+						+ "You may also inform the expression 'topic-name:partition-number' for deleting all messages from the given partition. "
+						+ "You may also inform the expression 'topic-name' for deleting all messages for all partitions of the give topic.")),
 		
 		KIBANA(AdminService::kibana,
 			"Performs some operations on KIBANA",
@@ -203,7 +261,14 @@ public class AdminService {
 		
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
-			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications.")),
+			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
+			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. The template name must be informed with this option, following this parameter indication. The taxpayer ID is also created randomly and the corresponding taxpayer record is created accordingly if absent."),
+			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
+			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
+			new Option("y","year",true, "Informs the year to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
+			new Option("thr","threads",true, "Number of parallel threads for generating random data (does not apply to validator/ETL phases). This parameter is only considered together with 'docs' parameter. If not informed, use "+DEFAULT_PARALLELISM_FOR_DATA_GENERATOR+" parallel threads."),
+			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
+			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
 		
 		UPDATE_INDEX_PATTERN(AdminService::updateIndexPattern,
 				"Updates the index pattern mapping in Kibana according to the index fields in ElasticSearch",
@@ -699,8 +764,260 @@ public class AdminService {
 
 		}
 		
+		if (cmdLine.hasOption("d")) {
+			// Add sample data (documents) according to provided template name
+			String template_name = cmdLine.getOptionValue("d");
+			if (template_name.trim().length()==0)
+				report.append("Missing template name with 'd' option!");
+			else {
+				boolean background = cmdLine.hasOption("bg");
+				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
+				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
+				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
+				int year = (cmdLine.hasOption("y")) ? Integer.parseInt(cmdLine.getOptionValue("y")) : Year.now().getValue() - 1;
+				int threads = (cmdLine.hasOption("thr")) ? Integer.parseInt(cmdLine.getOptionValue("thr")) : DEFAULT_PARALLELISM_FOR_DATA_GENERATOR;
+				
+				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+				RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
+				String remoteIpAddr = (reqAttr instanceof ServletRequestAttributes) ? ((ServletRequestAttributes)reqAttr).getRequest().getRemoteAddr() : null;
+
+				if (background) {
+					new Thread("SampleDocuments") {
+						{
+							setDaemon(true);
+						}
+						public void run() {
+							StringBuilder bg_report = new StringBuilder();
+							bg_report.append("Report for background process of creation of ").append(limit_docs).append(" documents with random data for template ").append(template_name).append("\n");
+							try {
+								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, bg_report, threads);
+							}
+							catch (Throwable ex) {
+								log.log(Level.SEVERE, "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()), ex);
+							}
+							finally {
+								log.log(Level.INFO, bg_report.toString());
+							}
+						}
+					}.start();
+					report.append("Creating ").append(limit_docs).append(" documents with random data for template ").append(template_name).append(" at background\n");
+				}
+				else {
+					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, report, threads);
+				}
+			}
+		}
+		
 		return report.toString();
 		
+	}
+	
+	/**
+	 * Creates sample documents with random data according to the provided template
+	 */
+	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String template_name, int limit_docs, 
+			long fixed_limit_records, String seedWord, int year, StringBuilder report, int threads) throws Exception {
+		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
+		if (templates_versions==null || templates_versions.isEmpty()) {
+			report.append("Could not find a template with name: ").append(template_name).append("\n");
+			return;
+		}
+		
+		DocumentTemplate template;
+		
+		if (templates_versions.size()>1) {
+			// In case of multiple versions, use the last one
+			template = templates_versions.stream()
+					.filter(t->t.getInputs()!=null && !t.getInputs().isEmpty())
+					.sorted(Comparator.comparing(DocumentTemplate::getTemplateCreateTime).reversed())
+					.findFirst().get();
+		}
+		else {
+			template = templates_versions.get(0);
+		}
+		
+		List<DocumentInput> inputFormats = template.getInputs();
+		if (inputFormats==null || inputFormats.isEmpty()) {
+			report.append("Template ").append(template.getName()).append(" version ").append(template.getVersion()).append(" has no input fields definitions!\n");
+			return;			
+		}
+		
+		Optional<TemplateArchetype> archetype =
+				(template.getArchetype() != null && template.getArchetype().trim().length() > 0)
+			? TemplateArchetypes.getArchetype(template.getArchetype())
+			: Optional.empty();
+
+		long seed;
+		if (seedWord==null || seedWord.trim().length()==0)
+			seed = UUID.randomUUID().getLeastSignificantBits() ^ UUID.randomUUID().getMostSignificantBits();
+		else {
+			seed = ByteBuffer.wrap(Hashing.sha256().hashString(seedWord, StandardCharsets.UTF_8).asBytes()).asLongBuffer().get();
+		}
+		
+        ExecutorService executor = (limit_docs>1) ? Executors.newFixedThreadPool(threads) : null;
+
+		// Let's use this for generating SEED per document
+		Random genSeed = new Random(seed);
+		
+		DocumentInput input_format = inputFormats.stream().filter(i->DocumentFormat.XLS.equals(i.getFormat())).findFirst().orElse(null);
+		if (input_format!=null) {
+			DocumentFormat format = input_format.getFormat();
+			
+			final boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
+
+			for (int i=0; i<limit_docs; i++) {
+				String subDir = fileSystemStorageService.getSubDir();
+				final Path location = fileSystemStorageService.getLocation(subDir);
+				
+				final String fileId = UUID.randomUUID().toString();
+
+				final OffsetDateTime timestamp = DateTimeUtils.now();
+
+				final Path destinationFile = location.resolve(Paths.get(fileId)).normalize().toAbsolutePath();
+				
+				final long doc_seed = genSeed.nextLong();
+				
+				final List<DocumentField> taxPayerIdFields = template.getFieldsOfType(FieldMapping.TAXPAYER_ID);
+				final int num_digits_for_taxpayer_id = (taxPayerIdFields.isEmpty()) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdFields.iterator().next().getMaxLength()).orElse(10)));
+
+				final Integer partition = (limit_docs>1) ? i : null;
+
+	        	Callable<Object> procedure = ()->{
+
+					final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
+
+					final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
+							: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
+							: fixed_limit_records;
+
+	    			final FileGenerator gen = FileGenerators.getFileGenerator(format);
+	    			gen.setDocumentTemplate(template);
+	    			gen.setDocumentInputSpec(input_format);
+	    			gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
+					gen.setRandomSeed(doc_seed);
+
+					final String originalFilename;
+					
+					String taxpayerId = null;
+					
+					try {
+						if (custom_gen!=null) {
+							if (year!=0)
+								custom_gen.setTaxYear(year);
+							custom_gen.start();
+							taxpayerId = custom_gen.getTaxpayerId();
+							gen.setFixedYear(custom_gen.getTaxYear());
+						}
+						else {
+							if (year!=0)
+								gen.setFixedYear(year);
+						}
+						if (taxpayerId==null || taxpayerId.trim().length()==0) {
+							RandomDataGenerator randomDataGenerator = new RandomDataGenerator(doc_seed);
+							taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id).toString();
+						}
+						gen.setFixedTaxpayerId(taxpayerId);
+						gen.setPath(destinationFile);
+						gen.start();
+						
+						if (custom_gen!=null) {
+							originalFilename = Optional.ofNullable(custom_gen.getFileName()).orElseGet(gen::getOriginalFileName);
+						}
+						else {
+							originalFilename = gen.getOriginalFileName();
+						}
+						
+						for (long j=0; j<limit_records; j++) {
+							if (custom_gen!=null) {
+								Map<String,Object> record = custom_gen.nextRecord();
+								if (record==null)
+									break;
+								gen.addRecord(record);
+							}
+							else {
+								gen.addRandomRecord();
+							}
+						}
+					}
+					finally {
+						if (custom_gen!=null) {
+							custom_gen.close();
+						}
+						gen.close();
+					}
+					
+					if (taxpayerId!=null && taxpayerId.trim().length()>0) {
+						Optional<Taxpayer> txp = taxPayerRepository.findByTaxPayerId(taxpayerId);
+						if (!txp.isPresent()) {
+							// Creates a new taxpayer with random name
+							RandomDataGenerator randomDataGenerator = new RandomDataGenerator(doc_seed);
+							String name = randomDataGenerator.nextPersonName();
+							Taxpayer new_txp = new Taxpayer();
+							new_txp.setName(name);
+							new_txp.setTaxPayerId(taxpayerId);
+							taxPayerRepository.saveWithTimestamp(new_txp);
+						}
+					}
+				
+					String fileHash = Files.asByteSource(destinationFile.toFile()).hash(Hashing.sha256()).toString();
+					
+					// Keep this information in history of all uploads
+					DocumentUploaded regUpload = new DocumentUploaded();
+					regUpload.setTemplateName(template.getName());
+					regUpload.setTemplateVersion(template.getVersion());
+					regUpload.setFileId(fileId);
+					regUpload.setFilename(originalFilename);
+					regUpload.setSubDir(subDir);
+					regUpload.setTimestamp(timestamp);
+					regUpload.setIpAddress(remoteIpAddr);
+					regUpload.setHash(fileHash);
+					regUpload.setSituation(DocumentSituation.RECEIVED);
+					if (auth != null) {
+						regUpload.setUser(String.valueOf(auth.getName()));
+					}
+					DocumentUploaded savedInfo = documentUploadedRepository.saveWithTimestamp(regUpload);
+	
+					DocumentSituationHistory situationHistory = new DocumentSituationHistory();
+					situationHistory.setDocumentId(savedInfo.getId());
+					situationHistory.setDocumentFilename(savedInfo.getFilename());
+					situationHistory.setTemplateName(savedInfo.getTemplateName());
+					situationHistory.setSituation(DocumentSituation.RECEIVED);
+					situationHistory.setTimestamp(timestamp);
+	
+					documentSituationHistoryRepository.saveWithTimestamp(situationHistory);
+					
+					// Generates an event at KAFKA in order to start the validation phase over this file
+	
+					FileUploadedEvent event = new FileUploadedEvent();
+					event.setFileId(savedInfo.getId());
+					fileUploadedProducer.fileUploaded(event, partition);
+					
+					return null;
+	        	};
+	        	
+	        	if (executor==null)
+	        		procedure.call();
+	        	else
+	        		executor.submit(procedure);
+
+			} // LOOP over number of documents
+			
+			if (executor!=null) {
+		        executor.shutdown();
+		        try {
+					boolean ok = executor.awaitTermination(1, TimeUnit.HOURS);
+					if (!ok)
+						log.log(Level.WARNING,"Too much time waiting for termination of generation of "+limit_docs+" documents of template "+template.getName());
+				} catch (InterruptedException e) {
+		        	log.log(Level.WARNING,"Interrupted data generation", e);
+				}
+			}
+
+			report.append("Created ").append(limit_docs).append(" documents with random data of format ").append(format.name()).append(" for template ").append(template.getName()).append(" version ").append(template.getVersion()).append("\n");
+			return;
+		}
+		
+		report.append("No implementation for random data generator of format ").append(inputFormats.get(0).getFormat().name()).append("\n");
 	}
 	
 	/**
@@ -842,6 +1159,7 @@ public class AdminService {
 		StringBuilder report = new StringBuilder();
 		
 		if (cmdLine.hasOption("m")) {
+			// Show KAFKA metrics
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 				
 				Map<String,String> metrics =
@@ -859,6 +1177,7 @@ public class AdminService {
 		}
 		
 		if (cmdLine.hasOption("c")) {
+			// Show information about KAFKA consumers
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
 				report.append(String.format("%-10s\t%-20s\t%s\t%s\n","group","topic","part","offset"));
@@ -876,6 +1195,7 @@ public class AdminService {
 		}
 
 		if (cmdLine.hasOption("t")) {
+			// Show information about KAFKA topics
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
 				report.append(String.format("%-20s\t%s\t%s\n","topic","part","offset"));
@@ -900,6 +1220,77 @@ public class AdminService {
 			}
 		}
 
+		if (cmdLine.hasOption("d")) {
+			// Delete KAFKA messages
+			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
+				Map<TopicPartition, RecordsToDelete> recordsToDelete = new HashMap<>();
+				String arg = cmdLine.getOptionValue("d").trim();
+				boolean all_topics = "all".equalsIgnoreCase(arg);
+				if (all_topics) {
+					ListTopicsResult topics_info = kafkaAdminClient.listTopics();
+					for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topics_info.names().get()).all().get().entrySet()) {
+						String topic = tp_entry.getKey();
+						Map<TopicPartition,OffsetSpec> requestInfo = 
+							tp_entry.getValue().partitions().stream()
+							.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+							.collect(Collectors.toMap(Function.identity(), 
+									(e)->OffsetSpec.latest()));
+						Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
+						for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
+							int part = tp_info.partition();
+							ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
+							long offset = (offset_info==null) ? -1 : offset_info.offset();
+							if (offset<=0)
+								continue;
+							report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
+							recordsToDelete.put(new TopicPartition(topic, part), RecordsToDelete.beforeOffset(offset));
+						}
+					}
+				}
+				else {
+					String[] parts = arg.split(":");
+					String topic = parts[0];
+					for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(Collections.singleton(topic)).all().get().entrySet()) {
+						Map<TopicPartition,OffsetSpec> requestInfo;
+						if (parts.length>1) {
+							int part = Integer.parseInt(parts[1]);
+							requestInfo = Collections.singletonMap(new TopicPartition(topic,part), OffsetSpec.latest());
+						}
+						else {
+							requestInfo = 
+								tp_entry.getValue().partitions().stream()
+								.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+								.collect(Collectors.toMap(Function.identity(), 
+										(e)->OffsetSpec.latest()));
+						}
+						if (parts.length>2) {
+							long offset = Long.parseLong(parts[2]);
+							for (Map.Entry<TopicPartition,OffsetSpec> tp_info: requestInfo.entrySet()) {
+								int part = tp_info.getKey().partition();
+								report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
+								recordsToDelete.put(new TopicPartition(topic, part), RecordsToDelete.beforeOffset(offset));
+							}
+						}
+						else {
+							Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
+							for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
+								int part = tp_info.partition();
+								ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
+								long offset = (offset_info==null) ? -1 : offset_info.offset();
+								if (offset<=0)
+									continue;
+								report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
+								recordsToDelete.put(new TopicPartition(topic, part), RecordsToDelete.beforeOffset(offset));
+							}
+						}
+					}
+				}
+                DeleteRecordsResult result = kafkaAdminClient.deleteRecords(recordsToDelete, new DeleteRecordsOptions());
+                result.all().get();
+                report.append("Records deleted!");
+			}
+		}
+		
 		return report.toString();
 	}
 	
@@ -968,6 +1359,13 @@ public class AdminService {
 			
 			int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/true);
 			report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+		}
+
+		if (cmdLine.hasOption("txp") || cmdLine.hasOption("a")) {
+			// Deletes all taxpayers. Recreates domain tables automatically.
+			long count_taxpayers = service.taxPayerRepository.count();
+			service.taxPayerRepository.deleteAll();
+			report.append("Deleted ").append(count_taxpayers).append(" taxpayers from database.\n");			
 		}
 
 		if (cmdLine.hasOption("u") || cmdLine.hasOption("a")) {

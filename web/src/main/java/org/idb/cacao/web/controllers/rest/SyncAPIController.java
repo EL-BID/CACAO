@@ -19,12 +19,15 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
+import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import com.google.common.io.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,12 +73,18 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.PublishedDataFieldNames;
+import org.idb.cacao.api.ValidatedDataFieldNames;
+import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.Views;
 import org.idb.cacao.api.errors.GeneralException;
+import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
-import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.Synchronizable;
+import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.dto.PaginationData;
 import org.idb.cacao.web.controllers.dto.SyncDto;
 import org.idb.cacao.web.controllers.dto.SyncRequestDto;
 import org.idb.cacao.web.controllers.services.ConfigSyncService;
@@ -83,11 +92,16 @@ import org.idb.cacao.web.controllers.services.SyncAPIService;
 import org.idb.cacao.web.controllers.services.SyncThread;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.ConfigSync;
+import org.idb.cacao.web.entities.SyncCommitHistory;
+import org.idb.cacao.web.entities.SyncCommitMilestone;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.InvalidParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
+import org.idb.cacao.web.repositories.SyncCommitHistoryRepository;
+import org.idb.cacao.web.repositories.SyncCommitMilestoneRepository;
+import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ReflectUtils;
@@ -97,6 +111,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.Repository;
@@ -108,6 +125,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -117,23 +135,25 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controller class for all RESTful endpoints related to 'synchronization' with other Kontaktu servers.
+ * Controller class for all RESTful endpoints related to 'synchronization' with other CACAO servers.
  * 
  * @author Gustavo Figueiredo
  *
  */
 @RestController
 @RequestMapping("/api")
-@Tag(name="sync-api-controller", description="Controller class for all RESTful endpoints related to 'synchronization' with other Kontaktu servers.")
+@Tag(name="sync-api-controller", description="Controller class for all RESTful endpoints related to 'synchronization' with other CACAO servers.")
 public class SyncAPIController {
 
 	private static final Logger log = Logger.getLogger(SyncAPIController.class.getName());
@@ -170,8 +190,17 @@ public class SyncAPIController {
 	private SyncAPIService syncAPIService;
 	
 	@Autowired
+	private FileSystemStorageService fileSystemStorageService;
+	
+	@Autowired
 	private Collection<Repository<?, ?>> all_repositories;
 	
+	@Autowired
+	private SyncCommitHistoryRepository syncHistoryRepository;
+
+	@Autowired
+	private SyncCommitMilestoneRepository syncMilestoneRepository;
+
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 
@@ -181,14 +210,14 @@ public class SyncAPIController {
 	private static final Map<String, Class<?>> map_repositories_classes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 	
 	/**
-	 * Downloads recent original files for synchronization purpose with other Kontaktu Server.<BR>
+	 * Downloads recent original files for synchronization purpose with other CACAO Server.<BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value = "/sync/original_files", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recent original files for synchronization purpose with other Kontaktu Server.")
+	@ApiOperation("Downloads recent original files for synchronization purpose with other CACAO Server.")
 	public ResponseEntity<StreamingResponseBody> getOriginalFiles(
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
@@ -263,14 +292,13 @@ public class SyncAPIController {
 	 */
 	public long syncCopyOriginalFiles(long start, long end, ZipOutputStream zip_out) throws IOException {
 
-		// Save incoming file as temporary file (don't keep everything in memory)
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
+		// File storage
 		LongAdder counter = new LongAdder();
 		AtomicLong actual_start_timestamp = new AtomicLong();
 		AtomicLong actual_end_timestamp = new AtomicLong();
 		AtomicLong pending_timestamp = new AtomicLong();
 
-		file_storage.listOriginalFiles(start, end, 
+		fileSystemStorageService.listOriginalFiles(start, end, 
 			/*interrupt*/()->counter.intValue()>=MAX_RESULTS_PER_REQUEST,
 			/*consumer*/file->{
 				long timestamp = file.lastModified();
@@ -312,399 +340,9 @@ public class SyncAPIController {
 		
 		return counter.longValue();
 	}
-	
-	/**
-	 * Downloads recently changed template files for synchronization purpose with other Kontaktu Server.<BR>
-	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
-	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
-	 * Should return files created or modified in this time interval<BR>
-	 */
-	@Secured({"ROLE_SYNC_OPS"})
-	@GetMapping(value = "/sync/template_files", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recently changed template files for synchronization purpose with other Kontaktu Server.")
-	public ResponseEntity<StreamingResponseBody> getTemplateFiles(
-			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
-			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
-			HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		throw new UserNotFoundException();
-
-    	User user = userService.getUser(auth);
-    	if (user==null)
-    		throw new UserNotFoundException();
-
-    	final long end = opt_end.orElseGet(System::currentTimeMillis);
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
-
-		if (!isSyncPublisherEnabled()) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for template files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr
-					+". But it's DISABLED at configuration!");
-			throw new GeneralException("SYNC service is disabled!");
-		}
-
-		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for template files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr
-					+". But has been REJECTED by the IP address filter!");
-			throw new InsufficientPrivilege();			
-		}
-
-		log.log(Level.INFO, "User "+user.getLogin()+" sync request for template files starting from timestamp "+start
-				+" ("+ParserUtils.formatTimestamp(new Date(start))
-				+") and ending at timestamp "+end
-				+" ("+ParserUtils.formatTimestamp(new Date(end))
-				+") IP ADDRESS: "
-				+remote_ip_addr);
-
-    	final String streaming_out_filename = "templates_"+start.toString()+".zip";
-		StreamingResponseBody responseBody = outputStream -> {
-			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
-			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncCopyTemplateFiles(start, end, zip_out);
-			zip_out.flush();
-			zip_out.finish();
-			response.flushBuffer();
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for template files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr+
-					" FINISHED! Copied "+copied_files+" files");
-		};
-		return ResponseEntity.ok()
-	            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename="+streaming_out_filename)
-	            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-	            .body(responseBody);
-	}
 
 	/**
-	 * Copies all template files submitted between two timestamps
-	 */
-	public long syncCopyTemplateFiles(long start, long end, ZipOutputStream zip_out) throws IOException {
-
-		// Save incoming file as temporary file (don't keep everything in memory)
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		LongAdder counter = new LongAdder();
-		AtomicLong actual_start_timestamp = new AtomicLong();
-		AtomicLong actual_end_timestamp = new AtomicLong();
-		AtomicLong pending_timestamp = new AtomicLong();
-
-		file_storage.listTemplateFiles(start, end, 
-			/*interrupt*/()->counter.intValue()>=MAX_RESULTS_PER_REQUEST,
-			/*consumer*/file->{
-				long timestamp = file.lastModified();
-				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST) {
-					pending_timestamp.set(timestamp);
-					return;
-				}
-				String entry_name = file.getName();
-				ZipEntry ze = new ZipEntry(entry_name);
-				
-				if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>timestamp)
-					actual_start_timestamp.set(timestamp);
-				if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<timestamp)
-					actual_end_timestamp.set(timestamp);
-				ze.setTime(timestamp);
-				
-				try {
-					zip_out.putNextEntry(ze);
-					Files.copy(file, zip_out);
-					counter.increment();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
-		
-		SyncDto sync_info = new SyncDto();
-		sync_info.setRequestedStart(new Date(start));
-		sync_info.setRequestedEnd(new Date(end));
-		sync_info.setCount(counter.longValue());
-		if (actual_start_timestamp.longValue()>0)
-			sync_info.setActualStart(new Date(actual_start_timestamp.longValue()));
-		if (actual_end_timestamp.longValue()>0)
-			sync_info.setActualEnd(new Date(actual_end_timestamp.longValue()));
-		if (pending_timestamp.longValue()>0) {
-			sync_info.setNextStart(new Date(pending_timestamp.longValue()));
-		}
-		saveSyncDto(sync_info, zip_out);
-
-		return counter.longValue();
-	}
-
-	/**
-	 * Downloads recently changed sample files for synchronization purpose with other Kontaktu Server.<BR>
-	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
-	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
-	 * Should return files created or modified in this time interval<BR>
-	 */
-	@Secured({"ROLE_SYNC_OPS"})
-	@GetMapping(value = "/sync/sample_files", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recently changed sample files for synchronization purpose with other Kontaktu Server.")
-	public ResponseEntity<StreamingResponseBody> getSampleFiles(
-			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
-			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
-			HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		throw new UserNotFoundException();
-
-    	User user = userService.getUser(auth);
-    	if (user==null)
-    		throw new UserNotFoundException();
-
-    	final long end = opt_end.orElseGet(System::currentTimeMillis);
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
-
-		if (!isSyncPublisherEnabled()) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for sample files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr
-					+". But it's DISABLED at configuration!");
-			throw new GeneralException("SYNC service is disabled!");
-		}
-
-		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for sample files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr
-					+". But has been REJECTED by the IP address filter!");
-			throw new InsufficientPrivilege();			
-		}
-
-		log.log(Level.INFO, "User "+user.getLogin()+" sync request for sample files starting from timestamp "+start
-				+" ("+ParserUtils.formatTimestamp(new Date(start))
-				+") and ending at timestamp "+end
-				+" ("+ParserUtils.formatTimestamp(new Date(end))
-				+") IP ADDRESS: "
-				+remote_ip_addr);
-
-    	final String streaming_out_filename = "samples_"+start.toString()+".zip";
-		StreamingResponseBody responseBody = outputStream -> {
-			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
-			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncCopySampleFiles(start, end, zip_out);
-			zip_out.flush();
-			zip_out.finish();
-			response.flushBuffer();
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for sample files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr+
-					" FINISHED! Copied "+copied_files+" files");
-		};
-		return ResponseEntity.ok()
-	            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename="+streaming_out_filename)
-	            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-	            .body(responseBody);
-	}
-
-	/**
-	 * Copies all sample files submitted between two timestamps
-	 */
-	public long syncCopySampleFiles(long start, long end, ZipOutputStream zip_out) throws IOException {
-
-		// Save incoming file as temporary file (don't keep everything in memory)
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		LongAdder counter = new LongAdder();
-		AtomicLong actual_start_timestamp = new AtomicLong();
-		AtomicLong actual_end_timestamp = new AtomicLong();
-		AtomicLong pending_timestamp = new AtomicLong();
-
-		file_storage.listSampleFiles(start, end, 
-			/*interrupt*/()->counter.intValue()>=MAX_RESULTS_PER_REQUEST,
-			/*consumer*/file->{
-				long timestamp = file.lastModified();
-				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST) {
-					pending_timestamp.set(timestamp);
-					return;
-				}
-				String entry_name = file.getName();
-				ZipEntry ze = new ZipEntry(entry_name);
-				
-				if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>timestamp)
-					actual_start_timestamp.set(timestamp);
-				if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<timestamp)
-					actual_end_timestamp.set(timestamp);
-				ze.setTime(timestamp);
-				
-				try {
-					zip_out.putNextEntry(ze);
-					Files.copy(file, zip_out);
-					counter.increment();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
-		
-		SyncDto sync_info = new SyncDto();
-		sync_info.setRequestedStart(new Date(start));
-		sync_info.setRequestedEnd(new Date(end));
-		sync_info.setCount(counter.longValue());
-		if (actual_start_timestamp.longValue()>0)
-			sync_info.setActualStart(new Date(actual_start_timestamp.longValue()));
-		if (actual_end_timestamp.longValue()>0)
-			sync_info.setActualEnd(new Date(actual_end_timestamp.longValue()));
-		if (pending_timestamp.longValue()>0) {
-			sync_info.setNextStart(new Date(pending_timestamp.longValue()));
-		}
-		saveSyncDto(sync_info, zip_out);
-
-		return counter.longValue();
-	}
-
-	/**
-	 * Downloads recently changed generic files for synchronization purpose with other Kontaktu Server.<BR>
-	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
-	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
-	 * Should return files created or modified in this time interval<BR>
-	 */
-	@Secured({"ROLE_SYNC_OPS"})
-	@GetMapping(value = "/sync/generic_files", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recently changed generic files for synchronization purpose with other Kontaktu Server.")
-	public ResponseEntity<StreamingResponseBody> getGenericFiles(
-			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
-			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
-			HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		throw new UserNotFoundException();
-
-    	User user = userService.getUser(auth);
-    	if (user==null)
-    		throw new UserNotFoundException();
-
-    	final long end = opt_end.orElseGet(System::currentTimeMillis);
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
-
-		if (!isSyncPublisherEnabled()) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for generic files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr
-					+". But it's DISABLED at configuration!");
-			throw new GeneralException("SYNC service is disabled!");
-		}
-
-		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for generic files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr
-					+". But has been REJECTED by the IP address filter!");
-			throw new InsufficientPrivilege();			
-		}
-
-		log.log(Level.INFO, "User "+user.getLogin()+" sync request for generic files starting from timestamp "+start
-				+" ("+ParserUtils.formatTimestamp(new Date(start))
-				+") and ending at timestamp "+end
-				+" ("+ParserUtils.formatTimestamp(new Date(end))
-				+") IP ADDRESS: "
-				+remote_ip_addr);
-
-    	final String streaming_out_filename = "generic_"+start.toString()+".zip";
-		StreamingResponseBody responseBody = outputStream -> {
-			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
-			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncCopyGenericFiles(start, end, zip_out);
-			zip_out.flush();
-			zip_out.finish();
-			response.flushBuffer();
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for generic files starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
-					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
-					+") IP ADDRESS: "
-					+remote_ip_addr+
-					" FINISHED! Copied "+copied_files+" files");
-		};
-		return ResponseEntity.ok()
-	            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename="+streaming_out_filename)
-	            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-	            .body(responseBody);
-	}
-
-	/**
-	 * Copies all generic files submitted between two timestamps
-	 */
-	public long syncCopyGenericFiles(long start, long end, ZipOutputStream zip_out) throws IOException {
-
-		// Save generic file as temporary file (don't keep everything in memory)
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		LongAdder counter = new LongAdder();
-		AtomicLong actual_start_timestamp = new AtomicLong();
-		AtomicLong actual_end_timestamp = new AtomicLong();
-		AtomicLong pending_timestamp = new AtomicLong();
-
-		file_storage.listGenericFiles(start, end, 
-			/*interrupt*/()->counter.intValue()>=MAX_RESULTS_PER_REQUEST,
-			/*consumer*/file->{
-				long timestamp = file.lastModified();
-				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST) {
-					pending_timestamp.set(timestamp);
-					return;
-				}
-				String entry_name = file.getName();
-				ZipEntry ze = new ZipEntry(entry_name);
-				
-				if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>timestamp)
-					actual_start_timestamp.set(timestamp);
-				if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<timestamp)
-					actual_end_timestamp.set(timestamp);
-				ze.setTime(timestamp);
-				
-				try {
-					zip_out.putNextEntry(ze);
-					Files.copy(file, zip_out);
-					counter.increment();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
-		
-		SyncDto sync_info = new SyncDto();
-		sync_info.setRequestedStart(new Date(start));
-		sync_info.setRequestedEnd(new Date(end));
-		sync_info.setCount(counter.longValue());
-		if (actual_start_timestamp.longValue()>0)
-			sync_info.setActualStart(new Date(actual_start_timestamp.longValue()));
-		if (actual_end_timestamp.longValue()>0)
-			sync_info.setActualEnd(new Date(actual_end_timestamp.longValue()));
-		if (pending_timestamp.longValue()>0) {
-			sync_info.setNextStart(new Date(pending_timestamp.longValue()));
-		}
-		saveSyncDto(sync_info, zip_out);
-
-		return counter.longValue();
-	}
-
-	/**
-	 * Downloads recently created or changed objects stored in database for synchronization purpose with other Kontaktu Server.<BR>
+	 * Downloads recently created or changed objects stored in database for synchronization purpose with other CACAO Server.<BR>
 	 * The 'type' indicates the class name of a known repository. <BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
@@ -712,7 +350,7 @@ public class SyncAPIController {
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value = "/sync/base/{type}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recently created or changed objects stored in database for synchronization purpose with other Kontaktu Server.")
+	@ApiOperation("Downloads recently created or changed objects stored in database for synchronization purpose with other CACAO Server.")
 	public ResponseEntity<StreamingResponseBody> getBase(
 			@ApiParam("The 'type' indicates the class name of a known repository.") @PathVariable("type") String type,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
@@ -820,12 +458,12 @@ public class SyncAPIController {
 			log.log(Level.WARNING, "Not found '"+timestamp_field+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
 			return 0L;									
 		}
-		final Function<Object,Date> timestamp_field_getter = ReflectUtils.getMemberGetter(entity, timestamp_field);
+		final Function<Object,Object> timestamp_field_getter = ReflectUtils.getMemberGetter(entity, timestamp_field);
 		if (timestamp_field_getter==null) {
 			log.log(Level.WARNING, "Not found '"+timestamp_field+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
 			return 0L;									
 		}
-		if (!Date.class.isAssignableFrom(timestamp_field_type)) {
+		if (!Date.class.isAssignableFrom(timestamp_field_type) && !OffsetDateTime.class.isAssignableFrom(timestamp_field_type)) {
 			log.log(Level.WARNING, "Wrong type for '"+timestamp_field+"' field in '"+entity.getName()+"' class ("+timestamp_field_type.getName()+"). This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
 			return 0L;												
 		}
@@ -925,7 +563,7 @@ public class SyncAPIController {
     	private final AtomicLong pending_timestamp;
     	private final String entity_simple_name;
     	private final Function<Object,Object> id_field_getter;
-    	private final Function<Object,Date> timestamp_field_getter;
+    	private final Function<Object,Object> timestamp_field_getter;
     	private final BiConsumer<Object,Object> ignorableFieldSetters[];
 		private final ObjectMapper mapper;
 		private final ZipOutputStream zip_out;
@@ -934,7 +572,7 @@ public class SyncAPIController {
 
 		SyncData(String entity_simple_name,
 				Function<Object,Object> id_field_getter,
-				Function<Object,Date> timestamp_field_getter,
+				Function<Object,Object> timestamp_field_getter,
 				BiConsumer<Object,Object> ignorableFieldSetters[],
 				ZipOutputStream zip_out,
 				boolean full_debug_info) {
@@ -947,6 +585,7 @@ public class SyncAPIController {
 			
 			mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
+			mapper.registerModule(new JavaTimeModule());
 			
 			this.entity_simple_name = entity_simple_name;
 			this.id_field_getter = id_field_getter;
@@ -983,7 +622,8 @@ public class SyncAPIController {
 				}
 				included_entries.add(entry_name); 
 
-	    		Date timestamp = timestamp_field_getter.apply(record);
+	    		Object timestamp_obj = timestamp_field_getter.apply(record);
+	    		Date timestamp = ValidationContext.toDate(timestamp_obj);
 				if (checkLimit && counter.intValue()+1>=MAX_RESULTS_PER_REQUEST) {
 					if (prev_timestamp!=null && prev_timestamp.equals(timestamp)) {
 						// If we reached the limit, but the timestamp is still the same as before, we
@@ -1123,17 +763,19 @@ public class SyncAPIController {
 	}
 	
 	/**
-	 * Downloads recently created or changed documents stored in database for synchronization purpose with other Kontaktu Server.<BR>
-	 * The 'template' indicates the template name associated to the index where the documents are stored. <BR>
+	 * Downloads recently validated documents stored in database for synchronization purpose with other CACAO Server.<BR>
+	 * The 'template' indicates the template name associated to the index where the validated documents are stored. <BR>
+	 * The 'version' indicates the template version.<BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
-	@GetMapping(value = "/sync/docs/{template}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recently created or changed documents stored in database for synchronization purpose with other Kontaktu Server.")
-	public ResponseEntity<StreamingResponseBody> getDocuments(
+	@GetMapping(value = "/sync/validated/{template}/{version}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+	@ApiOperation("Downloads recently validated documents stored in database for synchronization purpose with other CACAO Server.")
+	public ResponseEntity<StreamingResponseBody> getValidatedDocuments(
 			@ApiParam("The 'template' indicates the template name associated to the index where the documents are stored.") @PathVariable("template") String template_name,
+			@ApiParam("The 'version' indicates the template version.") @PathVariable("version") String version,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
 			HttpServletRequest request,
@@ -1150,16 +792,27 @@ public class SyncAPIController {
     		throw new InvalidParameter("template="+template_name);
     	}
     	
-		List<DocumentTemplate> template_versions = templateRepository.findByName(template_name);
-		if (template_versions==null || template_versions.isEmpty()) {
-			throw new InvalidParameter("template="+template_name);				
-		}
-		if (template_versions.size()>1) {
-			// if we have more than one possible choice, let's give higher priority to most recent ones
-			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
-		}
+    	final DocumentTemplate template;
+    	
+    	if (version!=null && version.trim().length()>0) {
+        	Optional<DocumentTemplate> template_version = templateRepository.findByNameAndVersion(template_name, version);
+    		if (template_version==null || !template_version.isPresent()) {
+    			throw new InvalidParameter("template="+template_name+", version="+version);				
+    		}    	
+    		template = template_version.get();
+    	}
+    	else {
+    		List<DocumentTemplate> template_versions = templateRepository.findByName(template_name);
+    		if (template_versions==null || template_versions.isEmpty()) {
+    			throw new InvalidParameter("template="+template_name);				
+    		}    		
+    		if (template_versions.size()>1) {
+    			// if we have more than one possible choice, let's give higher priority to most recent ones
+    			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
+    		}
+    		template = template_versions.get(0);
+    	}
 		
-		final DocumentTemplate template = template_versions.get(0);
 		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);
 
     	final long end = opt_end.orElseGet(System::currentTimeMillis);
@@ -1198,7 +851,8 @@ public class SyncAPIController {
 		StreamingResponseBody responseBody = outputStream -> {
 			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
 			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncCopyDocuments(index_name, start, end, zip_out);
+			long copied_files = syncIndexedData(index_name, /*timestampFieldName*/ValidatedDataFieldNames.TIMESTAMP.getFieldName(),
+					start, end, zip_out);
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
@@ -1218,13 +872,13 @@ public class SyncAPIController {
 	}
 
 	/**
-	 * Copies all stored documents submitted or changed between two timestamps
+	 * Copies all stored data submitted or changed between two timestamps. May be data produced by the 'validation' phase or by 'ETL' phase
 	 */
-	public long syncCopyDocuments(String index_name, long start, long end, ZipOutputStream zip_out) throws IOException {
+	public long syncIndexedData(String index_name, String timestampFieldName, long start, long end, ZipOutputStream zip_out) throws IOException {
 		
     	SearchRequest searchRequest = new SearchRequest(index_name);
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
-		RangeQueryBuilder b = new RangeQueryBuilder(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP)
+		RangeQueryBuilder b = new RangeQueryBuilder(timestampFieldName)
 				.from(ParserUtils.formatTimestampES(new Date(start)), /*includeLower*/true)
 				.to(ParserUtils.formatTimestampES(new Date(end)), /*includeUpper*/false);
 		query = query.must(b);
@@ -1233,13 +887,14 @@ public class SyncAPIController {
     			.query(query); 
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST);
-        searchSourceBuilder.sort(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP, SortOrder.ASC);
+        searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
 
     	searchRequest.source(searchSourceBuilder);
     	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
 
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
 
 		LongAdder counter = new LongAdder();
 		AtomicLong actual_start_timestamp = new AtomicLong();
@@ -1251,14 +906,15 @@ public class SyncAPIController {
 				Map<String, Object> map = hit.getSourceAsMap();
 				map.put("id", hit.getId());
 				map.remove("_class");
-				Object timestamp = map.get(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP);
+				Object timestamp = map.get(timestampFieldName);
+				Date timestamp_as_date = ValidationContext.toDate(timestamp);
 				
 				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST-1) {
 					// Actually we stop at 'MAX_RESULTS_PER_REQUEST-1' in this SYNC block because we need to
 					// store the timestamp for the next unread register and we can't search for MAX_RESULTS_PER_REQUEST+1
 					// elements
-					if (timestamp instanceof Date) {
-						pending_timestamp.set(((Date) timestamp).getTime());
+					if (timestamp_as_date!=null) {
+						pending_timestamp.set((timestamp_as_date).getTime());
 					}
 					break;
 				}
@@ -1266,8 +922,8 @@ public class SyncAPIController {
 				String entry_name = hit.getId();
 				ZipEntry ze = new ZipEntry(entry_name);
 				
-	    		if (timestamp instanceof Date) {
-	    			long t = ((Date) timestamp).getTime();
+	    		if (timestamp_as_date!=null) {
+	    			long t = timestamp_as_date.getTime();
 					if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
 						actual_start_timestamp.set(t);
 					if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
@@ -1303,14 +959,97 @@ public class SyncAPIController {
 	}
 
 	/**
-	 * Downloads recently created or changed Kibana assets for synchronization purpose with other Kontaktu Server.<BR>
+	 * Downloads recently published (denormalized) data stored in database for synchronization purpose with other CACAO Server.<BR>
+	 * The 'indexname' indicates index name associated to published (denormalized) data. <BR>
+	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
+	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
+	 * Should return files received in this time interval<BR>
+	 */
+	@Secured({"ROLE_SYNC_OPS"})
+	@GetMapping(value = "/sync/published/{indexname}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+	@ApiOperation("Downloads recently published (denormalized) data stored in database for synchronization purpose with other CACAO Server.")
+	public ResponseEntity<StreamingResponseBody> getPublishedData(
+			@ApiParam("The 'indexname' indicates index name associated to published (denormalized) data.") @PathVariable("indexname") String indexname,
+			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
+			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
+			HttpServletRequest request,
+			HttpServletResponse response) throws Exception {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+
+    	User user = userService.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	if (indexname==null || indexname.trim().length()==0 || !indexname.startsWith(IndexNamesUtils.PUBLISHED_DATA_INDEX_PREFIX)) {
+    		throw new InvalidParameter("indexname="+indexname);
+    	}
+    	
+    	final long end = opt_end.orElseGet(System::currentTimeMillis);
+		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+
+		if (!isSyncPublisherEnabled()) {
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
+					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+") and ending at timestamp "+end
+					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+") IP ADDRESS: "
+					+remote_ip_addr
+					+". But it's DISABLED at configuration!");
+			throw new GeneralException("SYNC service is disabled!");
+		}
+
+		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
+					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+") and ending at timestamp "+end
+					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+") IP ADDRESS: "
+					+remote_ip_addr
+					+". But has been REJECTED by the IP address filter!");
+			throw new InsufficientPrivilege();			
+		}
+
+		log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
+				+" ("+ParserUtils.formatTimestamp(new Date(start))
+				+") and ending at timestamp "+end
+				+" ("+ParserUtils.formatTimestamp(new Date(end))
+				+") IP ADDRESS: "
+				+remote_ip_addr);
+
+    	final String streaming_out_filename = indexname+"_"+start.toString()+".zip";
+		StreamingResponseBody responseBody = outputStream -> {
+			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
+			ZipOutputStream zip_out = new ZipOutputStream(checksum);
+			long copied_files = syncIndexedData(indexname, /*timestampFieldName*/PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), start, end, zip_out);
+			zip_out.flush();
+			zip_out.finish();
+			response.flushBuffer();
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
+					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+") and ending at timestamp "+end
+					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+") IP ADDRESS: "
+					+remote_ip_addr+
+					" FINISHED! Copied "+copied_files+" files");
+
+		};
+		return ResponseEntity.ok()
+	            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename="+streaming_out_filename)
+	            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+	            .body(responseBody);
+	}
+
+	/**
+	 * Downloads recently created or changed Kibana assets for synchronization purpose with other CACAO Server.<BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value = "/sync/kibana", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	@ApiOperation("Downloads recently created or changed Kibana assets for synchronization purpose with other Kontaktu Server.")
+	@ApiOperation("Downloads recently created or changed Kibana assets for synchronization purpose with other CACAO Server.")
 	public ResponseEntity<StreamingResponseBody> getKibana(
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
@@ -1433,6 +1172,7 @@ public class SyncAPIController {
 	
 			final ObjectMapper mapper = new ObjectMapper();
 			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			mapper.registerModule(new JavaTimeModule());
 	
 			for (SearchHit hit : sresp.getHits()) {
 				Map<String, Object> map = hit.getSourceAsMap();
@@ -1544,6 +1284,7 @@ public class SyncAPIController {
 		zip_out.putNextEntry(ze);
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
+		mapper.registerModule(new JavaTimeModule());
 		String json = mapper.writeValueAsString(sync_info);
 		IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zip_out);
 	}
@@ -1672,7 +1413,7 @@ public class SyncAPIController {
 		for (String index_name: indices) {
 	    	SearchRequest searchRequest = new SearchRequest(index_name);
 	    	BoolQueryBuilder query = QueryBuilders.boolQuery();
-	    	query = query.mustNot(QueryBuilders.existsQuery(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP));
+	    	query = query.mustNot(QueryBuilders.existsQuery(ValidatedDataFieldNames.TIMESTAMP.getFieldName()));
 
 	    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
 	    			.query(query); 
@@ -1688,9 +1429,9 @@ public class SyncAPIController {
 			final LongAdder count_changes = new LongAdder();
 			for (SearchHit hit : sresp.getHits()) {
 				Map<String, Object> parsed_contents = hit.getSourceAsMap();
-				Object timestamp = parsed_contents.get(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP);
+				Object timestamp = parsed_contents.get(ValidatedDataFieldNames.TIMESTAMP.getFieldName());
 				if (timestamp==null) {
-					parsed_contents.put(DocumentStoreAPIController.FIELD_DOC_TIMESTAMP, timestamp_to_fill_nulls);
+					parsed_contents.put(ValidatedDataFieldNames.TIMESTAMP.getFieldName(), timestamp_to_fill_nulls);
 					parsed_contents.remove("_class");
 					elasticsearchClient.index(new IndexRequest(index_name)
 							.id(hit.getId())
@@ -1710,4 +1451,103 @@ public class SyncAPIController {
 	public boolean isFullDebugEnabled() {
 		return "true".equalsIgnoreCase(env.getProperty("sync.full.debug"));
 	}
+
+	@JsonView(Views.Public.class)
+	@Secured({"ROLE_SYNC_OPS"})
+	@GetMapping(value="/sync/history", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Method used for listing history of synchronization operations using pagination")
+	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, @RequestParam("endpoint") Optional<String> endpoint,
+			@RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, 
+			@RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy,
+			@RequestParam("sortorder") Optional<String> sortOrder) {
+		int currentPage = page.orElse(1);
+		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
+		Sort.Direction direction = sortOrder.orElse("desc").equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+		Page<SyncCommitHistory> commits;
+		if (endpoint!=null && endpoint.isPresent()) {
+			if (filters.isPresent() && !filters.get().isEmpty()) {
+				Optional<AdvancedSearch> filters_with_endpoint = Optional.of(filters.get().clone().withFilter("endpoint", endpoint.get()));
+				commits = searchCommitHistory(filters_with_endpoint, page, size, sortBy, sortOrder);
+			} else {
+				commits = searchPage(() -> syncHistoryRepository
+						.findByEndPoint(endpoint.get(), PageRequest.of(currentPage - 1, pageSize, Sort.by(direction, sortBy.orElse("timeRun")))));
+			}			
+		}
+		else {
+			if (filters.isPresent() && !filters.get().isEmpty()) {
+				commits = searchCommitHistory(filters, page, size, sortBy, sortOrder);
+			} else {
+				commits = searchPage(() -> syncHistoryRepository
+						.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by(sortBy.orElse("timeRun")).descending())));
+			}
+		}
+		PaginationData<SyncCommitHistory> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
+		return result;
+	}
+
+	@JsonView(Views.Public.class)
+	@Secured({"ROLE_SYNC_OPS"})
+	@GetMapping(value="/sync/milestone", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Method used for listing current stats of synchronizable resources using pagination")
+	public PaginationData<SyncCommitMilestone> getSyncMilestone(Model model, @RequestParam("page") Optional<Integer> page,
+			@RequestParam("size") Optional<Integer> size, 
+			@RequestParam("filter") Optional<String> filter, 
+			@RequestParam("sortby") Optional<String> sortBy,
+			@RequestParam("sortorder") Optional<String> sortOrder) {
+		int currentPage = page.orElse(1);
+		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
+		Sort.Direction direction = sortOrder.orElse("asc").equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+		Page<SyncCommitMilestone> commits;
+		if (filters.isPresent() && !filters.get().isEmpty()) {
+			commits = searchCommitMilestone(filters, page, size, sortBy, sortOrder);
+		} else {
+			commits = searchPage(() -> syncMilestoneRepository
+					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by(direction, sortBy.orElse("endPoint")))));
+		}
+		PaginationData<SyncCommitMilestone> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
+		return result;
+	}
+
+    /**
+     * Search SyncCommitHistory objects using AdvancedSearch filters
+     */
+	@Transactional(readOnly=true)
+	public Page<SyncCommitHistory> searchCommitHistory(Optional<AdvancedSearch> filters,
+			Optional<Integer> page, 
+			Optional<Integer> size,
+			Optional<String> sortBy,
+			Optional<String> sortOrder) {
+		try {
+			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, 
+					Optional.of(sortBy.orElse("timeRun")), 
+					Optional.of(sortOrder.orElse("desc").equals("asc") ? SortOrder.ASC : SortOrder.DESC));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
+    /**
+     * Search SyncCommitMilestone objects using AdvancedSearch filters
+     */
+	@Transactional(readOnly=true)
+	public Page<SyncCommitMilestone> searchCommitMilestone(Optional<AdvancedSearch> filters,
+			Optional<Integer> page, 
+			Optional<Integer> size,
+			Optional<String> sortBy,
+			Optional<String> sortOrder) {
+		try {
+			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitMilestone.class, elasticsearchClient, page, size, 
+					Optional.of(sortBy.orElse("endPoint")), 
+					Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
 }

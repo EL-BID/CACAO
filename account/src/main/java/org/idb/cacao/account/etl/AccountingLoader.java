@@ -174,10 +174,15 @@ public class AccountingLoader {
 		Year,
 		
 		/**
-		 * Month indication (for Monthly Balance Sheets and Daily Accounting Flows)
+		 * Month name indication (for Monthly Balance Sheets and Daily Accounting Flows)
 		 */
 		Month,
 		
+		/**
+		 * Month number indication (for Monthly Balance Sheets and Daily Accounting Flows)
+		 */
+		MonthNumber,
+
 		/**
 		 * Credited account code (for Daily Accounting Flows)
 		 */
@@ -236,9 +241,14 @@ public class AccountingLoader {
 	private static final String publishedYear = IndexNamesUtils.formatFieldName(AccountingFieldNames.Year.name());
 
 	/**
-	 * The field name for indication of Month for each Monthly Balance Sheet
+	 * The field name for name indication of Month for each Monthly Balance Sheet
 	 */
 	private static final String publishedMonth = IndexNamesUtils.formatFieldName(AccountingFieldNames.Month.name());
+
+	/**
+	 * The field name for number indication of Month for each Monthly Balance Sheet
+	 */
+	private static final String publishedMonthNumber = IndexNamesUtils.formatFieldName(AccountingFieldNames.MonthNumber.name());
 
 	/**
 	 * The field name for taxpayer ID in published data
@@ -537,7 +547,7 @@ public class AccountingLoader {
 			});
 			
 			// Computes monthly balance sheets
-			final MonthlyBalanceSheetProcessor balanceSheetProc = new MonthlyBalanceSheetProcessor(context, ob, timestamp);
+			final MonthlyBalanceSheetProcessor balanceSheetProc = new MonthlyBalanceSheetProcessor(context, account_standard, ob, timestamp);
 			balanceSheetProc.setDocumentUploadedForGeneralLedger(gl);
 			balanceSheetProc.setCountRecordsOverall(countRecordsOverall);
 			balanceSheetProc.setDeclarantInformation(declarantInformation);
@@ -632,7 +642,7 @@ public class AccountingLoader {
 							normalizedRecord_GL.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
 						}
 					}
-					normalizedRecord_GL.put("doc_"+publishedTimestamp, timestamp);
+					normalizedRecord_GL.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 					normalizedRecord_GL.put(publishedTimestamp, date);
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
@@ -738,7 +748,7 @@ public class AccountingLoader {
 		final Optional<Map<String,Object>> accountCreditedInfo = (flow.hasCreditedManyAccountCodes()) ? Optional.empty() : lookupChartOfAccounts.getUnchecked(flow.getCreditedAccountCode());
 		String rowId_DAF = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsInAccountingFlows.incrementAndGet());
 		Map<String,Object> normalizedRecord_DAF = new HashMap<>();
-		normalizedRecord_DAF.put("doc_"+publishedTimestamp, timestamp);
+		normalizedRecord_DAF.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 		normalizedRecord_DAF.put(publishedTimestamp, flow.getDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
 		normalizedRecord_DAF.put(publishedTaxpayerId, taxPayerId);
 		normalizedRecord_DAF.put(publishedtaxPeriodNumber, taxPeriodNumber);
@@ -746,6 +756,7 @@ public class AccountingLoader {
 		normalizedRecord_DAF.put(publishedTemplateVersion, gl.getTemplateVersion());
 		normalizedRecord_DAF.put(publishedYear, year);
 		normalizedRecord_DAF.put(publishedMonth, month);
+		normalizedRecord_DAF.put(publishedMonthNumber, monthNumber);
 		normalizedRecord_DAF.put(ledgerDate, ValidationContext.toDate(flow.getDate()));
 		normalizedRecord_DAF.put(creditedAccount, flow.getCreditedAccountCode());
 		normalizedRecord_DAF.put(debitedAccount, flow.getDebitedAccountCode());

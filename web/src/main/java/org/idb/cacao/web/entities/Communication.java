@@ -64,7 +64,12 @@ public class Communication implements Serializable, Cloneable {
 	/**
 	 * Communication type
 	 */
-	@Field(type=Text)
+	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
 	@Enumerated(EnumType.STRING)
 	@NotNull
 	private CommunicationType type;

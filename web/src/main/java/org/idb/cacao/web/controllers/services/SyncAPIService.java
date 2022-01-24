@@ -21,6 +21,7 @@ package org.idb.cacao.web.controllers.services;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,13 +33,13 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -48,6 +49,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
@@ -57,10 +59,10 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.errors.GeneralException;
+import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
-import org.idb.cacao.web.IncomingFileStorage;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.controllers.dto.SyncDto;
 import org.idb.cacao.web.controllers.rest.SyncAPIController;
@@ -98,6 +100,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
  * Service methods for 'synchronization' with other cacao servers.
@@ -126,6 +129,12 @@ public class SyncAPIService {
 
 	@Autowired
 	private FieldsConventionsService fieldsConventionsService;
+
+	@Autowired
+	private FileSystemStorageService fileSystemStorageService;
+	
+	@Autowired
+	private PublishedDataService publishedDataService;
 
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
@@ -179,30 +188,6 @@ public class SyncAPIService {
 			log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
 		}
 		
-		try {
-			// SYNC template files
-			syncTemplateFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.TEMPLATE_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for template files", ex);
-		}
-		
-		try {
-			// SYNC sample files
-			syncSampleFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.SAMPLE_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for sample files", ex);
-		}
-
-		try {
-			// SYNC generic files
-			syncGenericFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.GENERIC_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for generic files", ex);
-		}
-
 		// SYNC bases (data kept in repositories, except documents)
 		List<Class<?>> all_sync_repos = getAllSyncRepositories();
 		for (Class<?> repository_class: all_sync_repos) {
@@ -214,23 +199,46 @@ public class SyncAPIService {
 			}
 		}
 				
-		// SYNC documents for all templates
-		Set<String> templateNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		// SYNC validated data for all templates and versions
+		List<DocumentTemplate> templates;
 		try {
-			templateRepository.findAll().forEach(t->templateNames.add(t.getName()));
+			templates = StreamSupport.stream(templateRepository.findAll().spliterator(), false)
+					.sorted(Comparator.comparing(DocumentTemplate::getName).thenComparing(DocumentTemplate::getVersion))
+					.collect(Collectors.toList());
 		} catch (Throwable ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
 				throw ex;
+			else
+				templates = Collections.emptyList();
 		}
-		for (String templateName: templateNames) {
+		for (DocumentTemplate template: templates) {
 			try {
-				syncDocuments(tokenApi, templateName, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PARSED_DOCUMENTS.getEndpoint(templateName),0L):0L, end);
+				syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, end);
 			}
 			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+templateName, ex);
+				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
 			}
 		}
 		
+		// SYNC published data for all indices produced by ETL phases
+		List<String> indices_for_published_data;
+		try {
+			indices_for_published_data = publishedDataService.getIndicesForPublishedData().stream().sorted().collect(Collectors.toList());
+		} catch (Throwable ex) {
+			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
+				throw new RuntimeException(ex);
+			else
+				indices_for_published_data = Collections.emptyList();
+		}
+		for (String indexname: indices_for_published_data) {
+			try {
+				syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, end);
+			}
+			catch (Throwable ex) {
+				log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
+			}
+		}
+
 		// SYNC Kibana assets
 		try {
 			syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, end);
@@ -259,33 +267,6 @@ public class SyncAPIService {
 			log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
 		}
 		
-		try {
-			// SYNC template files
-			if (SyncContexts.hasContext(endpoints, SyncContexts.TEMPLATE_FILES))
-				syncTemplateFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.TEMPLATE_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for template files", ex);
-		}
-
-		try {
-			// SYNC sample files
-			if (SyncContexts.hasContext(endpoints, SyncContexts.SAMPLE_FILES))
-				syncSampleFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.SAMPLE_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for sample files", ex);
-		}
-
-		try {
-			// SYNC generic files
-			if (SyncContexts.hasContext(endpoints, SyncContexts.GENERIC_FILES))
-				syncGenericFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.GENERIC_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for sample files", ex);
-		}
-
 		// SYNC bases (data kept in repositories, except documents)
 		List<Class<?>> all_sync_repos = getAllSyncRepositories();
 		for (Class<?> repository_class: all_sync_repos) {
@@ -298,30 +279,48 @@ public class SyncAPIService {
 			}
 		}
 				
-		/* FIXME:
-		// SYNC documents for all templates (except for those that are not related to files)
-		Set<String> templateNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		// SYNC validated data for all templates and versions
+		List<DocumentTemplate> templates;
 		try {
-			templateRepository.findAll()
-				.forEach(t->{
-					if (t.getFilename()!=null && t.getFilename().trim().length()>0)
-						templateNames.add(t.getName());
-				});
+			templates = StreamSupport.stream(templateRepository.findAll().spliterator(), false)
+					.sorted(Comparator.comparing(DocumentTemplate::getName).thenComparing(DocumentTemplate::getVersion))
+					.collect(Collectors.toList());
 		} catch (Throwable ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
 				throw ex;
+			else
+				templates = Collections.emptyList();
 		}
-		for (String templateName: templateNames) {
+		for (DocumentTemplate template: templates) {
 			try {
-				if (SyncContexts.hasContext(endpoints, SyncContexts.PARSED_DOCUMENTS, templateName))
-					syncDocuments(tokenApi, templateName, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PARSED_DOCUMENTS.getEndpoint(templateName),0L):0L, end);
+				if (SyncContexts.hasContext(endpoints, SyncContexts.VALIDATED_DATA, template.getName()+"/"+template.getVersion()))
+					syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, end);
 			}
 			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+templateName, ex);
+				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
 			}
 		}
-		*/
 		
+		// SYNC published data for all indices produced by ETL phases
+		List<String> indices_for_published_data;
+		try {
+			indices_for_published_data = publishedDataService.getIndicesForPublishedData().stream().sorted().collect(Collectors.toList());
+		} catch (Throwable ex) {
+			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
+				throw new RuntimeException(ex);
+			else
+				indices_for_published_data = Collections.emptyList();
+		}
+		for (String indexname: indices_for_published_data) {
+			try {
+				if (SyncContexts.hasContext(endpoints, SyncContexts.PUBLISHED_DATA, indexname))
+					syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, end);
+			}
+			catch (Throwable ex) {
+				log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
+			}
+		}
+
 		try {
 			// SYNC Kibana assets
 			if (SyncContexts.hasContext(endpoints, SyncContexts.KIBANA_ASSETS))
@@ -339,18 +338,19 @@ public class SyncAPIService {
 	@Transactional
 	public void syncOriginalFiles(String tokenApi, long start, Optional<Long> end) {
 		
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
 		final File original_files_dir;
 		try {
-			original_files_dir = file_storage.getIncomingDirOriginalFiles();
-		} catch (IOException ex) {
+			original_files_dir = fileSystemStorageService.getRootLocation().toFile();
+			if (!original_files_dir.exists())
+				throw new FileNotFoundException(original_files_dir.getAbsolutePath());
+		} catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error while synchronizing with "+SyncContexts.ORIGINAL_FILES.getEndpoint(), ex);
 			throw new GeneralException(messages.getMessage("error.failed.sync", null, LocaleContextHolder.getLocale()));
 		}
 		
 		// Expects to find files with this name pattern inside ZIP
 		// Let's reject anything else for safety (e.g. 'man in the middle attack' or compromised master would serve malicious files) 
-		final Pattern pattern_name_entry = Pattern.compile("^[\\/]?(\\d{4})[\\/](\\d{2})[\\/](\\d{2})[\\/](\\d+\\.[A-Za-z]+)$");
+		final Pattern pattern_name_entry = Pattern.compile("^(?>original)?[\\/]?(\\d{4})[\\/](\\d{2})[\\/]([\\d+\\-A-Za-z]+)$");
 
 		LongAdder counter = new LongAdder();
 		LongAdder sum_bytes = new LongAdder();
@@ -366,8 +366,7 @@ public class SyncAPIService {
 			}
 			File year_dir = new File(original_files_dir, matcher_name_entry.group(1));
 			File month_dir = new File(year_dir, matcher_name_entry.group(2));
-			File day_dir = new File(month_dir, matcher_name_entry.group(3));
-			File target_file = new File(day_dir, matcher_name_entry.group(4));
+			File target_file = new File(month_dir, matcher_name_entry.group(3));
 			if (!target_file.getParentFile().exists())
 				target_file.getParentFile().mkdirs();
 			if (target_file.exists())
@@ -384,147 +383,6 @@ public class SyncAPIService {
 	}
 	
 	/**
-	 * Retrieves and saves locally all template files created or changed between a time interval
-	 */
-	@Transactional
-	public void syncTemplateFiles(String tokenApi, long start, Optional<Long> end) {
-		
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		final File templates_dir;
-		try {
-			templates_dir = file_storage.getTemplateDir();
-		} catch (IOException ex) {
-			log.log(Level.SEVERE, "Error while synchronizing with "+SyncContexts.TEMPLATE_FILES.getEndpoint(), ex);
-			throw new GeneralException(messages.getMessage("error.failed.sync", null, LocaleContextHolder.getLocale()));
-		}
-
-		// Expects to find files with this name pattern inside ZIP
-		// Let's reject anything else for safety (e.g. 'man in the middle attack' or compromised master would serve malicious files) 
-		final Pattern pattern_name_entry = Pattern.compile("^([A-Za-z\\d\\-_]+\\.[A-Za-z]+)$");
-
-		LongAdder counter = new LongAdder();
-		LongAdder sum_bytes = new LongAdder();
-		final long timestamp = System.currentTimeMillis();
-
-		syncSomething(tokenApi, SyncContexts.TEMPLATE_FILES.getEndpoint(), start, end,
-		/*consumer*/(entry,input)->{
-			String entry_name = entry.getName();
-			Matcher matcher_name_entry = pattern_name_entry.matcher(entry_name);
-			if (!matcher_name_entry.find()) {
-				log.log(Level.INFO, "Ignoring entry with unrecognizable name ("+entry_name+") received from "+SyncContexts.TEMPLATE_FILES.getEndpoint());
-				return;
-			}
-			File target_file = new File(templates_dir, matcher_name_entry.group());
-			if (!target_file.getParentFile().exists())
-				target_file.getParentFile().mkdirs();
-			if (target_file.exists())
-				target_file.delete();
-			Files.copy(input, target_file.toPath());
-			if (entry.getLastModifiedTime()!=null)
-				target_file.setLastModified(entry.getLastModifiedTime().toMillis());
-			counter.increment();
-			sum_bytes.add(target_file.length());
-		});
-
-		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+SyncContexts.TEMPLATE_FILES.getEndpoint()+" in "+elapsed_time+" ms and "+sum_bytes.longValue()+" bytes");
-	}
-
-	/**
-	 * Retrieves and saves locally all sample files created or changed between a time interval
-	 */
-	@Transactional
-	public void syncSampleFiles(String tokenApi, long start, Optional<Long> end) {
-		
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		final File samples_dir;
-		try {
-			samples_dir = file_storage.getSampleDir();
-		} catch (IOException ex) {
-			log.log(Level.SEVERE, "Error while synchronizing with "+SyncContexts.SAMPLE_FILES.getEndpoint(), ex);
-			throw new GeneralException(messages.getMessage("error.failed.sync", null, LocaleContextHolder.getLocale()));
-		}
-
-		// Expects to find files with this name pattern inside ZIP
-		// Let's reject anything else for safety (e.g. 'man in the middle attack' or compromised master would serve malicious files) 
-		final Pattern pattern_name_entry = Pattern.compile("^([A-Za-z\\d\\-_]+\\.[A-Za-z]+)$");
-
-		LongAdder counter = new LongAdder();
-		LongAdder sum_bytes = new LongAdder();
-		final long timestamp = System.currentTimeMillis();
-
-		syncSomething(tokenApi, SyncContexts.SAMPLE_FILES.getEndpoint(), start, end,
-		/*consumer*/(entry,input)->{
-			String entry_name = entry.getName();
-			Matcher matcher_name_entry = pattern_name_entry.matcher(entry_name);
-			if (!matcher_name_entry.find()) {
-				log.log(Level.INFO, "Ignoring entry with unrecognizable name ("+entry_name+") received from "+SyncContexts.SAMPLE_FILES.getEndpoint());
-				return;
-			}
-			File target_file = new File(samples_dir, matcher_name_entry.group());
-			if (!target_file.getParentFile().exists())
-				target_file.getParentFile().mkdirs();
-			if (target_file.exists())
-				target_file.delete();
-			Files.copy(input, target_file.toPath());
-			if (entry.getLastModifiedTime()!=null)
-				target_file.setLastModified(entry.getLastModifiedTime().toMillis());
-			counter.increment();
-			sum_bytes.add(target_file.length());
-		});
-		
-		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+SyncContexts.SAMPLE_FILES.getEndpoint()+" in "+elapsed_time+" ms and "+sum_bytes.longValue()+" bytes");
-	}
-
-	/**
-	 * Retrieves and saves locally all generic files created or changed between a time interval
-	 */
-	@Transactional
-	public void syncGenericFiles(String tokenApi, long start, Optional<Long> end) {
-		
-		IncomingFileStorage file_storage = app.getBean(IncomingFileStorage.class);
-		final File generic_dir;
-		try {
-			generic_dir = file_storage.getGenericFileDir();
-		} catch (IOException ex) {
-			log.log(Level.SEVERE, "Error while synchronizing with "+SyncContexts.GENERIC_FILES.getEndpoint(), ex);
-			throw new GeneralException(messages.getMessage("error.failed.sync", null, LocaleContextHolder.getLocale()));
-		}
-
-		// Expects to find files with this name pattern inside ZIP
-		// Let's reject anything else for safety (e.g. 'man in the middle attack' or compromised master would serve malicious files) 
-		final Pattern pattern_name_entry = Pattern.compile("^([A-Za-z\\d\\-_]+\\.[A-Za-z\\d]+)$");
-
-		LongAdder counter = new LongAdder();
-		LongAdder sum_bytes = new LongAdder();
-		final long timestamp = System.currentTimeMillis();
-
-		syncSomething(tokenApi, SyncContexts.GENERIC_FILES.getEndpoint(), start, end,
-		/*consumer*/(entry,input)->{
-			String entry_name = entry.getName();
-			Matcher matcher_name_entry = pattern_name_entry.matcher(entry_name);
-			if (!matcher_name_entry.find()) {
-				log.log(Level.INFO, "Ignoring entry with unrecognizable name ("+entry_name+") received from "+SyncContexts.GENERIC_FILES.getEndpoint());
-				return;
-			}
-			File target_file = new File(generic_dir, matcher_name_entry.group());
-			if (!target_file.getParentFile().exists())
-				target_file.getParentFile().mkdirs();
-			if (target_file.exists())
-				target_file.delete();
-			Files.copy(input, target_file.toPath());
-			if (entry.getLastModifiedTime()!=null)
-				target_file.setLastModified(entry.getLastModifiedTime().toMillis());
-			counter.increment();
-			sum_bytes.add(target_file.length());
-		});
-		
-		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+SyncContexts.GENERIC_FILES.getEndpoint()+" in "+elapsed_time+" ms and "+sum_bytes.longValue()+" bytes");
-	}
-
-	/**
 	 * Retrieves and saves locally all entity instances created or changed between a time interval
 	 */
 	@Transactional
@@ -540,6 +398,7 @@ public class SyncAPIService {
 
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
 
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName());
@@ -636,6 +495,7 @@ public class SyncAPIService {
 			if (target instanceof Collection) {
 				Object instance = ((Collection<?>)target).iterator().next();
 				ObjectMapper m_out_json = new ObjectMapper();
+				m_out_json.registerModule(new JavaTimeModule());
 				m_out_json.setSerializationInclusion(Include.NON_NULL);
 				String info;
 				try {
@@ -651,6 +511,7 @@ public class SyncAPIService {
 			else {
 				ObjectMapper m_out_json = new ObjectMapper();
 				m_out_json.setSerializationInclusion(Include.NON_NULL);
+				m_out_json.registerModule(new JavaTimeModule());
 				try {
 					return m_out_json.writeValueAsString(target);
 				} catch (JsonProcessingException e) {
@@ -664,29 +525,12 @@ public class SyncAPIService {
 	 * Retrieves and saves locally all parsed documents created or changed between a time interval
 	 */
 	@Transactional
-	public void syncDocuments(String tokenApi, String templateName, long start, Optional<Long> end) {
+	public void syncValidatedData(String tokenApi, DocumentTemplate template, long start, Optional<Long> end) {
 		
-    	if (templateName==null || templateName.trim().length()==0) {
-    		throw new InvalidParameter("template="+templateName);
+    	if (template==null) {
+    		throw new InvalidParameter("template");
     	}
     	
-		List<DocumentTemplate> template_versions;
-		try {
-			template_versions = templateRepository.findByName(templateName);
-		} catch (Throwable ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
-				throw ex;
-			template_versions = null;
-		}
-		if (template_versions==null || template_versions.isEmpty()) {
-			throw new InvalidParameter("template="+templateName);				
-		}
-		if (template_versions.size()>1) {
-			// if we have more than one possible choice, let's give higher priority to most recent ones
-			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
-		}
-		
-		final DocumentTemplate template = template_versions.get(0);
 		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);
 
         // Creates the index, in case it has not been created yet
@@ -717,10 +561,11 @@ public class SyncAPIService {
 
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
 
 		LongAdder counter = new LongAdder();
 		final long timestamp = System.currentTimeMillis();
-		final String uri = SyncContexts.PARSED_DOCUMENTS.getEndpoint(templateName);
+		final String uri = SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(), template.getVersion());
 
 		syncSomething(tokenApi, uri, start, end,
 		/*consumer*/(entry,input)->{
@@ -748,7 +593,78 @@ public class SyncAPIService {
 		final long elapsed_time = System.currentTimeMillis() - timestamp;
 		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
 	}
-	
+
+	/**
+	 * Retrieves and saves locally all published (denormalized) data created or changed between a time interval
+	 */
+	@Transactional
+	public void syncPublishedData(String tokenApi, String indexname, long start, Optional<Long> end) {
+		
+    	if (indexname==null || indexname.trim().length()==0 || !indexname.startsWith(IndexNamesUtils.PUBLISHED_DATA_INDEX_PREFIX)) {
+    		throw new InvalidParameter("indexname");
+    	}
+    	
+        // Creates the index, in case it has not been created yet
+        try {
+        	boolean has_indice;
+        	try {
+        		ESUtils.hasMappings(elasticsearchClient, indexname);
+        		has_indice = true; // the index may exist and have no mapping
+        	}
+        	catch (Throwable ex) {
+        		if (ErrorUtils.isErrorNoIndexFound(ex))
+        			has_indice = false;
+        		else
+        			throw ex;
+        	}
+	        if (!has_indice) {
+		        try {
+			        ESUtils.createIndex(elasticsearchClient, indexname, /*ignore_malformed*/true);
+		        }
+		        catch (Throwable ex) {
+		        	log.log(Level.WARNING, "Ignoring error while creating new index '"+indexname+"' ", ex);
+		        }
+	        }
+        }
+        catch (Throwable ex) {
+        	log.log(Level.WARNING, "Ignoring error while checking existence of index '"+indexname+"' ", ex);
+        }
+
+		final ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
+
+		LongAdder counter = new LongAdder();
+		final long timestamp = System.currentTimeMillis();
+		final String uri = SyncContexts.PUBLISHED_DATA.getEndpoint(indexname);
+
+		syncSomething(tokenApi, uri, start, end,
+		/*consumer*/(entry,input)->{
+			
+			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
+			// also have inside de JSON contents
+
+			// Let's deserialize the JSON contents
+			@SuppressWarnings("unchecked")
+			Map<String, Object> parsed_contents = (Map<String, Object>)mapper.readValue(input, Map.class);
+			
+			String id = (String)parsed_contents.get("id");
+			if (id==null)
+				return;
+			
+			ESUtils.indexWithRetry(elasticsearchClient,
+				new IndexRequest(indexname)
+					.id(id)
+					.source(parsed_contents)
+					.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
+
+			counter.increment();
+		});
+		
+		final long elapsed_time = System.currentTimeMillis() - timestamp;
+		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
+	}
+
 	/**
 	 * Retrieves and saves locally all Kibana assets created or changed between a time interval
 	 */
@@ -757,6 +673,7 @@ public class SyncAPIService {
 		
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
 
 		LongAdder counter = new LongAdder();
 		final long timestamp = System.currentTimeMillis();
@@ -1010,7 +927,7 @@ public class SyncAPIService {
 	@Transactional(readOnly=true)
 	public long getStartForNextSync(String endPoint, long fallback) {
 		Optional<SyncCommitMilestone> existent_milestone = syncCommitMilestoneRepository.findByEndPoint(endPoint);
-		return existent_milestone.map(SyncCommitMilestone::getLastTimeEnd).map(OffsetDateTime::toEpochSecond).orElse(fallback);
+		return existent_milestone.map(SyncCommitMilestone::getLastTimeEnd).map(off->off.toInstant().toEpochMilli()).orElse(fallback);
 	}
 	
 	/**
@@ -1084,6 +1001,7 @@ public class SyncAPIService {
 	public static SyncDto readSyncDto(InputStream input) {
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.registerModule(new JavaTimeModule());
 		try {
 			return mapper.readValue(input, SyncDto.class);
 		} catch (IOException e) {

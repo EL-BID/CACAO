@@ -41,6 +41,7 @@ services:
       - kafka
     volumes:
       - logdir_web:/var/log
+      - web_settings:/home/usr/app/.cacao
       - ./app_config_web:/app_config.properties:ro
       - file-storage:/var/cacao
     configs:
@@ -107,12 +108,10 @@ services:
       context: ./es
     environment:
       - PORT=9200
-      - node.name=es01
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es02,es03
-      - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - NODE_NAME=es01
+      - CLUSTER_NAME=es-docker-cluster
+      - SEED_HOSTS=es02,es03
+      - MASTER_NODES=es01,es02,es03
     ulimits:
       memlock:
         soft: -1
@@ -122,7 +121,11 @@ services:
 #      - "9300:9300"
     volumes:
       - es-data:/usr/share/elasticsearch/data
-    restart: always
+      - es-conf:/usr/share/elasticsearch/config
+      - ./conf/es.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
+      - ./conf/es.misc.options:/usr/share/elasticsearch/config/jvm.options.d/es.misc.options
+#    restart: always
   es02:
     container_name: es02
     hostname: 'es02'
@@ -130,12 +133,10 @@ services:
       context: ./es
     environment:
       - PORT=9200
-      - node.name=es02
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es01,es03
-      - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - NODE_NAME=es02
+      - CLUSTER_NAME=es-docker-cluster
+      - SEED_HOSTS=es01,es03
+      - MASTER_NODES=es01,es02,es03
     ulimits:
       memlock:
         soft: -1
@@ -145,7 +146,11 @@ services:
 #      - "9301:9300"
     volumes:
       - es-data2:/usr/share/elasticsearch/data
-    restart: always
+      - es-conf2:/usr/share/elasticsearch/config
+      - ./conf/es.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
+      - ./conf/es.misc.options:/usr/share/elasticsearch/config/jvm.options.d/es.misc.options
+#   restart: always
   es03:
     container_name: es03
     hostname: 'es03'
@@ -153,12 +158,10 @@ services:
       context: ./es
     environment:
       - PORT=9200
-      - node.name=es03
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es01,es02
-      - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - NODE_NAME=es03
+      - CLUSTER_NAME=es-docker-cluster
+      - SEED_HOSTS=es01,es02
+      - MASTER_NODES=es01,es02,es03
     ulimits:
       memlock:
         soft: -1
@@ -168,7 +171,11 @@ services:
 #      - "9302:9300"
     volumes:
       - es-data3:/usr/share/elasticsearch/data
-    restart: always
+      - es-conf3:/usr/share/elasticsearch/config
+      - ./conf/es.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
+      - ./conf/es.misc.options:/usr/share/elasticsearch/config/jvm.options.d/es.misc.options
+#    restart: always
   kibana:
     container_name: kibana
     build:
@@ -179,6 +186,8 @@ services:
       - "NODE_OPTIONS=--max-old-space-size=4096"
 #    ports:
 #      - "5601:5601"
+    volumes:
+      - kibana-conf:/usr/share/kibana/config
     depends_on:
       - es01
       - es02
@@ -237,13 +246,23 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    depends_on:
+      - web
     restart: always
 volumes:
   es-data:
     driver: local
+  es-conf:
+    driver: local
   es-data2:
     driver: local
+  es-conf2:
+    driver: local
   es-data3:
+    driver: local
+  es-conf3:
+    driver: local
+  kibana-conf:
     driver: local
   logdir_web:
     driver: local
@@ -252,5 +271,7 @@ volumes:
   logdir_etl:
     driver: local
   file-storage:
+    driver: local
+  web_settings:
     driver: local
     

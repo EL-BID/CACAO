@@ -144,6 +144,14 @@
 			<version>1.12</version>
 		</dependency>
 
+		<!-- This dependency is due to 'FileGenerator' feature for generating random strings out of regular expressions -->
+		<!-- https://mvnrepository.com/artifact/com.github.mifmif/generex -->
+		<dependency>
+		    <groupId>com.github.mifmif</groupId>
+		    <artifactId>generex</artifactId>
+		    <version>1.0.2</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

@@ -1,3 +1,4 @@
+# https://github.com/elastic/elasticsearch/tree/v7.14.1/distribution/docker
 FROM elasticsearch:7.14.1
 
 # container creator
@@ -11,7 +12,7 @@ COPY log4j2.properties /usr/share/elasticsearch/config
 COPY setup.sh .
 RUN chmod +x ./setup.sh
 
-# additional configuration e start application
+# additional configuration and start application
 CMD ["./setup.sh"]
 
 # expose the default Elasticsearch port
