@@ -61,6 +61,7 @@
 			columns:true,
 		},
 	    persistenceID:"doc_situation_history_persistence",
+	    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 		columns:[ //Define Table Columns
 			{title: /*{{#taxpayer.id}}} */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
 			{title: /*[[#{doc.timestamp}]]*/ "Upload date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
