@@ -60,7 +60,7 @@
                           th:value="${i.name()}" th:text="#{${i}}"></option>
                       </select>  
                     </div>
-                    <div class="field" id="showTaxpayer" style="display: none;">
+                    <div class="field" id="showTaxpayer" style="none">
                       <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
                       <div class="ui search selection dropdown" id="selectTaxpayer">
                           <input type="hidden" th:field="*{taxpayerId}" id="taxpayerId">

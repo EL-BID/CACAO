@@ -46,6 +46,9 @@ ENV KIBANA_ENDPOINT=/kibana
 # List of KAFKA Brokers (host:port)
 ENV KAFKA_BROKERS=kafka:9092
 
+# Eureka server for auto-discovery of services (host:port)
+ENV EUREKA_SERVER=eureka:8761
+
 ENV WEB_JVM_OPTS="-Xms512m -Xmx512m"
 
 # additional configuration and start application

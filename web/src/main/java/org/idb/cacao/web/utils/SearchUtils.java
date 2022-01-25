@@ -115,7 +115,9 @@ public class SearchUtils {
 			TabulatorFilter[] filters = mapper.readValue(as_json.get(), TabulatorFilter[].class);
 			AdvancedSearch search = new AdvancedSearch();
 			Arrays.stream(filters)
-			  .forEach(filter -> search.addFilter(new AdvancedSearch.QueryFilterTerm(filter.getField(), filter.getValue())));
+			  .forEach(filter -> search.addFilter( filter.isString() ? 
+					  new AdvancedSearch.QueryFilterTerm(filter.getField(), filter.getStringValue()) :
+					  new AdvancedSearch.QueryFilterDate(filter.getField(), filter.getProperty("start"), filter.getProperty("end"))));
 			return Optional.of(search);
 		} catch (JsonProcessingException e) {
 			return Optional.empty();
@@ -376,9 +378,9 @@ public class SearchUtils {
 		else if (field instanceof AdvancedSearch.QueryFilterDate) {
 			RangeQueryBuilder b = new RangeQueryBuilder(field.getName());
 			if (((AdvancedSearch.QueryFilterDate)field).hasStart())
-				b = b.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(((AdvancedSearch.QueryFilterDate)field).getStart())), /*includeLower*/true);
+				b = b.from(ParserUtils.formatTimestampES(ParserUtils.parseTimestamp(((AdvancedSearch.QueryFilterDate)field).getStart())), /*includeLower*/true);
 			if (((AdvancedSearch.QueryFilterDate)field).hasEnd())
-				b = b.to(ParserUtils.formatTimestampES(DateTimeUtils.lastTimeOfDay(ParserUtils.parseFlexibleDate(((AdvancedSearch.QueryFilterDate)field).getEnd()))), /*includeUpper*/true);
+				b = b.to(ParserUtils.formatTimestampES(DateTimeUtils.lastTimeOfDay(ParserUtils.parseTimestamp(((AdvancedSearch.QueryFilterDate)field).getEnd()))), /*includeUpper*/true);
 			query_builder.accept(b);
 		}    		
 		else if (field instanceof AdvancedSearch.QueryFilterList) {

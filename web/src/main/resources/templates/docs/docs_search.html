@@ -30,8 +30,29 @@
 				<a th:href="@{/docs}" class="ui primary button"><i class="plus icon"></i><span th:text="#{docs.main.upload}">Upload Documents</span></a>
 			</div>
 		</div>
+        <div class="ui top aligned tiny modal" id="chooseRangeModal">
+          <div class="header">Choose a date range</div>
+          <div class="content">
+            <span class="ui calendar" id="rangestart">
+              <div class="ui input left icon" style="position:auto">
+                <i class="calendar icon"></i>
+                <input type="text" placeholder="Start">
+                </div>
+            </span>
+            <span class="ui calendar" id="rangeend">
+              <div class="ui input left icon" style="position:auto">
+                <i class="calendar icon"></i>
+                <input type="text" placeholder="End">
+                </div>
+            </span>
+          </div>
+          <div class="actions">
+            <div class="ui approve button">Ok</div>
+            <div class="ui cancel button">Cancel</div>
+          </div>
+        </div>
 	</div>
- 
+
 <script th:nonce="${cspNonce}" th:inline="javascript">
 dateFormatter = function(cell, formatterParams, onRendered) {
 	var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
@@ -52,7 +73,95 @@ let showErrorMessages = function(e, cell) {
 let downloadFile = function(e, cell) {
 	window.location.replace([[@{/doc/download/}]] + cell.getRow().getIndex());			
 }
+
+let adjustDate = function(date, start) {
+	if(date==null)
+		return null;
+	var newDate= luxon.DateTime.fromJSDate(date)
+    if(!newDate.isValid) {
+        return date
+    }
+	if(start)
+		return newDate.startOf('day').toJSDate()
+	return newDate.endOf('day').toJSDate()
+}
+
+function chooseFilter(value, update) {
 	
+	$('#chooseRangeModal')
+	  .modal( { onApprove: function() {
+		  update({ 
+			  start: adjustDate($('#rangestart').calendar('get date'), true),
+			  end: adjustDate($('#rangeend').calendar('get date'), false)
+		  })
+	  }})
+	  .modal('show')
+	$('#rangestart').calendar({
+		type: 'date', 
+		endCalendar: $('#rangeend'),
+		popupOptions: {position: 'bottom left'},
+		formatter: {
+		  date: function (date, settings) {
+			if(!date) return ''
+			return luxon.DateTime.fromJSDate(date).toISODate()
+		  }
+		}
+	})
+   
+	$('#rangeend').calendar({
+        type: 'date', 
+        startCalendar: $('#rangestart'),
+        popupOptions: { position: 'bottom left'},
+        formatter: {
+          date: function (date, settings) {
+            if(!date) return ''
+            return luxon.DateTime.fromJSDate(date).toISODate()
+          }
+        }
+
+	})
+	if(value!=null) {
+		console.log(value)
+        $('#rangestart').calendar('set date', value.start)
+		$('#rangeend').calendar('set date', value.end)
+	}
+}
+
+var formatRange = function(value) {
+  if(value==null || value.start==null || value.end==null)
+	  return ""
+  return luxon.DateTime.fromJSDate(value.start).toISODate() + " - " + luxon.DateTime.fromJSDate(value.end).toISODate() 
+}
+
+var minMaxFilterEditor = function(cell, onRendered, success, cancel, editorParams){
+
+	var div = document.createElement("div")
+    var container = document.createElement("input");
+    container.readOnly = true
+    container.style.padding = "4px"
+    container.style.width = "100%"
+    container.style.boxSizing = "border-box"
+    //container.setAttribute("type", "search")
+    
+    var value = cell.getValue();
+   	container.value = formatRange(value)
+    var update = function update(newValue) {
+    	container.value = formatRange(newValue)
+    	success(newValue)
+    }
+    var table = cell.getColumn().getTable()
+    var click = function click(ev) {
+    	//if(container.offsetWidth - ev.offsetX <= 30)
+    	//	return
+    	var v = table.getHeaderFilterValue(cell.getField())
+    	console.log(v)
+    	chooseFilter(v, update)
+    }
+    container.addEventListener("click", click)
+    div.appendChild(container)
+    return div;
+ }
+
 let situationsIcon = function(cell, formatterParams){ return "<i class='file alternate outline icon'></i>"};
 let errorsIcon = function(cell, formatterParams){ return "<i class='warning sign icon'></i>"};
 let downloadIcon = function(cell, formatterParams){ return "<i class='save icon'></i>"};
@@ -78,6 +187,7 @@ let table = new Tabulator('#table', {
 	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
     ajaxURLGenerator: function(url, config, params ){
 		p= new URLSearchParams()
+		console.log(params)
 		p.set('page', params.page)
 		p.set('size', params.size)
 		p.set('filter', JSON.stringify(params.filter))
@@ -124,16 +234,18 @@ table.on("tableBuilt", function(){
   $('#filter').click( function() {
       showHeaderFilter = !showHeaderFilter
       table.getHeaderFilters().forEach( t => table.setHeaderFilterValue(t.field, ''))
-      let cols = ['user', 'taxPayerId', 'taxPeriodNumber', 'templateName', 'timestamp', 'situation']
+      let cols = ['user', 'taxPayerId', 'taxPeriodNumber', 'templateName']
       cols.forEach( name =>
         table.updateColumnDefinition(name, { headerFilter: showHeaderFilter})
       )
-      /*
-      if(showHeaderFilter)
+      
+      if(showHeaderFilter) {
           table.updateColumnDefinition('situation', { headerFilter: 'select', headerFilterParams: { values: situationLookup } })
-        else
-          table.updateColumnDefinition('situation', { headerFilter: false })
-       */
+          table.updateColumnDefinition('timestamp', { headerFilter:minMaxFilterEditor, minWidth: 200 })
+      } else {
+          table.updateColumnDefinition('timestamp', { headerFilter: false })
+    	  table.updateColumnDefinition('situation', { headerFilter: false })
+      }
   })
 })
 </script>

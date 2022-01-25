@@ -72,7 +72,8 @@
 		sortMode: "remote",
 		headerFilterLiveFilterDelay:700,			
 		persistentLayout:true,
-	    persistenceID:"doc_error_messages_persistence",				
+	    persistenceID:"doc_error_messages_persistence",
+	    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 		columns:[ //Define Table Columns
 			{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
 			{title: /*[[#{tax.period}]] */ "Tax Period", field:"templateName", headerFilter:this.headerFilter},

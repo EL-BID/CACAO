@@ -17,44 +17,26 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.dto;
+package org.idb.cacao.eureka;
 
-import java.util.Map;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 
-public class TabulatorFilter {
+/**
+ * SpringBoot WebApplication entry point.
+ * 
+ * @author Gustavo Figueiredo
+ *
+ */
+@SpringBootApplication
+@EnableEurekaServer
+public class Application {
 
-	private String field;
-	private String type;
-	private Object value;
-	public String getField() {
-		return field;
+	/**
+	 * This is the entrypoint for the entire web application
+	 */
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
 	}
-	public void setField(String field) {
-		this.field = field;
-	}
-	public String getType() {
-		return type;
-	}
-	public void setType(String type) {
-		this.type = type;
-	}
-	public Object getValue() {
-		return value;
-	}
-	public String getStringValue() {
-		return value.toString();
-	}
-	public boolean isString() {
-		return value instanceof String;
-	}
-	public void setValue(Object value) {
-		this.value = value;
-	}
-	public String getProperty(String name) {
-		if (value!=null && value instanceof Map) {
-			return (String) ((Map)value).get(name);
-		}
-		return null;
-	}
-	
 }
