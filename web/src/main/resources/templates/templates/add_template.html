@@ -24,25 +24,24 @@
 
     <h2 class="ui header">
       <i class="file alternate outline icon"></i>
-      <span class="content" th:text="#{template.new}">New Document Template</span>
+      <span class="content" th:text="#{template.manage}">ManageTemplates</span>
     </h2>
     <div class="ui container">
-      <div class="ui orange segment">
-        <div class="ui stackable cards">
-          <a class="ui card" th:href="@{/templates/new(type=)}" id="empty">
-            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon file outline"></i></div>
+      <div class="ui stackable cards">
+          <a class="ui orange card" th:href="@{/templates/new(type=)}" id="empty">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon file outline black"></i></div>
             <div class="content center aligned">
               <div class="header" th:text="#{template.empty}">Empty Template</div>
             </div>
           </a>
-          <a class="ui card" href="#" id="archetype">
-            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon archway"></i></div>
+          <a class="ui orange card" href="#" id="archetype">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon archway black"></i></div>
             <div class="content center aligned">
               <div class="header" th:text="#{archetype}">Archetype</div>
             </div>
           </a>
-          <a class="ui card" href="#" id="template">
-            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon file alternate outline"></i></div>
+          <a class="ui orange card" href="#" id="template">
+            <div class="image center aligned" style="padding: 25px 5px 15px"><i class="massive icon file alternate outline black"></i></div>
             <div class="content center aligned">
               <div class="header" th:text="#{template.existing}">Existing Document Template</div>
             </div>
@@ -65,7 +64,6 @@
                 th:href="@{/templates/new(type=archetype,id=${t.id})}"></a>
     		</div>
     	</div>
-      </div>
      </div>
 	
   </div>

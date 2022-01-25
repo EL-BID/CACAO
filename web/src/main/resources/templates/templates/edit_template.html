@@ -22,8 +22,8 @@
       <div class="divider"> / </div>
       <a class="section" th:text="#{templates.title}" th:href="@{/templates}">Templates</a>
       <div class="divider"> / </div>
-      <div th:if="${template.id==null}" class="active section" th:text="#{template.new}">New Document Template</div>
-      <th:block th:if="${template.id!=null}"> 
+      <div th:if="${template.name==null}" class="active section" th:text="#{template.new}">New Document Template</div>
+      <th:block th:if="${template.name!=null}"> 
       <a class="section" th:text="${template.name}" th:href="@{/templates/{id}(id=${template.id})}"></a>
       <div class="divider"> / </div>
       <div class="active section" th:text="#{template.edit}">Edit Document Template</div>
@@ -31,8 +31,8 @@
     </div>
     <h2 class="ui header">
       <i class="file alternate outline icon"></i>
-      <div th:if="${template.id==null}" class="content" th:text="#{template.new}">New Declaration Template</div>
-      <div th:if="${template.id!=null}" class="content" th:text="#{template.edit}">Edit Declaration Template</div>
+      <div th:if="${template.name==null}" class="content" th:text="#{template.new}">New Declaration Template</div>
+      <div th:if="${template.name!=null}" class="content" th:text="#{template.edit}">Edit Declaration Template</div>
     </h2>
     <div class="ui container">
       <div class="ui orange segment">
