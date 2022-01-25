@@ -19,11 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.dto;
 
+import java.util.Map;
+
 public class TabulatorFilter {
 
 	private String field;
 	private String type;
-	private String value;
+	private Object value;
 	public String getField() {
 		return field;
 	}
@@ -36,11 +38,23 @@ public class TabulatorFilter {
 	public void setType(String type) {
 		this.type = type;
 	}
-	public String getValue() {
+	public Object getValue() {
 		return value;
 	}
-	public void setValue(String value) {
+	public String getStringValue() {
+		return value.toString();
+	}
+	public boolean isString() {
+		return value instanceof String;
+	}
+	public void setValue(Object value) {
 		this.value = value;
+	}
+	public String getProperty(String name) {
+		if (value!=null && value instanceof Map) {
+			return (String) ((Map)value).get(name);
+		}
+		return null;
 	}
 	
 }

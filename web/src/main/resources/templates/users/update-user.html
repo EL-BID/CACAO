@@ -151,7 +151,7 @@ $('#form').form({
   },
   onSuccess: (processForm)
 })
-[# th:if="${user.taxpayerId!=null}"]
+[# th:if="${user.taxpayerId!=null && !user.taxpayerId.isEmpty()}"]
 $('#selectTaxpayer').dropdown('set text', [['<b>' + ${user.taxpayerId} + '</b> : ' + ${taxpayerName}]])
 [/]
 </script>

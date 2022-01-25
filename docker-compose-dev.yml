@@ -59,6 +59,22 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  kibana:
+    image: kibana:7.14.1
+    container_name: kibana
+    environment:
+      - PORT=5601
+      - ESPORT=9200
+      - SERVER_NAME=localhost
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true
+    ports:
+      - "5601:5601"
+    depends_on:
+      - es01
+    restart: always
+
 volumes:
   es-data:
     driver: local

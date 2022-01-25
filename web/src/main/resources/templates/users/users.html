@@ -138,7 +138,7 @@ let table = new Tabulator('#table', {
 		{title: /*[[#{user.name}}*/ "Name", field:"name", minWidth: 140},
 		{title: /*[[#{user.login}}*/ "Login", field:"login", hozAlign:"left", minWidth: 140 },
 		{title: /*[[#{user.profile}}*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup, 
-		      minWidth: 100},
+		      minWidth: 100, headerSort:false},
 		{title: /*[[#{taxpayer.id}}*/ "Taxpayer ID", field:"taxpayerId", minWidth: 100},
 		[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
 		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
