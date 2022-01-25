@@ -22,6 +22,7 @@ package org.idb.cacao.web.controllers.ui;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -37,7 +38,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class TaxPayerGeneralViewUIController {
 	
-	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
+	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/horizontal_vertical_analysis"})
 	public String getVerticalAnalysis(Model model) {
 		

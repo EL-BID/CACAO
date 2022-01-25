@@ -138,7 +138,12 @@ public enum SystemPrivilege {
 	/**
 	 * Privilege for changing user accounts
 	 */
-	USER_WRITE;
+	USER_WRITE,
+	
+	/**
+	 * Privilege for generating tax reports
+	 */
+	TAX_REPORT_READ;
 	
 	/**
 	 * Return the role name associated to this system privilege
