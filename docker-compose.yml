@@ -289,7 +289,7 @@ volumes:
     driver: local
   logdir_etl:
     driver: local
-  logdir_eureka
+  logdir_eureka:
     driver: local
   file-storage:
     driver: local
