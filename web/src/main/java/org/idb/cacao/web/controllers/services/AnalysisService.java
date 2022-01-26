@@ -30,9 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TaxPayerGeneralViewService {
+public class AnalysisService {
 
-	private static final Logger log = Logger.getLogger(TaxPayerGeneralViewService.class.getName());
+	private static final Logger log = Logger.getLogger(AnalysisService.class.getName());
 
 	/**
 	 * Maximum number of records that we will return for a given parameter. Should

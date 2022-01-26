@@ -30,16 +30,16 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * Controller class for all endpoints related to 'gerenal view' from tax payers
+ * Controller class for all endpoints related to 'analysis view' from tax payers
  * 
  * @author Rivelino Patrício
  *
  */
 @Controller
-public class TaxPayerGeneralViewUIController {
+public class AnalysisUIController {
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/horizontal_vertical_analysis"})
+	@GetMapping(value= {"/vertical_horizontal_analysis"})
 	public String getVerticalAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -49,7 +49,7 @@ public class TaxPayerGeneralViewUIController {
     	if (user==null)
     		throw new UserNotFoundException();
 		
-        return "taxpayersgeneralview/horizontal_vertical_analysis";
+        return "analysis/vertical_horizontal_analysis";
 	}	
 	
 }

@@ -20,11 +20,11 @@
         <div class="ui breadcrumb">
           <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
           <div class="divider"> / </div>
-          <div class="active section" th:text="#{taxpayers.general.view.analysis}">Horizontal and Vertical Analysis</div>
+          <div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
         </div>	
 		<h2 class="ui header">
 			<i class="stream icon"></i>
-			<span class="content" th:text="#{taxpayers.general.view.analysis}">Horizontal and Vertical Analysis</span>			
+			<span class="content" th:text="#{taxpayers.analysis.vertical.and.horizontal}">Vertical and Horizontal Analysis</span>			
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
@@ -41,13 +41,13 @@
 					</div>
 
 					<div class="ui field" id="type">
-						<label th:text="#{taxpayers.general.view.analysis.type}">Analysis
+						<label th:text="#{taxpayers.analysis.type}">Analysis
 							Type</label> <select class="ui dropdown" id="analysisType">
 							<option value="1"
-								th:text="#{taxpayers.general.view.analysis.type.vertical}">Vertical</option>
+								th:text="#{taxpayers.analysis.type.vertical}">Vertical</option>
 							<option value="2"
-								th:text="#{taxpayers.general.view.analysis.type.horizontal}">Horizontal</option>
-							<option value="3" th:text="#{taxpayers.general.view.analysis.type.both}">Both</option>
+								th:text="#{taxpayers.analysis.type.horizontal}">Horizontal</option>
+							<option value="3" th:text="#{taxpayers.analysis.type.both}">Both</option>
 						</select>
 					</div>
 
@@ -60,7 +60,7 @@
 					</div>
 
 					<div class="ui field" id="periodicity">
-						<label th:text="#{taxpayers.general.view.periodicity}">Date</label> <select
+						<label th:text="#{taxpayers.analysis.periodicity}">Date</label> <select
 							class="ui dropdown" id="period">
 							<option value="1" th:text="#{periodicity.one.month.before}">1
 								month before</option>
@@ -100,6 +100,15 @@
 								years after</option>
 						</select>
 					</div>
+					
+					<div class="ui field" id="levelview">
+						<label th:text="#{account.level.show}">Show Level</label> 
+						<select class="ui dropdown" id="level">
+							<option value="1" th:text="#{account.level.1}">Level 1</option>
+							<option value="2" th:text="#{account.level.2}">Level 2</option>
+							<option value="3" selected="selected" th:text="#{account.level.3}">Level 3</option>
+						</select>
+					</div>					
 
 					<div class="ui field checkbox" id="showZeroBalanceAccount">
 						<input type="checkbox" tabindex="0" name="zeroBalance" id="zeroBalance">
@@ -140,6 +149,22 @@
 			$("#showtable").hide()   
 	     });
 		
+		$('#level').on('change', function() {
+			var level = $('#level').val();
+			if ( level == 3 )
+				table.clearFilter();
+			else {
+				table.setFilter([
+				    {field:"level", type:"<=", value:level}, //filter by level
+				]);
+			}
+			table.redraw();   
+	     });
+		
+		$('#zeroBalance').on('change', function() {
+			$("#showtable").hide()   
+	     });		
+		
 		$('#select').dropdown({
 			apiSettings: {
 	        	url: '/api/taxpayers/autocomplete?term={query}',
@@ -170,6 +195,13 @@
 	                	rules: [{
 	                    	type   : 'empty',
 	                    	prompt : [[#{taxpayer.missing.taxpayer.id}]]
+	                  	}]
+	              	},
+	              	date: {
+	                	identifier  : 'date',
+	                	rules: [{
+	                    	type   : 'empty',
+	                    	prompt : [[#{date.missing}]]
 	                  	}]
 	              	}
 	          	},
@@ -213,7 +245,7 @@
 		var columnsFormat = {};		
 		
 		function updateColumns() {
-			$.get('/api/generalview/analysis-view-columns', 
+			$.get('/api/analysis/vertical-horizontal-view-columns', 
 					{ finalDate: $('#finalDate').calendar('get date'), 
 			    	  comparisonPeriods: $('#period').val(),
 			    	  analysisType: $('#analysisType').val() } ,  // data to submit
@@ -232,7 +264,7 @@
 			paginationMode: "local", //enable local pagination
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
-			ajaxURL: /*[[@{/api/generalview/vertical-horizontal-analysis}]]*/ "/api/generalview/vertical-horizontal-analysis", //set url for ajax request
+			ajaxURL: /*[[@{/api/analysis/vertical-horizontal-analysis}]]*/ "/api/analysis/vertical-horizontal-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)
