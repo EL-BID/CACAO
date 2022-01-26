@@ -22,6 +22,7 @@ package org.idb.cacao.web.controllers.ui;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -29,16 +30,16 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * Controller class for all endpoints related to 'gerenal view' from tax payers
+ * Controller class for all endpoints related to 'analysis view' from tax payers
  * 
  * @author Rivelino Patrício
  *
  */
 @Controller
-public class TaxPayerGeneralViewUIController {
+public class AnalysisUIController {
 	
-	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})
-	@GetMapping(value= {"/horizontal_vertical_analysis"})
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/vertical_horizontal_analysis"})
 	public String getVerticalAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -48,7 +49,7 @@ public class TaxPayerGeneralViewUIController {
     	if (user==null)
     		throw new UserNotFoundException();
 		
-        return "taxpayersgeneralview/horizontal_vertical_analysis";
+        return "analysis/vertical_horizontal_analysis";
 	}	
 	
 }

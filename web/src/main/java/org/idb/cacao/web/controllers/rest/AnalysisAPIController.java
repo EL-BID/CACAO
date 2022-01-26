@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.utils.ParserUtils;
-import org.idb.cacao.web.controllers.services.TaxPayerGeneralViewService;
+import org.idb.cacao.web.controllers.services.AnalysisService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,30 +49,30 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controller class for all endpoints related to 'gerenal view' from tax payers
+ * Controller class for all endpoints related to 'analysis' from tax payers
  * 
  * @author Rivelino Patrício
  *
  */
 @RestController
 @RequestMapping("/api")
-@Tag(name="taxpayer-general-view-api-controller", description="Controller class for all endpoints related to 'TaxPayer' general view interacting by a REST interface.")
-public class TaxPayerGeneralViewAPIController {
+@Tag(name="analysis-api-controller", description="Controller class for all endpoints related to 'TaxPayer' analysis interacting by a REST interface.")
+public class AnalysisAPIController {
 
-	private static final Logger log = Logger.getLogger(TaxPayerGeneralViewAPIController.class.getName());
+	private static final Logger log = Logger.getLogger(AnalysisAPIController.class.getName());
 	
 	private static final int VERTICAL = 1;
 	private static final int HORIZONTAL = 2;
 	private static final int BOTH = 3;
 
 	@Autowired
-	private TaxPayerGeneralViewService taxPayerGeneralViewService;
+	private AnalysisService taxPayerGeneralViewService;
 	
 	@Autowired
 	private MessageSource messageSource;	
 	
-	//@Secured({"ROLE_TAXPAYER_GENERAL_VIEW"})	
-	@GetMapping(value= {"/generalview/vertical-horizontal-analysis"})
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/vertical-horizontal-analysis"})
 	public ResponseEntity<Object> getVerticalHorizontalAnalysis(@RequestParam("taxpayerId") String taxpayerId,
 			@RequestParam("finalDate") String finalDate, @RequestParam("zeroBalance") String zeroBalance, 
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
@@ -105,6 +106,13 @@ public class TaxPayerGeneralViewAPIController {
     	return ResponseEntity.ok().body(mapOfAccounts);    	
 	}
 
+	/**
+	 * Given a month and information about comparison periods, creates and returns a {@link List}
+	 * of {@link YearMonth} 	 
+	 * @param basePeriod	The base period
+	 * @param comparisonPeriods	The compatison periods information
+	 * @return	A {@link List} of {@link YearMonth}
+	 */
 	private List<YearMonth> getAdditionalPeriods(YearMonth basePeriod, int comparisonPeriods) {
 		
 		List<YearMonth> periods = new LinkedList<>();
@@ -176,7 +184,8 @@ public class TaxPayerGeneralViewAPIController {
 		return periods;
 	}
 	
-	@GetMapping(value= {"/generalview/analysis-view-columns"})
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/vertical-horizontal-view-columns"})
 	public ResponseEntity<Object> getAnalysisViewColumns(@RequestParam("finalDate") String finalDate, 
 			@RequestParam("comparisonPeriods") int comparisonPeriods, 
 			@RequestParam("analysisType") int analysisType ) {
@@ -205,20 +214,20 @@ public class TaxPayerGeneralViewAPIController {
 		int i = 0;
 		for ( YearMonth p : allPeriods ) {		
 			
-			String title = getTitle(p, comparisonPeriods, simpleFormat);			
+			String title = StringUtils.capitalize(simpleFormat.format(p));			
 			String field = "B" + i;
 			String[] data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "$", "true", "0" };
 			columns.add(data);
 			
 			if ( analysisType == VERTICAL || analysisType == BOTH ) { //Vertical OR both
-				title = getTitle(p, comparisonPeriods, simpleFormat) + vertical;
+				title += vertical;
 				field = "V" + i;
 				data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "%", "true", "2" };
 				columns.add(data);	
 			}
 			
 			if ( i > 0 && ( analysisType == HORIZONTAL || analysisType == BOTH ) ) { //Horizontal OR both
-				title = getTitle(p, comparisonPeriods, simpleFormat) + horizontal;
+				title += horizontal;
 				field = "H" + i;
 				data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "%", "true", "2" };
 				columns.add(data);	
@@ -231,19 +240,5 @@ public class TaxPayerGeneralViewAPIController {
     	return ResponseEntity.ok().body(columns);    	
     	
 	}
-
-	/**
-	 * With a given period and comparison type, return a {@link String} with a header for a column 
-	 * @param period
-	 * @param comparisonPeriods
-	 * @param simpleformat
-	 * @return	A formatted {@link String} that represents a header for a column
-	 */
-	private String getTitle(YearMonth period, int comparisonPeriods, DateTimeFormatter simpleformat) {
-		if ( comparisonPeriods < 10 || ( comparisonPeriods > 20 && comparisonPeriods < 30 ) ) {//Monthly periods
-			return StringUtils.capitalize(simpleformat.format(period));
-		}
-		return String.valueOf(period.getYear());
-	}	
 
 }

@@ -154,12 +154,11 @@ public class LoginUIController {
 					"/taxpayers", "address book outline"));
 		}
 		
-		MenuItem submenu = new MenuItem(messages.getMessage("taxpayers.general.view", null, LocaleContextHolder.getLocale()));
+		MenuItem submenu = new MenuItem(messages.getMessage("taxpayers.analysis", null, LocaleContextHolder.getLocale()));
 		menu.add(submenu);
-		//TODO Create specifics roles for this view
-		if (hasPrivilege(roles, SystemPrivilege.TAXPAYER_WRITE)) {
-			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.general.view.analysis", null, LocaleContextHolder.getLocale()),
-					"/horizontal_vertical_analysis", "stream"));
+		if (hasPrivilege(roles, SystemPrivilege.TAX_REPORT_READ)) {
+			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.vertical.and.horizontal", null, LocaleContextHolder.getLocale()),
+					"/vertical_horizontal_analysis", "stream"));
 		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {
