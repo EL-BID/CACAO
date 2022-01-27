@@ -46,20 +46,26 @@
           <form action="#" name="form" id="form" class="ui form" method="post">
               <div class="ui field" id="search1">
                 <label th:text="#{interpersonal.person1}">Referring person</label>
-                <div class="ui search selection dropdown" id="select1">
+                <div style="width: 100%">
+                  <div class="ui search selection dropdown" id="select1" style="width:calc(100% - 35px)">
                     <input id="taxpayer1" type="hidden" name="personId1">
                     <div class="default text" th:text="#{select}">Select</div>
                     <i class="dropdown icon"></i>
                     <div class="menu"></div>
+                  </div>
+                   <i class="large link copy outline icon" id="copyTaxpayer1"></i>
                 </div>
               </div>
               <div class="ui field" id="search2">
                 <label th:text="#{interpersonal.person2}">Referred person</label>
-                <div class="ui search selection dropdown" id="select2">
+                <div style="width: 100%">
+                  <div class="ui search selection dropdown" id="select2" style="width:calc(100% - 35px)">
                     <input id="taxpayer2" type="hidden" name="personId2">
                     <div class="default text" th:text="#{select}">Select</div>
                     <i class="dropdown icon"></i>
                     <div class="menu"></div>
+                  </div>
+                  <i class="large link copy outline icon" id="copyTaxpayer2"></i>
                 </div>
               </div>
               
@@ -85,6 +91,12 @@
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
 [# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
+$('#copyTaxpayer1').click( function() {
+	navigator.clipboard.writeText($('#taxpayer1').val())
+})
+$('#copyTaxpayer2').click( function() {
+    navigator.clipboard.writeText($('#taxpayer2').val())
+})
 $('#select1').dropdown({
     apiSettings: {
        url: '/api/taxpayers/autocomplete?term={query}',
