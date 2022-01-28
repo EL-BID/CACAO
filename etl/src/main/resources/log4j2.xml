@@ -48,6 +48,9 @@
     	<Logger name="com.netflix.discovery" level="off" additivity="false">
     		<AppenderRef ref="NullAppender" />
     	</Logger>
+    	<Logger name="com.netflix.discovery.DiscoveryClient" level="off" additivity="false">
+    		<AppenderRef ref="NullAppender" />
+    	</Logger>
     	<Logger name="org.apache.pdfbox" level="off" additivity="false">
     		<AppenderRef ref="NullAppender" />
     	</Logger>

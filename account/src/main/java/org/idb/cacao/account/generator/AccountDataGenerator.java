@@ -84,7 +84,13 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	private final Map<String, Double> accountBalance;
 	
 	private final Map<String, String> accountDescriptions;
-	
+
+	private final Set<String> assetAccounts;
+
+	private final Set<String> liabilityAccounts;
+
+	private final Set<String> equityAccounts;
+
 	private final Set<String> revenueAccounts;
 	
 	private final Set<String> expenseAccounts;
@@ -127,7 +133,22 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				/*valueMapper*/SampleChartOfAccounts::getAccountDescription, 
 				/*mergeFunction*/(a,b)->a, 
 				/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
-		
+
+		this.assetAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountCategory.ASSET.equals(a.getCategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
+		this.liabilityAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountCategory.LIABILITY.equals(a.getCategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
+		this.equityAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountCategory.EQUITY.equals(a.getCategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
 		this.revenueAccounts = Arrays.stream(SampleChartOfAccounts.values())
 				.filter(a->AccountCategory.REVENUE.equals(a.getCategory()))
 				.map(SampleChartOfAccounts::getAccountCode)
@@ -442,19 +463,51 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			List<String> choosableAccounts = new ArrayList<>(accountDescriptions.keySet());
 			List<String> revenueAccounts = new ArrayList<>(this.revenueAccounts);
 			List<String> expenseAccounts = new ArrayList<>(this.expenseAccounts);
-			List<String> choosableAccountsForDebit = ListUtils.subtract(choosableAccounts,revenueAccounts); // Accounts that may use for DEBIT (any account except REVENUE)
-			List<String> choosableAccountsForCredit = ListUtils.subtract(choosableAccounts,expenseAccounts); // Accounts that may use for CREDIT (any account except EXPENSE)
+			List<String> assetAccountsWithNoBalance = assetAccounts.stream()
+					.filter(acc->accountBalance.getOrDefault(acc, 0.0)<=0.0) // negative means credit balance, but ASSET has a debit nature
+					.collect(Collectors.toList()); 
+			List<String> liabilityAccountsWithNoBalance = liabilityAccounts.stream()
+					.filter(acc->accountBalance.getOrDefault(acc, 0.0)>=0.0)	// positive means debit balance, but LIABILITY has a credit nature
+					.collect(Collectors.toList()); 
+			List<String> equityAccountsWithNoBalance = equityAccounts.stream()
+					.filter(acc->accountBalance.getOrDefault(acc, 0.0)>=0.0)	// positive means debit balance, but EQUITY has a credit nature
+					.collect(Collectors.toList()); 
+			List<String> choosableAccountsForDebit = // Accounts that may use for DEBIT (any account except REVENUE, and also except LIABILITY or EQUITY with not enough balance)
+					ListUtils.subtract(
+					ListUtils.subtract(
+					ListUtils.subtract(
+					choosableAccounts,
+						revenueAccounts), 
+						liabilityAccountsWithNoBalance),
+						equityAccountsWithNoBalance);
+			List<String> choosableAccountsForCredit = // Accounts that may use for CREDIT (any account except EXPENSE)
+					ListUtils.subtract(
+					ListUtils.subtract(
+					choosableAccounts,
+						expenseAccounts),
+						assetAccountsWithNoBalance); 
 			// Choose DEBIT entries
 			for (int i=0; i<transactionDebits; i++) {
 				double amount = randomDataGenerator.nextRandomDecimal().doubleValue();
 				amount = Math.floor(amount * 100.0) / 100.0; // round to 2 decimals
 				String account = chooseDebitedAccount(amount, choosableAccountsForDebit);
+				if (account!=null) {
+					// Avoid leaving LIABILITY or EQUITY accounts with negative (debit) balance
+					if (liabilityAccounts.contains(account)
+							|| equityAccounts.contains(account)) {
+						Double balance =  - accountBalance.getOrDefault(account, 0.0);	// by convention in 'accountBalance' we keep credit balance as negative value
+						if (balance > 0 && balance<amount) {
+							amount = balance;	// if the randomly chosen amount surpasses the account balance, use the remaining balance
+						}
+					}
+				}
 				if (account==null)
 					account = expenseAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(expenseAccounts.size()));
 				PartialEntry entry = new PartialEntry(account, amount);
 				nextDebits.add(entry);
 				choosableAccounts.remove(account);
 				choosableAccountsForDebit.remove(account);
+				choosableAccountsForCredit.remove(account);
 				totalDebitsAmount += amount;
 			}
 			// Choose CREDIT entries
@@ -475,8 +528,9 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				for (int i=0; i<transactionCredits; i++) {
 					double proportion = (double)grade[i] / (double)grade_sum;
 					double value;
-					if (i==transactionCredits-1) {
-						// The last one must complete the whole value (avoid problem with rounding precision)
+					boolean last_entry = (i==transactionCredits-1);
+					if (last_entry) {
+						// The last one must complete the whole value (avoid problem with rounding precision or with the surplus discounted in the next condition block)
 						value = totalDebitsAmount - accumulated;
 						value = Math.round(value * 100.0) / 100.0; // round to 2 decimals
 					}
@@ -485,6 +539,14 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
 					}
 					String account = chooseCreditedAccount(value, choosableAccountsForCredit);
+					// Avoid leaving ASSET accounts with negative (credit) balance (unless it's the last entry for this transaction)
+					if (account!=null && !last_entry 
+							&& assetAccounts.contains(account)) {
+						Double balance =  accountBalance.getOrDefault(account, 0.0);	// by convention in 'accountBalance' we keep debit balance as positive value
+						if (balance > 0 && balance<value) {
+							value = balance;	// if the randomly chosen amount surpasses the account balance, use the remaining balance
+						}						
+					}
 					if (account==null)
 						account = revenueAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(revenueAccounts.size()));
 					PartialEntry entry = new PartialEntry(account, value);
@@ -509,7 +571,11 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name(), entry.getAccount());			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Description.name(), "Debit - "+accountDescriptions.get(entry.getAccount()));			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name(), entry.getAmount());			
-			record.put(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name(), "D");			
+			record.put(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name(), "D");
+			
+			// Updates balance for this account (avoid picking the same account with insufficient balance for the next transaction)
+			Double balance = accountBalance.getOrDefault(entry.getAccount(), 0.0);
+			accountBalance.put(entry.getAccount(), balance + entry.getAmount());
 		}
 		else {
 			// Consuming credits of the same transaction
@@ -518,6 +584,10 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Description.name(), "Credit - "+accountDescriptions.get(entry.getAccount()));			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name(), entry.getAmount());			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name(), "C");			
+
+			// Updates balance for this account (avoid picking the same account with insufficient balance for the next transaction)
+			Double balance = accountBalance.getOrDefault(entry.getAccount(), 0.0);
+			accountBalance.put(entry.getAccount(), balance - entry.getAmount());
 		}
 
 	}

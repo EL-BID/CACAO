@@ -79,9 +79,6 @@ public class ValidationTests {
 	private static ElasticsearchMockClient mockElastic;
 	
 	@Autowired
-	private Validations validations;
-	
-	@Autowired
 	private DomainTableRepository domainTableRepository;
 	
 	@BeforeAll
@@ -246,7 +243,7 @@ public class ValidationTests {
 		}
 		
 		//Configure object validations
-		validations.setValidationContext(validationContext);
+		Validations validations = new Validations(validationContext, domainTableRepository);
 		// Add TaxPayerId and TaxPeriod to document on database
 		validations.addTaxPayerInformation();
 		// Update document on database
