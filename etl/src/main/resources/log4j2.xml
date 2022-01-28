@@ -48,6 +48,9 @@
     	<Logger name="com.netflix.discovery" level="off" additivity="false">
     		<AppenderRef ref="NullAppender" />
     	</Logger>
+    	<Logger name="com.netflix.discovery.DiscoveryClient" level="off" additivity="false">
+    		<AppenderRef ref="NullAppender" />
+    	</Logger>
     	<Logger name="org.apache.pdfbox" level="off" additivity="false">
     		<AppenderRef ref="NullAppender" />
     	</Logger>
@@ -59,6 +62,10 @@
             <AppenderRef ref="FileAppender" />
     	</Logger>
     	<Logger name="org.idb.cacao" level="info" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
+    	<Logger name="org.elasticsearch.client.RestClient" level="error" additivity="false">
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />
     	</Logger>

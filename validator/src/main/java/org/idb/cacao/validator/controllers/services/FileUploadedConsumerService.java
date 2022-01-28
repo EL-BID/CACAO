@@ -44,6 +44,7 @@ import org.idb.cacao.validator.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageRepository;
+import org.idb.cacao.validator.repositories.DomainTableRepository;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
@@ -85,7 +86,7 @@ public class FileUploadedConsumerService {
 	private ValidatedDataStorageService validatedDataStorageService;
 
 	@Autowired
-	private Validations validations;
+	private DomainTableRepository domainTableRepository;
 
 	@Autowired
 	private final StreamBridge streamBridge;
@@ -140,6 +141,8 @@ public class FileUploadedConsumerService {
 				throw new DocumentNotFoundException("Document with id " + documentId + " wasn't found in database.");
 
 			validationContext.setDocumentUploaded(doc);
+			
+			Validations validations = new Validations(validationContext, domainTableRepository);
 
 			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
 					doc.getTemplateVersion());
@@ -265,8 +268,6 @@ public class FileUploadedConsumerService {
 			// Fetch information from file name according to the configuration
 			fetchInformationFromFileName(docInputExpected, validationContext);
 
-			//Configure object validations
-			validations.setValidationContext(validationContext);
 			// Add TaxPayerId and TaxPeriod to document on database
 			validations.addTaxPayerInformation();
 			// Update document on database

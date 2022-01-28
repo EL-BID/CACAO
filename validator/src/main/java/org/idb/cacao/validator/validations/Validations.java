@@ -36,8 +36,6 @@ import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.api.utils.StringUtils;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * A set of utilities methods for file content validation purpose. <br>
@@ -49,7 +47,6 @@ import org.springframework.stereotype.Component;
  * @since 17/11/2021
  *
  */
-@Component
 public class Validations {
 	
 	private static final Logger log = Logger.getLogger(Validations.class.getName());
@@ -59,13 +56,13 @@ public class Validations {
 	 */
 	private static final int MAX_ES_FIELD_SIZE = 1_000;
 
-	@Autowired
-	private DomainTableRepository domainTableRepository;
+	private final ValidationContext validationContext;
 	
-	private ValidationContext validationContext;
+	private final DomainTableRepository domainTableRepository;
 
-	public void setValidationContext(ValidationContext validationContext) {
+	public Validations(ValidationContext validationContext, DomainTableRepository domainTableRepository) {
 		this.validationContext = validationContext;
+		this.domainTableRepository = domainTableRepository;
 	}
 
 	/**

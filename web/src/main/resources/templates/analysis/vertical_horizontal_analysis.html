@@ -32,12 +32,15 @@
 					th:action="@{/vertical-analysis-data}" class="ui form" method="post">
 					<div class="ui field" id="search1">
 						<label th:text="#{taxpayer.name}">TaxPayer name</label>
-						<div class="ui search selection dropdown" id="select">
+                        <div style="width: 100%">
+						   <div class="ui search selection dropdown" id="select"  style="width:calc(100% - 35px)">
 							<input id="taxpayer" type="hidden" name="personId">
 							<div class="default text" th:text="#{select}">Select</div>
 							<i class="dropdown icon"></i>
 							<div class="menu"></div>
-						</div>
+						  </div>
+                         <i class="large link copy outline icon" id="copyTaxpayer"></i>
+                       </div> 
 					</div>
 
 					<div class="ui field" id="type">
@@ -133,6 +136,9 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
+    	$('#copyTaxpayer').click( function() {
+    	    navigator.clipboard.writeText($('#taxpayer').val())
+    	})
 	
 		$('#finalDate').calendar({
 		  type: 'month',
