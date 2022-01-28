@@ -65,6 +65,10 @@
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />
     	</Logger>
+    	<Logger name="org.elasticsearch.client.RestClient" level="error" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
         <Root level="warn">
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />
