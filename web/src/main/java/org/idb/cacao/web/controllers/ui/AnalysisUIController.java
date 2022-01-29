@@ -40,7 +40,7 @@ public class AnalysisUIController {
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/vertical_horizontal_analysis"})
-	public String getVerticalAnalysis(Model model) {
+	public String getVerticalHorizontalAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -51,5 +51,19 @@ public class AnalysisUIController {
 		
         return "analysis/vertical_horizontal_analysis";
 	}	
+	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/general_analysis"})
+	public String getGeneralAnalysis(Model model) {
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+		
+        return "analysis/general_analysis";
+	}		
 	
 }

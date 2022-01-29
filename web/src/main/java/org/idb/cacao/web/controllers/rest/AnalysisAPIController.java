@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.services.AnalysisService;
+import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
@@ -66,10 +67,10 @@ public class AnalysisAPIController {
 	private static final int BOTH = 3;
 
 	@Autowired
-	private AnalysisService taxPayerGeneralViewService;
+	private AnalysisService analysisService;
 	
 	@Autowired
-	private MessageSource messageSource;	
+	private MessageSource messageSource;
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/vertical-horizontal-analysis"})
@@ -100,7 +101,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<Map<String,Object>> mapOfAccounts = taxPayerGeneralViewService.getMapOfAccounts(
+    	List<Map<String,Object>> mapOfAccounts = analysisService.getMapOfAccounts(
     			taxpayerId,period,fetchZeroBalance,additionalPeriods);
 	
     	return ResponseEntity.ok().body(mapOfAccounts);    	
@@ -241,4 +242,76 @@ public class AnalysisAPIController {
     	
 	}
 
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/general-analysis"})
+	public ResponseEntity<Object> getGeneralAnalysis(@RequestParam("qualifier") String qualifier,
+			@RequestParam("qualifierValue") String qualifierValue,
+			@RequestParam("year") int year) {
+		
+		if ( qualifier == null || qualifier.isEmpty() ) {
+			log.log(Level.WARNING, "Missing parameter 'qualifier'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		if ( qualifierValue == null || qualifierValue.isEmpty() ) {
+			log.log(Level.WARNING, "Missing parameter 'qualifierValue'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		if ( year == 0 ) {
+			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	List<AnalysisData> mapOfValues = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, year);
+	
+    	return ResponseEntity.ok().body(mapOfValues);    	
+	}
+	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/qualifiers"})
+	public ResponseEntity<Object> getQualifierValues(@RequestParam("qualifier") String qualifier) {
+		
+		if ( qualifier == null || qualifier.isEmpty() ) {
+			log.log(Level.WARNING, "Missing parameter 'qualifier'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	List<String> values = analysisService.getQualifierValues(qualifier);
+    	
+    	return ResponseEntity.ok().body(values);    
+		
+	}
+	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/years"})
+	public ResponseEntity<Object> getYars() {
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	List<String> values = analysisService.getYears();
+    	
+    	return ResponseEntity.ok().body(values);    
+		
+	}	
+	
 }

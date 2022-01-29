@@ -107,6 +107,11 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 	private static final String amount = IndexNamesUtils.formatFieldName("Amount");
 
 	/**
+	 * The field name for published data regarding 'Statement Amount Relative to Revenue Net'
+	 */
+	private static final String amountRelative = IndexNamesUtils.formatFieldName("AmountRelative");
+
+	/**
 	 * The field name of the subcategory of an account according to the Taxpayer's Chart of Account
 	 */
 	private static final String accountSubCategory = IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name());
@@ -285,6 +290,11 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 			.set(computed);
 		}
 		
+		// The revenue net is also used as denominator for calculating relative values
+		double revenue_net =
+			mapStatementEntries.getOrDefault(StatementComprehensiveIncome.REVENUE_NET, new ComputedStatementEntry(StatementComprehensiveIncome.REVENUE_NET.getNature()))
+			.getValue();
+		
 		// Store information in denormalized view
 		
 		final OffsetDateTime timestampForView = LocalDate.of(year, 12, 1).atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
@@ -306,6 +316,9 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 			normalizedRecord_SCI.put(publishedYear, year);
 			normalizedRecord_SCI.put(entryCode, t.name());
 			normalizedRecord_SCI.put(amount, computed.getValue());
+			if (revenue_net!=0 && !StatementComprehensiveIncome.REVENUE_NET.equals(t)) {
+				normalizedRecord_SCI.put(amountRelative, computed.getValue() * 100.0 / revenue_net);
+			}
 			if (declarantInformation.isPresent())
 				normalizedRecord_SCI.putAll(declarantInformation.get());
 			if (multiLanguageDomainEntry!=null && !multiLanguageDomainEntry.isEmpty())

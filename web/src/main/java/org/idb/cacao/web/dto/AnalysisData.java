@@ -17,44 +17,85 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.dto;
+package org.idb.cacao.web.dto;
 
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 
-public class TabulatorFilter {
+public class AnalysisData {
+	
+	private String statementName;
+	
+	private double q1;
+	
+	private double q3;
+	
+	private double median;
+	
+	private List<Outlier> outliers;
 
-	private String field;
-	private String type;
-	private Object value;
-	public String getField() {
-		return field;
+	public String getStatementName() {
+		return statementName;
 	}
-	public void setField(String field) {
-		this.field = field;
+
+	public void setStatementName(String statementName) {
+		this.statementName = statementName;
 	}
-	public String getType() {
-		return type;
+
+	public double getQ1() {
+		return q1;
 	}
-	public void setType(String type) {
-		this.type = type;
+
+	public void setQ1(double q1) {
+		this.q1 = q1;
 	}
-	public Object getValue() {
-		return value;
+
+	public double getQ3() {
+		return q3;
 	}
-	public String getStringValue() {
-		return value.toString();
+
+	public void setQ3(double q3) {
+		this.q3 = q3;
 	}
-	public boolean isString() {
-		return value instanceof String;
+	
+	public double getIIQ() {
+		return (q3 - q1);
 	}
-	public void setValue(Object value) {
-		this.value = value;
+	
+	public double getMax() {
+		return (q3 + (1.5d * getIIQ()) );
 	}
-	public String getProperty(String name) {
-		if (value!=null && value instanceof Map) {
-			return (String) ((Map)value).get(name);
-		}
-		return null;
+	
+	public double getMin() {
+		return (q1 - (1.5d * getIIQ()) );
 	}
+	
+	public double getMedian() {
+		return median;
+	}
+
+	public void setMedian(double median) {
+		this.median = median;
+	}
+
+	public List<Outlier> getOutliers() {
+		if ( outliers == null )
+			outliers = new LinkedList<>();
+		return outliers;
+	}
+
+	public void setOutliers(List<Outlier> outliers) {
+		this.outliers = outliers;
+	}
+	
+	public void addOutilier(Outlier outlier) {
+		getOutliers().add(outlier);	
+	}
+
+	@Override
+	public String toString() {
+		return "AnalysisData [statementName=" + statementName + ", q1=" + q1 + ", q3=" + q3 + "]";
+	}
+
 	
 }

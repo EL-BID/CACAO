@@ -11,21 +11,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.dto.Account;
+import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.dto.BalanceSheet;
+import org.idb.cacao.web.dto.Outlier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +50,8 @@ public class AnalysisService {
 	private RestHighLevelClient elasticsearchClient;
 
 	private final String BALANCE_SHEET_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Balance Sheet Monthly");
+	private final String COMPUTED_STATEMENT_INCOME_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Computed Statement Income");
+	private final String TAXPAYER_INDEX = "cacao_taxpayers";
 	
 	/**
 	 * Retrieves and return a balanece sheet for a given taxpayer and period (month and year) 
@@ -378,5 +385,444 @@ public class AnalysisService {
 		accountKeys.forEach(key->accounts.add(accountsToRet.get(key)));
 		return accounts;
 	}
+	
+	/**
+	 * Build the query object used by {@link #getAccounts(String, int, String)}
+	 */
+	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int year) {
+		
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
+		
+		//Filter by taxpayerId
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		for (String argument: taxpayerIds) {
+			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		//query = query.should(subquery);		
+
+		// Filter for year
+		//query = query.must(new TermQueryBuilder("year", year));
+
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = //Aggregates by first field
+				AggregationBuilders.terms("byName").size(10_000).field("statement_name.keyword")
+						.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"));		
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);
+
+		return searchRequest;
+
+	}
+
+	/**
+	 * Search and return a {@link Map} of values for a specific qualifier, qualifier value and year.
+	 * @param qualifier	A name of qualifier to search values
+	 * @param qualifierValue	A value for qualifier
+	 * @param year	A year of values to search
+	 * @return	A {@link Map} of values separated by taxpayers
+	 */
+	public List<AnalysisData> getGeneralAnalysisValues(String qualifier, String qualifierValue, int year) {
+		
+		List<String> taxpayerIds = getTaxPayersId(qualifier, qualifierValue);
+		
+		if ( taxpayerIds == null || taxpayerIds.isEmpty() ) {
+			log.log(Level.INFO, "No taxpayers found for qualifier " + qualifier + " for year " + year);			
+			return Collections.emptyList(); // No balance sheet found			
+		}			
+		
+		//Create a search request
+		SearchRequest searchRequest = searchComputedStatementIncome(taxpayerIds, year);
+
+		//Execute a search
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting accounts", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No data found for qualifier " + qualifier + " for year " + year);			
+			return Collections.emptyList(); // No balance sheet found
+		} else {
+			
+			//Let's fill the resulting list with values
+			
+			List<AnalysisData> values = new LinkedList<>();			
+			
+			Terms statementsNames = sresp.getAggregations().get("byName");			
+
+			for (Terms.Bucket statementNameBucket : statementsNames.getBuckets()) {
+				
+				String statementName = statementNameBucket.getKeyAsString();
+				if (statementName == null || statementName.isEmpty())
+					continue;				
+			
+				AnalysisData analysisData = new AnalysisData();
+				analysisData.setStatementName(statementName);
+			
+				Percentiles percentile = statementNameBucket.getAggregations().get("amount");
+				if( percentile != null ) {
+					
+					percentile.forEach(item-> {
+						double percent = item.getPercent();
+						
+						if ( percent == 25 ) //First quartile
+							analysisData.setQ1(item.getValue());
+						else if ( percent == 50 ) //Median
+							analysisData.setMedian(item.getValue());
+						else if ( percent == 75 ) //Third quartile
+							analysisData.setQ3(item.getValue());
+						
+					});
+					
+					if ( !Double.isNaN(analysisData.getQ1()) && !Double.isNaN(analysisData.getQ3()) && 
+							analysisData.getQ1() != 0 && analysisData.getQ3() != 0 )
+						values.add(analysisData);
+					
+				}
+		
+			} //Loop over statement code
+			
+			//Add outliers			
+			for ( AnalysisData item : values ) {
+				addOutliers(item, year);
+			}
+			
+			return values;
+			
+		} // condition: got results from query
+		
+	}
+
+	/**
+	 * Add outliers to analysis data
+	 * @param item	Analysis item
+	 * @param year	Year of analysis
+	 */
+	private void addOutliers(AnalysisData item, int year) {
+		
+		if ( item.getStatementName() == null )
+			return;
+		
+		//Add outliers for minimal value
+		SearchRequest searchRequest = getRequestForOutliers(true /*min*/, item.getStatementName(), item.getMin(), year);
+		
+		//Execute a search
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting outliers", ex);
+		}
+
+		if (sresp != null && sresp.getHits().getTotalHits().value > 0) {
+			
+			//Let's fill the resulting list with values
+			
+			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");			
+
+			for (Terms.Bucket taxpayerIdBucket : taxpayersIds.getBuckets()) {
+				
+				String taxpayerId = taxpayerIdBucket.getKeyAsString();
+				if (taxpayerId == null || taxpayerId.isEmpty())
+					continue;
+				
+				Terms taxpayersNames = taxpayerIdBucket.getAggregations().get("byTaxpayerName");
+				
+				for (Terms.Bucket taxpayerNameBucket : taxpayersNames.getBuckets()) {
+					
+					String taxpayerName = taxpayerNameBucket.getKeyAsString();
+					
+					Sum amount = taxpayerNameBucket.getAggregations().get("amount");
+					
+					double value = 0;
+					if ( amount != null ) {
+						value = amount.getValue();					
+					}
+					
+					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
+					item.addOutilier(outlier);
+					
+				}
+				
+			}
+			
+		}				
+		
+		//Add outliers for maximal value
+		searchRequest = getRequestForOutliers(false /*min*/, item.getStatementName(), item.getMax(), year);
+		
+		//Execute a search
+		sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting outliers", ex);
+		}
+
+		if (sresp != null && sresp.getHits().getTotalHits().value > 0) {
+			
+			//Let's fill the resulting list with values
+			
+			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");			
+
+			for (Terms.Bucket taxpayerIdBucket : taxpayersIds.getBuckets()) {
+				
+				String taxpayerId = taxpayerIdBucket.getKeyAsString();
+				if (taxpayerId == null || taxpayerId.isEmpty())
+					continue;
+				
+				Terms taxpayersNames = taxpayerIdBucket.getAggregations().get("byTaxpayerName");
+				
+				for (Terms.Bucket taxpayerNameBucket : taxpayersNames.getBuckets()) {
+					
+					String taxpayerName = taxpayerNameBucket.getKeyAsString();
+					
+					Sum amount = taxpayerNameBucket.getAggregations().get("amount");
+					
+					double value = 0;
+					if ( amount != null ) {
+						value = amount.getValue();					
+					}
+					
+					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
+					item.addOutilier(outlier);
+					
+				}
+				
+			}
+			
+		}
+		
+	}
+
+	/**
+	 * Create and return a search request for getting outliers
+	 * @param min
+	 * @param statementCode
+	 * @param value
+	 * @param year
+	 * @return	A {@link SearchRequest}
+	 */
+	private SearchRequest getRequestForOutliers(boolean min, String statementName, double value, int year) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
+		
+		//Filter by statementCode
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		query = query.must(new TermQueryBuilder("statement_name.keyword", statementName));		
+
+		// Filter by year
+		query = query.must(new TermQueryBuilder("year", year));
+		
+		// Filter by value
+		if ( min )
+			query = query.must(new RangeQueryBuilder("amount_relative").from(0.01).to(value));
+		else
+			query = query.must(new RangeQueryBuilder("amount_relative").from(value));
+
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = //Aggregates by first field
+			AggregationBuilders.terms("byTaxpayerId").size(10_000).field("taxpayer_id.keyword")
+				.subAggregation(AggregationBuilders.terms("byTaxpayerName").size(10_000).field("taxpayer_name.keyword")			
+					.subAggregation(AggregationBuilders.sum("amount").field("amount_relative"))
+				);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);
+
+		return searchRequest;
+	}
+
+	/**
+	 * Search and return a list of taxpayers for a a qualifier and qualifier value
+	 * @param qualifier
+	 * @param qualifierValue
+	 * @return	A {@link List} of taxpayers
+	 */
+	private List<String> getTaxPayersId(String qualifier, String qualifierValue) {
+		
+		// Index over 'balance sheet monthly' objects
+		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
+		
+		//Filter by qualifier
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		query = query.must(new TermQueryBuilder(qualifier + ".keyword", qualifierValue));
+
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = //Aggregates by first field
+			AggregationBuilders.terms("byTaxpayer").size(10_000).field("taxPayerId");
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);		
+		
+		//Execute a search
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting accounts", ex);
+		}
+
+		List<String> taxpayers = new LinkedList<>();
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No data found for qualifier " + qualifier + " with value " + qualifierValue);			
+			return Collections.emptyList(); // No balance sheet found
+		} else {
+			
+			//Let's fill the resulting list with values
+			
+			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayer");			
+
+			for (Terms.Bucket taxpayerBucket : taxpayersIds.getBuckets()) {
+				
+				String taxpayerId = taxpayerBucket.getKeyAsString();
+				if (taxpayerId == null || taxpayerId.isEmpty())
+					continue;
+				
+				taxpayers.add(taxpayerId);
+				
+			}
+			
+		}		
+		
+		return taxpayers;
+	}
+
+	/**
+	 * Search and return values for a specified qualifier
+	 * @param qualifier	Qualifier to search
+	 * @return	A {@link List} of values for specified qualifier
+	 */
+	public List<String> getQualifierValues(String qualifier) {
+
+		// Index over 'taxpayer' objects
+		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
+		
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = //Aggregates by qualifier field
+			AggregationBuilders.terms("byQualifierValue").size(10_000).field(qualifier + ".keyword");
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);		
+		
+		//Execute a search
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting qualifier values", ex);
+		}
+
+		List<String> values = new LinkedList<>();
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No data found for qualifier " + qualifier);			
+			return Collections.emptyList(); // No data found
+		} else {
+			
+			//Let's fill the resulting list with values
+			
+			Terms qualifierValues = sresp.getAggregations().get("byQualifierValue");			
+
+			for (Terms.Bucket qualifierValueBucket : qualifierValues.getBuckets()) {
+				
+				String value = qualifierValueBucket.getKeyAsString();
+				if (value == null || value.isEmpty())
+					continue;
+				
+				values.add(StringUtils.capitalize(value));
+				
+			}
+			
+		}		
+		
+		values.sort(null);
+		return values;
+		
+	}
+
+	/**
+	 * 
+	 * @return	A list of years present in Accounting Computed Statement Income index 
+	 */
+	public List<String> getYears() {
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
+		
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = //Aggregates by qualifier field
+			AggregationBuilders.terms("byYear").size(10_000).field("year");
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);		
+		
+		//Execute a search
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting year values", ex);
+		}
+
+		List<String> values = new LinkedList<>();
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No data found for years");			
+			return Collections.emptyList(); // No data found
+		} else {
+			
+			//Let's fill the resulting list with values
+			
+			Terms yearValues = sresp.getAggregations().get("byYear");			
+
+			for (Terms.Bucket yearValueBucket : yearValues.getBuckets()) {
+				
+				String value = yearValueBucket.getKeyAsString();
+				if (value == null || value.isEmpty())
+					continue;
+				
+				values.add(StringUtils.capitalize(value));
+				
+			}
+			
+		}		
+		
+		values.sort(null);
+		return values;
+	}
+	
 }
