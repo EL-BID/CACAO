@@ -498,6 +498,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						Double balance =  - accountBalance.getOrDefault(account, 0.0);	// by convention in 'accountBalance' we keep credit balance as negative value
 						if (balance > 0 && balance<amount) {
 							amount = balance;	// if the randomly chosen amount surpasses the account balance, use the remaining balance
+							amount = Math.floor(amount * 100.0) / 100.0; // round to 2 decimals
 						}
 					}
 				}
@@ -545,6 +546,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						Double balance =  accountBalance.getOrDefault(account, 0.0);	// by convention in 'accountBalance' we keep debit balance as positive value
 						if (balance > 0 && balance<value) {
 							value = balance;	// if the randomly chosen amount surpasses the account balance, use the remaining balance
+							value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
 						}						
 					}
 					if (account==null)
