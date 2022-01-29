@@ -38,7 +38,7 @@ import org.idb.cacao.api.Views;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.GenericCounts;
 import org.idb.cacao.web.controllers.AdvancedSearch;
-import org.idb.cacao.web.controllers.dto.PaginationData;
+import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;

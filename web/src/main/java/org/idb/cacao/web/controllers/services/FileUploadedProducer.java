@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.idb.cacao.web.conf.StreamConfiguration;
-import org.idb.cacao.web.controllers.dto.FileUploadedEvent;
+import org.idb.cacao.web.dto.FileUploadedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.integration.support.MessageBuilder;

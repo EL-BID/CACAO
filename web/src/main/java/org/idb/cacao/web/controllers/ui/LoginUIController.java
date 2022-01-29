@@ -159,6 +159,8 @@ public class LoginUIController {
 		if (hasPrivilege(roles, SystemPrivilege.TAX_REPORT_READ)) {
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.vertical.and.horizontal", null, LocaleContextHolder.getLocale()),
 					"/vertical_horizontal_analysis", "stream"));
+			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.general", null, LocaleContextHolder.getLocale()),
+					"/general_analysis", "stream"));
 		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {

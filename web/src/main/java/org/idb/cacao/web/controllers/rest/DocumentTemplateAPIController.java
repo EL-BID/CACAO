@@ -15,7 +15,7 @@ import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
-import org.idb.cacao.web.controllers.dto.PaginationData;
+import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
