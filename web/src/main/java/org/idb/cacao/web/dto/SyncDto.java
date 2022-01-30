@@ -59,6 +59,8 @@ public class SyncDto {
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
 	private Date nextStart;
 
+	private Long nextLineStart;
+	
 	public Date getRequestedStart() {
 		return requestedStart;
 	}
@@ -105,6 +107,14 @@ public class SyncDto {
 
 	public void setNextStart(Date nextStart) {
 		this.nextStart = nextStart;
+	}
+
+	public Long getNextLineStart() {
+		return nextLineStart;
+	}
+
+	public void setNextLineStart(Long nextLineStart) {
+		this.nextLineStart = nextLineStart;
 	}
 
 	public boolean hasMore() {

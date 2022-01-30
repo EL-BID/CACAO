@@ -90,6 +90,7 @@ public class ValidatedDataStorageService {
 			// Includes additional metadata
 			normalized_record.put(ValidatedDataFieldNames.FILE_ID.name(), fileId);
 			normalized_record.put(ValidatedDataFieldNames.TIMESTAMP.name(), timestamp);
+			normalized_record.put(ValidatedDataFieldNames.LINE.name(), count);
 			
 			// Add this record to index
 			request.add(new IndexRequest(index_name)

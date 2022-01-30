@@ -72,6 +72,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.ValidatedDataFieldNames;
@@ -768,6 +769,7 @@ public class SyncAPIController {
 	 * The 'version' indicates the template version.<BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
+	 * The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -778,6 +780,7 @@ public class SyncAPIController {
 			@ApiParam("The 'version' indicates the template version.") @PathVariable("version") String version,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
+			@ApiParam(value="The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.",required=false) @RequestParam("line_start") Optional<Long> opt_line_start,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -852,7 +855,10 @@ public class SyncAPIController {
 			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
 			ZipOutputStream zip_out = new ZipOutputStream(checksum);
 			long copied_files = syncIndexedData(index_name, /*timestampFieldName*/ValidatedDataFieldNames.TIMESTAMP.getFieldName(),
-					start, end, zip_out);
+					start, end,
+					ValidatedDataFieldNames.LINE.getFieldName(),
+					(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
+					zip_out);
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
@@ -874,7 +880,10 @@ public class SyncAPIController {
 	/**
 	 * Copies all stored data submitted or changed between two timestamps. May be data produced by the 'validation' phase or by 'ETL' phase
 	 */
-	public long syncIndexedData(String index_name, String timestampFieldName, long start, long end, ZipOutputStream zip_out) throws IOException {
+	public long syncIndexedData(String index_name, 
+			String timestampFieldName, long start, long end,
+			String lineFieldName, long lineStart,
+			ZipOutputStream zip_out) throws IOException {
 		
     	SearchRequest searchRequest = new SearchRequest(index_name);
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -882,12 +891,25 @@ public class SyncAPIController {
 				.from(ParserUtils.formatTimestampES(new Date(start)), /*includeLower*/true)
 				.to(ParserUtils.formatTimestampES(new Date(end)), /*includeUpper*/false);
 		query = query.must(b);
+		
+		if (lineStart>0 && lineFieldName!=null) {
+			RangeQueryBuilder b2 = new RangeQueryBuilder(lineFieldName)
+					.from(lineStart, /*includeLower*/true);
+			query = query.must(b2);
+		}
 
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
     			.query(query); 
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST);
-        searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
+        if (lineFieldName!=null) {
+        	searchSourceBuilder.sort(Arrays.asList(
+        		SortBuilders.fieldSort(timestampFieldName).order(SortOrder.ASC),
+        		SortBuilders.fieldSort(lineFieldName).order(SortOrder.ASC)));
+        }
+        else {
+        	searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
+        }
 
     	searchRequest.source(searchSourceBuilder);
     	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
@@ -900,6 +922,7 @@ public class SyncAPIController {
 		AtomicLong actual_start_timestamp = new AtomicLong();
 		AtomicLong actual_end_timestamp = new AtomicLong();
 		AtomicLong pending_timestamp = new AtomicLong();
+		AtomicLong pending_line = new AtomicLong();
 		
 		if (sresp!=null) {
 			for (SearchHit hit : sresp.getHits()) {
@@ -908,6 +931,7 @@ public class SyncAPIController {
 				map.remove("_class");
 				Object timestamp = map.get(timestampFieldName);
 				Date timestamp_as_date = ValidationContext.toDate(timestamp);
+				Object lineNumber = (lineFieldName!=null) ? map.get(lineFieldName) : null;
 				
 				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST-1) {
 					// Actually we stop at 'MAX_RESULTS_PER_REQUEST-1' in this SYNC block because we need to
@@ -915,6 +939,9 @@ public class SyncAPIController {
 					// elements
 					if (timestamp_as_date!=null) {
 						pending_timestamp.set((timestamp_as_date).getTime());
+					}
+					if (lineNumber!=null) {
+						pending_line.set(ValidationContext.toNumber(lineNumber).longValue());
 					}
 					break;
 				}
@@ -953,6 +980,9 @@ public class SyncAPIController {
 		if (pending_timestamp.longValue()>0) {
 			sync_info.setNextStart(new Date(pending_timestamp.longValue()));
 		}
+		if (pending_line.longValue()>0) {
+			sync_info.setNextLineStart(pending_line.longValue());
+		}
 		saveSyncDto(sync_info, zip_out);
 
 		return counter.longValue();
@@ -963,6 +993,7 @@ public class SyncAPIController {
 	 * The 'indexname' indicates index name associated to published (denormalized) data. <BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
+	 * The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -972,6 +1003,7 @@ public class SyncAPIController {
 			@ApiParam("The 'indexname' indicates index name associated to published (denormalized) data.") @PathVariable("indexname") String indexname,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
+			@ApiParam(value="The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.",required=false) @RequestParam("line_start") Optional<Long> opt_line_start,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -1022,7 +1054,11 @@ public class SyncAPIController {
 		StreamingResponseBody responseBody = outputStream -> {
 			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
 			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncIndexedData(indexname, /*timestampFieldName*/PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), start, end, zip_out);
+			long copied_files = syncIndexedData(indexname, 
+				/*timestampFieldName*/PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), start, end, 
+				/*lineFieldName*/PublishedDataFieldNames.LINE.getFieldName(),
+				(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
+				zip_out);
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();

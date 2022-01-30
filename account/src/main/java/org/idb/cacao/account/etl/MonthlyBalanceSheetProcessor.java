@@ -79,6 +79,11 @@ public class MonthlyBalanceSheetProcessor {
 	private static final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
 
 	/**
+	 * The field name for line numbering for the same published data contents
+	 */
+	private static final String lineNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE.name());
+
+	/**
 	 * The field name for taxpayer ID in published data
 	 */
 	private static final String publishedTaxpayerId = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPAYER_ID.name());
@@ -428,6 +433,7 @@ public class MonthlyBalanceSheetProcessor {
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
 				normalizedRecord_BS.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, monthNumber, 1));
+				normalizedRecord_BS.put(lineNumber, countRecordsInBalanceSheet.longValue());
 				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
 				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
 				if (gl!=null) {
@@ -581,6 +587,7 @@ public class MonthlyBalanceSheetProcessor {
 				Map<String,Object> normalizedRecord_BS = new HashMap<>();
 				normalizedRecord_BS.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 				normalizedRecord_BS.put(publishedTimestamp, LocalDate.of(year, month, 1));
+				normalizedRecord_BS.put(lineNumber, countRecordsInBalanceSheet.longValue());
 				normalizedRecord_BS.put(publishedTaxpayerId, taxPayerId);
 				normalizedRecord_BS.put(publishedtaxPeriodNumber, taxPeriodNumber);
 				if (gl!=null) {
