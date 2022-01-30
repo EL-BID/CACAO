@@ -40,6 +40,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -63,6 +65,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.Synchronizable;
@@ -126,7 +130,7 @@ public class SyncAPIService {
 	 * Too low means more delays between batches.<BR>
 	 * Too high means more memory consumed.
 	 */
-	private static final int BULK_LOAD_BATCH_COMMIT = 100_000;
+	private static final int BULK_LOAD_BATCH_COMMIT = 10_000;
 
     @Autowired
     private MessageSource messages;
@@ -224,25 +228,40 @@ public class SyncAPIService {
 			else
 				templates = Collections.emptyList();
 		}
+		
+		Set<String> archetypesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		for (DocumentTemplate template: templates) {
 			try {
 				syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, end);
+				if (template.getArchetype()!=null && template.getArchetype().trim().length()>0)
+					archetypesNames.add(template.getArchetype());
 			}
 			catch (Throwable ex) {
 				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
 			}
 		}
 		
-		// SYNC published data for all indices produced by ETL phases
 		List<String> indices_for_published_data;
-		try {
-			indices_for_published_data = publishedDataService.getIndicesForPublishedData().stream().sorted().collect(Collectors.toList());
-		} catch (Throwable ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
-				throw new RuntimeException(ex);
-			else
+		
+		if (!archetypesNames.isEmpty()) {
+			TemplateArchetype[] archetypes = archetypesNames.stream()
+					.map(TemplateArchetypes::getArchetype)
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.toArray(TemplateArchetype[]::new);
+			Set<String> published_indices = TemplateArchetypes.getRelatedPublishedDataIndices(archetypes);
+			if (published_indices!=null && !published_indices.isEmpty()) {
+				indices_for_published_data = new ArrayList<>(published_indices);
+			}
+			else {
 				indices_for_published_data = Collections.emptyList();
+			}
 		}
+		else {
+			indices_for_published_data = Collections.emptyList();
+		}
+		
+		// SYNC published data for all indices produced by ETL phases
 		for (String indexname: indices_for_published_data) {
 			try {
 				syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, end);
@@ -918,8 +937,8 @@ public class SyncAPIService {
 					uri += "&line_start="+sync_info.get().getNextLineStart();
 				if (end!=null && end.isPresent())
 					uri +="&end="+end.get();
-				if (log.isLoggable(Level.FINE))
-					log.log(Level.FINE, "URI for resuming partial SYNC: "+uri);
+				if (log.isLoggable(Level.INFO))
+					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri);
 				has_more = true; // will repeat SYNC with remaining data
 				lastTimeStart = sync_info.get().getNextStart().toInstant().atOffset(ZoneOffset.UTC);
 			}
