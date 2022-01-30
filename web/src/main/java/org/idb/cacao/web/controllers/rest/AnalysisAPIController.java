@@ -270,9 +270,9 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<AnalysisData> mapOfValues = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, year);
+    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, year);
 	
-    	return ResponseEntity.ok().body(mapOfValues);    	
+    	return ResponseEntity.ok().body(analysisData);    	
 	}
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
