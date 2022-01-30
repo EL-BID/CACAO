@@ -845,7 +845,9 @@ public class SyncAPIController {
 
 		log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
 				+" ("+ParserUtils.formatTimestamp(new Date(start))
-				+") and ending at timestamp "+end
+				+") "
+				+(opt_line_start.isPresent()?("and line_start ("+opt_line_start.get()+") "):"")
+				+"and ending at timestamp "+end
 				+" ("+ParserUtils.formatTimestamp(new Date(end))
 				+") IP ADDRESS: "
 				+remote_ip_addr);
@@ -905,7 +907,7 @@ public class SyncAPIController {
 			additional_query.minimumShouldMatch(1);
 			query = query.must(additional_query);
 		}
-
+		
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
     			.query(query); 
         searchSourceBuilder.from(0);
@@ -919,8 +921,14 @@ public class SyncAPIController {
         	searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
         }
 
+        // FIXME:
+		log.log(Level.INFO, "Index: "+index_name+", Search: "+searchSourceBuilder.toString());
+
     	searchRequest.source(searchSourceBuilder);
     	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
+
+        // FIXME:
+		log.log(Level.INFO, "Index: "+index_name+", Search: "+searchSourceBuilder.toString()+", Replied hits: "+sresp.getHits().getHits().length+" total: "+sresp.getHits().getTotalHits().value);
 
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -940,6 +948,13 @@ public class SyncAPIController {
 				Object timestamp = map.get(timestampFieldName);
 				Date timestamp_as_date = ValidationContext.toDate(timestamp);
 				Object lineNumber = (lineFieldName!=null) ? map.get(lineFieldName) : null;
+				
+				// FIXME:
+				if (counter.intValue()==0 && log.isLoggable(Level.INFO)) {
+					log.log(Level.INFO, "First record of index "+index_name+" with id: "+hit.getId()
+						+", timestamp: "+ParserUtils.formatTimestamp(timestamp_as_date)
+						+", line: "+ValidationContext.toNumber(lineNumber));
+				}
 				
 				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST-1) {
 					// Actually we stop at 'MAX_RESULTS_PER_REQUEST-1' in this SYNC block because we need to
@@ -1053,7 +1068,9 @@ public class SyncAPIController {
 
 		log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
 				+" ("+ParserUtils.formatTimestamp(new Date(start))
-				+") and ending at timestamp "+end
+				+") "
+				+(opt_line_start.isPresent()?("and line_start ("+opt_line_start.get()+") "):"")
+				+"and ending at timestamp "+end
 				+" ("+ParserUtils.formatTimestamp(new Date(end))
 				+") IP ADDRESS: "
 				+remote_ip_addr);
