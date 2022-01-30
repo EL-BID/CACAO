@@ -87,7 +87,8 @@ public class DocumentTemplateUIController {
         model.addAttribute("template", template);
         model.addAttribute("fieldTypes", FieldType.values());
         model.addAttribute("fieldMappings", FieldMapping.values());
-        List<DocumentFormat> usedFormats = template.getInputs().stream()
+        List<DocumentFormat> usedFormats = template.getInputs()== null ? Collections.emptyList() : 
+        	template.getInputs().stream()
         	.map(input -> input.getFormat())
         	.collect(Collectors.toList());
         List<DocumentFormat> availableFormats = Arrays.stream(DocumentFormat.values())

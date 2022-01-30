@@ -351,7 +351,7 @@ let addField = function() {
   $('#form_edit_field input[type="checkbox"]:not(:checked)').each(function(i, e) {
     form_obj.push({name: e.getAttribute("name"), value: false});
   });
-  field = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), field)
+  field = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value ? kv.value : null}), field)
   if( field.id == null) {
     field.id = Math.max(...table.getData().map(o => o.id),0)+1
     table.addRow(field, false)
@@ -380,7 +380,7 @@ let mappingLookup = {
 
 let table = new Tabulator('#table', {
     index: 'id',
-    layout: "fitDataStretch", //fit columns to width of table (optional)
+    layout: "fitData", //fit columns to width of table (optional)
     responsiveLayout: "collapse",
     //placeholder: "Empty",
     columns:[ //Define Table Columns

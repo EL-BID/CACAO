@@ -50,7 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class JSONParser implements FileParser {
 
-	private static final Logger log = Logger.getLogger(CSVParser.class.getName());
+	private static final Logger log = Logger.getLogger(JSONParser.class.getName());
 
 	private Path path;
 
