@@ -289,7 +289,7 @@ public class ESUtils {
 		catch (Throwable ex) {
 			if (null!=ErrorUtils.getIllegalArgumentTypeMismatch(ex)
 					|| null!=ErrorUtils.getIllegalArgumentInputString(ex)) {
-				// In case of an error relative to type mismatch, lets try again after chaging some of the index parameters
+				// In case of an error relative to type mismatch, lets try again after changing some of the index parameters
 				changeBooleanIndexSetting(client, indexRequest.index(), SETTING_IGNORE_MALFORMED, true, /*closeAndReopenIndex*/true);
 				client.index(indexRequest, RequestOptions.DEFAULT);
 			}

@@ -37,7 +37,12 @@ public enum ValidatedDataFieldNames {
 	/**
 	 * Date/time the validation phase finished
 	 */
-	TIMESTAMP("TIMESTAMP");
+	TIMESTAMP("TIMESTAMP"),
+	
+	/**
+	 * Line number of validated data
+	 */
+	LINE("LINE");
 	
 	/**
 	 * Internal field name to be stored in ElasticSearch

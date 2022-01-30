@@ -39,6 +39,11 @@ public enum PublishedDataFieldNames {
 	ETL_TIMESTAMP("doc_timestamp"),
 
 	/**
+	 * Line number of validated data
+	 */
+	LINE("line"),
+
+	/**
 	 * TaxPayer ID. Must match the same information stored
 	 * in {@link DocumentUploaded#getTaxPayerId() taxPayerId}.
 	 */

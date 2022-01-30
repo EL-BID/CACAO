@@ -55,8 +55,10 @@ import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
@@ -79,6 +81,7 @@ import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ReflectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
@@ -117,6 +120,13 @@ public class SyncAPIService {
 	 * Number of instances to put in the same 'batch' for saving in local database (improves performance over individual saves)
 	 */
 	private static final int BATCH_SIZE = 100;
+	
+	/**
+	 * Number of records before partial commits while doing SYNC with validated or published data (using bulk load).<BR>
+	 * Too low means more delays between batches.<BR>
+	 * Too high means more memory consumed.
+	 */
+	private static final int BULK_LOAD_BATCH_COMMIT = 100_000;
 
     @Autowired
     private MessageSource messages;
@@ -150,6 +160,9 @@ public class SyncAPIService {
 	
 	@Autowired
 	private Collection<Repository<?, ?>> all_repositories;
+
+	@Value("${spring.elasticsearch.rest.connection-timeout}")
+	private String elasticSearchConnectionTimeout;
 
     private RestTemplate restTemplate;
     
@@ -341,6 +354,8 @@ public class SyncAPIService {
 		final File original_files_dir;
 		try {
 			original_files_dir = fileSystemStorageService.getRootLocation().toFile();
+			if (!original_files_dir.exists())
+				original_files_dir.mkdirs();
 			if (!original_files_dir.exists())
 				throw new FileNotFoundException(original_files_dir.getAbsolutePath());
 		} catch (Throwable ex) {
@@ -566,6 +581,13 @@ public class SyncAPIService {
 		LongAdder counter = new LongAdder();
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(), template.getVersion());
+		
+		final BulkRequest bulkRequest = new BulkRequest();
+		if (elasticSearchConnectionTimeout!=null
+			&& elasticSearchConnectionTimeout.trim().length()>0)
+			bulkRequest.timeout(elasticSearchConnectionTimeout);
+		
+		final LongAdder recordsForCommit = new LongAdder();
 
 		syncSomething(tokenApi, uri, start, end,
 		/*consumer*/(entry,input)->{
@@ -581,15 +603,20 @@ public class SyncAPIService {
 			if (id==null)
 				return;
 			
-			ESUtils.indexWithRetry(elasticsearchClient,
-				new IndexRequest(index_name)
+			bulkRequest.add(new IndexRequest(index_name)
 					.id(id)
-					.source(parsed_contents)
-					.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
+					.source(parsed_contents));
+
+			if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
+				commitBulkRequest(bulkRequest, index_name);
+				recordsForCommit.reset();
+			}
 
 			counter.increment();
 		});
-		
+
+		commitBulkRequest(bulkRequest, index_name);
+
 		final long elapsed_time = System.currentTimeMillis() - timestamp;
 		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
 	}
@@ -638,6 +665,10 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.PUBLISHED_DATA.getEndpoint(indexname);
 
+		final BulkRequest bulkRequest = new BulkRequest();
+
+		final LongAdder recordsForCommit = new LongAdder();
+
 		syncSomething(tokenApi, uri, start, end,
 		/*consumer*/(entry,input)->{
 			
@@ -652,14 +683,19 @@ public class SyncAPIService {
 			if (id==null)
 				return;
 			
-			ESUtils.indexWithRetry(elasticsearchClient,
-				new IndexRequest(indexname)
+			bulkRequest.add(new IndexRequest(indexname)
 					.id(id)
-					.source(parsed_contents)
-					.setRefreshPolicy(RefreshPolicy.IMMEDIATE));
+					.source(parsed_contents));
+			
+			if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
+				commitBulkRequest(bulkRequest, indexname);
+				recordsForCommit.reset();
+			}
 
 			counter.increment();
 		});
+		
+		commitBulkRequest(bulkRequest, indexname);
 		
 		final long elapsed_time = System.currentTimeMillis() - timestamp;
 		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
@@ -878,8 +914,12 @@ public class SyncAPIService {
 			if (sync_info.get()!=null && sync_info.get().hasMore()) {
 				// Will do the next SYNC with the next timestamp (should not be NULL if 'hasMore')
 				uri = "https://"+master+endPoint+"?start="+sync_info.get().getNextStart().getTime();
+				if (sync_info.get().getNextLineStart()!=null && sync_info.get().getNextLineStart().longValue()>0)
+					uri += "&line_start="+sync_info.get().getNextLineStart();
 				if (end!=null && end.isPresent())
 					uri +="&end="+end.get();
+				if (log.isLoggable(Level.FINE))
+					log.log(Level.FINE, "URI for resuming partial SYNC: "+uri);
 				has_more = true; // will repeat SYNC with remaining data
 				lastTimeStart = sync_info.get().getNextStart().toInstant().atOffset(ZoneOffset.UTC);
 			}
@@ -1117,5 +1157,35 @@ public class SyncAPIService {
 			// don't close
 		}
 		
+	}
+	
+	private void commitBulkRequest(BulkRequest bulkRequest, String index_name) {
+		if (bulkRequest.numberOfActions()>0) {
+			bulkRequest.setRefreshPolicy(RefreshPolicy.NONE);
+			try {
+				elasticsearchClient.bulk(bulkRequest,
+					RequestOptions.DEFAULT);
+			}
+			catch (Throwable ex) {
+				try {
+					if (null!=ErrorUtils.getIllegalArgumentTypeMismatch(ex)
+							|| null!=ErrorUtils.getIllegalArgumentInputString(ex)) {
+						// In case of an error relative to type mismatch, lets try again after changing some of the index parameters
+						ESUtils.changeBooleanIndexSetting(elasticsearchClient, index_name, ESUtils.SETTING_IGNORE_MALFORMED, true, /*closeAndReopenIndex*/true);
+						elasticsearchClient.bulk(bulkRequest,
+								RequestOptions.DEFAULT);
+					}
+					else {
+						throw ex;
+					}
+				}
+				catch (RuntimeException|Error ex2) {
+					throw ex2;
+				}
+				catch (Exception ex2) {
+					throw new RuntimeException(ex2);
+				}
+			}
+		}		
 	}
 }

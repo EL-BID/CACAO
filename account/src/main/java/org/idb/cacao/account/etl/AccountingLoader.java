@@ -236,6 +236,11 @@ public class AccountingLoader {
 	private static final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
 	
 	/**
+	 * The field name for line numbering for the same published data contents
+	 */
+	private static final String lineNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE.name());
+
+	/**
 	 * The field name for indication of Year for each Monthly Balance Sheet
 	 */
 	private static final String publishedYear = IndexNamesUtils.formatFieldName(AccountingFieldNames.Year.name());
@@ -644,6 +649,7 @@ public class AccountingLoader {
 					}
 					normalizedRecord_GL.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 					normalizedRecord_GL.put(publishedTimestamp, date);
+					normalizedRecord_GL.put(lineNumber, countRecordsInGeneralLedger.longValue());
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
 					normalizedRecord_GL.put(publishedTemplateName, gl.getTemplateName());
@@ -750,6 +756,7 @@ public class AccountingLoader {
 		Map<String,Object> normalizedRecord_DAF = new HashMap<>();
 		normalizedRecord_DAF.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 		normalizedRecord_DAF.put(publishedTimestamp, flow.getDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime());
+		normalizedRecord_DAF.put(lineNumber, countRecordsInAccountingFlows.longValue());
 		normalizedRecord_DAF.put(publishedTaxpayerId, taxPayerId);
 		normalizedRecord_DAF.put(publishedtaxPeriodNumber, taxPeriodNumber);
 		normalizedRecord_DAF.put(publishedTemplateName, gl.getTemplateName());

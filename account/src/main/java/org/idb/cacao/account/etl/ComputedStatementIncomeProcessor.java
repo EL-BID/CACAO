@@ -67,6 +67,11 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 	private static final String publishedTimestamp = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TIMESTAMP.name());
 
 	/**
+	 * The field name for line numbering for the same published data contents
+	 */
+	private static final String lineNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE.name());
+
+	/**
 	 * The field name for taxpayer ID in published data
 	 */
 	private static final String publishedTaxpayerId = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TAXPAYER_ID.name());
@@ -307,6 +312,7 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 			Map<String,Object> normalizedRecord_SCI = new HashMap<>();
 			normalizedRecord_SCI.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 			normalizedRecord_SCI.put(publishedTimestamp, timestampForView);
+			normalizedRecord_SCI.put(lineNumber, countRecordsInStatement.longValue());
 			normalizedRecord_SCI.put(publishedTaxpayerId, taxPayerId);
 			normalizedRecord_SCI.put(publishedtaxPeriodNumber, taxPeriodNumber);
 			if (gl!=null) {
