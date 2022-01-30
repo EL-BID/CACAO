@@ -156,7 +156,6 @@
 	      var yourVlSpec = {
 			$schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     	        description: 'A simple chart with embedded data.',
-    	        title: "General Analysis",
     	        data: {
    	        		"values": [{
 						"Statement": "Cost of Sales and Services",
@@ -193,8 +192,14 @@
    	                "x": {
    	                  "field": "lower",
    	                  "type": "quantitative",
-   	                  "scale": {"zero": false},
-   	                  "title": null
+   	                  "scale": {
+   	                	  	"zero": false,
+   	                		// Outliers do not show with 200 as max value,
+   	                		// maybe leave without domain is better
+   	                	  	"domain": [-100, 200] 
+   	                  },
+   	                  "title": null,
+   	                  "axis": null
    	                },
    	                "x2": {"field": "upper"}
    	              }
