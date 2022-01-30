@@ -24,78 +24,45 @@ import java.util.List;
 
 public class AnalysisData {
 	
-	private String statementName;
+	private double scaleMin;
 	
-	private double q1;
+	private double scaleMax;
 	
-	private double q3;
-	
-	private double median;
-	
-	private List<Outlier> outliers;
+	private List<AnalysisItem> items;
 
-	public String getStatementName() {
-		return statementName;
+	public double getScaleMin() {
+		return scaleMin;
 	}
 
-	public void setStatementName(String statementName) {
-		this.statementName = statementName;
+	public void setScaleMin(double scaleMin) {
+		this.scaleMin = scaleMin;
 	}
 
-	public double getQ1() {
-		return q1;
+	public double getScaleMax() {
+		return scaleMax;
 	}
 
-	public void setQ1(double q1) {
-		this.q1 = q1;
+	public void setScaleMax(double scaleMax) {
+		this.scaleMax = scaleMax;
 	}
 
-	public double getQ3() {
-		return q3;
+	public List<AnalysisItem> getItems() {
+		if ( items == null )
+			items = new LinkedList<>();
+		return items;
 	}
 
-	public void setQ3(double q3) {
-		this.q3 = q3;
+	public void setItems(List<AnalysisItem> items) {
+		this.items = items;
 	}
 	
-	public double getIIQ() {
-		return (q3 - q1);
-	}
-	
-	public double getMax() {
-		return (q3 + (1.5d * getIIQ()) );
-	}
-	
-	public double getMin() {
-		return (q1 - (1.5d * getIIQ()) );
-	}
-	
-	public double getMedian() {
-		return median;
-	}
-
-	public void setMedian(double median) {
-		this.median = median;
-	}
-
-	public List<Outlier> getOutliers() {
-		if ( outliers == null )
-			outliers = new LinkedList<>();
-		return outliers;
-	}
-
-	public void setOutliers(List<Outlier> outliers) {
-		this.outliers = outliers;
-	}
-	
-	public void addOutilier(Outlier outlier) {
-		getOutliers().add(outlier);	
+	public void addItem(AnalysisItem item) {
+		getItems().add(item);
 	}
 
 	@Override
 	public String toString() {
-		return "AnalysisData [statementName=" + statementName + ", q1=" + q1 + ", q3=" + q3 + "]";
+		return "AnalysisData [scaleMin=" + scaleMin + ", scaleMax=" + scaleMax + "]";
 	}
-
 	
 }
