@@ -17,48 +17,44 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.dto;
+package org.idb.cacao.web.dto;
 
-import java.util.List;
+import java.util.Map;
 
-import org.idb.cacao.api.Views;
+public class TabulatorFilter {
 
-import com.fasterxml.jackson.annotation.JsonView;
-
-/**
- * Pagination data to return to Tabulator
- * @author Luis Kauer
- *
- */
-public class PaginationData<E> {
-	// Total number of pages
-	@JsonView(Views.Public.class)
-	private int last_page;
-	
-	// List with data objects
-	@JsonView(Views.Public.class)
-	private List<E> data;
-
-	public PaginationData(int lastPage, List<E> data) {
-		this.last_page = lastPage;;
-		this.data = data;
+	private String field;
+	private String type;
+	private Object value;
+	public String getField() {
+		return field;
 	}
-	
-	public int getLast_page() {
-		return last_page;
+	public void setField(String field) {
+		this.field = field;
 	}
-
-	public void setLast_page(int lastPage) {
-		this.last_page = lastPage;
+	public String getType() {
+		return type;
 	}
-
-	public List<E> getData() {
-		return data;
+	public void setType(String type) {
+		this.type = type;
 	}
-
-	public void setData(List<E> data) {
-		this.data = data;
+	public Object getValue() {
+		return value;
 	}
-	
+	public String getStringValue() {
+		return value.toString();
+	}
+	public boolean isString() {
+		return value instanceof String;
+	}
+	public void setValue(Object value) {
+		this.value = value;
+	}
+	public String getProperty(String name) {
+		if (value!=null && value instanceof Map) {
+			return (String) ((Map)value).get(name);
+		}
+		return null;
+	}
 	
 }

@@ -34,7 +34,7 @@ import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
-import org.idb.cacao.web.controllers.dto.NameId;
+import org.idb.cacao.web.dto.NameId;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;

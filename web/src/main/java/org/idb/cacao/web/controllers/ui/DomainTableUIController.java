@@ -22,8 +22,8 @@ package org.idb.cacao.web.controllers.ui;
 import java.util.stream.Collectors;
 
 import org.idb.cacao.api.templates.DomainTable;
-import org.idb.cacao.web.controllers.dto.NameId;
 import org.idb.cacao.web.controllers.services.DomainTableService;
+import org.idb.cacao.web.dto.NameId;
 import org.idb.cacao.web.repositories.DomainTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;

@@ -1,0 +1,227 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<head
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui"
+	href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"></script>
+<script src="/js/vega.min.js"></script>
+<script src="/js/vega-lite.min.js"></script>
+<script src="/js/vega-embed.min.js"></script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<div class="ui breadcrumb">
+			<a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+			<div class="divider">/</div>
+			<div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
+		</div>
+		<h2 class="ui header">
+			<i class="stream icon"></i> <span class="content"
+				th:text="#{taxpayers.analysis.general}">General Analysis</span>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form action="#" name="form" id="form" th:action="@{/general-analysis-data}"
+					class="ui form" method="post">
+
+					<div class="ui field" id="qualifiersView">
+						<label th:text="#{taxpayers.analysis.general.qualifiers}">Qualifiers</label>
+						<select class="ui dropdown" id="qualifiers">
+							<option value="qualifier1" th:text="#{taxpayer.qualifier.1}">Qualifier
+								1</option>
+							<option value="qualifier2" th:text="#{taxpayer.qualifier.2}">Qualifier
+								2</option>
+							<option value="qualifier3" th:text="#{taxpayer.qualifier.3}">Qualifier
+								3</option>
+							<option value="qualifier4" th:text="#{taxpayer.qualifier.4}">Qualifier
+								4</option>
+							<option value="qualifier5" th:text="#{taxpayer.qualifier.5}">Qualifier
+								5</option>
+						</select>
+					</div>
+
+					<div class="ui field" id="qualifierValuesView">
+						<label th:text="#{taxpayers.analysis.general.qualifier.values}">Qualifier
+							Value</label> <select class="ui dropdown" id="qualifierValues">
+						</select>
+					</div>
+
+					<div class="ui field">
+						<label th:text="#{base.period}">Base Period</label> <select
+							class="ui dropdown" id="year">
+						</select>
+					</div>
+
+					<div class="row">
+						<input type="submit" class="ui blue button" th:value="#{search}"
+							value="Search">
+					</div>
+				</form>
+			</div>
+			<div id="vis" style="display: none">
+				<!-- Display graphics -->
+			</div>
+			<div id="showtable" style="display: none">
+				<div id="table" class="ui orange table"></div>
+			</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		$('#qualifiers').on('change', function() {
+			updateQualifiersValues();	
+     	});
+		
+		function updateQualifiersValues() {
+			$('#qualifierValues').find('option').remove();
+			$.get('/api/analysis/qualifiers', 
+					{ qualifier: $('#qualifiers').val() } ,  //data to submit
+			    function (data, status, xhr) {
+					$.each(data, function (i, item) {						
+					    $('#qualifierValues').append($('<option>', { 
+					        value: item,
+					        text : item
+					    }));					    
+					});		
+			    }
+			);
+		}		
+		
+		function updateYears() {		
+			$('#year').find('option').remove();
+			$.get('/api/analysis/years',
+			    function (data, status, xhr) {
+					$.each(data, function (i, item) {						
+					    $('#year').append($('<option>', { 
+					        value: item,
+					        text : item
+					    }));					    
+					});		
+			    }
+			);			
+		}
+		
+		$(document).ready(function() {
+			updateQualifiersValues();
+			updateYears();
+			$('.ui.form').form({
+				fields: {
+					year: {
+	                	identifier  : 'year',
+	                	rules: [{
+	                    	type   : 'empty',
+	                    	prompt : [[#{year.missing}]]
+	                  	}]
+	              	},
+	          	},
+				onSuccess: (function(event,fields){
+					event.preventDefault();				
+					updateData();
+					showGraphics();
+	          	})
+	        });
+	    });
+		
+		function updateData() {
+
+			$.get('/api/analysis/general-analysis', 
+					{ qualifier: $('#qualifiers').val(),
+						qualifierValue: $('#qualifierValues').val(),
+						year: $('#year').val(),				
+					} ,  //data to submit
+			    function (data, status, xhr) {
+					console.log(data);		
+			    }
+			);
+			
+		}
+		
+		function showGraphics() {
+			
+	      var yourVlSpec = {
+			$schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    	        description: 'A simple chart with embedded data.',
+    	        title: "General Analysis",
+    	        data: {
+   	        		"values": [{
+						"Statement": "Cost of Sales and Services",
+						"lower": -71.74317693710327,
+						"q1": 3.895665168762207,
+						"median": 22.783777236938477,
+						"q3": 54.32155990600586,
+						"upper": 129.96040201187134,
+						"outliers": [387.3805236816406]
+   	        	    },{
+   	        	      "Statement": "General and Administrative Expenses",
+   	        	      "lower": 4.987144470214844,
+   	        	      "q1": 42.93650817871094,
+   	        	      "median": 56.53312873840332,
+   	        	      "q3": 68.236083984375,
+   	        	      "upper": 106.1854476928711,
+   	        	      "outliers": [1478.636962890625]
+   	        	    },{
+   	        	      "Statement": "Gross Profit",
+   	        	      "lower": -29.960397720336914,
+   	        	      "q1": 45.67844009399414,
+   	        	      "median": 77.21622467041016,
+   	        	      "q3": 96.10433197021484,
+   	        	      "upper": 171.7431697845459,
+   	        	      "outliers": []
+   	        	    }]
+   	        	  },
+    	        
+   	        	 "encoding": {"y": {"field": "Statement", "type": "nominal", "title": null}},
+   	          "layer": [
+   	            {
+   	              "mark": {"type": "rule"},
+   	              "encoding": {
+   	                "x": {
+   	                  "field": "lower",
+   	                  "type": "quantitative",
+   	                  "scale": {"zero": false},
+   	                  "title": null
+   	                },
+   	                "x2": {"field": "upper"}
+   	              }
+   	            },
+   	            {
+   	              "mark": {"type": "bar", "size": 18},
+   	              "encoding": {
+   	                "x": {"field": "q1", "type": "quantitative"},
+   	                "x2": {"field": "q3"},
+   	                "color": {"field": "Statement", "type": "nominal", "legend": null}
+   	              }
+   	            },
+   	            {
+   	              "mark": {"type": "tick", "color": "white", "size": 18},
+   	              "encoding": {"x": {"field": "median", "type": "quantitative"}}
+   	            },
+   	            {
+   	              "transform": [{"flatten": ["outliers"]}],
+   	              "mark": {"type": "point", "style": "boxplot-outliers"},
+   	              "encoding": {"x": {"field": "outliers", "type": "quantitative"}}
+   	            }
+   	          ]
+   	        };	      
+    	      vegaEmbed('#vis', yourVlSpec);
+    	      $("#vis").show()
+		}
+		
+	</script>
+</body>
+</html>

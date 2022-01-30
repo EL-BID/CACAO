@@ -17,44 +17,47 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.controllers.dto;
+package org.idb.cacao.web.dto;
+
+import java.util.List;
+
+import org.idb.cacao.api.Views;
+
+import com.fasterxml.jackson.annotation.JsonView;
 
 /**
- * Data Transfer Object to pass name and id
+ * Pagination data to return to Tabulator
  * @author Luis Kauer
  *
  */
-public class NameId {
+public class PaginationData<E> {
+	// Total number of pages
+	@JsonView(Views.Public.class)
+	private int last_page;
 	
-	public NameId(String name, String id) {
-		this.name = name;
-		this.id = id;
+	// List with data objects
+	@JsonView(Views.Public.class)
+	private List<E> data;
+
+	public PaginationData(int lastPage, List<E> data) {
+		this.last_page = lastPage;;
+		this.data = data;
 	}
 	
-	/**
-	 * Identifier
-	 */
-	private String id;
-
-	/**
-	 * Name
-	 */
-	private String name;
-
-	public String getId() {
-		return id;
+	public int getLast_page() {
+		return last_page;
 	}
 
-	public void setId(String id) {
-		this.id = id;
+	public void setLast_page(int lastPage) {
+		this.last_page = lastPage;
 	}
 
-	public String getName() {
-		return name;
+	public List<E> getData() {
+		return data;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setData(List<E> data) {
+		this.data = data;
 	}
 	
 	

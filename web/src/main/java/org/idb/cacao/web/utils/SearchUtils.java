@@ -69,7 +69,7 @@ import org.hibernate.jpa.QueryHints;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
-import org.idb.cacao.web.controllers.dto.TabulatorFilter;
+import org.idb.cacao.web.dto.TabulatorFilter;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;

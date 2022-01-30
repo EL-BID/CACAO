@@ -1,4 +1,4 @@
-package org.idb.cacao.web.controllers.dto;
+package org.idb.cacao.web.dto;
 
 import org.springframework.stereotype.Component;
 
