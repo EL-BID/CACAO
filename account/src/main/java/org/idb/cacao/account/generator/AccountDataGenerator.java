@@ -34,6 +34,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -60,9 +62,17 @@ import org.idb.cacao.api.utils.RandomDataGenerator;
  */
 public class AccountDataGenerator implements CustomDataGenerator {
 	
+	private static final Logger log = Logger.getLogger(AccountDataGenerator.class.getName());
+
 	public static final int FIXED_NUMBER_OF_ACCOUNTS = 100;
 	
 	public static final int DEFAULT_NUMBER_OF_LEDGER_ENTRIES = 10_000;
+	
+	/**
+	 * Tells with it should generate additional warnings at LOG whenever getting absurd account balances
+	 * whenever generating journal entries.
+	 */
+	public static boolean LOG_WARN_ABSURD_BALANCES = false;
 	
 	/**
 	 * Some minimum value of CASH to start with. 
@@ -83,6 +93,11 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	 * Some maximum value of 'accounts payable' at LIABILITY
 	 */
 	public static final double MAX_LIABILITY_PAYABLE = 10_000;
+	
+	/**
+	 * Some arbitrary 'small value' (e.g. little expense)
+	 */
+	public static final double SMALL_VALUE = 100;
 
 	/**
 	 * Odds to consider 'start of business'. Bigger value means smaller odds.<BR>
@@ -144,6 +159,10 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	private List<PartialEntry> nextCredits, nextDebits;
 	
 	private long transactionId;
+	
+	private String currTransactionTrackingInfoForWarnings;
+	
+	private Map<String, Double> previousBalancesForWarnings;
 		
 	public AccountDataGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
 			throws Exception {
@@ -258,8 +277,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			else {
 				initialAssetBalance = Math.max(1.0, randomDataGenerator.nextRandomDecimal().doubleValue()) * 100.0;
 				double equityProportion = (0.1+randomDataGenerator.getRandomGenerator().nextDouble()*0.5);
-				initialEquityBalance = equityProportion * initialAssetBalance;
-				initialEquityBalance = Math.floor(initialEquityBalance * 100.0) / 100.0; // round to 2 decimals
+				initialEquityBalance = roundDecimals(equityProportion * initialAssetBalance);
 				initialLiabilityBalance = initialAssetBalance - initialEquityBalance;
 			}
 			
@@ -281,8 +299,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						value = initialAssetBalance - accumulated;
 					}
 					else {
-						value = initialAssetBalance * proportion;
-						value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
+						value = roundDecimals(initialAssetBalance * proportion);
 					}
 					accumulated += value;
 					accountBalance.put(assets[i].getAccountCode(), value); // positive means 'debit nature'
@@ -307,8 +324,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						value = initialLiabilityBalance - accumulated;
 					}
 					else {
-						value = initialLiabilityBalance * proportion;
-						value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
+						value = roundDecimals(initialLiabilityBalance * proportion);
 					}
 					accumulated += value;
 					accountBalance.put(liabilities[i].getAccountCode(), -value); // negative means 'credit nature'
@@ -490,60 +506,80 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			int recordsRemainingAtDay = Math.min(transactionsPerDay[currentDay], 
 					(records-recordsCreated)>Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)(records-recordsCreated));
 			
+			final double cash_balance = getBalance(cashAccounts);
+			final double inventory_balance = getBalance(inventoryAccounts);
+			final double expenses_balance = getBalance(expenseAccounts);
+
+			// The minus sign is due to the convention of representing 'credit' as 'negative value'
+			final double equity_balance = -getBalance(equityAccounts);
+			final double revenue_balance = -getBalance(revenueAccounts);
+			
 			// If the cash is low, try to increase using some standard patterns
 			if ((recordsRemainingAtDay==4 || recordsRemainingAtDay>=6) 
-					&& getBalance(cashAccounts)<MIN_CASH_VALUE) {
+					&& cash_balance<MIN_CASH_VALUE) {
 				
 				// If the equity is also low, use the standard pattern of stock issuance
-				// The minus sign is due to the convention of representing 'credit' as 'negative value'
-				double equity_balance = -getBalance(equityAccounts);
 				if (equity_balance<MIN_EQUITY_VALUE) {
 					chooseStandardTransaction(CommonAccountingPatterns.STOCK_ISSUANCE);
 				}
 				// If the inventory is also low, use the standard pattern of inventory purchase
-				else if (getBalance(inventoryAccounts)<MIN_INVENTORY_VALUE) {
+				else if (inventory_balance<MIN_INVENTORY_VALUE) {
 					chooseStandardTransaction(CommonAccountingPatterns.INVENTORY_PURCHASE);
 				}
-				// For other cases, use the standard pattern of revenues + costs
+				// For other cases, use the standard pattern of revenues + costs for increasing CASH
 				else {
 					chooseStandardTransaction(CommonAccountingPatterns.SERVICES_REVENUE_CASH);
 				}
 			}
 			
+			// If the inventory is low, use the standard pattern of inventory purchase
+			else if ((recordsRemainingAtDay==2 || recordsRemainingAtDay>=4) 
+					&& inventory_balance<MIN_INVENTORY_VALUE) {
+				chooseStandardTransaction(CommonAccountingPatterns.INVENTORY_PURCHASE);
+			}
+			
 			// Three out of 5 will be a standard pattern of revenue + cost
-			// One out of 5 will be a standard pattern of some expense
+			// One out of 5 will be a standard pattern of some expense (unless the total expenses approaches total revenues)
 			else if (recordsRemainingAtDay>=6) {
 						
 				final int odds = randomDataGenerator.getRandomGenerator().nextInt(5);
 				
-				if (odds<3) {				
-					if (odds==0)
+				if ((revenue_balance-expenses_balance)<SMALL_VALUE) {
+					if (odds<2)
 						chooseStandardTransaction(CommonAccountingPatterns.SERVICES_REVENUE_RECEIVABLE);
 					else
-						chooseStandardTransaction(CommonAccountingPatterns.SERVICES_REVENUE_CASH);
+						chooseStandardTransaction(CommonAccountingPatterns.SERVICES_REVENUE_CASH);					
 				}
-				else if (odds==3) {
-					double liability_payable_balance = -getBalance(payableAccounts);
-					if (liability_payable_balance>MAX_LIABILITY_PAYABLE) {
-						chooseStandardTransaction(CommonAccountingPatterns.ACCOUNTS_PAYABLE);						
+				else {
+					if (odds<3) {				
+						if (odds==0)
+							chooseStandardTransaction(CommonAccountingPatterns.SERVICES_REVENUE_RECEIVABLE);
+						else
+							chooseStandardTransaction(CommonAccountingPatterns.SERVICES_REVENUE_CASH);
 					}
-					else {
-						int expense_type = randomDataGenerator.getRandomGenerator().nextInt(3);
-						switch (expense_type) {
-						case 0:
-							chooseStandardTransaction(CommonAccountingPatterns.SERVICES_EXPENSE);
-							break;
-						case 1:
-							chooseStandardTransaction(CommonAccountingPatterns.ADMINISTRATIVE_EXPENSE);
-							break;
-						default:
-							chooseStandardTransaction(CommonAccountingPatterns.RENT_EXPENSE);
+					else if (odds==3) {
+						double liability_payable_balance = -getBalance(payableAccounts);
+						if (liability_payable_balance>MAX_LIABILITY_PAYABLE) {
+							chooseStandardTransaction(CommonAccountingPatterns.ACCOUNTS_PAYABLE);						
+						}
+						else {
+							int expense_type = randomDataGenerator.getRandomGenerator().nextInt(3);
+							switch (expense_type) {
+							case 0:
+								chooseStandardTransaction(CommonAccountingPatterns.SERVICES_EXPENSE);
+								break;
+							case 1:
+								chooseStandardTransaction(CommonAccountingPatterns.ADMINISTRATIVE_EXPENSE);
+								break;
+							default:
+								chooseStandardTransaction(CommonAccountingPatterns.RENT_EXPENSE);
+							}
 						}
 					}
-				}
-				else {					
-					// For all other cases, generates a random transaction
-					chooseRandomTransaction();
+					else {					
+						// For all other cases, generates a random transaction
+						chooseRandomTransaction();
+					}
 				}
 				
 			}
@@ -552,6 +588,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			else {
 				chooseRandomTransaction();
 			}
+			
 		}
 		
 		LocalDate currentDate = days[currentDay];
@@ -559,7 +596,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 		record.put(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
 		record.put(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name(), year);
 		record.put(GeneralLedgerArchetype.FIELDS_NAMES.EntryId.name(), String.format("#%06d", transactionId));			
-		record.put(GeneralLedgerArchetype.FIELDS_NAMES.Date.name(), currentDate);			
+		record.put(GeneralLedgerArchetype.FIELDS_NAMES.Date.name(), currentDate);
 		
 		if (!nextDebits.isEmpty()) {
 			// Consuming debits of the same transaction
@@ -586,6 +623,98 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			accountBalance.put(entry.getAccount(), balance - entry.getAmount());
 		}
 
+		if (LOG_WARN_ABSURD_BALANCES) {
+			checkAbsurdBalances();
+		}
+	}
+	
+	/**
+	 * Generates warnings at LOG for some absurd situations
+	 */
+	private void checkAbsurdBalances() {
+		double prev_total_asset_balance = 0;
+		double curr_total_asset_balance = 0;
+		
+		if (previousBalancesForWarnings==null) {
+			previousBalancesForWarnings = new HashMap<>(accountBalance);
+		}
+		
+		for (String acc: assetAccounts) {
+			double curr_balance = roundDecimals(accountBalance.getOrDefault(acc, 0.0));
+			double prev_balance = roundDecimals(previousBalancesForWarnings.getOrDefault(acc, 0.0));
+			if (curr_balance<0 && prev_balance>=0) {
+				log.log(Level.WARNING, "Absurd account balance! Account: "+acc+" "+accountDescriptions.get(acc)
+						+", category: ASSET, balance: "+curr_balance+", prev: "+prev_balance
+						+", taxpayer: "+getTaxpayerId()+", year: "+getTaxYear()+", journal entryId: "+String.format("#%06d", transactionId)
+						+", trackInfo: "+currTransactionTrackingInfoForWarnings);
+			}
+			curr_total_asset_balance += curr_balance;
+			prev_total_asset_balance += prev_balance;
+		}
+		
+		for (String acc: equityAccounts) {
+			double curr_balance = roundDecimals(-accountBalance.getOrDefault(acc, 0.0)); // invert the sign because by convention we represent credit as negative values
+			double prev_balance = roundDecimals(-previousBalancesForWarnings.getOrDefault(acc, 0.0)); // invert the sign because by convention we represent credit as negative values
+			if (curr_balance<0 && prev_balance>=0) {
+				log.log(Level.WARNING, "Absurd account balance! Account: "+acc+" "+accountDescriptions.get(acc)
+						+", category: EQUITY, balance: "+curr_balance+", prev: "+prev_balance
+						+", taxpayer: "+getTaxpayerId()+", year: "+getTaxYear()+", journal entryId: "+String.format("#%06d", transactionId)
+						+", trackInfo: "+currTransactionTrackingInfoForWarnings);
+			}
+		}
+		
+		// If all the entries of the last transaction have already been accounted, let's check the total balance so far ...
+		if (nextDebits.isEmpty() && nextCredits.isEmpty()) {
+			double prev_total_liability_balance = 0;
+			double curr_total_liability_balance = 0;
+			for (String acc: liabilityAccounts) {
+				double curr_balance = roundDecimals(-accountBalance.getOrDefault(acc, 0.0)); // invert the sign because by convention we represent credit as negative values
+				double prev_balance = roundDecimals(-previousBalancesForWarnings.getOrDefault(acc, 0.0)); // invert the sign because by convention we represent credit as negative values
+				if (curr_balance<0 && prev_balance>=0) {
+					log.log(Level.WARNING, "Absurd account balance! Account: "+acc+" "+accountDescriptions.get(acc)
+							+", category: LIABILITY, balance: "+curr_balance+", prev: "+prev_balance
+							+", taxpayer: "+getTaxpayerId()+", year: "+getTaxYear()+", journal entryId: "+String.format("#%06d", transactionId)
+							+", trackInfo: "+currTransactionTrackingInfoForWarnings);
+				}
+				curr_total_liability_balance += curr_balance;
+				prev_total_liability_balance += prev_balance;
+			}
+			if ((roundDecimals(curr_total_liability_balance)>roundDecimals(curr_total_asset_balance)) 
+					&& (roundDecimals(prev_total_liability_balance)<=roundDecimals(prev_total_asset_balance))) {
+				// Not exactly an 'absurd hypothesis', but we shall warn nonetheless
+				log.log(Level.WARNING, "Absurd account balance! The total assets amounts to "+curr_total_asset_balance
+					+", but the total liabilities amounts to the greater value: "+curr_total_liability_balance
+					+", taxpayer: "+getTaxpayerId()+", year: "+getTaxYear()+", journal entryId: "+String.format("#%06d", transactionId)
+					+", trackInfo: "+currTransactionTrackingInfoForWarnings);
+			}
+			double prev_total_revenues = 0;
+			double curr_total_revenues = 0;
+			for (String acc: revenueAccounts) {
+				double curr_balance = -accountBalance.getOrDefault(acc, 0.0); // invert the sign because by convention we represent credit as negative values
+				double prev_balance = -previousBalancesForWarnings.getOrDefault(acc, 0.0); // invert the sign because by convention we represent credit as negative values
+				prev_total_revenues += prev_balance;
+				curr_total_revenues += curr_balance;
+			}
+			double prev_total_expenses = 0;
+			double curr_total_expenses = 0;
+			for (String acc: expenseAccounts) {
+				double curr_balance = accountBalance.getOrDefault(acc, 0.0); 
+				double prev_balance = previousBalancesForWarnings.getOrDefault(acc, 0.0);
+				prev_total_expenses += prev_balance;
+				curr_total_expenses += curr_balance;
+			}
+			if ((roundDecimals(curr_total_expenses)>roundDecimals(curr_total_revenues)) 
+					&& (roundDecimals(prev_total_expenses)<=roundDecimals(prev_total_revenues))) {
+				// Not exactly an 'absurd hypothesis', but we shall warn nonetheless
+				log.log(Level.WARNING, "Absurd account balance! The total revenues amounts to "+curr_total_revenues
+					+", but the total expenses amounts to the greater value: "+curr_total_expenses
+					+", taxpayer: "+getTaxpayerId()+", year: "+getTaxYear()+", journal entryId: "+String.format("#%06d", transactionId)
+					+", trackInfo: "+currTransactionTrackingInfoForWarnings);			
+			}
+			
+			previousBalancesForWarnings = new HashMap<>(accountBalance);
+		}
+		
 	}
 	
 	/**
@@ -602,6 +731,12 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				nextDebits.add(entry);
 			else
 				nextCredits.add(entry);
+		}
+		
+		if (LOG_WARN_ABSURD_BALANCES) {
+			// Keep track of additional information about the creation of this transaction in case we need to report
+			// warnings about it
+			currTransactionTrackingInfoForWarnings = pattern.name();
 		}
 	}
 	
@@ -654,11 +789,17 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				ListUtils.subtract(
 				choosableAccounts,
 					expenseAccounts),
-					assetAccountsWithNoBalance); 
+					assetAccountsWithNoBalance);
+		
+		// Computes the total balance for ASSETS and for LIABILITIES in order to prevent unusual situation of having total LIABILITIES greater than total ASSETS
+		double assets_total_balance = getBalance(assetAccounts);
+		double liabilities_total_balance = -getBalance(liabilityAccounts); // negative means 'credit', so we invert the sign for comparison with assets
+		double revenues_total_balance = -getBalance(revenueAccounts); // negative means 'credit', so we invert the sign for comparison with assets
+		double expenses_total_balance = getBalance(expenseAccounts); 
+		
 		// Choose DEBIT entries
 		for (int i=0; i<transactionDebits; i++) {
-			double amount = randomDataGenerator.nextRandomDecimal().doubleValue();
-			amount = Math.floor(amount * 100.0) / 100.0; // round to 2 decimals
+			double amount = roundDecimals(randomDataGenerator.nextRandomDecimal().doubleValue());
 			String account = chooseDebitedAccount(amount, choosableAccountsForDebit);
 			if (account!=null) {
 				// Avoid leaving LIABILITY or EQUITY accounts with negative (debit) balance
@@ -666,8 +807,24 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						|| equityAccounts.contains(account)) {
 					Double balance =  - accountBalance.getOrDefault(account, 0.0);	// by convention in 'accountBalance' we keep credit balance as negative value
 					if (balance > 0 && balance<amount) {
-						amount = balance;	// if the randomly chosen amount surpasses the account balance, use the remaining balance
-						amount = Math.floor(amount * 100.0) / 100.0; // round to 2 decimals
+						amount = roundDecimals(balance);	// if the randomly chosen amount surpasses the account balance, use the remaining balance
+					}
+				}
+				// Avoid leaving EXPENSES accounts higher than overall REVENUES
+				else if (expenseAccounts.contains(account)) {
+					if (revenues_total_balance<=(expenses_total_balance+amount)) {
+						double limited_amount = revenues_total_balance - expenses_total_balance;
+						if (limited_amount>SMALL_VALUE) {
+							amount = limited_amount;
+							expenses_total_balance += amount;
+						}
+						else {
+							choosableAccountsForDebit.removeAll(expenseAccounts);
+							account = chooseDebitedAccount(amount, choosableAccountsForDebit);
+						}
+					}
+					else {
+						expenses_total_balance += amount;
 					}
 				}
 			}
@@ -679,21 +836,26 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			choosableAccountsForDebit.remove(account);
 			choosableAccountsForCredit.remove(account);
 			totalDebitsAmount += amount;
+			if (assetAccounts.contains(account))
+				assets_total_balance += amount;
+			else if (liabilityAccounts.contains(account))
+				liabilities_total_balance -= amount; // negative means 'credit', so we invert the sign for comparison with assets
 		}
 		// Choose CREDIT entries
 		if (transactionCredits==1) {
 			double amount = totalDebitsAmount;
 			List<String> assetAccountsWithNotEnoughBalance = assetAccounts.stream()
 					.filter(acc->accountBalance.getOrDefault(acc, 0.0)<=amount) 
-					.collect(Collectors.toList()); 
+					.collect(Collectors.toList());
 			choosableAccountsForCredit.removeAll(assetAccountsWithNotEnoughBalance);
+			if (assets_total_balance<=liabilities_total_balance+amount) {
+				choosableAccountsForCredit.removeAll(liabilityAccounts);
+			}
 			String account = chooseCreditedAccount(amount, choosableAccountsForCredit);
 			if (account==null)
 				account = revenueAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(revenueAccounts.size()));
 			PartialEntry entry = new PartialEntry(account, amount);
 			nextCredits.add(entry);
-			choosableAccounts.remove(account);
-			choosableAccountsForCredit.remove(account);
 		}
 		else {
 			int[] grade = IntStream.range(0, transactionCredits).map(i->1+randomDataGenerator.getRandomGenerator().nextInt(10)).toArray();
@@ -705,21 +867,35 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				boolean last_entry = (i==transactionCredits-1);
 				if (last_entry) {
 					// The last one must complete the whole value (avoid problem with rounding precision or with the surplus discounted in the next condition block)
-					value = totalDebitsAmount - accumulated;
-					value = Math.round(value * 100.0) / 100.0; // round to 2 decimals
+					value = roundDecimals(totalDebitsAmount - accumulated);
 				}
 				else {
-					value = totalDebitsAmount * proportion;
-					value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
+					value = roundDecimals(totalDebitsAmount * proportion);
 				}
-				String account = chooseCreditedAccount(value, choosableAccountsForCredit);
+				
+				List<String> choosableAccountsForCreditThisEntry = choosableAccountsForCredit;
+				
+				// Avoid choosing for this CREDIT some ASSET account with not enough balance
+				final double amount = value;
+				List<String> assetAccountsWithNotEnoughBalance = assetAccounts.stream()
+						.filter(acc->accountBalance.getOrDefault(acc, 0.0)<=amount) 
+						.collect(Collectors.toList()); 
+				if (!assetAccountsWithNotEnoughBalance.isEmpty()) {
+					assetAccountsWithNotEnoughBalance = new ArrayList<>(choosableAccountsForCredit);
+					choosableAccountsForCreditThisEntry.removeAll(assetAccountsWithNotEnoughBalance);
+				}
+
+				if (assets_total_balance<=liabilities_total_balance+amount) {
+					choosableAccountsForCreditThisEntry.removeAll(liabilityAccounts);
+				}
+
+				String account = chooseCreditedAccount(value, choosableAccountsForCreditThisEntry);
 				// Avoid leaving ASSET accounts with negative (credit) balance (unless it's the last entry for this transaction)
 				if (account!=null && !last_entry 
 						&& assetAccounts.contains(account)) {
 					Double balance =  accountBalance.getOrDefault(account, 0.0);	// by convention in 'accountBalance' we keep debit balance as positive value
 					if (balance > 0 && balance<value) {
-						value = balance;	// if the randomly chosen amount surpasses the account balance, use the remaining balance
-						value = Math.floor(value * 100.0) / 100.0; // round to 2 decimals
+						value = roundDecimals(balance);	// if the randomly chosen amount surpasses the account balance, use the remaining balance
 					}						
 				}
 				if (account==null)
@@ -729,8 +905,25 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				choosableAccounts.remove(account);
 				choosableAccountsForCredit.remove(account);
 				accumulated += value;
+				
+				if (assetAccounts.contains(account))
+					assets_total_balance -= amount;
+				else if (liabilityAccounts.contains(account))
+					liabilities_total_balance += amount; // negative means 'credit', so we invert the sign for comparison with assets
 			}
 		}
+		
+		if (LOG_WARN_ABSURD_BALANCES) {
+			// Keep track of additional information about the creation of this transaction in case we need to report
+			// warnings about it
+			currTransactionTrackingInfoForWarnings = new StringBuilder()
+					.append("random of ")
+					.append(transactionDebits)
+					.append(" debits and ")
+					.append(transactionCredits)
+					.append(" credits")
+					.toString();
+		}		
 	}
 	
 	/**
@@ -767,5 +960,13 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	public void close() throws IOException {
 		
 	}
+
+	/**
+	 * Round to two decimals
+	 */
+	private static double roundDecimals(double amount) {
+		return Math.round(amount * 100.0) / 100.0; // round to 2 decimals
+	}
+
 
 }
