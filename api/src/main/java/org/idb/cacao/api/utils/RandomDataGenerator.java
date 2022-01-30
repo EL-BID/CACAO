@@ -234,14 +234,18 @@ public class RandomDataGenerator {
 	}
 
 	public Number nextRandomDecimal() {
+		return nextRandomLogNormal(numericLognormalMed, numericLognormalVar);
+	}
+	
+	public Number nextRandomLogNormal(double logNormalMed, double logNormalVar) {
 		// Approaches a normal distribution (roughly)
 		double r = nextRandomGauss();
 		// Turn into a lognormal distribution (more closely related to monetary values)
-		double v = Math.exp(numericLognormalMed + r*numericLognormalVar);
+		double v = Math.exp(logNormalMed + r*logNormalVar);
 		v = Math.floor(v*100.0)/100.0; // keeps only 2 decimal places
-		return v;
+		return v;		
 	}
-	
+
 	public double nextRandomGauss() {
 		// Approaches a normal distribution (roughly)
 		double r = random.nextDouble()*2.0 - 1.0;	// [-1.0 - 1.0]
