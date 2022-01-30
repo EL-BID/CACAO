@@ -1205,6 +1205,7 @@ public class SyncAPIService {
 					throw new RuntimeException(ex2);
 				}
 			}
+			bulkRequest.requests().clear();
 		}		
 	}
 }

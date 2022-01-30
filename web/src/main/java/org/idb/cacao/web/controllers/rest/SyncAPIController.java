@@ -893,9 +893,17 @@ public class SyncAPIController {
 		query = query.must(b);
 		
 		if (lineStart>0 && lineFieldName!=null) {
-			RangeQueryBuilder b2 = new RangeQueryBuilder(lineFieldName)
-					.from(lineStart, /*includeLower*/true);
-			query = query.must(b2);
+			// If the line start parameter has been informed, we will consider this as an additional filter if and only if
+			// the timestamp of the indexed record is the same as the start date/time parameter. Because if the timestamp of the record is higher than the
+			// start date/time parameter we will accept any line number
+			// This additional query will become something like this:
+			//    doc[${timestamp}].value > ${param.start}   OR   doc[${line}].value > ${param.lineStart}
+			BoolQueryBuilder additional_query = QueryBuilders.boolQuery();
+			additional_query.should(new RangeQueryBuilder(timestampFieldName)
+					.from(ParserUtils.formatTimestampES(new Date(start)), /*includeLower*/false));
+			additional_query.should(new RangeQueryBuilder(lineFieldName).from(lineStart, /*includeLower*/true));
+			additional_query.minimumShouldMatch(1);
+			query = query.must(additional_query);
 		}
 
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
