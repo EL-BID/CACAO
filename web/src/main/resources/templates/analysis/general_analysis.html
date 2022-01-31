@@ -175,7 +175,7 @@
     	                "type": "quantitative",          
     	                "scale": {
     	                  "zero": false,
-    	                  "domain": [-273.02556324005127, 399.3092956542969]
+    	                  "domain": [data.scaleMin, data.scaleMax]
     	                },
     	                "title": "Min",
     	                "axis": {"title": null}
@@ -193,7 +193,7 @@
     	          },
     	          {
     	            "mark": {"type": "tick", "color": "white", "size": 18},
-    	            "encoding": {"x": {"field": "median", "type": "quantitative"}}
+    	            "encoding": {"x": {"field": "median", "type": "quantitative", "title": "Median"}}
     	          },
     	          {
     	            "transform": [{"flatten": ["normalizedOutliers"]}],
