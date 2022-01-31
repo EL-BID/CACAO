@@ -889,6 +889,7 @@ public class SyncAPIController {
 	/**
 	 * Copies all stored data submitted or changed between two timestamps. May be data produced by the 'validation' phase or by 'ETL' phase
 	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public long syncIndexedData(String index_name, 
 			String timestampFieldName, long start, long end,
 			String lineFieldName, long lineStart,
@@ -962,7 +963,7 @@ public class SyncAPIController {
 			// If we have a lot of records to return, do a SCROLL
 			
 			final BoolQueryBuilder QUERY = query;
-			stream = SearchUtils.findWithScroll(/*entity*/Map.class, index_name, elasticsearchClient, 
+			stream = (Stream<Map<?,?>>)(Stream)SearchUtils.findWithScroll(/*entity*/Map.class, index_name, elasticsearchClient, 
 				/*customizeSearch*/searchSourceBuilder->{
 					searchSourceBuilder.query(QUERY);
 			        if (lineFieldName!=null) {
