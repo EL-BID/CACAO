@@ -114,6 +114,11 @@ import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.HttpUtils;
 import org.idb.cacao.web.utils.generators.FileGenerator;
 import org.idb.cacao.web.utils.generators.FileGenerators;
+import org.idb.cacao.web.utils.generators.SampleCompanySizes;
+import org.idb.cacao.web.utils.generators.SampleCounty;
+import org.idb.cacao.web.utils.generators.SampleEconomicSectors;
+import org.idb.cacao.web.utils.generators.SampleLegalEntities;
+import org.idb.cacao.web.utils.generators.SampleTaxRegimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
@@ -956,6 +961,22 @@ public class AdminService {
 							Taxpayer new_txp = new Taxpayer();
 							new_txp.setName(name);
 							new_txp.setTaxPayerId(taxpayerId);
+							
+							// suppose Qualifier1 refers to Economic Sector
+							new_txp.setQualifier1(SampleEconomicSectors.sample(randomDataGenerator.getRandomGenerator()).getName());
+
+							// suppose Qualifier2 refers to Legal Entity
+							new_txp.setQualifier2(SampleLegalEntities.sample(randomDataGenerator.getRandomGenerator()).getName());
+
+							// suppose Qualifier3 refers to County
+							new_txp.setQualifier3(SampleCounty.sample(randomDataGenerator.getRandomGenerator()).getName());
+
+							// suppose Qualifier4 refers to Size of Company
+							new_txp.setQualifier4(SampleCompanySizes.sample(randomDataGenerator.getRandomGenerator()).getName());
+
+							// suppose Qualifier5 refers to Tax Regime
+							new_txp.setQualifier5(SampleTaxRegimes.sample(randomDataGenerator.getRandomGenerator()).getName());
+
 							taxPayerRepository.saveWithTimestamp(new_txp);
 						}
 					}
