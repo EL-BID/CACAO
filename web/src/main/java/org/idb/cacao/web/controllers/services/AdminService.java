@@ -1208,13 +1208,17 @@ public class AdminService {
 						.collect(Collectors.toMap(Function.identity(), 
 								(e)->OffsetSpec.latest()));
 					Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
+					long total = 0;
 					for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
 						int part = tp_info.partition();
 						ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
 						long offset = (offset_info==null) ? 0 : offset_info.offset();
 						report.append(String.format("%-20s\t%d\t%d\n",topic, part, offset));
+						total += offset;
 						
 					} // LOOP over each partition of a topic
+					report.append(String.format("%-20s\t%s\t%d\n",topic, "total", total));
+					report.append("\n");
 				} // LOOP over each topic
 
 			}

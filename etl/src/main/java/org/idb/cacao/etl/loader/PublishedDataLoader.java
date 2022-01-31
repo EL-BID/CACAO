@@ -113,6 +113,7 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 			request.setRefreshPolicy(RefreshPolicy.NONE);
 			elasticsearchClient.bulk(request,
 				RequestOptions.DEFAULT);
+			request.requests().clear();
 		}
 	}
 
