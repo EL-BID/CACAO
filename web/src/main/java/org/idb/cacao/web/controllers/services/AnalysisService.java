@@ -1,5 +1,6 @@
 package org.idb.cacao.web.controllers.services;
 
+import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Precision;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -23,9 +24,9 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.Avg;
 import org.elasticsearch.search.aggregations.metrics.MedianAbsoluteDeviation;
+import org.elasticsearch.search.aggregations.metrics.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.utils.IndexNamesUtils;
@@ -404,18 +405,18 @@ public class AnalysisService {
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
 
-		// Filter by taxpayerId
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
+		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 		for (String argument : taxpayerIds) {
 			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
 		}
 		subquery = subquery.minimumShouldMatch(1);
-		// query = query.should(subquery);
+		query = query.must(subquery);
 
 		// Filter for year
-		// query = query.must(new TermQueryBuilder("year", year));
+		query = query.must(new TermQueryBuilder("year", year));
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
@@ -448,6 +449,11 @@ public class AnalysisService {
 	 * @return A {@link Map} of values separated by taxpayers
 	 */
 	public AnalysisData getGeneralAnalysisValues(String qualifier, String qualifierValue, int year) {
+		
+		if ( qualifier == null || qualifier.isEmpty() || qualifierValue == null || qualifierValue.isEmpty() ) {
+			log.log(Level.SEVERE, "No parameters provided");
+			return null;
+		}
 
 		List<String> taxpayerIds = getTaxPayersId(qualifier, qualifierValue);
 
@@ -499,8 +505,8 @@ public class AnalysisService {
 					Avg average = statementNameBucket.getAggregations().get("average");
 					MedianAbsoluteDeviation deviation = statementNameBucket.getAggregations().get("deviation");
 					
-					double averegaValue = average == null ? 0d: average.getValue();
-					double deviationValue = deviation == null ? 0d : deviation.value();
+					double averegaValue = average == null ? 0d: Precision.round(average.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
+					double deviationValue = deviation == null ? 0d : Precision.round(deviation.value(), 2, BigDecimal.ROUND_HALF_DOWN);
 
 					Percentiles percentile = statementNameBucket.getAggregations().get("amount");
 					if (percentile != null) {
@@ -509,11 +515,11 @@ public class AnalysisService {
 							double percent = item.getPercent();
 
 							if (percent == 25) // First quartile
-								analysisItem.setQ1(item.getValue());
+								analysisItem.setQ1(Precision.round(item.getValue(), 2, BigDecimal.ROUND_HALF_DOWN));
 							else if (percent == 50) // Median
-								analysisItem.setMedian(item.getValue());
+								analysisItem.setMedian(Precision.round(item.getValue(), 2, BigDecimal.ROUND_HALF_DOWN));
 							else if (percent == 75) // Third quartile
-								analysisItem.setQ3(item.getValue());
+								analysisItem.setQ3(Precision.round(item.getValue(), 2, BigDecimal.ROUND_HALF_DOWN));
 
 						});
 
@@ -532,7 +538,7 @@ public class AnalysisService {
 
 			// Add outliers
 			for (AnalysisItem item : items) {
-				addOutliers(item, year);
+				addOutliers(item, year, taxpayerIds);
 			}
 			
 			AnalysisData data = new AnalysisData();
@@ -577,6 +583,8 @@ public class AnalysisService {
 				else if ( value > max )
 					value = normalize(value, item.getMin(), item.getMax(), bigger, true /*superior*/);					
 				
+				value = Precision.round(value, 2, BigDecimal.ROUND_HALF_DOWN);
+				
 				Outlier copy = new Outlier(outlier.getTaxpayerId(),
 						outlier.getTaxpayerName() + " : " + value, value);
 				item.addNormalizedOutlier(copy);				
@@ -599,12 +607,12 @@ public class AnalysisService {
 		if ( superior ) {
 		
 			double viewLimit = (max + 100) * 0.9d;
-			return ( ( (value - max) * viewLimit) / (limit-max));
+			return Precision.round(( ( (value - max) * viewLimit) / (limit-max)), 2, BigDecimal.ROUND_HALF_DOWN);
 					
 		}
 		
 		double viewLimit = (min - 100) * 0.9d;
-		return ( ( (value - min) * viewLimit ) / (limit-min));
+		return Precision.round(( ( (value - min) * viewLimit ) / (limit-min)), 2, BigDecimal.ROUND_HALF_DOWN);
  		
 	}	
 
@@ -614,14 +622,14 @@ public class AnalysisService {
 	 * @param item Analysis item
 	 * @param year Year of analysis
 	 */
-	private void addOutliers(AnalysisItem item, int year) {
+	private void addOutliers(AnalysisItem item, int year, List<String> taxpayerIds) {
 
 		if (item.getStatementName() == null)
 			return;
 
 		// Add outliers for minimal value
 		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementCode(), item.getMin(),
-				year);
+				year, taxpayerIds);
 
 		// Execute a search
 		SearchResponse sresp = null;
@@ -653,8 +661,7 @@ public class AnalysisService {
 
 					double value = 0;
 					if (amount != null) {
-						value = amount.getValue();
-
+						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					}
 
 					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
@@ -667,7 +674,7 @@ public class AnalysisService {
 		}
 
 		// Add outliers for maximal value
-		searchRequest = getRequestForOutliers(false /* min */, item.getStatementCode(), item.getMax(), year);
+		searchRequest = getRequestForOutliers(false /* min */, item.getStatementCode(), item.getMax(), year, taxpayerIds);
 
 		// Execute a search
 		sresp = null;
@@ -699,7 +706,7 @@ public class AnalysisService {
 
 					double value = 0;
 					if (amount != null) {
-						value = amount.getValue();
+						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					}
 
 					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
@@ -720,9 +727,10 @@ public class AnalysisService {
 	 * @param statementCode
 	 * @param value
 	 * @param year
+	 * @param taxpayerIds
 	 * @return A {@link SearchRequest}
 	 */
-	private SearchRequest getRequestForOutliers(boolean min, String statementCode, double value, int year) {
+	private SearchRequest getRequestForOutliers(boolean min, String statementCode, double value, int year, List<String> taxpayerIds) {
 
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
@@ -730,6 +738,14 @@ public class AnalysisService {
 		// Filter by statementCode
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		query = query.must(new TermQueryBuilder("statement_entry_code.keyword", statementCode));
+		
+		// Filter by taxpayer id
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		for (String argument : taxpayerIds) {
+			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);		
 
 		// Filter by year
 		query = query.must(new TermQueryBuilder("year", year));
@@ -765,13 +781,13 @@ public class AnalysisService {
 	 * @return A {@link List} of taxpayers
 	 */
 	private List<String> getTaxPayersId(String qualifier, String qualifierValue) {
-
+		
 		// Index over 'balance sheet monthly' objects
 		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
-
+		
 		// Filter by qualifier
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.must(new TermQueryBuilder(qualifier + ".keyword", qualifierValue));
+		query = query.should(new TermQueryBuilder(qualifier + ".keyword", qualifierValue));
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
@@ -866,7 +882,7 @@ public class AnalysisService {
 				if (value == null || value.isEmpty())
 					continue;
 
-				values.add(StringUtils.capitalize(value));
+				values.add(value);
 
 			}
 
@@ -921,7 +937,7 @@ public class AnalysisService {
 				if (value == null || value.isEmpty())
 					continue;
 
-				values.add(StringUtils.capitalize(value));
+				values.add(value);
 
 			}
 

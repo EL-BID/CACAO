@@ -19,8 +19,11 @@
  *******************************************************************************/
 package org.idb.cacao.web.dto;
 
+import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.commons.math3.util.Precision;
 
 public class AnalysisItem {
 	
@@ -75,15 +78,15 @@ public class AnalysisItem {
 	}
 	
 	public double getIIQ() {
-		return (q3 - q1);
+		return Precision.round((q3 - q1), 2, BigDecimal.ROUND_HALF_DOWN);
 	}
 	
 	public double getMax() {
-		return (q3 + (1.5d * getIIQ()) );
+		return Precision.round((q3 + (1.5d * getIIQ()) ), 2, BigDecimal.ROUND_HALF_DOWN);
 	}
 	
 	public double getMin() {
-		return (q1 - (1.5d * getIIQ()) );
+		return Precision.round((q1 - (1.5d * getIIQ()) ), 2, BigDecimal.ROUND_HALF_DOWN);
 	}
 	
 	public double getMedian() {
