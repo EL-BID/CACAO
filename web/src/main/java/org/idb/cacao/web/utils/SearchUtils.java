@@ -116,7 +116,7 @@ public class SearchUtils {
 			AdvancedSearch search = new AdvancedSearch();
 			Arrays.stream(filters)
 			  .forEach(filter -> search.addFilter( filter.isString() ? 
-					  new AdvancedSearch.QueryFilterTerm(filter.getField(), filter.getStringValue()) :
+					  new AdvancedSearch.QueryFilterTerm(filter.getField(), filter.getStringValue() + "*") :
 					  new AdvancedSearch.QueryFilterDate(filter.getField(), filter.getProperty("start"), filter.getProperty("end"))));
 			return Optional.of(search);
 		} catch (JsonProcessingException e) {

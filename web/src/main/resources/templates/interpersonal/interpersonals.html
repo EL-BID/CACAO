@@ -296,10 +296,10 @@ let table = new Tabulator('#table', {
         }
     },
 	columns:[ //Define Table Columns
-		{title: /*[[#{interpersonal.person1}}*/ "Referring Person", field:"personId1"},
-		{title: /*[[#{interpersonal.person2}}*/ "Referred Person", field:"personId2" },
+		{title: /*[[#{interpersonal.person1}}*/ "Referring Person", field:"personId1", headerFilter: true},
+		{title: /*[[#{interpersonal.person2}}*/ "Referred Person", field:"personId2" , headerFilter: true},
 		{title: /*[[#{interpersonal.relationship.type}}*/ "Relationship Type", field:"relationshipType",
-		   formatter:"lookup", formatterParams: typeLookup},
+		   formatter:"lookup", formatterParams: typeLookup, headerFilter: 'select', headerFilterParams: { values: typeLookup }},
 		{title: /*[[#{interpersonal.removed}]]}*/ "Removed", field:"removed" },
 		[# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
@@ -313,20 +313,19 @@ table.on('rowClick', function(e, row) {
     window.location.replace([[@{/interpersonals/}]] + row.getIndex());
 })
 
-let showHeaderFilter = false
+let showHeaderFilter = true
+let toggleFilter = function() {
+    showHeaderFilter = ! showHeaderFilter
+    if(!showHeaderFilter) {
+        table.clearHeaderFilter()
+    }
+    $('.tabulator-header-filter').toggle(showHeaderFilter)
+    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+}
+
 table.on("tableBuilt", function(){
-  $('#filter').click( function() {
-      showHeaderFilter = !showHeaderFilter
-      table.getHeaderFilters().forEach( t => table.setHeaderFilterValue(t.field, ''))
-      let cols = ['personId1', 'personId2']
-      cols.forEach( name =>
-        table.updateColumnDefinition(name, { headerFilter: showHeaderFilter})
-      )
-      if(showHeaderFilter)
-        table.updateColumnDefinition('relationshipType', { headerFilter: 'select', headerFilterParams: { values: typeLookup } })
-      else
-    	table.updateColumnDefinition('relationshipType', { headerFilter: false} )
-  })
+    $('#filter').click( toggleFilter )
+    toggleFilter()
 })
 
 </script>

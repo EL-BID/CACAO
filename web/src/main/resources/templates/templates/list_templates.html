@@ -75,10 +75,11 @@ table = new Tabulator('#table', {
 		[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
 		{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editRow, headerSort:false, width:45},
 		[/]
-		{title: /*[[#{template.name}]]*/ "Name", field:"name", minWidth: 140},
-		{title: /*[[#{template.group}]]*/ "Group", field:"group", minWidth: 100},
-		{title: /*[[#{template.version}]]*/ "Version", field:"version", minWidth: 100},
-		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150 },
+		{title: /*[[#{template.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
+		{title: /*[[#{template.group}]]*/ "Group", field:"group", minWidth: 100, headerFilter: true},
+		{title: /*[[#{template.version}]]*/ "Version", field:"version", minWidth: 100, headerFilter: true},
+		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150,
+			headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
 		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
 			formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
 	]
@@ -90,21 +91,19 @@ table.on('rowClick', function(e, row) {
 	window.location.replace([[@{/templates/}]] + row.getIndex());
 })
 
-let showHeaderFilter = false
+let showHeaderFilter = true
+let toggleFilter = function() {
+    showHeaderFilter = ! showHeaderFilter
+    if(!showHeaderFilter) {
+        table.clearHeaderFilter()
+    }
+    $('.tabulator-header-filter').toggle(showHeaderFilter)
+    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+}
+
 table.on("tableBuilt", function(){
-  $('#filter').click( function() {
-      showHeaderFilter = !showHeaderFilter
-      table.getHeaderFilters().forEach( t => table.setHeaderFilterValue(t.field, ''))
-      let cols = ['name', 'group', 'version']
-      cols.forEach( name =>
-        table.updateColumnDefinition(name, { headerFilter: showHeaderFilter})
-      )
-      if(showHeaderFilter)
-        table.updateColumnDefinition('periodicity', { headerFilter: 'select', headerFilterParams: { values: periodicityLookup } })
-      else {
-    	table.updateColumnDefinition('periodicity', { headerFilter: false})
-      }
-  })
+    $('#filter').click( toggleFilter )
+    toggleFilter()
 })
 </script>
 </body>
