@@ -791,7 +791,10 @@ public class SearchUtils {
 			Map<String, Object> map = hit.getSourceAsMap();
 			map.put("id", hit.getId());
 			map.remove("_class");
-			return (T)mapper.convertValue(map, entity);
+			if (entity==null || Map.class==entity)
+				return (T)map;
+			else
+				return (T)mapper.convertValue(map, entity);
 		}
 	}
 	

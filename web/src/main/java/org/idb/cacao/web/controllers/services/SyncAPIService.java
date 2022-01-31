@@ -130,7 +130,7 @@ public class SyncAPIService {
 	 * Too low means more delays between batches.<BR>
 	 * Too high means more memory consumed.
 	 */
-	private static final int BULK_LOAD_BATCH_COMMIT = 10_000;
+	private static final int BULK_LOAD_BATCH_COMMIT = 100_000;
 
     @Autowired
     private MessageSource messages;
@@ -390,7 +390,7 @@ public class SyncAPIService {
 		LongAdder sum_bytes = new LongAdder();
 		final long timestamp = System.currentTimeMillis();
 		
-		syncSomething(tokenApi, SyncContexts.ORIGINAL_FILES.getEndpoint(), start, end,
+		syncSomething(tokenApi, SyncContexts.ORIGINAL_FILES.getEndpoint(), start, end, /*limit*/-1,
 		/*consumer*/(entry,input)->{
 			String entry_name = entry.getName();
 			Matcher matcher_name_entry = pattern_name_entry.matcher(entry_name);
@@ -439,7 +439,7 @@ public class SyncAPIService {
 		
 		final BatchSave batch_to_save = new BatchSave(BATCH_SIZE, entity.getSimpleName(), repository);
 
-		syncSomething(tokenApi, uri, start, end,
+		syncSomething(tokenApi, uri, start, end, /*limit*/-1,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -608,7 +608,7 @@ public class SyncAPIService {
 		
 		final LongAdder recordsForCommit = new LongAdder();
 
-		syncSomething(tokenApi, uri, start, end,
+		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -688,7 +688,7 @@ public class SyncAPIService {
 
 		final LongAdder recordsForCommit = new LongAdder();
 
-		syncSomething(tokenApi, uri, start, end,
+		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -734,7 +734,7 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.KIBANA_ASSETS.getEndpoint();
 
-		syncSomething(tokenApi, uri, start, end,
+		syncSomething(tokenApi, uri, start, end, /*limit*/-1,
 		/*consumer*/(entry,input)->{
 			
 			// The entry name includes the index used for Kibana. We need to keep it. The rest of the entry name
@@ -827,7 +827,7 @@ public class SyncAPIService {
 		}
 	}
 
-	private void syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end,
+	private void syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end, long limit,
 			ConsumeSyncContents consumer) {
 		
 		ConfigSync config = configSyncService.getActiveConfig();
@@ -843,13 +843,17 @@ public class SyncAPIService {
 		String uri = "https://"+master+endPoint+"?start="+start;
 		if (end!=null && end.isPresent())
 			uri +="&end="+end.get();
+		if (limit>0)
+			uri += "&limit="+limit;
 		
 		boolean has_more = false; // will be set to TRUE if there is more data to SYNC for
 		
 		log.log(Level.INFO, "SYNC started for endpoint '"+endPoint+"'");
 		
 		OffsetDateTime lastTimeStart = (start==0) ? null : new Date(start).toInstant().atOffset(ZoneOffset.UTC);
-		
+
+		final LongAdder count_incoming_objects_overall = new LongAdder();
+
 		do {
 			
 			has_more = false; // resets the flag if we are repeating SYNC
@@ -888,6 +892,7 @@ public class SyncAPIService {
 							
 							consumer.load(ze, new NoClosingInputStream(zip_input));
 							count_incoming_objects.increment();
+							count_incoming_objects_overall.increment();
 							
 						} // LOOP through zip contents
 					} catch (IOException ex) {
@@ -938,7 +943,7 @@ public class SyncAPIService {
 				if (end!=null && end.isPresent())
 					uri +="&end="+end.get();
 				if (log.isLoggable(Level.INFO))
-					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri);
+					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri+" (got "+count_incoming_objects_overall.longValue()+" objects so far)");
 				has_more = true; // will repeat SYNC with remaining data
 				lastTimeStart = sync_info.get().getNextStart().toInstant().atOffset(ZoneOffset.UTC);
 			}

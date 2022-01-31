@@ -98,6 +98,7 @@ import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.api.utils.RandomDataGenerator;
 import org.idb.cacao.web.controllers.rest.AdminAPIController;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
@@ -1198,7 +1199,7 @@ public class AdminService {
 			// Show information about KAFKA topics
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
-				report.append(String.format("%-20s\t%s\t%s\n","topic","part","offset"));
+				report.append(String.format("%-20s\t%s\t%s\t%s\n","topic","part","offset","timestamp"));
 				ListTopicsResult topics_info = kafkaAdminClient.listTopics();
 				for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topics_info.names().get()).all().get().entrySet()) {
 					String topic = tp_entry.getKey();
@@ -1213,7 +1214,11 @@ public class AdminService {
 						int part = tp_info.partition();
 						ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
 						long offset = (offset_info==null) ? 0 : offset_info.offset();
-						report.append(String.format("%-20s\t%d\t%d\n",topic, part, offset));
+						long timestamp = (offset_info==null) ? 0 : offset_info.timestamp();
+						if (timestamp>0)
+							report.append(String.format("%-20s\t%d\t%d\t%s\n",topic, part, offset, ParserUtils.formatTimestampWithMS(new Date(timestamp))));
+						else
+							report.append(String.format("%-20s\t%d\t%d\n",topic, part, offset));
 						total += offset;
 						
 					} // LOOP over each partition of a topic

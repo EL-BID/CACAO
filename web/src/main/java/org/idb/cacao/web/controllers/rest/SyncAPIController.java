@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
@@ -50,6 +52,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
@@ -770,6 +773,7 @@ public class SyncAPIController {
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.<BR>
+	 * The 'limit' parameter is the maximum number of records to return from this request.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -781,6 +785,7 @@ public class SyncAPIController {
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
 			@ApiParam(value="The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.",required=false) @RequestParam("line_start") Optional<Long> opt_line_start,
+			@ApiParam(value="The 'limit' parameter is the maximum number of records to return from this request.",required=false) @RequestParam("limit") Optional<Long> opt_limit,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -850,7 +855,8 @@ public class SyncAPIController {
 				+"and ending at timestamp "+end
 				+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 				+") IP ADDRESS: "
-				+remote_ip_addr);
+				+remote_ip_addr
+				+" LIMIT: "+((opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST));
 
     	final String streaming_out_filename = index_name+"_"+start.toString()+".zip";
 		StreamingResponseBody responseBody = outputStream -> {
@@ -860,7 +866,8 @@ public class SyncAPIController {
 					start, end,
 					ValidatedDataFieldNames.LINE.getFieldName(),
 					(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
-					zip_out);
+					zip_out,
+					(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST);
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
@@ -885,9 +892,9 @@ public class SyncAPIController {
 	public long syncIndexedData(String index_name, 
 			String timestampFieldName, long start, long end,
 			String lineFieldName, long lineStart,
-			ZipOutputStream zip_out) throws IOException {
+			ZipOutputStream zip_out,
+			long limit) throws IOException {
 		
-    	SearchRequest searchRequest = new SearchRequest(index_name);
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
 		RangeQueryBuilder b = new RangeQueryBuilder(timestampFieldName)
 				.from(ParserUtils.formatTimestampES(new Date(start)), /*includeLower*/true)
@@ -908,27 +915,69 @@ public class SyncAPIController {
 			query = query.must(additional_query);
 		}
 		
-    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-    			.query(query); 
-        searchSourceBuilder.from(0);
-        searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST);
-        if (lineFieldName!=null) {
-        	searchSourceBuilder.sort(Arrays.asList(
-        		SortBuilders.fieldSort(timestampFieldName).order(SortOrder.ASC),
-        		SortBuilders.fieldSort(lineFieldName).order(SortOrder.ASC)));
-        }
-        else {
-        	searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
-        }
+		Stream<Map<?,?>> stream = null;
+		
+		if (limit<=MAX_RESULTS_PER_REQUEST) {
+			
+			// If we have just a few data to return, do a simple search
+		
+	    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+	    			.query(query); 
+	        searchSourceBuilder.from(0);
+	        searchSourceBuilder.size((int)limit);
+	        if (lineFieldName!=null) {
+	        	searchSourceBuilder.sort(Arrays.asList(
+	        		SortBuilders.fieldSort(timestampFieldName).order(SortOrder.ASC),
+	        		SortBuilders.fieldSort(lineFieldName).order(SortOrder.ASC)));
+	        }
+	        else {
+	        	searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
+	        }
+	        if (log.isLoggable(Level.FINE))
+	        	log.log(Level.FINE, "Index: "+index_name+", Search: "+searchSourceBuilder.toString());
+	        
+	    	SearchRequest searchRequest = new SearchRequest(index_name);
+	    	searchRequest.source(searchSourceBuilder);
+	    	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
 
-        // FIXME:
-		log.log(Level.INFO, "Index: "+index_name+", Search: "+searchSourceBuilder.toString());
+	        if (log.isLoggable(Level.FINE))
+	        	log.log(Level.FINE, "Index: "+index_name+", Search: "+searchSourceBuilder.toString()+", Replied hits: "+sresp.getHits().getHits().length+" total: "+sresp.getHits().getTotalHits().value);
 
-    	searchRequest.source(searchSourceBuilder);
-    	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
+			if (sresp==null) {
+				stream = Collections.<Map<?,?>>emptyList().stream();
+			}
+			else {
+				stream = StreamSupport.stream(sresp.getHits().spliterator(), /*parallel*/false)
+					.map(hit->{
+						Map<String,Object> map = hit.getSourceAsMap();
+						map.put("id", hit.getId());
+						map.remove("_class");
+						return map;
+					});
+			}
 
-        // FIXME:
-		log.log(Level.INFO, "Index: "+index_name+", Search: "+searchSourceBuilder.toString()+", Replied hits: "+sresp.getHits().getHits().length+" total: "+sresp.getHits().getTotalHits().value);
+		}
+		else {
+			
+			// If we have a lot of records to return, do a SCROLL
+			
+			final BoolQueryBuilder QUERY = query;
+			stream = SearchUtils.findWithScroll(/*entity*/Map.class, index_name, elasticsearchClient, 
+				/*customizeSearch*/searchSourceBuilder->{
+					searchSourceBuilder.query(QUERY);
+			        if (lineFieldName!=null) {
+			        	searchSourceBuilder.sort(Arrays.asList(
+			        		SortBuilders.fieldSort(timestampFieldName).order(SortOrder.ASC),
+			        		SortBuilders.fieldSort(lineFieldName).order(SortOrder.ASC)));
+			        }
+			        else {
+			        	searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
+			        }
+			        if (log.isLoggable(Level.FINE))
+			        	log.log(Level.FINE, "Index: "+index_name+", Scroll: "+searchSourceBuilder.toString());
+				});
+			
+		}		
 
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -940,55 +989,62 @@ public class SyncAPIController {
 		AtomicLong pending_timestamp = new AtomicLong();
 		AtomicLong pending_line = new AtomicLong();
 		
-		if (sresp!=null) {
-			for (SearchHit hit : sresp.getHits()) {
-				Map<String, Object> map = hit.getSourceAsMap();
-				map.put("id", hit.getId());
-				map.remove("_class");
-				Object timestamp = map.get(timestampFieldName);
-				Date timestamp_as_date = ValidationContext.toDate(timestamp);
-				Object lineNumber = (lineFieldName!=null) ? map.get(lineFieldName) : null;
-				
-				// FIXME:
-				if (counter.intValue()==0 && log.isLoggable(Level.INFO)) {
-					log.log(Level.INFO, "First record of index "+index_name+" with id: "+hit.getId()
-						+", timestamp: "+ParserUtils.formatTimestampWithMS(timestamp_as_date)
-						+", line: "+ValidationContext.toNumber(lineNumber));
+		if (stream!=null) {
+			final AtomicBoolean shouldBreak = new AtomicBoolean(false);
+			try {
+				Spliterator<Map<?,?>> spliterator = stream.spliterator();
+				boolean hadNext = true;
+				while (hadNext && !shouldBreak.get()) {
+					hadNext = spliterator.tryAdvance(map->{
+						Object timestamp = map.get(timestampFieldName);
+						Date timestamp_as_date = ValidationContext.toDate(timestamp);
+						Object lineNumber = (lineFieldName!=null) ? map.get(lineFieldName) : null;
+						
+						if (counter.intValue()==0 && log.isLoggable(Level.FINE)) {
+							log.log(Level.FINE, "First record of index "+index_name+" with id: "+map.get("id")
+								+", timestamp: "+ParserUtils.formatTimestampWithMS(timestamp_as_date)
+								+", line: "+ValidationContext.toNumber(lineNumber));
+						}
+						
+						if (counter.intValue()>=limit-1) {
+							// Actually we stop at 'MAX_RESULTS_PER_REQUEST-1' in this SYNC block because we need to
+							// store the timestamp for the next unread register and we can't search for MAX_RESULTS_PER_REQUEST+1
+							// elements
+							if (timestamp_as_date!=null) {
+								pending_timestamp.set((timestamp_as_date).getTime());
+							}
+							if (lineNumber!=null) {
+								pending_line.set(ValidationContext.toNumber(lineNumber).longValue());
+							}
+							shouldBreak.set(true);
+							return;
+						}
+			
+						String entry_name = (String)map.get("id");
+						ZipEntry ze = new ZipEntry(entry_name);
+						
+			    		if (timestamp_as_date!=null) {
+			    			long t = timestamp_as_date.getTime();
+							if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
+								actual_start_timestamp.set(t);
+							if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
+								actual_end_timestamp.set(t);
+							ze.setTime(t);
+			    		}
+			
+						try {
+							zip_out.putNextEntry(ze);
+							String json = mapper.writeValueAsString(map);
+							IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zip_out);
+							counter.increment();
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+					});
 				}
-				
-				if (counter.intValue()>=MAX_RESULTS_PER_REQUEST-1) {
-					// Actually we stop at 'MAX_RESULTS_PER_REQUEST-1' in this SYNC block because we need to
-					// store the timestamp for the next unread register and we can't search for MAX_RESULTS_PER_REQUEST+1
-					// elements
-					if (timestamp_as_date!=null) {
-						pending_timestamp.set((timestamp_as_date).getTime());
-					}
-					if (lineNumber!=null) {
-						pending_line.set(ValidationContext.toNumber(lineNumber).longValue());
-					}
-					break;
-				}
-	
-				String entry_name = hit.getId();
-				ZipEntry ze = new ZipEntry(entry_name);
-				
-	    		if (timestamp_as_date!=null) {
-	    			long t = timestamp_as_date.getTime();
-					if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
-						actual_start_timestamp.set(t);
-					if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
-						actual_end_timestamp.set(t);
-					ze.setTime(t);
-	    		}
-	
-				try {
-					zip_out.putNextEntry(ze);
-					String json = mapper.writeValueAsString(map);
-					IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zip_out);
-					counter.increment();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+			}
+			finally {
+				stream.close();
 			}
 		}
 
@@ -1017,6 +1073,7 @@ public class SyncAPIController {
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.<BR>
+	 * The 'limit' parameter is the maximum number of records to return from this request.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -1027,6 +1084,7 @@ public class SyncAPIController {
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
 			@ApiParam(value="The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.",required=false) @RequestParam("line_start") Optional<Long> opt_line_start,
+			@ApiParam(value="The 'limit' parameter is the maximum number of records to return from this request.",required=false) @RequestParam("limit") Optional<Long> opt_limit,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -1073,7 +1131,8 @@ public class SyncAPIController {
 				+"and ending at timestamp "+end
 				+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 				+") IP ADDRESS: "
-				+remote_ip_addr);
+				+remote_ip_addr
+				+" LIMIT: "+((opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST));
 
     	final String streaming_out_filename = indexname+"_"+start.toString()+".zip";
 		StreamingResponseBody responseBody = outputStream -> {
@@ -1083,7 +1142,8 @@ public class SyncAPIController {
 				/*timestampFieldName*/PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), start, end, 
 				/*lineFieldName*/PublishedDataFieldNames.LINE.getFieldName(),
 				(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
-				zip_out);
+				zip_out,
+				(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST);
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
