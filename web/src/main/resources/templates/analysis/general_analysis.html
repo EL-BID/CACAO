@@ -99,7 +99,7 @@
 		   		minimumFractionDigits: 2,      	
 		   		maximumFractionDigits: 2,	
 			});			
-			return format(cell.getValue())
+			return format(cell.getValue()) + "%";
 		}
 	
 		$('#qualifiers').on('change', function() {
@@ -153,7 +153,7 @@
 	                	identifier  : 'year',
 	                	rules: [{
 	                    	type   : 'empty',
-	                    	prompt : [[#{year.missing}]]
+	                    	prompt : /*[[#{year.missing}]]*/ ''
 	                  	}]
 	              	},
 	          	},
@@ -233,7 +233,8 @@
     	            "transform": [{"flatten": ["normalizedOutliers"]}],
     	            "mark": {"type": "point", "style": "boxplot-outliers"},
     	            "encoding": {
-    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": "Outlier"}, "tooltip":{"field": "normalizedOutliers.taxpayerName"}}
+    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": "Outlier"}, 
+    	              		"tooltip":{"field": "normalizedOutliers.taxpayerName"}}
     	          }
     	        ]
    	        };	      
@@ -299,7 +300,7 @@
 					{title: /*[[#{taxpayer.name}]]*/ "Taxpayer Name", field:"taxpayerName", hozAlign:"left", headerSort:false},
 					{title: /*[[#{account.outlier.value}]]*/ "Value", field:"value", formatter: decimalFormatter, hozAlign:"right", headerSort:false},					
 				]
-			})	
+			});
 		}
 		
 	</script>
