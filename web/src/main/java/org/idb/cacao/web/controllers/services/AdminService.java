@@ -1181,14 +1181,14 @@ public class AdminService {
 			// Show information about KAFKA consumers
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
-				report.append(String.format("%-10s\t%-20s\t%s\t%s\n","group","topic","part","offset"));
+				report.append(String.format("%-10s\t%-20s\t%s\t%s\t%s\n","group","topic","part","offset","metadata"));
 				for (ConsumerGroupListing l:kafkaAdminClient.listConsumerGroups().all().get()) {
 					String groupId = l.groupId();
 					for (Map.Entry<TopicPartition,OffsetAndMetadata> entry:kafkaAdminClient.listConsumerGroupOffsets(groupId).partitionsToOffsetAndMetadata().get().entrySet()) {
 						String topic = entry.getKey().topic();
 						int part = entry.getKey().partition();
 						long offset = entry.getValue().offset();
-						report.append(String.format("%-10s\t%-20s\t%d\t%d\n", groupId, topic, part, offset));
+						report.append(String.format("%-10s\t%-20s\t%d\t%d\t%s\n", groupId, topic, part, offset, entry.getValue().metadata()));
 					}
 				}
 
