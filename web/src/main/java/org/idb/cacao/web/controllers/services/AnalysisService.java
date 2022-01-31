@@ -405,9 +405,9 @@ public class AnalysisService {
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
 
-		// Filter by taxpayerId
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
+		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 		for (String argument : taxpayerIds) {
 			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
@@ -538,7 +538,7 @@ public class AnalysisService {
 
 			// Add outliers
 			for (AnalysisItem item : items) {
-				addOutliers(item, year);
+				addOutliers(item, year, taxpayerIds);
 			}
 			
 			AnalysisData data = new AnalysisData();
@@ -622,14 +622,14 @@ public class AnalysisService {
 	 * @param item Analysis item
 	 * @param year Year of analysis
 	 */
-	private void addOutliers(AnalysisItem item, int year) {
+	private void addOutliers(AnalysisItem item, int year, List<String> taxpayerIds) {
 
 		if (item.getStatementName() == null)
 			return;
 
 		// Add outliers for minimal value
 		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementCode(), item.getMin(),
-				year);
+				year, taxpayerIds);
 
 		// Execute a search
 		SearchResponse sresp = null;
@@ -674,7 +674,7 @@ public class AnalysisService {
 		}
 
 		// Add outliers for maximal value
-		searchRequest = getRequestForOutliers(false /* min */, item.getStatementCode(), item.getMax(), year);
+		searchRequest = getRequestForOutliers(false /* min */, item.getStatementCode(), item.getMax(), year, taxpayerIds);
 
 		// Execute a search
 		sresp = null;
@@ -727,9 +727,10 @@ public class AnalysisService {
 	 * @param statementCode
 	 * @param value
 	 * @param year
+	 * @param taxpayerIds
 	 * @return A {@link SearchRequest}
 	 */
-	private SearchRequest getRequestForOutliers(boolean min, String statementCode, double value, int year) {
+	private SearchRequest getRequestForOutliers(boolean min, String statementCode, double value, int year, List<String> taxpayerIds) {
 
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
@@ -737,6 +738,14 @@ public class AnalysisService {
 		// Filter by statementCode
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		query = query.must(new TermQueryBuilder("statement_entry_code.keyword", statementCode));
+		
+		// Filter by taxpayer id
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		for (String argument : taxpayerIds) {
+			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);		
 
 		// Filter by year
 		query = query.must(new TermQueryBuilder("year", year));
