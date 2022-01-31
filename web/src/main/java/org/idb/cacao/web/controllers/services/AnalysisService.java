@@ -576,6 +576,9 @@ public class AnalysisService {
 			}
 			
 			for ( Outlier outlier : item.getOutliers() ) {
+			
+				outlier.setStatementName(item.getStatementName());
+				data.addOutlier(outlier);
 				
 				double value = outlier.getValue();
 				if ( value < min )
@@ -586,11 +589,12 @@ public class AnalysisService {
 				value = Precision.round(value, 2, BigDecimal.ROUND_HALF_DOWN);
 				
 				Outlier copy = new Outlier(outlier.getTaxpayerId(),
-						outlier.getTaxpayerName() + " : " + value, value);
+						outlier.getTaxpayerName() + " : " + outlier.getValue(), value);
 				item.addNormalizedOutlier(copy);				
 			}
 			
-		}
+		}		
+		
 	}	
 	
 	/**
@@ -665,7 +669,7 @@ public class AnalysisService {
 					}
 
 					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
-					item.addOutilier(outlier);
+					item.addOutlier(outlier);
 
 				}
 
@@ -710,7 +714,7 @@ public class AnalysisService {
 					}
 
 					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
-					item.addOutilier(outlier);
+					item.addOutlier(outlier);
 
 				}
 
@@ -745,7 +749,7 @@ public class AnalysisService {
 			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
 		}
 		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);		
+		//query = query.must(subquery);		
 
 		// Filter by year
 		query = query.must(new TermQueryBuilder("year", year));

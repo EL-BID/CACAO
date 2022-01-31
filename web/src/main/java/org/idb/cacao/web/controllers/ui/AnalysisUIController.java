@@ -22,6 +22,7 @@ package org.idb.cacao.web.controllers.ui;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -62,6 +63,8 @@ public class AnalysisUIController {
     	User user = UserUtils.getUser(auth);
     	if (user==null)
     		throw new UserNotFoundException();
+    	
+    	model.addAttribute("language", LocaleContextHolder.getLocale().toLanguageTag());
 		
         return "analysis/general_analysis";
 	}		

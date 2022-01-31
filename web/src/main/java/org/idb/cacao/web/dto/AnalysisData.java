@@ -29,6 +29,8 @@ public class AnalysisData {
 	private double scaleMax;
 	
 	private List<AnalysisItem> items;
+	
+	private List<Outlier> outliers;
 
 	public double getScaleMin() {
 		return scaleMin;
@@ -58,6 +60,20 @@ public class AnalysisData {
 	
 	public void addItem(AnalysisItem item) {
 		getItems().add(item);
+	}
+	
+	public List<Outlier> getOutliers() {
+		if ( outliers == null )
+			outliers = new LinkedList<>();
+		return outliers;
+	}
+
+	public void setOutliers(List<Outlier> outliers) {
+		this.outliers = outliers;
+	}
+	
+	public void addOutlier(Outlier outlier) {
+		getOutliers().add(outlier);	
 	}
 
 	@Override

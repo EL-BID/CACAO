@@ -41,7 +41,7 @@ public class AnalysisItem {
 	
 	private double deviation;
 	
-	private List<Outlier> outliers;
+	private transient List<Outlier> outliers;
 
 	private List<Outlier> normalizedOutliers;
 
@@ -107,7 +107,7 @@ public class AnalysisItem {
 		this.outliers = outliers;
 	}
 	
-	public void addOutilier(Outlier outlier) {
+	public void addOutlier(Outlier outlier) {
 		getOutliers().add(outlier);	
 	}
 
