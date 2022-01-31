@@ -85,6 +85,18 @@ public class ParserUtils {
     };
     
     /**
+     * Timestamp format that conforms to ISO 8601 with milçiseconds
+     */
+    private static final ThreadLocal<SimpleDateFormat> tlDateFormatWithMS = new ThreadLocal<SimpleDateFormat>() {
+
+		@Override
+		protected SimpleDateFormat initialValue() {
+			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+		}
+    	
+    };
+
+    /**
      * Timestamp format used in ElasticSearch
      */
     private static final ThreadLocal<SimpleDateFormat> tlDateFormatES = new ThreadLocal<SimpleDateFormat>() {
@@ -292,7 +304,16 @@ public class ParserUtils {
 			return null;
 		return tlDateFormat.get().format(timestamp);
 	}
-	
+
+    /**
+     * Return timestamp in a format that conforms to ISO 8601 with milliseconds
+     */
+	public static String formatTimestampWithMS(Date timestamp) {
+		if (timestamp==null)
+			return null;
+		return tlDateFormatWithMS.get().format(timestamp);
+	}
+
 	/**
 	 * Return indication that provided value looks like timestamp according to ISO 8601
 	 */
@@ -322,6 +343,20 @@ public class ParserUtils {
 		}		
 	}
 	
+	/**
+	 * Parse the provided value as a timestamp according to ISO 8601 with milliseconds
+	 */
+	public static Date parseTimestampWithMS(String value) {
+		if (value==null)
+			return null;
+		try {
+			return tlDateFormatWithMS.get().parse(value);
+		}
+		catch (Throwable ex) {
+			return null;
+		}		
+	}
+
     /**
      * Return timestamp in a format that conforms to Elasticsearch standard
      */

@@ -823,9 +823,9 @@ public class SyncAPIController {
 
 		if (!isSyncPublisherEnabled()) {
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 					+") IP ADDRESS: "
 					+remote_ip_addr
 					+". But it's DISABLED at configuration!");
@@ -834,9 +834,9 @@ public class SyncAPIController {
 
 		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 					+") IP ADDRESS: "
 					+remote_ip_addr
 					+". But has been REJECTED by the IP address filter!");
@@ -844,11 +844,11 @@ public class SyncAPIController {
 		}
 
 		log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
-				+" ("+ParserUtils.formatTimestamp(new Date(start))
+				+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 				+") "
 				+(opt_line_start.isPresent()?("and line_start ("+opt_line_start.get()+") "):"")
 				+"and ending at timestamp "+end
-				+" ("+ParserUtils.formatTimestamp(new Date(end))
+				+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 				+") IP ADDRESS: "
 				+remote_ip_addr);
 
@@ -865,9 +865,9 @@ public class SyncAPIController {
 			zip_out.finish();
 			response.flushBuffer();
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 					+") IP ADDRESS: "
 					+remote_ip_addr+
 					" FINISHED! Copied "+copied_files+" files");
@@ -952,7 +952,7 @@ public class SyncAPIController {
 				// FIXME:
 				if (counter.intValue()==0 && log.isLoggable(Level.INFO)) {
 					log.log(Level.INFO, "First record of index "+index_name+" with id: "+hit.getId()
-						+", timestamp: "+ParserUtils.formatTimestamp(timestamp_as_date)
+						+", timestamp: "+ParserUtils.formatTimestampWithMS(timestamp_as_date)
 						+", line: "+ValidationContext.toNumber(lineNumber));
 				}
 				
@@ -1046,9 +1046,9 @@ public class SyncAPIController {
 
 		if (!isSyncPublisherEnabled()) {
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 					+") IP ADDRESS: "
 					+remote_ip_addr
 					+". But it's DISABLED at configuration!");
@@ -1057,9 +1057,9 @@ public class SyncAPIController {
 
 		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 					+") IP ADDRESS: "
 					+remote_ip_addr
 					+". But has been REJECTED by the IP address filter!");
@@ -1067,11 +1067,11 @@ public class SyncAPIController {
 		}
 
 		log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
-				+" ("+ParserUtils.formatTimestamp(new Date(start))
+				+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 				+") "
 				+(opt_line_start.isPresent()?("and line_start ("+opt_line_start.get()+") "):"")
 				+"and ending at timestamp "+end
-				+" ("+ParserUtils.formatTimestamp(new Date(end))
+				+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 				+") IP ADDRESS: "
 				+remote_ip_addr);
 
@@ -1088,9 +1088,9 @@ public class SyncAPIController {
 			zip_out.finish();
 			response.flushBuffer();
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for published "+indexname+" data starting from timestamp "+start
-					+" ("+ParserUtils.formatTimestamp(new Date(start))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
-					+" ("+ParserUtils.formatTimestamp(new Date(end))
+					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
 					+") IP ADDRESS: "
 					+remote_ip_addr+
 					" FINISHED! Copied "+copied_files+" files");

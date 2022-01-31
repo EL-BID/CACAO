@@ -462,7 +462,10 @@ public class ValidationContext {
 				return parseDMY(value);
 			if (isYMD(value))
 				return parseYMD(value);
-			Date d = parseTimestamp(value);
+			Date d = parseTimestampWithMS(value);
+			if (d!=null)
+				return d;
+			d = parseTimestamp(value);
 			if (d!=null)
 				return d;
 			d = parseTimestampES(value);
