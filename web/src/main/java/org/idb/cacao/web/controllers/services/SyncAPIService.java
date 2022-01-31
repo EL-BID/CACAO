@@ -626,6 +626,8 @@ public class SyncAPIService {
 					.id(id)
 					.source(parsed_contents));
 
+			recordsForCommit.increment();
+			
 			if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
 				commitBulkRequest(bulkRequest, index_name);
 				recordsForCommit.reset();
@@ -705,6 +707,8 @@ public class SyncAPIService {
 			bulkRequest.add(new IndexRequest(indexname)
 					.id(id)
 					.source(parsed_contents));
+			
+			recordsForCommit.increment();
 			
 			if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
 				commitBulkRequest(bulkRequest, indexname);
