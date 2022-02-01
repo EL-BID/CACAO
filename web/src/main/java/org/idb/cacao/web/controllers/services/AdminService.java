@@ -46,12 +46,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.catalina.valves.rewrite.QuotedStringTokenizer;
 import org.apache.commons.cli.CommandLine;
@@ -82,6 +84,9 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.ResizeRequest;
 import org.elasticsearch.client.indices.ResizeResponse;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
@@ -100,6 +105,7 @@ import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.api.utils.RandomDataGenerator;
+import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.rest.AdminAPIController;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
 import org.idb.cacao.web.dto.FileUploadedEvent;
@@ -265,6 +271,12 @@ public class AdminService {
 		LOGDIR(AdminService::logdir,
 				"Return information about the directory for LOG files"),
 		
+		REDO(AdminService::redo,
+			"Redo some operation",
+			new Option("val","validation",true, "Redo the validation phase for one or more documents. Inform 'all' as parameter for this option in order to redo the validation for all previously uploaded documents. "
+					+ "Inform 'unprocessed' as parameter for this option in order to redo only those documents that are not in PROCESSED state."
+					+ "Inform 'processed' or 'pending' or 'received' or 'invalid' or 'valid' as parameter for this option in order to redo only those documents that are in the corresponding state.")),
+
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
@@ -1571,4 +1583,73 @@ public class AdminService {
 		return report.toString();
 	}
 
+	/**
+	 * Redo some operation
+	 */
+	public static Object redo(AdminService service, CommandLine cmdLine) throws Exception {
+
+		Option[] options = cmdLine.getOptions();
+		if (options==null || options.length==0) {		
+			return getHelp(AdminOperations.REDO);
+		}
+
+		StringBuilder report = new StringBuilder();
+		
+		if (cmdLine.hasOption("val")) {
+			// Redo validation phase
+			Stream<DocumentUploaded> stream;
+			String val_opt = cmdLine.getOptionValue("val");
+			if (val_opt.equalsIgnoreCase("all")) {
+				stream = ScrollUtils.findAll(service.documentUploadedRepository, service.elasticsearchClient, /*durationInMinutes*/5);
+			}
+			else if (val_opt.equalsIgnoreCase("unprocessed")
+					|| val_opt.equalsIgnoreCase("processed")
+					|| val_opt.equalsIgnoreCase("pending")
+					|| val_opt.equalsIgnoreCase("received")
+					|| val_opt.equalsIgnoreCase("invalid")
+					|| val_opt.equalsIgnoreCase("valid")) {
+				stream = ScrollUtils.findWithScroll(
+					/*entity*/DocumentUploaded.class, 
+					/*indexName*/"cacao_docs_uploaded", 
+					/*clientForScrollSearch*/service.elasticsearchClient, 
+					/*customizeSearch*/e->{
+						BoolQueryBuilder query = QueryBuilders.boolQuery();
+						if (val_opt.equalsIgnoreCase("unprocessed"))
+							query.mustNot(new TermQueryBuilder("situation.keyword", "PROCESSED"));
+						else if (val_opt.equalsIgnoreCase("processed"))
+							query.must(new TermQueryBuilder("situation.keyword", "PROCESSED"));
+						else if (val_opt.equalsIgnoreCase("pending"))
+							query.must(new TermQueryBuilder("situation.keyword", "PENDING"));
+						else if (val_opt.equalsIgnoreCase("invalid"))
+							query.must(new TermQueryBuilder("situation.keyword", "INVALID"));
+						else if (val_opt.equalsIgnoreCase("valid"))
+							query.must(new TermQueryBuilder("situation.keyword", "VALID"));
+						e.query(query);
+					},
+					/*durationInMinutes*/5);
+			}
+			else {
+				report.append("Invalid argument for '--validation' option: "+val_opt);
+				stream = null;
+			}
+			if (stream!=null) {
+				try {
+					AtomicInteger partition = new AtomicInteger(0);
+					stream.forEach(doc->{
+						// Generates an event at KAFKA in order to start the validation phase over this file
+						
+						FileUploadedEvent event = new FileUploadedEvent();
+						event.setFileId(doc.getId());
+						service.fileUploadedProducer.fileUploaded(event, partition.getAndIncrement());
+
+					});
+				}
+				finally {
+					stream.close();
+				}
+			}
+		}
+
+		return report.toString();
+	}
 }
