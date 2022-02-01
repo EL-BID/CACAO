@@ -88,7 +88,7 @@ this.table = new Tabulator('#table', {
     paginationMode: "remote", //enable remote pagination
     ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request
     paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
     ajaxContentType: "json",
     filterMode:"remote",
     sortMode: "remote",
@@ -108,6 +108,25 @@ this.table = new Tabulator('#table', {
         return url + '?' + p.toString()
     },
     responsiveLayout: "collapse",
+    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+    locale:'xx',
+    langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
     columns:[ //Define Table Columns
         {title: /*{{#domain.table.name}}*/ "Name", field:"name", minWidth: 140, headerFilter: true},
         {title: /*{{#domain.table.version}}*/ "Version", field:"version", hozAlign:"left", minWidth: 100, headerFilter: true },

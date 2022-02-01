@@ -185,7 +185,7 @@ let table = new Tabulator('#table', {
 	paginationMode: "remote", //enable remote pagination
 	ajaxURL: /*[[@{/api/docs_search}]]*/ "/api/docs_seach", //set url for ajax request
 	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
 	ajaxContentType: "json",
 	filterMode:"remote",
 	sortMode: "remote",
