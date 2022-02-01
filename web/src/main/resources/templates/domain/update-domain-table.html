@@ -147,22 +147,43 @@ var deleteEntry = function(e, cell) {
     })
     dlg.modal('show');
 }
+
+var languageLookup = {
+    [# th:each="l : ${languages}"]
+    [[${l.name}]] : [[${l.id}]],
+    [/]
+}
 var table = new Tabulator('#table', {
     index: 'id',
     layout: "fitColumns", //fit columns to width of table (optional)
     responsiveLayout: "collapse",
     pagination: true,
     paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+    locale:'xx',
+    langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
     columns:[ //Define Table Columns
-        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200"},
+        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200", headerFilter: true},
         {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
-        	formatterParams: {
-        		[# th:each="l : ${languages}"]
-        		[[${l.name}]] : [[${l.id}]],
-        		[/]
-        	}}, 
-        {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true },
+        	formatterParams: languageLookup, headerFilter: 'select', headerFilterParams: { values: languageLookup }}, 
+        {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true, headerFilter: true },
         {formatter:deleteIcon, width:50, tooltip: /*{{#{delete}}} */ "Delete", cellClick: deleteEntry, headerSort: false }
     ],
     data: domain_table.entries
@@ -219,7 +240,20 @@ $(document)
 	  onSuccess: add_entry
   })
 })
+let showHeaderFilter = true
+let toggleFilter = function() {
+    showHeaderFilter = ! showHeaderFilter
+    if(!showHeaderFilter) {
+        table.clearHeaderFilter()
+    }
+    $('.tabulator-header-filter').toggle(showHeaderFilter)
+    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+}
 
+table.on("tableBuilt", function(){
+    $('#filter').click( toggleFilter )
+    toggleFilter()
+})
 </script>
 </body>
 </html>

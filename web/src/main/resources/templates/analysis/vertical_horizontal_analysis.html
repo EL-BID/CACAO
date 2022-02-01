@@ -269,7 +269,7 @@
 		    pagination: true,
 			paginationMode: "local", //enable local pagination
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
 			ajaxURL: /*[[@{/api/analysis/vertical-horizontal-analysis}]]*/ "/api/analysis/vertical-horizontal-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)

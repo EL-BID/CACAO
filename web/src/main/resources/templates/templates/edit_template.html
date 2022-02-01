@@ -383,19 +383,35 @@ let table = new Tabulator('#table', {
     layout: "fitData", //fit columns to width of table (optional)
     responsiveLayout: "collapse",
     //placeholder: "Empty",
+    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
     columns:[ //Define Table Columns
         {formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editField, width:45, headerSort: false, responsive:0},
-        {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0},
-        {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3 },
-        {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3 },
+        {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0, headerFilter: true},
+        {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3,
+        	headerFilter: 'select', headerFilterParams: { values: typeLookup }},
+        {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3,
+        	headerFilter: 'select', headerFilterParams: { values: mappingLookup }},
         {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5},
         {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
         {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5 },
-        {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6}
+        {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6, headerFilter: true }
     ],
     data: fields
 })
+let showHeaderFilter = true
+let toggleFilter = function() {
+    showHeaderFilter = ! showHeaderFilter
+    if(!showHeaderFilter) {
+        table.clearHeaderFilter()
+    }
+    $('.tabulator-header-filter').toggle(showHeaderFilter)
+    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+}
 
+table.on("tableBuilt", function(){
+    $('#filter').click( toggleFilter )
+    toggleFilter()
+})
 </script>
 </body>
 </html>
