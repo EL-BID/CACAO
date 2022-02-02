@@ -33,7 +33,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import org.apache.commons.text.CaseUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.elements.StatementComprehensiveIncome;
@@ -205,7 +204,7 @@ public class IncomeStatementLoader {
 				data.forEach(record->{
 					
 					for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
-						String fieldName = CaseUtils.toCamelCase(stmt.name(), true, '_');
+						String fieldName = stmt.name().toLowerCase();
 						Object fieldValue = record.get(fieldName);
 						if (fieldValue==null)
 							continue;
@@ -230,7 +229,7 @@ public class IncomeStatementLoader {
 				
 				for (StatementComprehensiveIncome t: StatementComprehensiveIncome.values()) {
 
-					double value = mapValues.getOrDefault(StatementComprehensiveIncome.REVENUE_NET, 0.0).doubleValue();
+					double value = mapValues.getOrDefault(t, 0.0).doubleValue();
 					
 					Map<DomainLanguage, DomainEntry> multiLanguageDomainEntry = mapDomainTexts.get(t);
 					
@@ -254,7 +253,7 @@ public class IncomeStatementLoader {
 					normalizedRecord_SCI.put(statementNumber, String.format("%02d", t.ordinal()+1));
 					if (multiLanguageDomainEntry!=null && !multiLanguageDomainEntry.isEmpty())
 						ETLContext.denormalizeDomainEntryNames(multiLanguageDomainEntry, statementEntry, normalizedRecord_SCI);
-					loader.add(new IndexRequest(AccountingLoader.INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME)
+					loader.add(new IndexRequest(INDEX_PUBLISHED_DECLARED_STATEMENT_INCOME)
 						.id(rowId_SCI)
 						.source(normalizedRecord_SCI));
 

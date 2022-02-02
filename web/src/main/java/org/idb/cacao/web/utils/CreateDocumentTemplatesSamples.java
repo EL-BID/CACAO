@@ -226,7 +226,7 @@ public class CreateDocumentTemplatesSamples {
 			.withFieldName(CaseUtils.toCamelCase(stmt.name(), true, '_'))
 			.withFieldType(FieldType.DECIMAL);
 			try {
-				field.withDescription(messages.getMessage(field.getDescription(), null, defaultLocale));
+				field.withDescription(messages.getMessage(stmt.toString(), null, defaultLocale));
 			} catch (Throwable ex) { }
 			fields.add(field);
 		}

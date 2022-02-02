@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.PublishedDataFieldNames;
-import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
@@ -267,18 +266,26 @@ public class KibanaSpacesService {
 		
 		if (indexName==null || indexName.trim().length()==0)
 			return false;
-		
+
 		final String indexPatternTitle = indexName+"*";
-		final String dataName = IndexNamesUtils.getCapitalizedNameForPublishedData(indexName);
-		if (map_patterns.containsKey(indexPatternTitle)) {
-			checkedIndices.add(indexName);
-			return true;
-		}
-		else {
-			boolean created = syncKibanaIndexPatternsInternal(indexName, indexPatternTitle, dataName, spaces);
-			if (created && collectCreationInfo!=null)
-				collectCreationInfo.accept("Created index-pattern "+indexPatternTitle+" at all known Kibana spaces\n");
-			return created;
+
+		synchronized (indexPatternTitle.intern()) {
+			
+			if (checkedIndices.contains(indexName))
+				return true;
+		
+			final String dataName = IndexNamesUtils.getCapitalizedNameForPublishedData(indexName);
+			if (map_patterns.containsKey(indexPatternTitle)) {
+				checkedIndices.add(indexName);
+				return true;
+			}
+			else {
+				boolean created = syncKibanaIndexPatternsInternal(indexName, indexPatternTitle, dataName, spaces);
+				if (created && collectCreationInfo!=null)
+					collectCreationInfo.accept("Created index-pattern "+indexPatternTitle+" at all known Kibana spaces\n");
+				return created;
+			}
+			
 		}
 
 	}
