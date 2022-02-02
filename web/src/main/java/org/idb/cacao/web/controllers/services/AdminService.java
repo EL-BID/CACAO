@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -127,6 +128,7 @@ import org.idb.cacao.web.utils.generators.SampleLegalEntities;
 import org.idb.cacao.web.utils.generators.SampleTaxRegimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.MessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
@@ -194,6 +196,9 @@ public class AdminService {
 	
 	@Autowired
 	private TaxpayerRepository taxPayerRepository;
+
+	@Autowired
+	private MessageSource messages;
 
     private RestTemplate restTemplate;
 
@@ -773,7 +778,10 @@ public class AdminService {
 		
 		if (cmdLine.hasOption("t")) {
 			// Add sample templates
-			List<DocumentTemplate> samples = CreateDocumentTemplatesSamples.getSampleTemplates();
+			
+			Locale defaultLocale = new Locale(service.env.getProperty("cacao.user.language"), service.env.getProperty("cacao.user.country"));
+			
+			List<DocumentTemplate> samples = CreateDocumentTemplatesSamples.getSampleTemplates(service.messages, defaultLocale);
 			
 			for (DocumentTemplate s: samples) {
 				service.templateRepository.saveWithTimestamp(s);

@@ -23,9 +23,11 @@ package org.idb.cacao.web.controllers.ui;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
@@ -162,7 +164,7 @@ public class DocumentTemplateUIController {
 				TemplateArchetype archetype = TemplateArchetypes.getArchetype(id).orElseThrow(() -> new IllegalArgumentException("Invalid archetype Id:" + id));
 				template.setArchetype(id);
 				template.setGroup(archetype.getSuggestedGroup());
-				template.setFields(archetype.getRequiredFields());
+				template.setFields(resolveDescriptions(archetype.getRequiredFields()));
 				template.setName(messages.getMessage(id, null, LocaleContextHolder.getLocale()));
 				break;
 		}
@@ -174,4 +176,29 @@ public class DocumentTemplateUIController {
     
     }
 
+    /**
+     * Given a list of DocumentField's, check for the presence of descriptions enclosed in curly braces. For these
+     * ones, tries to resolve them using the message properties file with the system default Locale.
+     */
+    public List<DocumentField> resolveDescriptions(List<DocumentField> fields) {
+    	if (fields!=null && !fields.isEmpty()) {
+    		for (DocumentField field: fields) {
+    			if (field.getDescription()!=null 
+    					&& field.getDescription().startsWith("{") 
+    					&& field.getDescription().endsWith("}")) {
+    				
+    				try {
+    					String desc = field.getDescription().substring(1, field.getDescription().length()-1);
+    					String translated = messages.getMessage(desc, null, Locale.getDefault());
+    					if (translated!=null && translated.trim().length()>0)
+    						field.setDescription(translated);
+    				}
+    				catch (Throwable ex) {
+    					// keep the description as informed
+    				}
+    			}
+    		}
+    	}
+    	return fields;
+    }
 }

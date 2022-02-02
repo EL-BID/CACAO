@@ -80,7 +80,7 @@ public class Validations {
 			return;
 
 		// Get a list of required fields
-		List<String> requiredFields = allFields.stream().filter(field -> field.getRequired())
+		List<String> requiredFields = allFields.stream().filter(field -> Boolean.TRUE.equals(field.getRequired()))
 				.map(field -> field.getFieldName()).collect(Collectors.toList());
 
 		if (requiredFields == null || requiredFields.isEmpty())

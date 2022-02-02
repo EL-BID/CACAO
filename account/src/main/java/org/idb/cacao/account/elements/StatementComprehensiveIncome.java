@@ -51,21 +51,21 @@ import static org.idb.cacao.account.elements.DebitCredit.*;
  */
 public enum StatementComprehensiveIncome {
 	
-	REVENUE_NET(AccountSubcategory.REVENUE_NET, C),
-	EXPENSE_COST(AccountSubcategory.EXPENSE_COST, D),
-	GROSS_PROFIT("account.gross.profit", "REVENUE_NET - EXPENSE_COST"),
-	EXPENSE_ADMIN(AccountSubcategory.EXPENSE_ADMIN, D),
-	EXPENSE_OPERATING(AccountSubcategory.EXPENSE_OPERATING, D),
-	EXPENSE_OPERATING_OTHER(AccountSubcategory.EXPENSE_OPERATING_OTHER, D),
-	TOTAL_OPERATING_EXPENSES("account.total.operating.expenses", "EXPENSE_ADMIN + EXPENSE_OPERATING + EXPENSE_OPERATING_OTHER"),
-	OPERATING_INCOME("account.operating.income", "GROSS_PROFIT - TOTAL_OPERATING_EXPENSES"),
-	REVENUE_NOP(AccountSubcategory.REVENUE_NOP, C),
-	EXPENSE_NOP(AccountSubcategory.EXPENSE_NOP, D),
-	GAINS_LOSSES(AccountSubcategory.GAINS_LOSSES, C),
-	INCOME_BEFORE_TAXES("account.income.before.taxes", "OPERATING_INCOME + REVENUE_NOP - EXPENSE_NOP + GAINS_LOSSES"),
-	TAXES_OTHERS(AccountSubcategory.TAXES_OTHERS, D),
-	TAXES_INCOME(AccountSubcategory.TAXES_INCOME, D),
-	NET_INCOME("account.net.income", "INCOME_BEFORE_TAXES - TAXES_OTHERS - TAXES_INCOME");
+	REVENUE_NET(AccountSubcategory.REVENUE_NET, C, /*absolute*/true),
+	EXPENSE_COST(AccountSubcategory.EXPENSE_COST, D, /*absolute*/true),
+	GROSS_PROFIT("account.gross.profit", "REVENUE_NET - EXPENSE_COST", /*absolute*/false),
+	EXPENSE_ADMIN(AccountSubcategory.EXPENSE_ADMIN, D, /*absolute*/true),
+	EXPENSE_OPERATING(AccountSubcategory.EXPENSE_OPERATING, D, /*absolute*/true),
+	EXPENSE_OPERATING_OTHER(AccountSubcategory.EXPENSE_OPERATING_OTHER, D, /*absolute*/true),
+	TOTAL_OPERATING_EXPENSES("account.total.operating.expenses", "EXPENSE_ADMIN + EXPENSE_OPERATING + EXPENSE_OPERATING_OTHER", /*absolute*/true),
+	OPERATING_INCOME("account.operating.income", "GROSS_PROFIT - TOTAL_OPERATING_EXPENSES", /*absolute*/false),
+	REVENUE_NOP(AccountSubcategory.REVENUE_NOP, C, /*absolute*/true),
+	EXPENSE_NOP(AccountSubcategory.EXPENSE_NOP, D, /*absolute*/true),
+	GAINS_LOSSES(AccountSubcategory.GAINS_LOSSES, C, /*absolute*/false),
+	INCOME_BEFORE_TAXES("account.income.before.taxes", "OPERATING_INCOME + REVENUE_NOP - EXPENSE_NOP + GAINS_LOSSES", /*absolute*/false),
+	TAXES_OTHERS(AccountSubcategory.TAXES_OTHERS, D, /*absolute*/true),
+	TAXES_INCOME(AccountSubcategory.TAXES_INCOME, D, /*absolute*/true),
+	NET_INCOME("account.net.income", "INCOME_BEFORE_TAXES - TAXES_OTHERS - TAXES_INCOME", /*absolute*/false);
 
 	private final String display;
 	
@@ -75,18 +75,25 @@ public enum StatementComprehensiveIncome {
 	
 	private final String formula;
 	
-	StatementComprehensiveIncome(String display, String formula) {
+	/**
+	 * Tells if this value should be taken as an absolute value regardless of the sign declared by the taxpayer
+	 */
+	private final boolean absoluteValue;
+	
+	StatementComprehensiveIncome(String display, String formula, boolean absoluteValue) {
 		this.display = display;
 		this.nature = null;
 		this.subcategory = null;
 		this.formula = formula;
+		this.absoluteValue = absoluteValue;
 	}
 
-	StatementComprehensiveIncome(AccountSubcategory subcategory, DebitCredit nature) {
+	StatementComprehensiveIncome(AccountSubcategory subcategory, DebitCredit nature, boolean absoluteValue) {
 		this.display = subcategory.toString();
 		this.nature = nature;
 		this.subcategory = subcategory;
 		this.formula = null;
+		this.absoluteValue = absoluteValue;
 	}
 
 	@Override
@@ -104,6 +111,13 @@ public enum StatementComprehensiveIncome {
 
 	public String getFormula() {
 		return formula;
+	}
+
+	/**
+	 * Tells if this value should be taken as an absolute value regardless of the sign declared by the taxpayer
+	 */
+	public boolean isAbsoluteValue() {
+		return absoluteValue;
 	}
 
 	public static StatementComprehensiveIncome parse(String s) {
