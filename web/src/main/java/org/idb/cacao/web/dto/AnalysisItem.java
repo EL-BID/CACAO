@@ -25,9 +25,9 @@ import java.util.List;
 
 import org.apache.commons.math3.util.Precision;
 
-public class AnalysisItem {
+public class AnalysisItem implements Comparable<AnalysisItem> {
 	
-	private String statementCode;
+	private String statementOrder;
 	
 	private String statementName;
 	
@@ -44,13 +44,13 @@ public class AnalysisItem {
 	private transient List<Outlier> outliers;
 
 	private List<Outlier> normalizedOutliers;
-
-	public String getStatementCode() {
-		return statementCode;
+	
+	public String getStatementOrder() {
+		return statementOrder;
 	}
 
-	public void setStatementCode(String statementCode) {
-		this.statementCode = statementCode;
+	public void setStatementOrder(String statementOrder) {
+		this.statementOrder = statementOrder;
 	}
 
 	public String getStatementName() {
@@ -145,6 +145,18 @@ public class AnalysisItem {
 	@Override
 	public String toString() {
 		return "AnalysisData [statementName=" + statementName + ", q1=" + q1 + ", q3=" + q3 + "]";
+	}
+
+	@Override
+	public int compareTo(AnalysisItem other) {
+		if (this==other)
+			return 0;
+		if (statementOrder==null)
+			return -1;
+		if (other.statementOrder==null)
+			return 1;
+		
+		return statementOrder.compareToIgnoreCase(other.statementOrder);
 	}
 	
 }

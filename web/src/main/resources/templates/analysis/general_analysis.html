@@ -235,6 +235,7 @@
     	        "mark": {"type": "rule"},
     	        "encoding": {
     	          "y": {"field": "statementName", "type": "nominal", "title": "Statement",
+    	        	    "sort": {"field": "statementOrder"},
     	                "axis": {"title": null, "labelFontSize": 10, "labelFontWeight": "bold", "labelLimit": 100}}
     	        },
     	        "layer": [
@@ -332,7 +333,7 @@
 			        return value;
 			    },			    
 				columns:[ //Define Table Columns
-					{ title: /*[[#{taxpayers.analysis.general.outliers}]]*/ "Outliers", headerHozAlign:"center",
+					{ title: /*[[#{taxpayers.analysis.general.outliers}]]*/ "Outliers", headerHozAlign:"center", cssClass:"my-background",
 						columns:[
 							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false, visible:false},
 							{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxpayerId", hozAlign:"left", headerSort:false, visible:false },
