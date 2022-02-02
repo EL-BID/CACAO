@@ -308,7 +308,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<String> values = analysisService.getYears();
+    	List<Integer> values = analysisService.getYears();
     	
     	return ResponseEntity.ok().body(values);    
 		

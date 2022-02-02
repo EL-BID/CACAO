@@ -19,9 +19,13 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
+import java.util.logging.Logger;
+
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.UserUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
@@ -38,6 +42,11 @@ import org.springframework.web.bind.annotation.GetMapping;
  */
 @Controller
 public class AnalysisUIController {
+	
+	static final Logger log = Logger.getLogger(AnalysisUIController.class.getName());
+
+	@Autowired
+	private MessageSource messages;
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/vertical_horizontal_analysis"})
@@ -65,6 +74,12 @@ public class AnalysisUIController {
     		throw new UserNotFoundException();
     	
     	model.addAttribute("language", LocaleContextHolder.getLocale().toLanguageTag());
+    	model.addAttribute("errorYearsNotFound", 
+    			messages.getMessage("years.missing", null, LocaleContextHolder.getLocale()));
+    	model.addAttribute("errorQualifierValuesNotFound", 
+    			messages.getMessage("qualilfier.values.missing", null, LocaleContextHolder.getLocale()));
+    	model.addAttribute("errorNoDataAvailable", 
+    			messages.getMessage("no.data.available", null, LocaleContextHolder.getLocale()));
 		
         return "analysis/general_analysis";
 	}		

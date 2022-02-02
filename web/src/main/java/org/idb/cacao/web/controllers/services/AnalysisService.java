@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -564,8 +565,7 @@ public class AnalysisService {
 		data.setScaleMin(min-100);
 		data.setScaleMax(max+100);		
 		
-		//Normalize data
-		
+		//Normalize data		
 		for ( AnalysisItem item : data.getItems() ) {
 			
 			double bigger = 0;
@@ -595,6 +595,8 @@ public class AnalysisService {
 			
 		}		
 		
+		data.getOutliers().sort(Comparator.comparing(Outlier::getOrder)
+				.thenComparingDouble(Outlier::getValue).reversed());
 	}	
 	
 	/**
@@ -901,7 +903,7 @@ public class AnalysisService {
 	 * 
 	 * @return A list of years present in Accounting Computed Statement Income index
 	 */
-	public List<String> getYears() {
+	public List<Integer> getYears() {
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
 
@@ -924,7 +926,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting year values", ex);
 		}
 
-		List<String> values = new LinkedList<>();
+		List<Integer> values = new LinkedList<>();
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No data found for years");
@@ -937,11 +939,11 @@ public class AnalysisService {
 
 			for (Terms.Bucket yearValueBucket : yearValues.getBuckets()) {
 
-				String value = yearValueBucket.getKeyAsString();
-				if (value == null || value.isEmpty())
+				Number value = yearValueBucket.getKeyAsNumber();
+				if (value == null || value.intValue() == 0)
 					continue;
 
-				values.add(value);
+				values.add(value.intValue());
 
 			}
 
