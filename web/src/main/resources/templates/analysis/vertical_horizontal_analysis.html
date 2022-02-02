@@ -10,6 +10,7 @@
 	href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
+<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
 </head>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
@@ -284,6 +285,7 @@
 				return url + '?' + p.toString()
 			},
 			ajaxContentType: "json",
+			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
 			locale:'xx',
 			langs:{
 		        "xx":{
@@ -326,6 +328,17 @@
 				{title: /*[[#{account.name}]]*/ "Name", field:"name", headerSort:false },	
 			]
 		})
+	
+		table.on("tableBuilt", function(){
+			document.getElementById('exportXLS').addEventListener("click", function(){
+				table.download("xlsx", getFileName() , {sheetName:'Analysis'});				    
+			});
+		});
+	
+		function getFileName() {
+			var fileName =/*[[#{taxpayers.analysis.vertical.and.horizontal}]]*/ null;
+			return  fileName + ".xlsx";
+		}
 
 	</script>
 </body>

@@ -10,6 +10,7 @@
 	href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
+<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
 <script src="/js/vega.min.js"></script>
 <script src="/js/vega-lite.min.js"></script>
 <script src="/js/vega-embed.min.js"></script>
@@ -289,7 +290,7 @@
 		}
 		
 		function showTable(values) {			
-			new Tabulator('#table', {
+			table = new Tabulator('#table', {
 				index: 'id',
 				columnDefaults:{
 					tooltip:function(cell) {
@@ -305,6 +306,7 @@
 				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
 				data: values,
+				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -343,6 +345,18 @@
 					},
 				]
 			});
+			
+			table.on("tableBuilt", function(){
+				document.getElementById('exportXLS').addEventListener("click", function(){
+					table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.general.outliers}]]*/''});				    
+				});
+			});
+		}
+		
+		function getFileName() {
+			var fileName =/*[[#{taxpayers.analysis.general}]]*/ null;
+			fileName = fileName + "-" + /*[[#{taxpayers.analysis.general.outliers}]]*/ null;
+			return  fileName + ".xlsx";
 		}
 		
 	</script>
