@@ -290,6 +290,10 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 	 */
 	public void finish() {
 		
+		// If we got no data, return 
+		if (year==0)
+			return;
+		
 		// Do all the computations according to the formulas
 		
 		for (StatementComprehensiveIncome entry: StatementComprehensiveIncome.values()) {
