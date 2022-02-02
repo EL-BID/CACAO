@@ -19,11 +19,11 @@
  *******************************************************************************/
 package org.idb.cacao.web.dto;
 
-public class Outlier implements Cloneable {
-	
-	private int order;
+public class Outlier implements Cloneable, Comparable<Outlier> {
 	
 	private String statementName;
+
+	private String order;
 	
 	private String taxpayerId;
 	
@@ -35,34 +35,38 @@ public class Outlier implements Cloneable {
 		super();
 	}
 	
-	public Outlier(String taxpayerId, String taxpayerName, double value) {
+	public Outlier(String taxpayerId, String taxpayerName, String statementName, String order, double value) {
 		super();
 		this.taxpayerId = taxpayerId;
 		this.taxpayerName = taxpayerName;
+		this.statementName = statementName;
+		this.order = order;
 		this.value = value;
 	}
 
 	public Outlier(Outlier other) {
 		this.taxpayerId = other.taxpayerId;
 		this.taxpayerName = other.taxpayerName;
+		this.statementName = other.statementName;
+		this.order = other.order;
 		this.value = other.value;
 	}
 	
-	public int getOrder() {
-		return order;
-	}
-
-	public void setOrder(int order) {
-		this.order = order;
-	}
-
 	public String getStatementName() {
 		return statementName;
 	}
 
 	public void setStatementName(String statementName) {
 		this.statementName = statementName;
-	}	
+	}
+
+	public String getOrder() {
+		return order;
+	}
+
+	public void setOrder(String order) {
+		this.order = order;
+	}
 
 	public String getTaxpayerId() {
 		return taxpayerId;
@@ -86,6 +90,22 @@ public class Outlier implements Cloneable {
 
 	public void setValue(double value) {
 		this.value = value;
+	}
+
+	@Override
+	public int compareTo(Outlier other) {
+		if (this==other)
+			return 0;
+		if (order==null)
+			return -1;
+		if (other.order==null)
+			return 1;
+		
+		int comp = order.compareToIgnoreCase(other.order);
+		if (comp==0) //Same order
+			return ( value < other.value ) ? 1 : -1;
+		else
+			return comp;
 	}
 
 }

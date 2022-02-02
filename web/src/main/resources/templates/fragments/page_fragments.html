@@ -341,6 +341,9 @@ select[readonly] {
 .tabulator .tabulator-header .tabulator-col.tabulator-sortable .tabulator-col-title {
     padding-right: 15px;
 }
+.tabulator .tabulator-header .tabulator-col-group.my-background {
+   	background-color: orange;   	
+}
 </style>
 </head>
 <body>
@@ -469,7 +472,7 @@ select[readonly] {
 	<!-- Language Javascript -->
 	<script th:nonce="${cspNonce}" th:inline="javascript" th:with="lang=${#locale.language}" th:fragment="languageJavascript">
 	$('.ui.dropdown.chooselang').dropdown();
-	$('.ui.dropdown.chooselang').dropdown('set selected', [[${lang}]])
+	$('.ui.dropdown.chooselang').dropdown('set selected', /*[[${lang}]]*/'')
 	$('.ui.dropdown.chooselang').change(function(e){window.location='/?lang='+$('.ui.dropdown.chooselang').dropdown('get value')})
 	$('.ui.dropdown.choose_simplepay').dropdown({
 		action: 'hide'	

@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -421,12 +420,13 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-				AggregationBuilders.terms("byCode").size(10_000).field("statement_entry_code.keyword")
-						.subAggregation(AggregationBuilders.terms("byName").size(10_000).field("statement_name.keyword")
-								.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
-								.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
-								.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation").field("amount_relative"))
-								);
+			AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
+				.subAggregation(AggregationBuilders.terms("byName").size(10_000).field("statement_name.keyword")
+					.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
+					.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
+					.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation").field("amount_relative")
+				)
+			);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -483,15 +483,15 @@ public class AnalysisService {
 
 			List<AnalysisItem> items = new LinkedList<>();
 
-			Terms statementsCodes = sresp.getAggregations().get("byCode");
+			Terms statementsNumbers = sresp.getAggregations().get("byNumber");
 
-			for (Terms.Bucket statementCodeBucket : statementsCodes.getBuckets()) {
+			for (Terms.Bucket statementNumberBucket : statementsNumbers.getBuckets()) {
 
-				String statementCode = statementCodeBucket.getKeyAsString();
-				if (statementCode == null || statementCode.isEmpty())
-					continue;
+				String statementNumber = statementNumberBucket.getKeyAsString();
+				if (statementNumber == null || statementNumber.isEmpty() )
+					continue;				
 
-				Terms statementsNames = statementCodeBucket.getAggregations().get("byName");
+				Terms statementsNames = statementNumberBucket.getAggregations().get("byName");
 
 				for (Terms.Bucket statementNameBucket : statementsNames.getBuckets()) {
 
@@ -500,7 +500,7 @@ public class AnalysisService {
 						continue;
 
 					AnalysisItem analysisItem = new AnalysisItem();
-					analysisItem.setStatementCode(statementCode);
+					analysisItem.setStatementOrder(statementNumber);
 					analysisItem.setStatementName(statementName);
 					
 					Avg average = statementNameBucket.getAggregations().get("average");
@@ -534,15 +534,15 @@ public class AnalysisService {
 					}
 
 				} // Loop over statement name
-
-			} // Loop over statement code
+				
+			} // Loop over statement number
 
 			// Add outliers
 			for (AnalysisItem item : items) {
 				addOutliers(item, year, taxpayerIds);
 			}
 			
-			AnalysisData data = new AnalysisData();
+			AnalysisData data = new AnalysisData();			
 			data.setItems(items);
 			updateScale(data);
 
@@ -589,14 +589,15 @@ public class AnalysisService {
 				value = Precision.round(value, 2, BigDecimal.ROUND_HALF_DOWN);
 				
 				Outlier copy = new Outlier(outlier.getTaxpayerId(),
-						outlier.getTaxpayerName() + " : " + outlier.getValue(), value);
+						outlier.getTaxpayerName() + " : " + outlier.getValue(), item.getStatementName(), item.getStatementOrder(), value);
 				item.addNormalizedOutlier(copy);				
 			}
 			
 		}		
 		
-		data.getOutliers().sort(Comparator.comparing(Outlier::getOrder)
-				.thenComparingDouble(Outlier::getValue).reversed());
+		data.getOutliers().sort(null);
+		
+		data.getItems().sort(null);
 	}	
 	
 	/**
@@ -634,7 +635,7 @@ public class AnalysisService {
 			return;
 
 		// Add outliers for minimal value
-		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementCode(), item.getMin(),
+		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementOrder(), item.getMin(),
 				year, taxpayerIds);
 
 		// Execute a search
@@ -670,7 +671,7 @@ public class AnalysisService {
 						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					}
 
-					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
+					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(), item.getStatementOrder(), value);
 					item.addOutlier(outlier);
 
 				}
@@ -680,7 +681,7 @@ public class AnalysisService {
 		}
 
 		// Add outliers for maximal value
-		searchRequest = getRequestForOutliers(false /* min */, item.getStatementCode(), item.getMax(), year, taxpayerIds);
+		searchRequest = getRequestForOutliers(false /* min */, item.getStatementOrder(), item.getMax(), year, taxpayerIds);
 
 		// Execute a search
 		sresp = null;
@@ -715,7 +716,7 @@ public class AnalysisService {
 						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					}
 
-					Outlier outlier = new Outlier(taxpayerId, taxpayerName, value);
+					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(), item.getStatementOrder(), value);
 					item.addOutlier(outlier);
 
 				}
@@ -730,20 +731,20 @@ public class AnalysisService {
 	 * Create and return a search request for getting outliers
 	 * 
 	 * @param min
-	 * @param statementCode
+	 * @param statementOrder
 	 * @param value
 	 * @param year
 	 * @param taxpayerIds
 	 * @return A {@link SearchRequest}
 	 */
-	private SearchRequest getRequestForOutliers(boolean min, String statementCode, double value, int year, List<String> taxpayerIds) {
+	private SearchRequest getRequestForOutliers(boolean min, String statementOrder, double value, int year, List<String> taxpayerIds) {
 
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
-
+		
 		// Filter by statementCode
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.must(new TermQueryBuilder("statement_entry_code.keyword", statementCode));
+		query = query.must(new TermQueryBuilder("statement_number.keyword", statementOrder));
 		
 		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
