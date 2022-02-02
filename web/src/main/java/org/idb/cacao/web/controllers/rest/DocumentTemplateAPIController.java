@@ -177,6 +177,7 @@ public class DocumentTemplateAPIController {
 		}
 		existingDocInput.setInputName(docInput.getInputName());
 		existingDocInput.setFields(docInput.getFields());
+		existingDocInput.setFieldsIdsMatchingTemplate(template);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
     }

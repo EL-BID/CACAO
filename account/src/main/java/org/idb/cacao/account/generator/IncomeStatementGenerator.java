@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -59,6 +60,7 @@ public class IncomeStatementGenerator implements CustomDataGenerator {
 				+"' it's not possible to define a total number of records different than "
 				+1);
 		
+		this.taxPayerIdField = template.getField(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name());
 		this.randomDataGenerator = new RandomDataGenerator(seed);
 	}
 	

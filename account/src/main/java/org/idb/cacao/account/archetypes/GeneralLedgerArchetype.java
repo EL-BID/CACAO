@@ -118,13 +118,16 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 				.withFieldMapping(FieldMapping.TAXPAYER_ID)
 				.withDescription("Taxpayer Identification Number")
 				.withMaxLength(128)
-				.withRequired(true),
+				.withRequired(true)
+				.withFileUniqueness(true)
+				.withPersonalData(true),
 			new DocumentField()
 				.withFieldName(TaxYear.name())
 				.withFieldType(FieldType.INTEGER)
 				.withFieldMapping(FieldMapping.TAX_YEAR)
 				.withDescription("Fiscal year of this financial reporting")
-				.withRequired(true),
+				.withRequired(true)
+				.withFileUniqueness(true),
 			new DocumentField()
 				.withFieldName(Date.name())
 				.withFieldType(FieldType.DATE)

@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -45,11 +46,13 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
@@ -87,6 +90,8 @@ public class ExcelGenerator implements FileGenerator {
 	private int currentRowNumber;
 	
 	private Map<String, Integer> mapFieldNamesToColumnPositions;
+	
+	private Map<String, NamedCellReferences> mapFieldNamesToNamedRowIntervals;
 
 	private DomainTableRepository domainTableRepository;
 	
@@ -288,25 +293,8 @@ public class ExcelGenerator implements FileGenerator {
 		sheet.createRow(0).createCell(0, CellType.STRING).setCellValue(title);
 		sheet.addMergedRegion(new CellRangeAddress(/*firstRow*/0, /*lastRow*/0, /*firstCol*/0, /*lastCol*/4));
 
-		// Writes the column headers giving names that matches the expressions configured
-		
-		rowOfColumnHeaders = 1;
-		Row rowHeader = sheet.createRow(rowOfColumnHeaders);
-		
-		Font fontHeader = workbook.createFont();
-		fontHeader.setBold(true);
-		fontHeader.setColor(IndexedColors.BLACK.getIndex());
-		
-		CellStyle styleHeader = workbook.createCellStyle();
-		styleHeader.setFont(fontHeader);
-		styleHeader.setBorderBottom(BorderStyle.THIN);
-		styleHeader.setBorderTop(BorderStyle.THIN);
-		styleHeader.setBorderLeft(BorderStyle.THIN);
-		styleHeader.setBorderRight(BorderStyle.THIN);
-		styleHeader.setFillBackgroundColor(IndexedColors.YELLOW.getIndex());
-
-		List<DocumentField> fieldsOrderedByName = template.getFields().stream()
-				.sorted(Comparator.comparing(DocumentField::getFieldName)).collect(Collectors.toList());
+		List<DocumentField> fieldsOrderedById = template.getFields().stream()
+				.sorted(Comparator.comparing(DocumentField::getId)).collect(Collectors.toList());
 		
 		Map<String, DocumentInputFieldMapping> mapFields = inputSpec.getFields().stream()
 				.collect(Collectors.toMap(
@@ -321,6 +309,12 @@ public class ExcelGenerator implements FileGenerator {
 				.map(DocumentInputFieldMapping::getColumnIndex)
 				.collect(Collectors.toSet());
 		
+		// Fields with specific cell names
+		Set<String> fieldsWithCellName = inputSpec.getFields().stream()
+				.filter(f->f.getCellName()!=null && f.getCellName().trim().length()>0)
+				.map(DocumentInputFieldMapping::getFieldName)
+				.collect(Collectors.toSet());
+
 		mapFieldNamesToColumnPositions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		
 		randomGenerator = new RandomDataGenerator(new Random(seed));
@@ -330,7 +324,38 @@ public class ExcelGenerator implements FileGenerator {
 		filenameGenerator.setFixedTaxpayerId(fixedTaxpayerId);
 		filenameGenerator.setFixedYear(fixedYear);
 		
-		for (DocumentField field: fieldsOrderedByName) {
+		// The actual data starts at row 2 (unless there are named cell references)
+		
+		int rowOfNamedCellInterval;
+		
+		if (!fieldsWithCellName.isEmpty()) {
+			rowOfNamedCellInterval = 1;
+			rowOfColumnHeaders = rowOfNamedCellInterval + fieldsWithCellName.size();
+			firstRowOfData = currentRowNumber = rowOfColumnHeaders + 1;
+		}
+		else {
+			rowOfNamedCellInterval = -1;			
+			rowOfColumnHeaders = 1;
+			firstRowOfData = currentRowNumber = 2;
+		}
+
+		// Writes the column headers giving names that matches the expressions configured
+		
+		Row rowHeader = sheet.createRow(rowOfColumnHeaders);
+		
+		Font fontHeader = workbook.createFont();
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.BLACK.getIndex());
+		
+		CellStyle styleHeader = workbook.createCellStyle();
+		styleHeader.setFont(fontHeader);
+		styleHeader.setBorderBottom(BorderStyle.THIN);
+		styleHeader.setBorderTop(BorderStyle.THIN);
+		styleHeader.setBorderLeft(BorderStyle.THIN);
+		styleHeader.setBorderRight(BorderStyle.THIN);
+		styleHeader.setFillBackgroundColor(IndexedColors.YELLOW.getIndex());
+
+		for (DocumentField field: fieldsOrderedById) {
 			
 			String fieldName = field.getFieldName();
 			DocumentInputFieldMapping fieldMapping = mapFields.get(fieldName);
@@ -340,6 +365,26 @@ public class ExcelGenerator implements FileGenerator {
 			if (fieldMapping.getFileNameExpression()!=null && fieldMapping.getFileNameExpression().trim().length()>0) {
 				// If the field is generated from the filename, we need a different process for generating this
 				filenameGenerator.addFilenameExpression(fieldMapping.getFileNameExpression(), field.getFieldMapping());
+				continue;
+			}
+			
+			if (fieldsWithCellName.contains(fieldName)) {
+				// If the field is related to named cells, we need a different process for generating this
+				if (mapFieldNamesToNamedRowIntervals==null)
+					mapFieldNamesToNamedRowIntervals = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+				NamedCellReferences ref = new NamedCellReferences();
+				ref.name = fieldMapping.getCellName();
+				ref.rowWithData = rowOfNamedCellInterval;
+				mapFieldNamesToNamedRowIntervals.put(fieldName, ref);
+				// Let's reserve the first, second and third cells of the row for the 'label', and the remaining of the row for the values (each cell with value associated to the same name)
+				String fieldLabel = Optional.ofNullable(field.getDescription()).orElse(field.getFieldName());
+				Row rowForNamedCells = sheet.createRow(rowOfNamedCellInterval);
+				Cell cellForFieldLabel = rowForNamedCells.createCell(0, CellType.STRING);
+				cellForFieldLabel.setCellStyle(styleHeader);
+				cellForFieldLabel.setCellValue(fieldLabel);
+				sheet.addMergedRegion(new CellRangeAddress(/*firstRow*/rowOfNamedCellInterval, /*lastRow*/rowOfNamedCellInterval, /*firstCol*/0, /*lastCol*/2));
+				ref.firstColumn = 3;
+				rowOfNamedCellInterval++;	
 				continue;
 			}
 
@@ -387,10 +432,7 @@ public class ExcelGenerator implements FileGenerator {
 			mapFieldNamesToColumnPositions.put(fieldName, columnPosition);
 			
 		} // LOOP over fields
-		
-		// The actual data starts at row 2
-		firstRowOfData = currentRowNumber = 2;
-		
+				
 		if (filenameGenerator.isEmpty()) {
 			generatedOriginalFileName = template.getName() + ".XLSX";
 		}
@@ -452,33 +494,65 @@ public class ExcelGenerator implements FileGenerator {
 		if (record==null || record.isEmpty())
 			return;
 		
-		Row rowData = sheet.createRow(currentRowNumber++);
+		Row rowData = null;
 
 		for (Map.Entry<String, Object> field: record.entrySet()) {
 			
-			Integer columnPosition = mapFieldNamesToColumnPositions.get(field.getKey());
-			if (columnPosition==null)
+			Row rowForFieldValue = null;
+			Integer columnPosition = null;
+			
+			if (mapFieldNamesToNamedRowIntervals!=null) {
+				// If this field corresponds to some named collection of cells, let's find out the position
+				// to write this particular value
+				NamedCellReferences namedCellRef = mapFieldNamesToNamedRowIntervals.get(field.getKey());
+				if (namedCellRef!=null) {
+					columnPosition = (namedCellRef.lastColumn>0) ? namedCellRef.lastColumn+1 : namedCellRef.firstColumn;
+					namedCellRef.lastColumn = columnPosition;
+					rowForFieldValue = sheet.getRow(namedCellRef.rowWithData);
+				}
+			}
+			
+			if (columnPosition==null) {
+				// If this field corresponds to some columnar data, let's find out the column position
+				columnPosition = mapFieldNamesToColumnPositions.get(field.getKey());
+			}
+			
+			if (columnPosition==null) {
+				// Fields related to filenames or any other special case won't be written here
 				continue;
+			}
+			
+			if (rowForFieldValue==null) {
+				
+				// If this field corresponds to some columnar data, let's feed a row will this field value
+				
+				if (rowData==null) {
+					// If we did not create a row of data yet for columnar data, lets create now
+					rowData = sheet.createRow(currentRowNumber++);
+				}
+				
+				rowForFieldValue = rowData;
+			}
 			
 			Object value = field.getValue();
 			if (value==null || "".equals(value)) {
-				rowData.createCell(columnPosition, CellType.BLANK);
+				rowForFieldValue.createCell(columnPosition, CellType.BLANK);
 			}
 			else if ((value instanceof Double) || (value instanceof Float)) {
-				rowData.createCell(columnPosition, CellType.NUMERIC).setCellValue(((Number)value).doubleValue());				
+				rowForFieldValue.createCell(columnPosition, CellType.NUMERIC).setCellValue(((Number)value).doubleValue());				
 			}
 			else if (value instanceof LocalDate) {
-				Cell cell = rowData.createCell(columnPosition);
+				Cell cell = rowForFieldValue.createCell(columnPosition);
 				cell.setCellValue(ValidationContext.toDate(value));
 				cell.setCellStyle(dateCellStyle);
 			}
 			else if (value instanceof OffsetDateTime) {
-				Cell cell = rowData.createCell(columnPosition);
+				Cell cell = rowForFieldValue.createCell(columnPosition);
 				cell.setCellValue(ValidationContext.toDate(value));
 				cell.setCellStyle(timestampCellStyle);				
 			}
 			else {
-				rowData.createCell(columnPosition, CellType.STRING).setCellValue(ValidationContext.toString(value));
+				rowForFieldValue.createCell(columnPosition, CellType.STRING).setCellValue(ValidationContext.toString(value));
 			}
 			
 		} // LOOP over each field
@@ -495,6 +569,19 @@ public class ExcelGenerator implements FileGenerator {
 		if (path == null || workbook == null) {
 			return;
 		}
+		
+		if (mapFieldNamesToNamedRowIntervals!=null && !mapFieldNamesToNamedRowIntervals.isEmpty()) {
+			for (NamedCellReferences ref: mapFieldNamesToNamedRowIntervals.values()) {
+				if (ref.hasData()) {
+					Name name = workbook.createName();
+					name.setNameName(ref.name);
+					String formula = "'"+sheet.getSheetName()+"'!$"+CellReference.convertNumToColString(ref.firstColumn)+"$"+(ref.rowWithData+1)
+							+":$"+CellReference.convertNumToColString(ref.lastColumn)+"$"+(ref.rowWithData+1);
+					name.setRefersToFormula(formula);					
+					name.setSheetIndex(workbook.getSheetIndex(sheet));
+				}
+			}
+		}
 
 		try (OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(path.toFile()))) {
 			workbook.write(fileOut);
@@ -503,6 +590,23 @@ public class ExcelGenerator implements FileGenerator {
 		if (randomGenerator!=null) {
 			// If we are generating multiple documents with the same generator, update the seed for the next iteration
 			seed = randomGenerator.getRandomGenerator().nextLong();
+		}
+	}
+	
+	/**
+	 * Wraps information regarding data related to a field that requires a 'name' for a collection of cell references
+	 *
+	 */
+	private static class NamedCellReferences {
+		String name;
+		int rowWithData;
+		int firstColumn;
+		int lastColumn;
+		boolean hasData() {
+			return lastColumn>=firstColumn;
+		}
+		public String toString() {
+			return name;
 		}
 	}
 }

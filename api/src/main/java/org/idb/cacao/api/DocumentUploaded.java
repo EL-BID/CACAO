@@ -101,10 +101,23 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	@AFieldDescriptor(externalName = "doc.file.name")
 	private String filename;
 	
+	/**
+	 * FileId is a random UUID generated for the file by the time it was uploaded. Each
+	 * uploaded file has a different FileId
+	 */
 	@Field(type=Keyword)
 	@AFieldDescriptor(externalName = "doc.file.id")
 	private String fileId;
 	
+	/**
+	 * Concatenation of values related to fields that have the 'file uniqueness' mark. If different
+	 * uploaded files have the same uniqueId, they should be considered as replacements (the last one
+	 * replaces the previous one). Usually the 'uniqueId' contains the 'taxpayer Id' and the 'year', but
+	 * the template may define other fields to be used as 'uniqueId'.
+	 */
+	@Field(type=Keyword)
+	private String uniqueId;
+
 	/**
 	 * A folder where the file was stored in system storage.
 	 */
@@ -236,14 +249,42 @@ public class DocumentUploaded implements Serializable, Cloneable {
 		this.filename = filename;
 	}
 
+	/**
+	 * FileId is a random UUID generated for the file by the time it was uploaded. Each
+	 * uploaded file has a different FileId
+	 */
 	public String getFileId() {
 		return fileId;
 	}
 
+	/**
+	 * FileId is a random UUID generated for the file by the time it was uploaded. Each
+	 * uploaded file has a different FileId
+	 */
 	public void setFileId(String fileId) {
 		this.fileId = fileId;
 	}	
 	
+	/**
+	 * Concatenation of values related to fields that have the 'file uniqueness' mark. If different
+	 * uploaded files have the same uniqueId, they should be considered as replacements (the last one
+	 * replaces the previous one). Usually the 'uniqueId' contains the 'taxpayer Id' and the 'year', but
+	 * the template may define other fields to be used as 'uniqueId'.
+	 */
+	public String getUniqueId() {
+		return uniqueId;
+	}
+
+	/**
+	 * Concatenation of values related to fields that have the 'file uniqueness' mark. If different
+	 * uploaded files have the same uniqueId, they should be considered as replacements (the last one
+	 * replaces the previous one). Usually the 'uniqueId' contains the 'taxpayer Id' and the 'year', but
+	 * the template may define other fields to be used as 'uniqueId'.
+	 */
+	public void setUniqueId(String uniqueId) {
+		this.uniqueId = uniqueId;
+	}
+
 	public String getSubDir() {
 		return subDir;
 	}

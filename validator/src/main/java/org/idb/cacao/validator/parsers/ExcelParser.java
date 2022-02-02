@@ -37,10 +37,13 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.AreaReference;
+import org.apache.poi.ss.util.CellReference;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
@@ -186,7 +189,29 @@ public class ExcelParser implements FileParser {
 				DataSerie dataSerie = new DataSerie();
 				dataSerie.sheet = sheet;
 				
-				if (fieldMapping.getRowIndex()!=null) {
+				if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {
+					
+					// If we have an expression for named cell intervals, let's look for this
+					Name namedCell = workbook.getName(fieldMapping.getCellName());
+					if (namedCell!=null) {
+						AreaReference aref = new AreaReference(namedCell.getRefersToFormula(), workbook.getSpreadsheetVersion());
+						dataSerie.cellReferences = aref.getAllReferencedCells();
+						if (isSameSheet(dataSerie.cellReferences)) {
+							String sheetName = dataSerie.cellReferences[0].getSheetName();
+							if (sheetName!=null) {
+								sheet = sheetsByName.get(sheetName);
+								if (sheet!=null)
+									dataSerie.sheet = sheet;
+							}
+						}
+						else {
+							dataSerie.sheets = sheetsByName;
+						}
+					}
+					
+				}
+				
+				else if (fieldMapping.getRowIndex()!=null) {
 					
 					// If we have a specific row, this field may be one singular value (if we also
 					// have one specific column) or it may be an entire row of values (if we don't
@@ -437,6 +462,12 @@ public class ExcelParser implements FileParser {
 		Sheet sheet;
 		
 		/**
+		 * For multiple sheets (referenced by multiple cellReferences) keep
+		 * a map of sheets given their names
+		 */
+		Map<String, Sheet> sheets;
+		
+		/**
 		 * Specific column for retrieving data.
 		 * If NULL or negative, there is no specific column
 		 */
@@ -463,12 +494,23 @@ public class ExcelParser implements FileParser {
 		 */
 		Integer currentRow;
 		
+		/**
+		 * Specific cell references for retrieving data.
+		 * IF NULL, ignores this field.
+		 */
+		CellReference[] cellReferences;
+		
+		/**
+		 * Incremented if this particular field has different cell references
+		 */
+		Integer currentCellReference;
+		
 		boolean isSameRow() {
-			return row!=null && row.intValue()>=0;
+			return (row!=null && row.intValue()>=0) || ExcelParser.isSameRow(cellReferences);
 		}
 		
 		boolean isSameColumn() {
-			return column!=null && column.intValue()>=0;
+			return (column!=null && column.intValue()>=0) || ExcelParser.isSameColumn(cellReferences);
 		}
 		
 		boolean isConstant() {
@@ -477,13 +519,46 @@ public class ExcelParser implements FileParser {
 		
 		Object getNextValue(boolean incrementAfter) {
 			if (isConstant()) {
-				Row r = sheet.getRow(row);
-				if (r==null)
+				if (row!=null && row.intValue()>=0) {
+					Row r = sheet.getRow(row);
+					if (r==null)
+						return null;
+					Cell c = r.getCell(column);
+					if (c==null)
+						return null;
+					return getCellValue(c);
+				}
+				else if (cellReferences!=null && cellReferences.length>0) {
+					Row r = sheet.getRow(cellReferences[0].getRow());
+					if (r==null)
+						return null;
+					Cell c = r.getCell(cellReferences[0].getCol());
+					if (c==null)
+						return null;
+					return getCellValue(c);
+				}
+			}
+			else if (cellReferences!=null) {
+				if (currentCellReference==null)
+					currentCellReference = 0;
+				if (currentCellReference.intValue()>=cellReferences.length) {
 					return null;
-				Cell c = r.getCell(column);
-				if (c==null)
-					return null;
-				return getCellValue(c);
+				}
+				try {
+					CellReference cref = cellReferences[currentCellReference];
+					Sheet sheet = (sheets!=null) ? sheets.getOrDefault(cref.getSheetName(), this.sheet) : this.sheet;
+					Row r = sheet.getRow(cref.getRow());
+					if (r==null)
+						return null;
+					Cell c = r.getCell(cref.getCol());
+					if (c==null)
+						return null;
+					return getCellValue(c);
+				}
+				finally {
+					if (incrementAfter)
+						currentCellReference++;
+				}
 			}
 			else if (isSameColumn()) {
 				if (currentRow==null)
@@ -521,6 +596,75 @@ public class ExcelParser implements FileParser {
 			}
 			return null;
 		}
+	}
+	
+	/**
+	 * Returns TRUE if all the cell references corresponds to the same row at the same sheet
+	 */
+	private static boolean isSameRow(CellReference[] refs) {
+		if (refs==null || refs.length==0)
+			return false;
+		String sheetName = null;
+		int row = -1;
+		for (CellReference ref: refs) {
+			String s = ref.getSheetName();
+			if (s!=null) {
+				if (sheetName==null)
+					sheetName = s;
+				else if (!sheetName.equals(s))
+					return false; // different sheets means different rows				
+			}
+			int r = ref.getRow();
+			if (row==-1)
+				row = r;
+			else if (row!=r)
+				return false; // different rows
+		}
+		return true;
+	}
+
+	/**
+	 * Returns TRUE if all the cell references corresponds to the same column at the same sheet
+	 */
+	private static boolean isSameColumn(CellReference[] refs) {
+		if (refs==null || refs.length==0)
+			return false;
+		String sheetName = null;
+		int col = -1;
+		for (CellReference ref: refs) {
+			String s = ref.getSheetName();
+			if (s!=null) {
+				if (sheetName==null)
+					sheetName = s;
+				else if (!sheetName.equals(s))
+					return false; // different sheets means different columns				
+			}
+			int c = ref.getCol();
+			if (col==-1)
+				col = c;
+			else if (col!=c)
+				return false; // different columns
+		}
+		return true;
+	}
+
+	/**
+	 * Returns TRUE if all the cell references corresponds to the same sheet
+	 */
+	private static boolean isSameSheet(CellReference[] refs) {
+		if (refs==null || refs.length==0)
+			return false;
+		String sheetName = null;
+		for (CellReference ref: refs) {
+			String s = ref.getSheetName();
+			if (s!=null) {
+				if (sheetName==null)
+					sheetName = s;
+				else if (!sheetName.equals(s))
+					return false; // different sheets			
+			}
+		}
+		return true;
 	}
 
 	/**

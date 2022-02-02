@@ -114,6 +114,15 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	private Integer rowIndex;
 
 	/**
+	 * The cell name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular named cell range.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	@Field(type=Keyword)
+	private String cellName;
+
+	/**
 	 * The sheet (0-based) position of this information in the input file.<BR>
 	 * May be NULL if not specific to a particular sheet or if a sheetNameExpression has been provided.<BR>
 	 * Applies to these file formats:<BR>
@@ -274,6 +283,31 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 		setRowIndex(rowIndex);
 		return this;
 	}		
+
+	/**
+	 * The cell name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular named cell range.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	public String getCellName() {
+		return cellName;
+	}
+
+	/**
+	 * The cell name expression of this information in the input file.<BR>
+	 * May be NULL if not specific to a particular named cell range.<BR>
+	 * Applies to these file formats:<BR>
+	 * XLS/XLSX<BR>
+	 */
+	public void setCellName(String cellName) {
+		this.cellName = cellName;
+	}
+
+	public DocumentInputFieldMapping withCellName(String cellName) {
+		setCellName(cellName);
+		return this;
+	}
 
 	/**
 	 * The sheet (0-based) position of this information in the input file.<BR>

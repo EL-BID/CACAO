@@ -104,14 +104,17 @@ public class IncomeStatementArchetype implements TemplateArchetype {
 				.withFieldMapping(FieldMapping.TAXPAYER_ID)
 				.withDescription("Taxpayer Identification Number")
 				.withMaxLength(128)
-				.withRequired(true));
+				.withRequired(true)
+				.withFileUniqueness(true)
+				.withPersonalData(true));
 		
 		fields.add(new DocumentField()
 				.withFieldName(TaxYear.name())
 				.withFieldType(FieldType.INTEGER)
 				.withFieldMapping(FieldMapping.TAX_YEAR)
 				.withDescription("Fiscal year of this financial reporting")
-				.withRequired(true));
+				.withRequired(true)
+				.withFileUniqueness(true));
 		
 		for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
 			
