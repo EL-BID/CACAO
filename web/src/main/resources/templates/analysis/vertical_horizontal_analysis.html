@@ -137,6 +137,12 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		$('#qualifiers').on('change', function() {
+			$("#dataView").hide();
+			updateQualifiersValues(true);
+	 	});	
+	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})
@@ -144,16 +150,19 @@
 		$('#finalDate').calendar({
 		  type: 'month',
 		     onChange: function(value) {
-		    	 $("#showtable").hide()   
+		    	 $("#showtable").hide()
+		    	 $('#form').submit();
 		     },
 		});
 		
 		$('#analysisType').on('change', function() {
-			$("#showtable").hide()   
+			$("#showtable").hide()
+			$('#form').submit();
 	     });	
 		
 		$('#period').on('change', function() {
-			$("#showtable").hide()   
+			$("#showtable").hide()
+			$('#form').submit();
 	     });
 		
 		$('#level').on('change', function() {
@@ -188,7 +197,8 @@
 	        	},
 	     	},
 	     	onChange: function(value) {
-				$("#showtable").hide()   
+				$("#showtable").hide() 
+				$('#form').submit();
 	     	},
 	    	action: 'activate',
 	    	clearable: true

@@ -73,7 +73,8 @@ public class AnalysisUIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	model.addAttribute("language", LocaleContextHolder.getLocale().toLanguageTag());
+    	model.addAttribute("decimalChar", messages.getMessage("decimal.char", null, LocaleContextHolder.getLocale()));
+    	model.addAttribute("decimalGroupSeparator", messages.getMessage("decimal.grouping.separator", null, LocaleContextHolder.getLocale()));
     	model.addAttribute("errorYearsNotFound", 
     			messages.getMessage("years.missing", null, LocaleContextHolder.getLocale()));
     	model.addAttribute("errorQualifierValuesNotFound", 
