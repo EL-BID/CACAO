@@ -329,6 +329,38 @@ public class DocumentTemplate implements Serializable, Cloneable {
 		return fields.stream().filter(f->type.equals(f.getFieldMapping())).collect(Collectors.toList());		
 	}
 
+	/**
+	 * Returns all the 'required' fields in this template
+	 */
+	@JsonIgnore
+	public List<DocumentField> getRequiredFields() {
+		if (fields==null)
+			return Collections.emptyList();
+		return fields.stream().filter(f->java.lang.Boolean.TRUE.equals(f.getRequired())).collect(Collectors.toList());		
+	}
+
+	/**
+	 * Returns all the 'personal data' fields in this template
+	 */
+	@JsonIgnore
+	public List<DocumentField> getPersonalDataFields() {
+		if (fields==null)
+			return Collections.emptyList();
+		return fields.stream().filter(f->java.lang.Boolean.TRUE.equals(f.getPersonalData())).collect(Collectors.toList());		
+	}
+
+	/**
+	 * Returns all the 'file uniqueness' fields in this template. The fields are sorted by ID.
+	 */
+	@JsonIgnore
+	public List<DocumentField> getFileUniquenessFields() {
+		if (fields==null)
+			return Collections.emptyList();
+		return fields.stream().filter(f->java.lang.Boolean.TRUE.equals(f.getFileUniqueness()))
+				.sorted(Comparator.comparing(DocumentField::getId))
+				.collect(Collectors.toList());		
+	}
+
 	public void setFields(List<DocumentField> fields) {
 		this.fields = fields;
 		if (fields!=null && !fields.isEmpty()) {

@@ -180,6 +180,11 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 		this.id = id;
 	}
 
+	public DocumentField withId(int id) {
+		setId(id);
+		return this;
+	}
+
 	/**
 	 * Identification of this field inside a document. The field name should be unique inside
 	 * the same document. Array elements should include positional suffixes (e.g.: [1])<BR>

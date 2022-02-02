@@ -11,11 +11,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.validation.ValidationException;
 
@@ -30,6 +34,7 @@ import org.idb.cacao.api.errors.MissingConfigurationException;
 import org.idb.cacao.api.errors.TemplateNotFoundException;
 import org.idb.cacao.api.errors.UnknownFileFormatException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
@@ -213,6 +218,12 @@ public class FileUploadedConsumerService {
 			parser.start();
 			DataIterator iterator = null;
 
+			// If the template defines any field to be used as criteria of 'file uniqueness', we should
+			// gather this information as well			
+			List<DocumentField> fileUniquenessFields = template.get().getFileUniquenessFields();
+			Map<String, Object> fileUniquenessValues = (fileUniquenessFields.isEmpty()) ? null : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+			Set<String> fileUniquenessViolationFieldNames = null;
+
 			try {
 
 				iterator = parser.iterator();
@@ -233,6 +244,35 @@ public class FileUploadedConsumerService {
 
 					if (record == null)
 						continue;
+					
+					if (fileUniquenessValues!=null && fileUniquenessValues.size()<fileUniquenessFields.size()) {
+						// Gather values for 'file uniqueness' criteria
+						for (DocumentField fUniqueField: fileUniquenessFields) {
+							Object value = record.get(fUniqueField.getFieldName());
+							if (value==null)
+								continue;
+							Object previousValue = fileUniquenessValues.get(fUniqueField.getFieldName());
+							if (previousValue==null) {
+								fileUniquenessValues.put(fUniqueField.getFieldName(), value);
+							}
+							else if (!value.equals(previousValue)) {
+								if (fileUniquenessViolationFieldNames!=null 
+										&& fileUniquenessViolationFieldNames.contains(fUniqueField.getFieldName())) {
+									// do not repeat this same warning
+								}
+								else {
+									// Include a warning about the uniqueness constraint
+									if (fileUniquenessViolationFieldNames==null)
+										fileUniquenessViolationFieldNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+									fileUniquenessViolationFieldNames.add(fUniqueField.getFieldName());
+									validations.addLogError(String.format("{doc.error.uniqueness.violation(%s,%s,%s)}",
+										ValidationContext.toString(previousValue),
+										ValidationContext.toString(value),
+										fUniqueField.getFieldName()));
+								}
+							}
+						}
+					}
 
 					validationContext.addParsedContent(record);
 					added++;
@@ -270,6 +310,17 @@ public class FileUploadedConsumerService {
 
 			// Add TaxPayerId and TaxPeriod to document on database
 			validations.addTaxPayerInformation();
+			
+			// Add unique Id according to file uniqueness criteria
+			if (fileUniquenessValues!=null && !fileUniquenessValues.isEmpty()) {
+				String uniqueId = fileUniquenessFields.stream().map(f->ValidationContext.toString(fileUniquenessValues.get(f.getFieldName()))).collect(Collectors.joining("_"));
+				doc.setUniqueId(uniqueId);
+			}
+			// If the template does not define any uniqueness criteria, use the combination of taxpayerId with tax period as uniqueness criteria
+			else {
+				doc.setUniqueId(String.format("%s_%d", doc.getTaxPayerId(), doc.getTaxPeriodNumber()));
+			}
+			
 			// Update document on database
 			doc = documentsUploadedRepository.saveWithTimestamp(doc);
 			validationContext.setDocumentUploaded(doc);

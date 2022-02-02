@@ -474,7 +474,7 @@ public class ETLContext {
 				prevailingDocument.getTaxPayerId(), prevailingDocument.getTaxPeriodNumber());
 		if (uploads.isEmpty()) {
 			return;  
-		}
+		}		
 		for (DocumentUploaded upload: uploads) {
 			if (upload.equals(prevailingDocument))
 				continue;

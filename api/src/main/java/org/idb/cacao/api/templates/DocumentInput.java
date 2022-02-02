@@ -27,6 +27,8 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -142,8 +144,8 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	}
 
 	public void setFields(List<DocumentInputFieldMapping> fields) {
+		this.fields = null;
 		if (fields==null) {
-			this.fields = null;
 			return;
 		}
 		fields.stream().forEach(f -> addField(f));
@@ -193,4 +195,28 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 		return String.CASE_INSENSITIVE_ORDER.compare(inputName, o.inputName);
 	}
 
+	/**
+	 * Given a template with several DocumentField, updates this objects 'DocumentInputFieldMapping's id's
+	 * with matching field names.
+	 */
+	public void setFieldsIdsMatchingTemplate(DocumentTemplate template) {
+		if (template==null || template.getFields()==null || template.getFields().isEmpty()
+			|| this.fields==null || this.fields.isEmpty())
+			return;
+		
+		Map<String, Integer> mapFieldsNamesToIds = template.getFields().stream()
+			.collect(Collectors.toMap(
+				/*keyMapper*/DocumentField::getFieldName, 
+				/*valueMapper*/DocumentField::getId, 
+				/*mergeFunction*/(a,b)->a));
+		
+		for (DocumentInputFieldMapping fieldMap: this.fields) {
+			if (fieldMap.getFieldName()==null)
+				continue;
+			Integer id = mapFieldsNamesToIds.get(fieldMap.getFieldName());
+			if (id==null)
+				continue;
+			fieldMap.setFieldId(id);
+		}
+	}
 }
