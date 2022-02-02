@@ -21,6 +21,8 @@ package org.idb.cacao.web.dto;
 
 public class Outlier implements Cloneable {
 	
+	private int order;
+	
 	private String statementName;
 	
 	private String taxpayerId;
@@ -46,6 +48,14 @@ public class Outlier implements Cloneable {
 		this.value = other.value;
 	}
 	
+	public int getOrder() {
+		return order;
+	}
+
+	public void setOrder(int order) {
+		this.order = order;
+	}
+
 	public String getStatementName() {
 		return statementName;
 	}

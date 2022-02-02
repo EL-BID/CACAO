@@ -15,6 +15,7 @@
 <script src="/js/vega-embed.min.js"></script>
 </head>
 <body>
+
 	<!-- Fix to avoid overlap from the Menu -->
 	<div>
 		<br>
@@ -26,7 +27,7 @@
 			<div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
 		</div>
 		<h2 class="ui header">
-			<i class="stream icon"></i> <span class="content"
+			<i class="sliders horizontal icon"></i> <span class="content"
 				th:text="#{taxpayers.analysis.general}">General Analysis</span>
 		</h2>
 		<div class="ui container">
@@ -69,7 +70,7 @@
 				</form>
 			</div>
 		</div>
- 
+		
 		<div id="dataView" style="display: none">
 			<div class="ui container grid">
 				<div class="ten wide column unbounded" id="graphView">
@@ -101,31 +102,47 @@
 			});			
 			return format(cell.getValue()) + "%";
 		}
+		
+		//Define error message var
+		errorQualifierValuesNotFound = /*[[${errorQualifierValuesNotFound}]]*/ '';
+		errorYearsNotFound = /*[[${errorYearsNotFound}]]*/ '';
+		errorNoDataAvailable = /*[[${errorNoDataAvailable}]]*/ '';
 	
 		$('#qualifiers').on('change', function() {
-			updateQualifiersValues();	
-			$("#dataView").hide();			
+			$("#dataView").hide();
+			updateQualifiersValues(true);
      	});
 		
 		$('#qualifierValues').on('change', function() {
-			$("#dataView").hide();
+			$("#dataView").hide();			
+			$('#form').submit();
 	    });
 		
 		$('#year').on('change', function() {
 			$("#dataView").hide();
+			$('#form').submit();
 	    });
 		
-		function updateQualifiersValues() {
+		function updateQualifiersValues(_submit) {
 			$('#qualifierValues').find('option').remove();
 			$.get('/api/analysis/qualifiers', 
 					{ qualifier: $('#qualifiers').val() } ,  //data to submit
 			    function (data, status, xhr) {
-					$.each(data, function (i, item) {						
-					    $('#qualifierValues').append($('<option>', { 
-					        value: item,
-					        text : item
-					    }));					    
-					});		
+					if ( data.length == 0 ) {						
+						$('#modal_failed').find('.description').html(errorQualifierValuesNotFound);
+						$('#modal_failed').modal('show');
+						console.log("ERROR : "+errorQualifierValuesNotFound);	
+					}
+					else {
+						$.each(data, function (i, item) {						
+						    $('#qualifierValues').append($('<option>', { 
+						        value: item,
+						        text : item
+						    }));
+						});
+						if ( _submit )
+							$('#form').submit();
+					}							
 			    }
 			);
 		}		
@@ -134,19 +151,32 @@
 			$('#year').find('option').remove();
 			$.get('/api/analysis/years',
 			    function (data, status, xhr) {
-					$.each(data, function (i, item) {						
-					    $('#year').append($('<option>', { 
-					        value: item,
-					        text : item
-					    }));					    
-					});		
+					if ( data.length == 0 ) {						
+						$('#modal_failed').find('.description').html(errorYearsNotFound);
+						$('#modal_failed').modal('show');
+						console.log("ERROR : "+errorYearsNotFound);	
+					}
+					else {
+						$.each(data, function (i, item) {						
+						    $('#year').append($('<option>', { 
+					        	value: item,
+					        	text : item
+					    	}));
+						});
+					}
 			    }
 			);			
 		}
 		
 		$(document).ready(function() {
-			updateQualifiersValues();
+			updateQualifiersValues(false);
 			updateYears();
+			
+			updateAll();
+			
+	    });
+		
+		function updateAll() {
 			$('.ui.form').form({
 				fields: {
 					year: {
@@ -163,7 +193,7 @@
 					//showGraphics();
 	          	})
 	        });
-	    });
+		}
 		
 		function updateData() {
 
@@ -172,14 +202,21 @@
 						qualifierValue: $('#qualifierValues').val(),
 						year: $('#year').val(),				
 					} ,  //data to submit
-			    function (data, status, xhr) {
+			    function (data, status, xhr) {						
 					console.log(data);
-					showTable(data.outliers);
-					$("#dataView").show();
-					var width = $("#graphView").width() * .7;
-					window.dispatchEvent(new Event('resize'));
-					showGraphics(data, width);
-					window.dispatchEvent(new Event('resize'));
+					if ( data.length == 0 ) {						
+						$('#modal_failed').find('.description').html(errorNoDataAvailable);
+						$('#modal_failed').modal('show');
+						console.log("ERROR : "+errorNoDataAvailable);	
+					}
+					else {
+						showTable(data.outliers);
+						$("#dataView").show();
+						var width = $("#graphView").width() * .7;
+						window.dispatchEvent(new Event('resize'));
+						showGraphics(data, width);
+						window.dispatchEvent(new Event('resize'));
+					}
 			    }
 			);
 			
@@ -250,7 +287,7 @@
             return id.getValue(); //return cells "field - value";						
 		}
 		
-		function showTable(values) {
+		function showTable(values) {			
 			new Tabulator('#table', {
 				index: 'id',
 				columnDefaults:{
@@ -260,8 +297,8 @@
 			            return "Id: " + id.getValue();
 			        },
 					headerTooltip:false,					
-			    },				    
-				layout: "fitDataFill", //fit columns to width of table (optional)
+			    },
+				layout: "fitColumns", //fit columns to width of table (optional)
 			    pagination: true,
 				paginationMode: "local", //enable local pagination
 				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
@@ -293,12 +330,16 @@
 			        //data - an array of all the row data objects in this group
 			        //group - the group component for the group
 			        return value;
-			    },
+			    },			    
 				columns:[ //Define Table Columns
-					{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false, visible:false},
-					{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxpayerId", hozAlign:"left", headerSort:false, visible:false },
-					{title: /*[[#{taxpayer.name}]]*/ "Taxpayer Name", field:"taxpayerName", hozAlign:"left", headerSort:false},
-					{title: /*[[#{account.outlier.value}]]*/ "Value", field:"value", formatter: decimalFormatter, hozAlign:"right", headerSort:false},					
+					{ title: /*[[#{taxpayers.analysis.general.outliers}]]*/ "Outliers", headerHozAlign:"center",
+						columns:[
+							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false, visible:false},
+							{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxpayerId", hozAlign:"left", headerSort:false, visible:false },
+							{title: /*[[#{taxpayer.name}]]*/ "Taxpayer Name", field:"taxpayerName", hozAlign:"left", headerSort:false},
+							{title: /*[[#{account.outlier.value}]]*/ "Value", field:"value", formatter: decimalFormatter, hozAlign:"right", headerSort:false, headerHozAlign:"right"}
+						],
+					},
 				]
 			});
 		}

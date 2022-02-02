@@ -160,7 +160,7 @@ public class LoginUIController {
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.vertical.and.horizontal", null, LocaleContextHolder.getLocale()),
 					"/vertical_horizontal_analysis", "stream"));
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.general", null, LocaleContextHolder.getLocale()),
-					"/general_analysis", "stream"));
+					"/general_analysis", "sliders horizontal"));
 		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {
