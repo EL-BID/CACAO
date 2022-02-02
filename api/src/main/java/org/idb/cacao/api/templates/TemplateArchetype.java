@@ -61,7 +61,10 @@ public interface TemplateArchetype {
 	 * Returns all the required fields for any DocumentTemplate related to this
 	 * TemplateArchetype.<BR>
 	 * For example, an archetype related to 'General Ledger' used in Accounting would
-	 * require at least the following fields: date, value, debit/credit indicator and account code. 
+	 * require at least the following fields: date, value, debit/credit indicator and account code.<BR>
+	 * The 'description' of each field usually is presented to user as is declared here in each object. If
+	 * the description needs to be resolved to a specific language using message properties file, this
+	 * method should enclose the description between curly braces. 
 	 */
 	public List<DocumentField> getRequiredFields();
 	

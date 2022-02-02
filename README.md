@@ -24,7 +24,8 @@ may be the same as the provided from the download. The configuration file of Kib
     server.rewriteBasePath: true
     
 Start both ElasticSearch and Kibana using the local startup files (e.g. for Windows platform, use \bin\elasticsearch.bat from ElasticSearch installation directory
-for starting one node of ElasticSearch and use \bin\kibana.bat from Kibana installation directory for starting Kibana)
+for starting one node of ElasticSearch and use \bin\kibana.bat from Kibana installation directory for starting Kibana). 
+Pay attention to the versions of kibana and elasticsearch, kibana may not work if they are from versions too apart.
 
 2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 

@@ -122,6 +122,14 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-jsr310 -->
+		<!-- Used at ScrollUtils for using JavaTimeModule for support to java 8 date types -->
+		<dependency>
+    		<groupId>com.fasterxml.jackson.datatype</groupId>
+    		<artifactId>jackson-datatype-jsr310</artifactId>
+    		<version>2.12.4</version>
+		</dependency>
+
 	</dependencies>
 
 </project>

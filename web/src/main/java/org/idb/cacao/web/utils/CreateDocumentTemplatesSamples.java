@@ -23,11 +23,15 @@ import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAM
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
+import org.apache.commons.text.CaseUtils;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
+import org.idb.cacao.account.elements.StatementComprehensiveIncome;
 import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -36,12 +40,13 @@ import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
+import org.springframework.context.MessageSource;
 
 public class CreateDocumentTemplatesSamples {
 
-	public static List<DocumentTemplate> getSampleTemplates() {
+	public static List<DocumentTemplate> getSampleTemplates(MessageSource messages, Locale defaultLocale) {
 
-		List<DocumentTemplate> toRet = new ArrayList<>(3);
+		List<DocumentTemplate> toRet = new ArrayList<>(5);
 
 		// General Ledger
 		DocumentTemplate docTemplate = new DocumentTemplate();
@@ -198,6 +203,36 @@ public class CreateDocumentTemplatesSamples {
 
 		docTemplate.setFields(fields);
 		addInputsLalur(docTemplate);
+
+		// Income Statement
+		docTemplate = new DocumentTemplate();
+		docTemplate.setName("Income Statement");
+		docTemplate.setGroup("Financial Report");
+		docTemplate.setPeriodicity(Periodicity.YEARLY);
+		docTemplate.setRequired(false);
+		docTemplate.setVersion("1.0");
+		docTemplate.setArchetype("accounting.income.statement");
+
+		toRet.add(docTemplate);
+		fields = new ArrayList<>();
+		fields.add(new DocumentField().withFieldName("TaxPayerId").withFieldType(FieldType.CHARACTER)
+				.withFieldMapping(FieldMapping.TAXPAYER_ID).withDescription("Taxpayer Identification Number")
+				.withMaxLength(128).withRequired(true));
+		fields.add(new DocumentField().withFieldName("TaxYear").withFieldType(FieldType.INTEGER)
+						.withFieldMapping(FieldMapping.TAX_YEAR)
+						.withDescription("Fiscal year of this financial reporting").withRequired(true));
+		for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
+			DocumentField field = new DocumentField()
+			.withFieldName(CaseUtils.toCamelCase(stmt.name(), true, '_'))
+			.withFieldType(FieldType.DECIMAL);
+			try {
+				field.withDescription(messages.getMessage(stmt.toString(), null, defaultLocale));
+			} catch (Throwable ex) { }
+			fields.add(field);
+		}
+
+		docTemplate.setFields(fields);
+		addInputsIncomeStatement(docTemplate);
 
 		return toRet;
 
@@ -583,6 +618,86 @@ public class CreateDocumentTemplatesSamples {
 						.withColumnIndex(6).withSheetIndex(0),
 				new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name())
 						.withColumnIndex(7).withSheetIndex(0));
+
+		input.setFields(mappings);
+	}
+	
+	/**
+	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
+	 *
+	 * @param docTemplate
+	 */
+	private static void addInputsIncomeStatement(DocumentTemplate docTemplate) {
+
+		if (docTemplate == null)
+			return;
+
+		DocumentInput input = new DocumentInput("CSV Income Statement");
+		input.setFormat(DocumentFormat.CSV);
+		docTemplate.addInput(input);
+		
+		List<DocumentInputFieldMapping> mappings = new LinkedList<>();
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name())
+						.withColumnIndex(0));
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name())
+						.withColumnIndex(1));
+		for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
+			DocumentInputFieldMapping field = new DocumentInputFieldMapping().withFieldName(CaseUtils.toCamelCase(stmt.name(), true, '_'))
+					.withColumnIndex(mappings.size());
+			mappings.add(field);
+		}
+
+		input.setFields(mappings);
+
+		input = new DocumentInput("XLS Income Statement");
+		input.setFormat(DocumentFormat.XLS);
+		docTemplate.addInput(input);
+
+		mappings = new LinkedList<>();
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name())
+						.withColumnNameExpression("TaxPayer").withSheetIndex(0));
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name())
+						.withColumnNameExpression("Year").withSheetIndex(0));
+		for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
+			DocumentInputFieldMapping field = new DocumentInputFieldMapping().withFieldName(CaseUtils.toCamelCase(stmt.name(), true, '_'));
+			field.withColumnNameExpression(field.getFieldName());
+			field.withSheetIndex(0);
+			mappings.add(field);
+		}
+
+		input.setFields(mappings);
+
+		input = new DocumentInput("PDF Income Statement");
+		input.setFormat(DocumentFormat.PDF);
+		docTemplate.addInput(input);
+
+		mappings = new LinkedList<>();
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name())
+						.withColumnNameExpression("TaxPayer"));
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name())
+						.withColumnNameExpression("Year"));
+		for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
+			DocumentInputFieldMapping field = new DocumentInputFieldMapping().withFieldName(CaseUtils.toCamelCase(stmt.name(), true, '_'));
+			field.withColumnNameExpression(field.getFieldName());
+			mappings.add(field);
+		}
+
+		input.setFields(mappings);
+
+		input = new DocumentInput("DOC Income Statement");
+		input.setFormat(DocumentFormat.DOC);
+		docTemplate.addInput(input);
+
+		mappings = new LinkedList<>();
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name())
+						.withColumnNameExpression("TaxPayer"));
+		mappings.add(new DocumentInputFieldMapping().withFieldName(GeneralLedgerArchetype.FIELDS_NAMES.TaxYear.name())
+						.withColumnNameExpression("Year"));
+		for (StatementComprehensiveIncome stmt: StatementComprehensiveIncome.values()) {
+			DocumentInputFieldMapping field = new DocumentInputFieldMapping().withFieldName(CaseUtils.toCamelCase(stmt.name(), true, '_'));
+			field.withColumnNameExpression(field.getFieldName());
+			mappings.add(field);
+		}
 
 		input.setFields(mappings);
 	}

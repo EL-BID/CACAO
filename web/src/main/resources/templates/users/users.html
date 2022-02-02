@@ -96,7 +96,7 @@ let table = new Tabulator('#table', {
     pagination: true,
 	paginationMode: "remote", //enable remote pagination
 	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
     filterMode:"remote",
     sortMode: "remote",
     headerFilterLiveFilterDelay:700,

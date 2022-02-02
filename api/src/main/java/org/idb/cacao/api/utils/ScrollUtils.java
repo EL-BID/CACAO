@@ -47,8 +47,10 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.util.CloseableIterator;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
  * Utility methods for generic search elastic search using 'scroll' operations to overcome limit
@@ -210,6 +212,7 @@ public class ScrollUtils {
 			}
 			this.mapper = new ObjectMapper();
 			this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			this.mapper.registerModule(new JavaTimeModule());
 			this.entity = entity;
 			
 			if (searchResponse==null) {

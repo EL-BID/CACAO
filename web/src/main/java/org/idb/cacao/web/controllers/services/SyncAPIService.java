@@ -62,6 +62,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
@@ -1191,8 +1192,9 @@ public class SyncAPIService {
 		if (bulkRequest.numberOfActions()>0) {
 			bulkRequest.setRefreshPolicy(RefreshPolicy.NONE);
 			try {
-				elasticsearchClient.bulk(bulkRequest,
-					RequestOptions.DEFAULT);
+				CommonErrors.doESWriteOpWithRetries(
+					()->elasticsearchClient.bulk(bulkRequest,
+					RequestOptions.DEFAULT));
 			}
 			catch (Throwable ex) {
 				try {
@@ -1200,8 +1202,9 @@ public class SyncAPIService {
 							|| null!=ErrorUtils.getIllegalArgumentInputString(ex)) {
 						// In case of an error relative to type mismatch, lets try again after changing some of the index parameters
 						ESUtils.changeBooleanIndexSetting(elasticsearchClient, index_name, ESUtils.SETTING_IGNORE_MALFORMED, true, /*closeAndReopenIndex*/true);
-						elasticsearchClient.bulk(bulkRequest,
-								RequestOptions.DEFAULT);
+						CommonErrors.doESWriteOpWithRetries(
+							()->elasticsearchClient.bulk(bulkRequest,
+							RequestOptions.DEFAULT));
 					}
 					else {
 						throw ex;

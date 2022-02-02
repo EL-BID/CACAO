@@ -107,6 +107,11 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 	private static final String statementEntry = IndexNamesUtils.formatFieldName("Statement");
 
 	/**
+	 * The field name for published data regarding 'Statement Order Number'
+	 */
+	private static final String statementNumber = IndexNamesUtils.formatFieldName("StatementNumber");
+
+	/**
 	 * The field name for published data regarding 'Statement Amount'
 	 */
 	private static final String amount = IndexNamesUtils.formatFieldName("Amount");
@@ -327,6 +332,7 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 			}
 			if (declarantInformation.isPresent())
 				normalizedRecord_SCI.putAll(declarantInformation.get());
+			normalizedRecord_SCI.put(statementNumber, String.format("%02d", t.ordinal()+1));
 			if (multiLanguageDomainEntry!=null && !multiLanguageDomainEntry.isEmpty())
 				ETLContext.denormalizeDomainEntryNames(multiLanguageDomainEntry, statementEntry, normalizedRecord_SCI);
 			loader.add(new IndexRequest(AccountingLoader.INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME)

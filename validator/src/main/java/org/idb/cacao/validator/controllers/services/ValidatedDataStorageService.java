@@ -34,6 +34,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,8 +103,9 @@ public class ValidatedDataStorageService {
 		request.timeout(elasticSearchConnectionTimeout);
 		request.setRefreshPolicy(RefreshPolicy.NONE);
 		try {
-			elasticsearchClient.bulk(request,
-				RequestOptions.DEFAULT);
+			CommonErrors.doESWriteOpWithRetries(
+				()->elasticsearchClient.bulk(request,
+				RequestOptions.DEFAULT));
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error while storing "+count+" rows for file "+fileId+" for index '"+index_name+"' for template '"+template.getName()+"' "+template.getVersion(), ex);
