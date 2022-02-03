@@ -752,7 +752,7 @@ public class AnalysisService {
 			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
 		}
 		subquery = subquery.minimumShouldMatch(1);
-		//query = query.must(subquery);		
+		query = query.must(subquery);		
 
 		// Filter by year
 		query = query.must(new TermQueryBuilder("year", year));

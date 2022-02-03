@@ -10,6 +10,7 @@
 	href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
+<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
 </head>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
@@ -136,6 +137,12 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		$('#qualifiers').on('change', function() {
+			$("#dataView").hide();
+			updateQualifiersValues(true);
+	 	});	
+	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})
@@ -143,16 +150,19 @@
 		$('#finalDate').calendar({
 		  type: 'month',
 		     onChange: function(value) {
-		    	 $("#showtable").hide()   
+		    	 $("#showtable").hide()
+		    	 $('#form').submit();
 		     },
 		});
 		
 		$('#analysisType').on('change', function() {
-			$("#showtable").hide()   
+			$("#showtable").hide()
+			$('#form').submit();
 	     });	
 		
 		$('#period').on('change', function() {
-			$("#showtable").hide()   
+			$("#showtable").hide()
+			$('#form').submit();
 	     });
 		
 		$('#level').on('change', function() {
@@ -187,7 +197,8 @@
 	        	},
 	     	},
 	     	onChange: function(value) {
-				$("#showtable").hide()   
+				$("#showtable").hide() 
+				$('#form').submit();
 	     	},
 	    	action: 'activate',
 	    	clearable: true
@@ -284,6 +295,7 @@
 				return url + '?' + p.toString()
 			},
 			ajaxContentType: "json",
+			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
 			locale:'xx',
 			langs:{
 		        "xx":{
@@ -326,6 +338,17 @@
 				{title: /*[[#{account.name}]]*/ "Name", field:"name", headerSort:false },	
 			]
 		})
+	
+		table.on("tableBuilt", function(){
+			document.getElementById('exportXLS').addEventListener("click", function(){
+				table.download("xlsx", getFileName() , {sheetName:'Analysis'});				    
+			});
+		});
+	
+		function getFileName() {
+			var fileName =/*[[#{taxpayers.analysis.vertical.and.horizontal}]]*/ null;
+			return  fileName + ".xlsx";
+		}
 
 	</script>
 </body>
