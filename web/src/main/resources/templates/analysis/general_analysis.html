@@ -61,8 +61,8 @@
 					<div class="ui field" id="sourceDataView">
 						<label th:text="#{taxpayers.analysis.general.source.data}">Source data</label> 
 						<select class="ui dropdown" id="sourceData">
-							<option value="1" selected="selected" th:text="#{taxpayer.analysis.source.data.journal}">Journal</option>
-							<option value="2" th:text="#{taxpayer.analysis.source.data.income_statement}">Income Statement</option>						
+							<option value="1" selected="selected" th:text="#{taxpayers.analysis.general.source.data.journal}">Journal</option>
+							<option value="2" th:text="#{taxpayers.analysis.general.source.data.income.statement}">Declared Income Statement</option>						
 						</select>
 					</div>					
 
@@ -236,60 +236,70 @@
 		
 		function showGraphics(data, width) {
 			
-	      var yourVlSpec = {
-			$schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    	        description: 'A box plot chart with statements data',    	        
-    	        "width": width,
-    	        //"width": "container",
-    	        "height": data.items.length * 50,
-    	        "data": { "values": data.items },
-    	        "config": {"mark": {"tooltip": true}},
-    	        "mark": {"type": "rule"},
-    	        "encoding": {
-    	          "y": {"field": "statementName", "type": "nominal", "title": "Statement",
-    	        	    "sort": {"field": "statementOrder"},
-    	                "axis": {"title": null, "labelFontSize": 10, "labelFontWeight": "bold", "labelLimit": 100}}
-    	        },
-    	        "layer": [
-    	          {
-    	            "mark": {"type": "rule"},
-    	            "encoding": {
-    	              "x": {
-    	                "field": "min",
-    	                "type": "quantitative",          
-    	                "scale": {
-    	                  "zero": false,
-    	                  "domain": [data.scaleMin, data.scaleMax]
-    	                },
-    	                "title": "Min",
-    	                "axis": {"title": null}
-    	              },
-    	              "x2": {"field": "max", "title": "Max"}
-    	            }
-    	          },
-    	          {
-    	            "mark": {"type": "bar", "size": 18},
-    	            "encoding": {
-    	              "x": {"field": "q1", "type": "quantitative", "title": "Q1"},
-    	              "x2": {"field": "q3", "title": "Q3"},
-    	              "color": {"field": "statementName", "type": "nominal", "legend": null, "title": "Statement"}
-    	            }
-    	          },
-    	          {
-    	            "mark": {"type": "tick", "color": "white", "size": 18},
-    	            "encoding": {"x": {"field": "median", "type": "quantitative", "title": "Median"}}
-    	          },
-    	          {
-    	            "transform": [{"flatten": ["normalizedOutliers"]}],
-    	            "mark": {"type": "point", "style": "boxplot-outliers"},
-    	            "encoding": {
-    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": "Outlier"}, 
-    	              		"tooltip":{"field": "normalizedOutliers.taxpayerName"}}
-    	          }
-    	        ]
-   	        };	      
-			vegaEmbed('#vis', yourVlSpec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
-			$("#vis").show()
+			if ( data.items.length == 0 ) {
+			
+				$("#dataView").hide();	
+				$('#modal_failed').find('.description').html(errorNoDataAvailable);
+				$('#modal_failed').modal('show');
+				
+			}
+			
+			else {
+				var yourVlSpec = {
+					$schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+		    	        description: 'A box plot chart with statements data',    	        
+		    	        "width": width,
+		    	        //"width": "container",
+		    	        "height": data.items.length * 50,
+		    	        "data": { "values": data.items },
+		    	        "config": {"mark": {"tooltip": true}},
+		    	        "mark": {"type": "rule"},
+		    	        "encoding": {
+		    	          "y": {"field": "statementName", "type": "nominal", "title": "Statement",
+		    	        	    "sort": {"field": "statementOrder"},
+		    	                "axis": {"title": null, "labelFontSize": 10, "labelFontWeight": "bold", "labelLimit": 100}}
+		    	        },
+		    	        "layer": [
+		    	          {
+		    	            "mark": {"type": "rule"},
+		    	            "encoding": {
+		    	              "x": {
+		    	                "field": "min",
+		    	                "type": "quantitative",          
+		    	                "scale": {
+		    	                  "zero": false,
+		    	                  "domain": [data.scaleMin, data.scaleMax]
+		    	                },
+		    	                "title": "Min",
+		    	                "axis": {"title": null}
+		    	              },
+		    	              "x2": {"field": "max", "title": "Max"}
+		    	            }
+		    	          },
+		    	          {
+		    	            "mark": {"type": "bar", "size": 18},
+		    	            "encoding": {
+		    	              "x": {"field": "q1", "type": "quantitative", "title": "Q1"},
+		    	              "x2": {"field": "q3", "title": "Q3"},
+		    	              "color": {"field": "statementName", "type": "nominal", "legend": null, "title": "Statement"}
+		    	            }
+		    	          },
+		    	          {
+		    	            "mark": {"type": "tick", "color": "white", "size": 18},
+		    	            "encoding": {"x": {"field": "median", "type": "quantitative", "title": "Median"}}
+		    	          },
+		    	          {
+		    	            "transform": [{"flatten": ["normalizedOutliers"]}],
+		    	            "mark": {"type": "point", "style": "boxplot-outliers"},
+		    	            "encoding": {
+		    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": "Outlier"}, 
+		    	              		"tooltip":{"field": "normalizedOutliers.taxpayerName"}}
+		    	          }
+		    	        ]
+		   	        };	      
+				vegaEmbed('#vis', yourVlSpec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+				$("#vis").show()
+			}
 		}
 		
 		let tooltip = function(e, cell) {

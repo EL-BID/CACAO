@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,9 +60,12 @@ import org.elasticsearch.index.query.WildcardQueryBuilder;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -83,6 +87,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.Lists;
 
 /**
  * Utility methods for advanced search facility with elastic search base
@@ -811,4 +816,39 @@ public class SearchUtils {
 		
 		return filters.get().splitFilters(filterNames);
 	}
+	
+	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, String[] fields, AggregationBuilder... metrics) {
+		TermsAggregationBuilder agg = AggregationBuilders.terms(fields[0]).size(10_000).field(fields[0]);
+		if (fields.length>1) {
+			agg = agg.subAggregation(aggregationBuilder(agg, Arrays.copyOfRange(fields, 1, fields.length), metrics));
+		} else {
+			final TermsAggregationBuilder groupAgg = agg;
+			Arrays.stream(metrics)
+			  .forEach(m -> groupAgg.subAggregation(m));
+		}
+		return agg;
+	}
+	
+	private static <R> void collectAggregationLevel(Aggregations aggregations, String[] fields, BiFunction<Aggregations, String[], R> function, 
+			int level, String[] values, List<R> results) {
+		Terms terms = aggregations.get(fields[level]);
+		boolean lastLevel = level == (fields.length-1);
+		for(Terms.Bucket bucket: terms.getBuckets()) {
+			values[level] = bucket.getKeyAsString();
+			if (lastLevel) {
+				results.add(function.apply(bucket.getAggregations(), values));
+			}
+			else {
+				collectAggregationLevel(bucket.getAggregations(), fields, function, level+1, values, results);
+			}
+		}
+	}
+	
+	public static <R> List<R> collectAggregations(Aggregations agg, String[] fields, BiFunction<Aggregations, String[], R> function) {
+		List<R> result = Lists.newArrayList();
+		String[] values = new String[fields.length];
+		collectAggregationLevel(agg, fields, function, 0, values, result);
+		return result;
+	}
+	
 }

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -22,7 +23,9 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.Avg;
 import org.elasticsearch.search.aggregations.metrics.MedianAbsoluteDeviation;
@@ -31,10 +34,12 @@ import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.dto.Account;
+import org.idb.cacao.web.dto.AggregatedAccountingFlow;
 import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.dto.AnalysisItem;
 import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.dto.Outlier;
+import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -64,9 +69,11 @@ public class AnalysisService {
 	private final static int SOURCE_JOURNAL = 1;
 	@SuppressWarnings("unused")
 	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
+	
+	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Flow Daily");
 
 	/**
-	 * Retrieves and return a balanece sheet for a given taxpayer and period (month
+	 * Retrieves and return a balance sheet for a given taxpayer and period (month
 	 * and year)
 	 * 
 	 * @param taxpayerId       Taxpayer for select a balance sheet
@@ -999,4 +1006,57 @@ public class AnalysisService {
 		return values;
 	}
 
+	public List<AggregatedAccountingFlow> getAccountingFlow(String taxpayerId, int year) {
+		SearchRequest searchRequest = new SearchRequest(INDEX_PUBLISHED_ACCOUNTING_FLOW);
+
+		// Filter by taxpayerId
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+
+		// Filter for year
+		query = query.must(new TermQueryBuilder("year", year));
+
+		String[] groupBy = {"credited_account_category.keyword", "credited_account_category_name.keyword", 
+		            "credited_account_subcategory.keyword", "credited_account_subcategory.keyword",
+		            "credited_account_subcategory.keyword", "credited_account_subcategory_name.keyword",
+		            "credited_account_code.keyword", "credited_account_name.keyword",
+		            "debited_account_subcategory.keyword", "debited_account_subcategory.keyword",
+		            "debited_account_subcategory.keyword", "debited_account_subcategory_name.keyword",
+		            "debited_account_code.keyword", "debited_account_name.keyword" };
+		
+		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field("amount");
+		
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);
+
+
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting flows", ex);
+		}
+		
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No flows found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No flows found
+		} 
+
+		BiFunction<Aggregations, String[], AggregatedAccountingFlow> function = (agg, values) -> {
+			Sum sum = agg.get("totalFlow");
+			return new AggregatedAccountingFlow(values, sum.getValue());
+		};
+		
+		List<AggregatedAccountingFlow> result = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		
+		return result;
+
+	}
 }

@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.services.AnalysisService;
+import org.idb.cacao.web.dto.AggregatedAccountingFlow;
 import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -38,6 +40,8 @@ import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
@@ -325,4 +329,27 @@ public class AnalysisAPIController {
 		
 	}	
 	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/accounting_flows"})
+	public ResponseEntity<Object> getAccountingFlows(@RequestParam("taxpayerId") String taxpayerId,
+			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate, 
+			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
+		
+		if ( taxpayerId == null ) {
+			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	List<AggregatedAccountingFlow> values = analysisService.getAccountingFlow(taxpayerId, startDate.getYear());
+    	
+    	return ResponseEntity.ok().body(values);    
+		
+	}
 }
