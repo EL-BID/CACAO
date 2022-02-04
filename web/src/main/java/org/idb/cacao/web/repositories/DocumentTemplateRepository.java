@@ -41,6 +41,8 @@ public interface DocumentTemplateRepository extends ElasticsearchRepository<Docu
 	public Optional<DocumentTemplate> findByNameAndVersion(String name, String version);
 	
 	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
+		if (entity.getTemplateCreateTime()==null)
+			entity.setTemplateCreateTime(DateTimeUtils.now());
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
