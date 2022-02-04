@@ -33,6 +33,7 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
@@ -56,6 +57,7 @@ public class FileProcessedConsumerService {
 	private KibanaSpacesService kibanaSpacesService;
 
 	@Bean
+	@CacheEvict(value={"years","accounts","qualifierValues"})
 	public Consumer<String> receiveProcessedFile() {
 		return documentId -> {
 			log.log(Level.INFO, "Received a message with documentId " + documentId);	

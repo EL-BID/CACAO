@@ -246,6 +246,7 @@ public class AnalysisAPIController {
 	@GetMapping(value= {"/analysis/general-analysis"})
 	public ResponseEntity<Object> getGeneralAnalysis(@RequestParam("qualifier") String qualifier,
 			@RequestParam("qualifierValue") String qualifierValue,
+			@RequestParam("sourceData") int sourceData,
 			@RequestParam("year") int year) {
 		
 		if ( qualifier == null || qualifier.isEmpty() ) {
@@ -255,6 +256,11 @@ public class AnalysisAPIController {
 		
 		if ( qualifierValue == null || qualifierValue.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'qualifierValue'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		if ( sourceData == 0 ) {
+			log.log(Level.WARNING, "Missing parameter 'sourceData'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
@@ -270,7 +276,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, year);
+    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, sourceData, year);
 	
     	return ResponseEntity.ok().body(analysisData);    	
 	}
@@ -299,7 +305,12 @@ public class AnalysisAPIController {
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/years"})
-	public ResponseEntity<Object> getYars() {
+	public ResponseEntity<Object> getYars(@RequestParam("sourceData") int sourceData) {
+		
+		if ( sourceData == 0 ) {
+			log.log(Level.WARNING, "Missing parameter 'sourceData'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}		
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -308,7 +319,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<Integer> values = analysisService.getYears();
+    	List<Integer> values = analysisService.getYears(sourceData);
     	
     	return ResponseEntity.ok().body(values);    
 		

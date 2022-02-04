@@ -47,6 +47,7 @@ import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
@@ -201,6 +202,7 @@ public class TaxPayerAPIController {
 	@Secured({"ROLE_TAXPAYER_WRITE"})
     @PostMapping(value="/taxpayer", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new taxpayer",response=Taxpayer.class)
+	@CacheEvict(value={"qualifierValues"})
     public ResponseEntity<Object> addTaxpayer(@Valid @RequestBody Taxpayer taxpayer, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
@@ -221,6 +223,7 @@ public class TaxPayerAPIController {
 	@Secured({"ROLE_TAXPAYER_WRITE"})
 	@PutMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing taxpayer",response=Taxpayer.class)
+	@CacheEvict(value={"qualifierValues"})
     public ResponseEntity<Object> updateTaxpayer(@PathVariable("id") String id, @Valid @RequestBody Taxpayer taxpayer, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
@@ -239,6 +242,7 @@ public class TaxPayerAPIController {
 	@Secured({"ROLE_TAXPAYER_WRITE"})
 	@DeleteMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing taxpayer",response=Taxpayer.class)
+	@CacheEvict(value={"qualifierValues"})
     public ResponseEntity<Object> deleteTaxpayer(@PathVariable("id") String id) {
     	Taxpayer taxpayer = taxpayerRepository.findById(id).orElse(null);
         if (taxpayer==null)

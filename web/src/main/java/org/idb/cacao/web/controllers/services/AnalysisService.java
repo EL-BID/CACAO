@@ -36,6 +36,7 @@ import org.idb.cacao.web.dto.AnalysisItem;
 import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.dto.Outlier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -56,7 +57,13 @@ public class AnalysisService {
 	private final String BALANCE_SHEET_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Balance Sheet Monthly");
 	private final String COMPUTED_STATEMENT_INCOME_INDEX = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Computed Statement Income");
+	private final String DECLARED_STATEMENT_INCOME_INDEX = IndexNamesUtils
+			.formatIndexNameForPublishedData("Accounting Declared Statement Income");
 	private final String TAXPAYER_INDEX = "cacao_taxpayers";
+	
+	private final static int SOURCE_JOURNAL = 1;
+	@SuppressWarnings("unused")
+	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
 
 	/**
 	 * Retrieves and return a balanece sheet for a given taxpayer and period (month
@@ -80,7 +87,12 @@ public class AnalysisService {
 	}
 
 	/**
-	 * Build the query object used by {@link #getAccounts(String, int, String)}
+	 * Build the query object used by {@link #getAccounts(String, YearMonth, boolean)}
+	 * @param taxpayerId	A taxpayer to filter for
+	 * @param year			A year to filter for
+	 * @param period		A period to filter for
+	 * 
+	 *  @return A {@link SearchRequest} with all parameters and filters
 	 */
 	private SearchRequest searchBalance(final String taxpayerId, YearMonth period) {
 
@@ -128,13 +140,14 @@ public class AnalysisService {
 	 * Retrive and return a list of accounts with it's attributes for conditions on
 	 * parameters
 	 * 
-	 * @param taxpayerId
-	 * @param year
-	 * @param month
-	 * @param fetchZeroBalance If true, fetches and return accounts with ZERO
-	 *                         balance
+	 * @param taxpayerId	A taxpayer to filter for
+	 * @param year			A year to filter for
+	 * @param period		A period to filter for 
+	 * @param fetchZeroBalance If true, fetches and return accounts with ZERO balance
+	 * 
 	 * @return A {@link List} of {@link Account}
 	 */
+	@Cacheable("accounts")
 	public List<Account> getAccounts(final String taxpayerId, YearMonth period, boolean fetchZeroBalance) {
 
 		// Create a search request
@@ -252,7 +265,7 @@ public class AnalysisService {
 	/**
 	 * Add informations about category, subcategory and percentage of each account
 	 * 
-	 * @param accounts
+	 * @param accounts	A {@link List} of {@link Account} to add a subcategory
 	 */
 	private void addCategorySubcategoryData(List<Account> accounts) {
 
@@ -339,16 +352,27 @@ public class AnalysisService {
 
 	}
 
+	/**
+	 * Search and return a {@link Map} of accounts for a specific taxpayerid and period. 
+	 * @param taxpayerId	Taxpayer id to search accounts for
+	 * @param period		Period to be searched
+	 * @param fetchZeroBalance	Indicates if accounts with ZERO balance will be included
+	 * @param additionalPeriods	A list os additional periods to search balance values
+	 * @return
+	 */
 	public List<Map<String, Object>> getMapOfAccounts(String taxpayerId, YearMonth period, boolean fetchZeroBalance,
 			List<YearMonth> additionalPeriods) {
 
+		//Get balance for initial period
 		BalanceSheet balanceP0 = getBalance(taxpayerId, period, fetchZeroBalance);
 
+		//If there is no accounts for the initial period, there is nothing to return
 		if (balanceP0 == null || balanceP0.getAccounts() == null || balanceP0.getAccounts().isEmpty())
 			return Collections.emptyList();
-
+		
 		Map<String, Map<String, Object>> accountsToRet = new HashMap<>();
 
+		//For each account add balance and vertical analysis value
 		for (Account account : balanceP0.getAccounts()) {
 			String key = account.getKey();
 			Map<String, Object> accountData = account.getAccountData();
@@ -358,10 +382,13 @@ public class AnalysisService {
 		}
 
 		int i = 1;
+		//For each adittional period
 		for (YearMonth p : additionalPeriods) {
 
+			//Get balance for period
 			BalanceSheet balance = getBalance(taxpayerId, p, fetchZeroBalance);
 
+			//If there is no data for this period, go next
 			if (balance == null || balance.getAccounts() == null || balance.getAccounts().isEmpty())
 				continue;
 
@@ -369,6 +396,7 @@ public class AnalysisService {
 			String prefixVerticalAnalysis = "V" + i;
 			String prefixHorizontalAnalysis = "H" + i;
 
+			//For each account add balance, vertical and horizontal analysis values
 			for (Account account : balance.getAccounts()) {
 				String key = account.getKey();
 				Map<String, Object> accountData = accountsToRet.get(key);
@@ -390,6 +418,7 @@ public class AnalysisService {
 
 		}
 
+		//Sort accounts 
 		List<String> accountKeys = new ArrayList<>(accountsToRet.keySet());
 		accountKeys.sort(null);
 		List<Map<String, Object>> accounts = new ArrayList<>(accountKeys.size());
@@ -399,11 +428,16 @@ public class AnalysisService {
 
 	/**
 	 * Build the query object used by {@link #getAccounts(String, int, String)}
+	 * @param taxpayerIds	A {@link List} of taxpayers to tilter for
+	 * @param sourceData	An indication of source data (index) to use
+	 * @param year	A year to filter for	 * 
+	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
-	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int year) {
+	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int sourceData, int year) {
 
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
+		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
+				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
@@ -446,10 +480,11 @@ public class AnalysisService {
 	 * 
 	 * @param qualifier      A name of qualifier to search values
 	 * @param qualifierValue A value for qualifier
+	 * @param sourceData	 An indication of source values (index) to use
 	 * @param year           A year of values to search
 	 * @return A {@link Map} of values separated by taxpayers
 	 */
-	public AnalysisData getGeneralAnalysisValues(String qualifier, String qualifierValue, int year) {
+	public AnalysisData getGeneralAnalysisValues(String qualifier, String qualifierValue, int sourceData, int year) {
 		
 		if ( qualifier == null || qualifier.isEmpty() || qualifierValue == null || qualifierValue.isEmpty() ) {
 			log.log(Level.SEVERE, "No parameters provided");
@@ -464,7 +499,7 @@ public class AnalysisService {
 		}
 
 		// Create a search request
-		SearchRequest searchRequest = searchComputedStatementIncome(taxpayerIds, year);
+		SearchRequest searchRequest = searchComputedStatementIncome(taxpayerIds, sourceData, year);
 
 		// Execute a search
 		SearchResponse sresp = null;
@@ -539,7 +574,7 @@ public class AnalysisService {
 
 			// Add outliers
 			for (AnalysisItem item : items) {
-				addOutliers(item, year, taxpayerIds);
+				addOutliers(item, sourceData, year, taxpayerIds);
 			}
 			
 			AnalysisData data = new AnalysisData();			
@@ -552,16 +587,22 @@ public class AnalysisService {
 
 	}
 
+	/**
+	 * Calculate and store a scale in with graph will be displayed
+	 * @param data	All data to be used in graph
+	 */
 	private void updateScale(AnalysisData data) {
 		
 		double min = -100d;
 		double max = 200d;
 		
+		//Get max an min values in graph data
 		for ( AnalysisItem item : data.getItems() ) {
 			min = Math.min(min, item.getMin());
 			max = Math.max(max, item.getMax());
 		}
 		
+		//Add and subtract a value of 100 from max and min value 
 		data.setScaleMin(min-100);
 		data.setScaleMax(max+100);		
 		
@@ -595,19 +636,18 @@ public class AnalysisService {
 			
 		}		
 		
-		data.getOutliers().sort(null);
-		
-		data.getItems().sort(null);
+		//data.getOutliers().sort(null);		
+		//data.getItems().sort(null);
 	}	
 	
 	/**
-	 * Normalize values to be user in graphics
-	 * @param value
-	 * @param min
-	 * @param max
-	 * @param limit
-	 * @param superior
-	 * @return
+	 * Normalize values to be used in graphics
+	 * @param value	A value to compare
+	 * @param min	Minimal value
+	 * @param max	Maximal value
+	 * @param limit	Limit for view (graph scale)
+	 * @param superior	Indicates if it's about superior limit
+	 * @return	A value between max/min and limit
 	 */
 	private double normalize(double value, double min, double max, double limit, boolean superior) {
 		
@@ -626,17 +666,19 @@ public class AnalysisService {
 	/**
 	 * Add outliers to analysis data
 	 * 
-	 * @param item Analysis item
-	 * @param year Year of analysis
+	 * @param item 			Analysis item
+	 * @param sourceData	An indication of source data (index) to use
+	 * @param year 			Year of analysis
+	 * @param taxpayerIds	A {@link List} of taxpayers to filter for
 	 */
-	private void addOutliers(AnalysisItem item, int year, List<String> taxpayerIds) {
+	private void addOutliers(AnalysisItem item, int sourceData, int year, List<String> taxpayerIds) {
 
 		if (item.getStatementName() == null)
 			return;
 
-		// Add outliers for minimal value
+		//Add outliers for minimal value
 		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementOrder(), item.getMin(),
-				year, taxpayerIds);
+				sourceData, year, taxpayerIds);
 
 		// Execute a search
 		SearchResponse sresp = null;
@@ -649,7 +691,6 @@ public class AnalysisService {
 		if (sresp != null && sresp.getHits().getTotalHits().value > 0) {
 
 			// Let's fill the resulting list with values
-
 			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");
 
 			for (Terms.Bucket taxpayerIdBucket : taxpayersIds.getBuckets()) {
@@ -680,8 +721,8 @@ public class AnalysisService {
 
 		}
 
-		// Add outliers for maximal value
-		searchRequest = getRequestForOutliers(false /* min */, item.getStatementOrder(), item.getMax(), year, taxpayerIds);
+		//Add outliers for maximal value
+		searchRequest = getRequestForOutliers(false /* min */, item.getStatementOrder(), item.getMax(), sourceData, year, taxpayerIds);
 
 		// Execute a search
 		sresp = null;
@@ -730,21 +771,23 @@ public class AnalysisService {
 	/**
 	 * Create and return a search request for getting outliers
 	 * 
-	 * @param min
-	 * @param statementOrder
-	 * @param value
-	 * @param year
-	 * @param taxpayerIds
-	 * @return A {@link SearchRequest}
+	 * @param min	A minimal value to consider
+	 * @param statement	A statement to search
+	 * @param value	A value to compare
+	 * @param sourceData	An indication of source data (index) to use 
+	 * @param year	A year to filter for
+	 * @param taxpayerIds	A list of taxpayers to filter for
+	 * @return A {@link SearchRequest} with all configurations	
 	 */
-	private SearchRequest getRequestForOutliers(boolean min, String statementOrder, double value, int year, List<String> taxpayerIds) {
+	private SearchRequest getRequestForOutliers(boolean min, String statement, double value, int sourceData, int year, List<String> taxpayerIds) {
 
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
+		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
+				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
 		
 		// Filter by statementCode
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.must(new TermQueryBuilder("statement_number.keyword", statementOrder));
+		query = query.must(new TermQueryBuilder("statement_number.keyword", statement));
 		
 		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
@@ -789,7 +832,7 @@ public class AnalysisService {
 	 */
 	private List<String> getTaxPayersId(String qualifier, String qualifierValue) {
 		
-		// Index over 'balance sheet monthly' objects
+		// Index over 'taxpayer' objects
 		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
 		
 		// Filter by qualifier
@@ -797,7 +840,7 @@ public class AnalysisService {
 		query = query.should(new TermQueryBuilder(qualifier + ".keyword", qualifierValue));
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
+		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by taxpayerid field
 				AggregationBuilders.terms("byTaxpayer").size(10_000).field("taxPayerId");
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
@@ -820,11 +863,10 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No data found for qualifier " + qualifier + " with value " + qualifierValue);
-			return Collections.emptyList(); // No balance sheet found
+			return Collections.emptyList(); // No data found
 		} else {
 
 			// Let's fill the resulting list with values
-
 			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayer");
 
 			for (Terms.Bucket taxpayerBucket : taxpayersIds.getBuckets()) {
@@ -848,9 +890,10 @@ public class AnalysisService {
 	 * @param qualifier Qualifier to search
 	 * @return A {@link List} of values for specified qualifier
 	 */
+	@Cacheable("qualifierValues")
 	public List<String> getQualifierValues(String qualifier) {
 
-		// Index over 'taxpayer' objects
+		//Index over 'taxpayer' objects
 		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
 
 		// Configure the aggregations
@@ -880,7 +923,6 @@ public class AnalysisService {
 		} else {
 
 			// Let's fill the resulting list with values
-
 			Terms qualifierValues = sresp.getAggregations().get("byQualifierValue");
 
 			for (Terms.Bucket qualifierValueBucket : qualifierValues.getBuckets()) {
@@ -901,14 +943,17 @@ public class AnalysisService {
 	}
 
 	/**
+	 * @param sourceData	An indication of source data (index) to use
 	 * 
 	 * @return A list of years present in Accounting Computed Statement Income index
 	 */
-	public List<Integer> getYears() {
+	@Cacheable("years")	
+	public List<Integer> getYears(int sourceData) {
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(COMPUTED_STATEMENT_INCOME_INDEX);
+		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
+				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
 
-		// Configure the aggregations
+		//Configure the aggregations 
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by qualifier field
 				AggregationBuilders.terms("byYear").size(10_000).field("year");
 

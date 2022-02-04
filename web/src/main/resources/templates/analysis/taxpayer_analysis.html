@@ -57,14 +57,6 @@
 							Value</label> <select class="ui dropdown" id="qualifierValues">
 						</select>
 					</div>
-					
-					<div class="ui field" id="sourceDataView">
-						<label th:text="#{taxpayers.analysis.general.source.data}">Source data</label> 
-						<select class="ui dropdown" id="sourceData">
-							<option value="1" selected="selected" th:text="#{taxpayer.analysis.source.data.journal}">Journal</option>
-							<option value="2" th:text="#{taxpayer.analysis.source.data.income_statement}">Income Statement</option>						
-						</select>
-					</div>					
 
 					<div class="ui field">
 						<label th:text="#{base.period}">Base Period</label> <select
@@ -123,11 +115,6 @@
 			$('#form').submit();
 	    });
 		
-		$('#sourceData').on('change', function() {
-			$("#dataView").hide();			
-			$('#form').submit();
-	    });		
-		
 		$('#year').on('change', function() {
 			$("#dataView").hide();
 			$('#form').submit();
@@ -159,8 +146,7 @@
 		
 		function updateYears() {		
 			$('#year').find('option').remove();
-			$.get('/api/analysis/years', 
-					{sourceData: $('#sourceData').val()}, //data to submit
+			$.get('/api/analysis/years',
 			    function (data, status, xhr) {
 					if ( data.length == 0 ) {						
 						$('#modal_failed').find('.description').html(errorYearsNotFound);
@@ -211,7 +197,6 @@
 			$.get('/api/analysis/general-analysis', 
 					{ qualifier: $('#qualifiers').val(),
 						qualifierValue: $('#qualifierValues').val(),
-						sourceData: $('#sourceData').val(),
 						year: $('#year').val(),				
 					} ,  //data to submit
 			    function (data, status, xhr) {						
