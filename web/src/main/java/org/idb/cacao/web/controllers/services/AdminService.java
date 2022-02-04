@@ -1641,6 +1641,7 @@ public class AdminService {
 				stream = null;
 			}
 			if (stream!=null) {
+				LongAdder count_docs = new LongAdder();
 				try {
 					AtomicInteger partition = new AtomicInteger(0);
 					stream.forEach(doc->{
@@ -1649,12 +1650,15 @@ public class AdminService {
 						FileUploadedEvent event = new FileUploadedEvent();
 						event.setFileId(doc.getId());
 						service.fileUploadedProducer.fileUploaded(event, partition.getAndIncrement());
+						count_docs.increment();
 
 					});
 				}
 				finally {
 					stream.close();
 				}
+				
+				report.append("Submitted ").append(count_docs.longValue()).append(" events for validation of documents according to the criteria '").append(val_opt).append("'\n");
 			}
 		}
 
