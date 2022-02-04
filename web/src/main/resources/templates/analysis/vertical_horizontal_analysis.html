@@ -273,6 +273,13 @@
 			    }
 			);	
 		}
+		
+		//Custom accessor
+		function nullConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    return value;
+		}
 	  
 		let table = new Tabulator('#table', {
 			index: 'id',
@@ -333,11 +340,11 @@
 				//{title: /*[[#{account.categoryCode}]]*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },
 				{title: /*[[#{account.category}]]*/ "Category", field:"category", hozAlign:"left", headerSort:false },
 				//{title: /*[[#{account.subcategoryCode}]]*/ "SubCategory", field:"subcategoryCode", hozAlign:"center", headerSort:false},
-				{title: /*[[#{account.subcategory}]]*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false},
-				{title: /*[[#{account.code}]]*/ "Code", field:"code", headerSort:false},
-				{title: /*[[#{account.name}]]*/ "Name", field:"name", headerSort:false },	
+				{title: /*[[#{account.subcategory}]]*/ "SubCategory", field:"subcategory", hozAlign:"left", headerSort:false, accessorDownload:nullConvert},
+				{title: /*[[#{account.code}]]*/ "Code", field:"code", headerSort:false, accessorDownload:nullConvert},
+				{title: /*[[#{account.name}]]*/ "Name", field:"name", headerSort:false, accessorDownload:nullConvert},	
 			]
-		})
+		})		
 	
 		table.on("tableBuilt", function(){
 			document.getElementById('exportXLS').addEventListener("click", function(){
