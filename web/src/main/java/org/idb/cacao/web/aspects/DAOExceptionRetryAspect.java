@@ -47,9 +47,11 @@ import org.springframework.stereotype.Component;
 public class DAOExceptionRetryAspect {
 
 	/**
-	 * Captures the 'save' and 'saveAll' methods of all classes that implements the CrudRepository interface
+	 * Captures the 'save' and 'saveAll' and 'saveWithTimestamp' methods of all classes that implements the CrudRepository interface
 	 */
-	@Pointcut("execution(* org.springframework.data.repository.CrudRepository+.save(..)) || execution(* org.springframework.data.repository.CrudRepository+.saveAll(..))")
+	@Pointcut("execution(* org.springframework.data.repository.CrudRepository+.save(..))"
+			+ " || execution(* org.springframework.data.repository.CrudRepository+.saveAll(..))"
+			+ " || execution(* org.springframework.data.repository.CrudRepository+.saveWithTimestamp(..))")
 	public void pointCutForCrudRepositorySaveMethod() {};
 
 	/**
