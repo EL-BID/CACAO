@@ -36,6 +36,13 @@ All functionalities of the CACAO system can be accessed through the sidebar menu
 Attention! The sidebar menu is located on the upper left corner, identified by 3 stacked bars. 
 ```
 After logging in to CACAO, or selecting the `Home` option in the sidebar menu, a card interface will be presented with shortcuts to CACAO's most commonly used features. 
+
+## Role Based Access Control
+
+The CACAO system implements a Role Base Access Control. **Not all functions are available to all roles**.
+
+If you don't have access to a function that you need, please make contact with the Tax Administration. 
+
 </div>
 </div>
 
@@ -180,6 +187,72 @@ Attention! The Taxpayer´s deletion procedure cannot be undone. If necessary, th
 
 </div>
 </div>
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">Vertical and Horizontal Analysis</span>
+</div>
+<div class="content markdown">
+## What's the purpose of a Vertical and Horizontal Analysis?
+
+The **vertical analysis** presents the financial statement for the period so that level 1 of the statement (Category) equals 100%, and then the percentage that each element of item 2 (subcategory) represents of this 100% is presented, and so on.
+
+For instance:
+
+|Level|Category|SubCategory |Comparison|
+|-|-|-|-|
+|**1**|**Asset**||**100%**|
+|2|Asset|Cash and Cash Equivalents|66,67%|
+|2|Asset|Intenvory|33,33%|
+
+The **horizontal analysis** compares two periods side by side, including a third column that shows how much the second period represents in relation to the first, which is considered 100%.
+
+For instance:
+
+|Level|Category|SubCategory|First Period|Second Period|Comparison|
+|-|-|-|-|-|-|
+|**1**|**Asset**||**1500**|**1050**|**70%**|
+|2|Asset|Cash and Cash Equivalents|1000|450|45%|
+|2|Asset|Inventory|500|600|120%|
+
+It is also possible to perform **both analysis** simultaneously. In this situation, after the information for the first period, there will be the vertical comparison column. After the information for the second period, there will be the horizontal comparison.
+
+|Level|Category|SubCategory|First Period|Vertical Comparison|Second Period|Horizontal Comparison|
+|-|-|-|-|-|-|-|
+|**1**|**Asset**||**1500**|**100%**|**1050**|**70%**|
+|2|Asset|Cash and Cash Equivalents|1000|66,67%|450|45%|
+|2|Asset|Inventory|500|33,33%|600|120%|
+
+## Using the Vertical and Horizontal Analysis
+
+To use the vertical and horizontal analysis, select the `Analysis` option located at the sidebar menu, then select `Vertical and Horizontal Analysis`.
+
+It's mandatory to select a Taxpayer by its *name* or *Taxpayer Id* from the **Name** menu. You can scroll the list of taxpayers or input the name or taxpayer id.
+
+The next step is to choose the analysis type. It's possible to choose from:
+
+* **Vertical** analysis
+* **Horizontal** analysis
+* **Both** vertical and horizontal analysis
+
+The third step is to select the **base period**. The base period is the first period in all comparisons.
+
+In the fourth step it must be select the periodicity of the analysis. This selection controls the periods that will be compared to the base period.
+
+The last step is to select the levels of the chart of accounts that will be displayed:
+
+* **Level 1** - only the category will be shown
+* **Level 2** - both category and subcategory will be shown
+* **Level 3** - The category, subcategory and account will be shown
+
+It's possible to show accounts with *zero* balance, selecting the `Show accounts with ZERO balance`option.
+
+With all the selections made, select `Search` to retrieve the data and the analysis desired.    
+
+</div>
+</div>
+
 
 
 <!-- <div>

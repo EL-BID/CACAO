@@ -35,7 +35,13 @@ Se puede acceder a todas las funcionalidades del sistema CACAO a través del men
 ```
 ¡Atención! El menú de la barra lateral se encuentra en la esquina superior izquierda, identificado por 3 barras apiladas. 
 ```
-Luego de ingresar a CACAO, o de seleccionar la opción `Página de inicio` en el menú de la barra lateral, se presentará una interfaz de tarjeta con accesos directos a las funcionalidades más utilizadas de CACAO. 
+Luego de ingresar a CACAO, o de seleccionar la opción `Página de inicio` en el menú de la barra lateral, se presentará una interfaz de tarjeta con accesos directos a las funcionalidades más utilizadas de CACAO.
+
+## Control de acceso basado en perfiles
+
+El sistema CACAO implementa un Control de Acceso Basado en Perfiles. **No todas las funciones están disponibles para todos los perfiles**.
+
+Si no tiene acceso a una función que necesita, póngase en contacto con la Administración Tributaria. 
 </div>
 </div>
 
@@ -177,6 +183,73 @@ Para eliminar un contribuyente de CACAO, seleccione el icono de la "papelera" ju
 ```
 ¡Atención! El procedimiento de eliminación del contribuyente no puede deshacerse. Si es necesario, habrá que volver a crear el usuario.
 ```
+
+</div>
+</div>
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">Análisis vertical y horizontal</span>
+</div>
+<div class="content markdown">
+## ¿Para qué sirve un análisis vertical y horizontal?
+
+A **análise vertical** apresenta a ficha financeira para o período de modo a que o nível 1 da ficha (Categoria) seja igual a 100%, e depois é apresentada a percentagem que cada elemento do item 2 (subcategoria) representa destes 100%, e assim por diante.
+
+Por ejemplo:
+
+|Nível|Categoria|SubCategoria |Comparación|
+|-|-|-|-|
+|**1**|**Activo**||**100%**|
+|2|Activo|Efectivo y equivalentes de efectivo|66,67%|
+|2|Activo|Inventario|33,33%|
+
+El **análisis horizontal** compara dos períodos uno al lado del otro, incluyendo una tercera columna que presenta lo que representa el segundo período en relación con el primero, que se considera el 100%.
+
+Por ejemplo:
+
+|Nivel|Categoría|Subcategoría|Primer Periodo|Segundo Periodo|Comparación|
+|-|-|-|-|-|-|
+|**1**|**Activo**||**1500**|**1050**|**70%**|
+|2|Activo|Efectivo y equivalentes de efectivo|1000|450|45%|
+|2|Activo|Inventario|500|600|120%|
+
+También es posible realizar **ambos análisis** simultáneamente. En esta situación, después de la información del primer período, estará la columna de comparación vertical. Después de la información correspondiente al segundo período, se realizará la comparación horizontal.
+
+|Nivel|Categoría|Subcategoría|Primer Periodo|Comparación vertical|Segundo Periodo|Comparación horizontal|
+|-|-|-|-|-|-|-|
+|**1**|**Activo**||**1500**|**100%**|**1050**|**70%**|
+|2|Activo|Efectivo y equivalentes de efectivo|1000|66,67%|450|45%|
+|2|Activo|Inventario|500|33,33%|600|120%|
+
+1.256 / 5.000
+Resultados de tradução
+## Uso del análisis vertical y horizontal
+
+Para usar el análisis vertical y horizontal, seleccione la opción `Análisis` ubicada en el menú de la barra lateral, luego seleccione `Análisis vertical y horizontal`.
+
+Es obligatorio seleccionar un Contribuyente por su *nombre* o *Identificación del Contribuyente* del menú **Nombre**. Puede desplazarse por la lista de contribuyentes o ingresar el nombre o la identificación del contribuyente.
+
+El siguiente paso es elegir el tipo de análisis. Es posible elegir entre:
+
+* **Análisis vertical**
+* **Análisis horizontal**
+* **Ambos** análisis vertical y horizontal
+
+El tercer paso es seleccionar el **período base**. El período base es el primer período en todas las comparaciones.
+
+En el cuarto paso se debe seleccionar la periodicidad del análisis. Esta selección controla los períodos que se compararán con el período base.
+
+El último paso es seleccionar los niveles del plan de cuentas que se mostrarán:
+
+* **Nivel 1** - solo se mostrará la categoría
+* **Nivel 2** - se mostrarán tanto la categoría como la subcategoría
+* **Nivel 3** - Se mostrará la categoría, subcategoría y cuenta
+
+Es posible mostrar cuentas con saldo *cero*, seleccionando la opción `Mostrar cuentas con saldo CERO`.
+
+Con todas las selecciones realizadas, seleccione `Buscar` para recuperar los datos y el análisis deseado. 
 
 </div>
 </div>
