@@ -296,6 +296,16 @@ public class AccountingLoader {
 	private static final String debitedAccount = IndexNamesUtils.formatFieldName(AccountingFieldNames.DebitedAccount.name());
 	
 	/**
+	 * The field name for customer/supplier ID in published data
+	 */
+	private static final String publishedCustomerSupplierId = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.CustomerSupplierId.name());
+
+	/**
+	 * The field name for customer/supplier NAME in published data
+	 */
+	private static final String publishedCustomerSupplierName = IndexNamesUtils.formatFieldName(GeneralLedgerArchetype.FIELDS_NAMES.CustomerSupplierName.name());
+
+	/**
 	 * Fields names that are used for keeping track of source of data
 	 */
 	public static final Set<String> TRACKING_FIELDS = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
@@ -667,6 +677,9 @@ public class AccountingLoader {
 
 					// Includes data about custom domain tables (possibly in multiple languages)
 					ETLContext.denormalizeDomainTables(record, normalizedRecord_GL, customDomainTables);
+					
+					// Include data about customer/supplier
+					addRecordAboutCustomerSupplier(record, lookupTaxpayers, normalizedRecord_GL);
 
 					loader.add(new IndexRequest(INDEX_PUBLISHED_GENERAL_LEDGER)
 						.id(rowId_GL)
@@ -801,5 +814,39 @@ public class AccountingLoader {
 				/*keyMapper*/Map.Entry::getKey, 
 				/*valueMapper*/Map.Entry::getValue, 
 				/*mergeFunction*/(a,b)->a));
+	}
+	
+	/**
+	 * Given an identification number of customer or supplier and given an object capable of retrieving
+	 * additional information according to taxpayers registry, inserts into normalized record additional
+	 * information retrieved, if any.
+	 */
+	public static void addRecordAboutCustomerSupplier(
+			Map<String, Object> inputRecord,
+			LoadingCache<String, Optional<Map<String, Object>>> lookupTaxpayers,
+			Map<String,Object> normalizedRecord) {
+		
+		Object customerSupplierId = inputRecord.get(publishedCustomerSupplierId);
+		if (customerSupplierId==null)
+			return;
+		Optional<Map<String,Object>> customerSupplierInformation = lookupTaxpayers.getUnchecked(customerSupplierId.toString());
+		if (customerSupplierInformation.isPresent() && !customerSupplierInformation.get().isEmpty()) {
+			for (Map.Entry<String,Object> entry: customerSupplierInformation.get().entrySet()) {
+				String fieldName = entry.getKey();
+				if ("taxpayer_id".equals(fieldName))
+					continue; // we already got this information in 'customer_supplier_id' field
+				if ("taxpayer_name".equals(fieldName)) {
+					String customerSupplierName = ValidationContext.toString(inputRecord.get(publishedCustomerSupplierName));
+					if (customerSupplierName!=null && customerSupplierName.trim().length()>0)
+						continue; // we already got this information in 'customer_supplier_name' field
+					normalizedRecord.put(publishedCustomerSupplierName, entry.getValue());
+					continue;
+				}
+				// All the other fields will be stored as 'customer_supplier_XXXXX'
+				if (fieldName.startsWith("taxpayer")) {
+					normalizedRecord.put(fieldName.replace("taxpayer", "customer_supplier"), entry.getValue());
+				}
+			} // LOOP over fields of customer/supplier according to the taxpayers registry
+		}
 	}
 }

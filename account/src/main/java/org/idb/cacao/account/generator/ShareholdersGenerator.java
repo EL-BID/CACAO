@@ -53,7 +53,7 @@ public class ShareholdersGenerator implements CustomDataGenerator {
 	
 	private DocumentField taxPayerIdField;
 	
-	private int num_digits_for_taxpayer_id;
+	private int numDigitsForTaxpayerId;
 	
 	private Number taxpayerId;
 
@@ -73,7 +73,7 @@ public class ShareholdersGenerator implements CustomDataGenerator {
 		this.records = (records<0) ? DEFAULT_NUMBER_OF_SHAREHOLDERS : records;
 
 		this.taxPayerIdField = template.getField(ShareholdersArchetype.FIELDS_NAMES.TaxPayerId.name());
-		this.num_digits_for_taxpayer_id = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
+		this.numDigitsForTaxpayerId = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
 		this.randomDataGenerator = new RandomDataGenerator(seed);
 	}
 	
@@ -85,7 +85,7 @@ public class ShareholdersGenerator implements CustomDataGenerator {
 	public void start() {
 		recordsCreated = 0;
 		
-		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
+		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
 
 		year = (providedYear==0) ? randomDataGenerator.nextRandomYear() : providedYear;
 		randomDataGenerator.reseedBasedOnYear(year);
@@ -162,12 +162,12 @@ public class ShareholdersGenerator implements CustomDataGenerator {
 			while (shareholderId==null || shareholderId.equals(taxpayerId)) {				
 				long doc_seed = genSeed.nextLong();
 				RandomDataGenerator doc_random = new RandomDataGenerator(doc_seed);
-				shareholderId = doc_random.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
+				shareholderId = doc_random.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
 			}
 		}
 		else {
 			while (shareholderId==null || shareholderId.equals(taxpayerId)) {	
-				shareholderId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
+				shareholderId = randomDataGenerator.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
 			}
 		}		
 		record.put(ShareholdersArchetype.FIELDS_NAMES.ShareholderId.name(), shareholderId.toString());

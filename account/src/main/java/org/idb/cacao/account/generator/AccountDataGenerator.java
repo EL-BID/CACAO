@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -132,6 +133,10 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	
 	private final Set<String> expenseAccounts;
 	
+	private final Set<String> customerRelatedAccounts;
+	
+	private final Set<String> supplierRelatedAccounts;
+	
 	private Set<String> cashAccounts;
 	
 	private Set<String> inventoryAccounts;
@@ -143,6 +148,8 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	private int recordsCreated;
 	
 	private DocumentField taxPayerIdField;
+	
+	private int numDigitsForTaxpayerId;
 	
 	private Number taxpayerId;
 	
@@ -164,6 +171,32 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	
 	private Map<String, Double> previousBalancesForWarnings;
 		
+	/**
+	 * This is the random generator for other 'documents' related to the same template. Useful for generating
+	 * other 'taxpayers id' that might actually be generated in other instances.
+	 */
+	private Random genSeed;
+	
+	/**
+	 * Some customers ID's to be used in some of the entries
+	 */
+	private Number[] customers;
+	
+	/**
+	 * Customer ID to use in the current transaction of General Ledger
+	 */
+	private Number customerId;
+	
+	/**
+	 * Some suppliers ID's to be used in some of the entries
+	 */
+	private Number[] suppliers;
+
+	/**
+	 * Supplier ID to use in the current transaction of General Ledger
+	 */
+	private Number supplierId;
+
 	public AccountDataGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
 			throws Exception {
 		
@@ -221,6 +254,17 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				.map(SampleChartOfAccounts::getAccountCode)
 				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 
+		this.customerRelatedAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountSubcategory.ASSET_RECEIVABLE.equals(a.getSubcategory()) 
+						|| AccountSubcategory.REVENUE_NET.equals(a.getSubcategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+
+		this.supplierRelatedAccounts = Arrays.stream(SampleChartOfAccounts.values())
+				.filter(a->AccountSubcategory.ASSET_INVENTORY.equals(a.getSubcategory()))
+				.map(SampleChartOfAccounts::getAccountCode)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+		
 		if (chartOfAccounts
 			|| openingBalance) {
 			
@@ -248,6 +292,8 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			taxPayerIdField = template.getField(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name());
 		}
 
+		numDigitsForTaxpayerId = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
+
 		accountBalance = new HashMap<>();
 	}
 	
@@ -259,8 +305,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	public void start() {
 		recordsCreated = 0;
 		
-		int num_digits_for_taxpayer_id = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
-		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
+		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
 
 		year = (providedYear==0) ? randomDataGenerator.nextRandomYear() : providedYear;
 		randomDataGenerator.reseedBasedOnYear(year);
@@ -393,7 +438,34 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			transactionId = 0;
 			nextDebits = new LinkedList<>();
 			nextCredits = new LinkedList<>();
+			
+			// Defines some 'customers' and some 'suppliers' to be used in some of the generated entries
+			int number_of_customers = randomDataGenerator.getRandomGenerator().nextInt(5)+5;
+			int number_of_suppliers = randomDataGenerator.getRandomGenerator().nextInt(4)+2;
+			customers = generateOthersTaxpayersIds(number_of_customers).toArray(new Number[0]);
+			suppliers = generateOthersTaxpayersIds(number_of_suppliers).toArray(new Number[0]);
 		}
+	}
+	
+	/**
+	 * Generates a number of 'id's for others taxpayers different from the declaring one
+	 */
+	private Set<Number> generateOthersTaxpayersIds(int number) {
+		if (genSeed==null)
+			genSeed = new Random(randomDataGenerator.getRandomGenerator().nextLong());
+		Random rSkipIds = new Random(randomDataGenerator.getRandomGenerator().nextLong());
+		Set<Number> generated = new TreeSet<>();
+		while (generated.size()<number) {
+			long doc_seed = genSeed.nextLong();
+			if (rSkipIds.nextInt(3)!=0)
+				continue; // skip some (2 out of 3) of the id's
+			RandomDataGenerator doc_random = new RandomDataGenerator(doc_seed);
+			Number id = doc_random.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
+			if (taxpayerId!=null && taxpayerId.equals(id))
+				continue;
+			generated.add(id);
+		}
+		return generated;
 	}
 	
 	public double getBalance(Collection<String> accounts) {
@@ -428,6 +500,21 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	@Override
 	public Number getTaxYear() {
 		return (year==0) ? ( (providedYear==0) ? null : providedYear ) : year;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.api.templates.CustomDataGenerator#setOverallSeed(long, int, int)
+	 */
+	@Override
+	public void setOverallSeed(long overallSeed, int docsTotal, int docIndex) {
+		genSeed = new Random(overallSeed);
+		
+		// advance forward in 'genSeed' according to 'docIndex' 
+		for (int i=0; i<docIndex && i<docsTotal-records; i++) {
+			genSeed.nextLong();
+		}
+		
 	}
 
 	/*
@@ -590,6 +677,19 @@ public class AccountDataGenerator implements CustomDataGenerator {
 				chooseRandomTransaction();
 			}
 			
+			customerId = supplierId = null;
+			
+			boolean has_customer_in_tx = nextDebits.stream().anyMatch(e->customerRelatedAccounts.contains(e.getAccount()))
+					|| nextCredits.stream().anyMatch(e->customerRelatedAccounts.contains(e.getAccount()));
+			boolean has_supplier_in_tx = nextDebits.stream().anyMatch(e->supplierRelatedAccounts.contains(e.getAccount()))
+					|| nextCredits.stream().anyMatch(e->supplierRelatedAccounts.contains(e.getAccount()));
+			if (has_customer_in_tx) {
+				customerId = customers[randomDataGenerator.getRandomGenerator().nextInt(customers.length)];
+			}
+			if (has_supplier_in_tx) {
+				supplierId = suppliers[randomDataGenerator.getRandomGenerator().nextInt(suppliers.length)];
+			}
+
 		}
 		
 		LocalDate currentDate = days[currentDay];
@@ -607,6 +707,13 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name(), entry.getAmount());			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name(), "D");
 			
+			if (customerId!=null && customerRelatedAccounts.contains(entry.getAccount())) {
+				record.put(GeneralLedgerArchetype.FIELDS_NAMES.CustomerSupplierId.name(), customerId.toString());			
+			}
+			else if (supplierId!=null && supplierRelatedAccounts.contains(entry.getAccount())) {
+				record.put(GeneralLedgerArchetype.FIELDS_NAMES.CustomerSupplierId.name(), supplierId.toString());							
+			}
+			
 			// Updates balance for this account (avoid picking the same account with insufficient balance for the next transaction)
 			Double balance = accountBalance.getOrDefault(entry.getAccount(), 0.0);
 			accountBalance.put(entry.getAccount(), balance + entry.getAmount());
@@ -618,6 +725,13 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Description.name(), "Credit - "+accountDescriptions.get(entry.getAccount()));			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name(), entry.getAmount());			
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name(), "C");			
+
+			if (customerId!=null && customerRelatedAccounts.contains(entry.getAccount())) {
+				record.put(GeneralLedgerArchetype.FIELDS_NAMES.CustomerSupplierId.name(), customerId.toString());							
+			}
+			else if (supplierId!=null && supplierRelatedAccounts.contains(entry.getAccount())) {
+				record.put(GeneralLedgerArchetype.FIELDS_NAMES.CustomerSupplierId.name(), supplierId.toString());											
+			}
 
 			// Updates balance for this account (avoid picking the same account with insufficient balance for the next transaction)
 			Double balance = accountBalance.getOrDefault(entry.getAccount(), 0.0);

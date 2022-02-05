@@ -66,6 +66,7 @@ public enum AccountSubcategory {
 	LIABILITY_ACCRUAL(AccountCategory.LIABILITY, "account.subcategory.liability.accrual",		/*GAAP*/"2.2", /*IFRS*/"3.4"),
 	LIABILITY_FINANCIAL(AccountCategory.LIABILITY, "account.subcategory.liability.financial",	/*GAAP*/"2.3", /*IFRS*/"3.3"),
 	LIABILITY_PROVISION(AccountCategory.LIABILITY, "account.subcategory.liability.provision",	/*GAAP*/"2.4", /*IFRS*/"3.2"),
+	LIABILITY_PROVISION_TAX(AccountCategory.LIABILITY, "account.subcategory.liability.provision.tax",	/*GAAP*/"2.4.1", /*IFRS*/"3.2.1"),
 	LIABILITY_OTHER(AccountCategory.LIABILITY, "account.subcategory.liability.other", 			/*GAAP*/"2.X", /*IFRS*/"3.X"),
 	
 	EQUITY_OWNERS(AccountCategory.EQUITY, "account.subcategory.equity.owners",			/*GAAP*/"3.1", /*IFRS*/"2.1"),

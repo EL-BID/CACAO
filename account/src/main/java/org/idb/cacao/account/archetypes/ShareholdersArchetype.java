@@ -139,6 +139,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 				.withFieldName(ShareholderName.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withDescription("Shareholder's name")
+				.withMaxLength(1024)
 				.withPersonalData(true));
 
 		fields.add(new DocumentField()
@@ -146,6 +147,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 				.withFieldType(FieldType.CHARACTER)
 				.withFieldMapping(FieldMapping.TAXPAYER_ID)
 				.withDescription("Shareholder's Identification Number")
+				.withMaxLength(128)
 				.withPersonalData(true));
 
 		fields.add(new DocumentField()
@@ -159,6 +161,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 		fields.add(new DocumentField()
 				.withFieldName(ShareClass.name())
 				.withFieldType(FieldType.CHARACTER)
+				.withMaxLength(128)
 				.withDescription("Class of share"));
 		
 		fields.add(new DocumentField()

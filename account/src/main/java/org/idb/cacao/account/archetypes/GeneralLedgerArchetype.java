@@ -101,7 +101,11 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 		
 		Amount,
 		
-		DebitCredit;
+		DebitCredit,
+		
+		CustomerSupplierId,
+		
+		CustomerSupplierName;
 		
 	}
 
@@ -163,7 +167,23 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 				.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
 				.withDescription("This is an indication of whether this entry is a debit or a credit to the account")
 				.withMaxLength(32)
-				.withRequired(true)
+				.withRequired(true),
+			new DocumentField()
+				.withFieldName(CustomerSupplierId.name())
+				.withFieldType(FieldType.CHARACTER)
+				.withFieldMapping(FieldMapping.TAXPAYER_ID)
+				.withDescription("Customer/supplier identification number (whenever applicable)")
+				.withMaxLength(128)
+				.withRequired(false)
+				.withPersonalData(true),
+			new DocumentField()
+				.withFieldName(CustomerSupplierName.name())
+				.withFieldType(FieldType.CHARACTER)
+				.withDescription("Customer/supplier name (whenever applicable)")
+				.withMaxLength(1024)
+				.withRequired(false)
+				.withPersonalData(true)
+
 		);
 	}
 
