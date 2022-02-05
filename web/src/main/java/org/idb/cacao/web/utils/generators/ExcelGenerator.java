@@ -319,6 +319,8 @@ public class ExcelGenerator implements FileGenerator {
 		
 		randomGenerator = new RandomDataGenerator(new Random(seed));
 		randomGenerator.setDomainTableRepository(domainTableRepository);
+		if (fixedYear!=null)
+			randomGenerator.reseedBasedOnYear(fixedYear.intValue());
 
 		FilenameGenerator filenameGenerator = new FilenameGenerator(randomGenerator);
 		filenameGenerator.setFixedTaxpayerId(fixedTaxpayerId);

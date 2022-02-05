@@ -76,6 +76,7 @@ public class IncomeStatementGenerator implements CustomDataGenerator {
 		taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(num_digits_for_taxpayer_id);
 
 		year = (providedYear==0) ? randomDataGenerator.nextRandomYear() : providedYear;
+		randomDataGenerator.reseedBasedOnYear(year);
 	}
 	
 	/*

@@ -89,6 +89,12 @@ public class RandomDataGenerator {
 	private static TreeMap<Float, String> females;
 
 	private static TreeMap<Float, String> males;
+	
+	/**
+	 * If the chosen year is different from this, will reseed the random number generator according to
+	 * the chosen year. Doing this we may generate different data for different years given the same seed.
+	 */
+	public static final int BASE_YEAR_FOR_RESEED = 2021; // any arbitrary year would do
 
 	
 	/**
@@ -406,5 +412,26 @@ public class RandomDataGenerator {
 	    }
 
 	    return map.get(key);
-	}	
+	}
+	
+	/**
+	 * Re-seed the Random data generator according to the current random state
+	 */
+	public void reseed() {
+		random.setSeed(random.nextLong());
+	}
+	
+	/**
+	 * Re-seed the Random data generator according to the year chosen and the current random state. 
+	 * Different years with the same initial seed provided at constructor will result in different data.
+	 */
+	public void reseedBasedOnYear(int year) {
+		if (year!=BASE_YEAR_FOR_RESEED) {
+			int number_of_reseed = Math.abs(year - BASE_YEAR_FOR_RESEED);
+			long signal_of_reseed = (year<BASE_YEAR_FOR_RESEED) ? -1 : +1;
+			for (int i=0; i<number_of_reseed; i++) {
+				random.setSeed(signal_of_reseed*random.nextLong());
+			}
+		}
+	}
 }
