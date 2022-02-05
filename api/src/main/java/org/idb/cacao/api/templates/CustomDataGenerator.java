@@ -22,6 +22,8 @@ package org.idb.cacao.api.templates;
 import java.io.Closeable;
 import java.util.Map;
 
+import org.idb.cacao.api.utils.RandomDataGenerator.DomainTableRepository;
+
 /**
  * This is a generic interface for providing a custom implementation for generating random data to be used 
  * as 'samples' of a given template and file format.
@@ -62,6 +64,11 @@ public interface CustomDataGenerator extends Closeable {
 	}
 
 	/**
+	 * Object used for retrieving registered domain tables given a domain table name and version
+	 */
+	default public void setDomainTableRepository(DomainTableRepository domainTableRepository) {	}
+
+	/**
 	 * Method called at the start of the procedure. Should initialize internal state.
 	 */
 	default public void start() { }
@@ -70,4 +77,14 @@ public interface CustomDataGenerator extends Closeable {
 	 * Method called for each generated record. NULL means there is no more record to generate.
 	 */
 	public Map<String,Object> nextRecord();
+	
+	/**
+	 * The 'overall seed' is the 'initial seed' used for generating several documents of the same template. It's different from the 'seed'
+	 * informed during construction of this instance (the 'per-document' seed). The implementation may find it useful for generating
+	 * additional data compliant to other generated documents.
+	 * @param overallSeed The 'overall seed' for the entire process (not just this particular document)
+	 * @param docsTotal The total number of documents to generate (including this particular document)
+	 * @param docIndex The number of documents already generated in this process
+	 */
+	default public void setOverallSeed(long overallSeed, int docsTotal, int docIndex) { }
 }

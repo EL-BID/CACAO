@@ -284,7 +284,7 @@ public class AdminService {
 
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
-			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications."),
+			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications. Ignores existent templates (i.e. with the same name and version)"),
 			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. The template name must be informed with this option, following this parameter indication. The taxpayer ID is also created randomly and the corresponding taxpayer record is created accordingly if absent."),
 			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
@@ -784,6 +784,8 @@ public class AdminService {
 			List<DocumentTemplate> samples = CreateDocumentTemplatesSamples.getSampleTemplates(service.messages, defaultLocale);
 			
 			for (DocumentTemplate s: samples) {
+				if (service.templateRepository.findByNameAndVersion(s.getName(), s.getVersion()).isPresent())
+					continue;
 				service.templateRepository.saveWithTimestamp(s);
 				report.append("Created template '").append(s.getName()).append("' version ").append(s.getVersion()).append("\n");
 			}
@@ -907,6 +909,8 @@ public class AdminService {
 				final int num_digits_for_taxpayer_id = (taxPayerIdFields.isEmpty()) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdFields.iterator().next().getMaxLength()).orElse(10)));
 
 				final Integer partition = (limit_docs>1) ? i : null;
+				
+				final int doc_index = i;
 
 	        	Callable<Object> procedure = ()->{
 
@@ -928,8 +932,10 @@ public class AdminService {
 					
 					try {
 						if (custom_gen!=null) {
+							custom_gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
 							if (year!=0)
 								custom_gen.setTaxYear(year);
+							custom_gen.setOverallSeed(seed, limit_docs, doc_index);
 							custom_gen.start();
 							taxpayerId = custom_gen.getTaxpayerId();
 							gen.setFixedYear(custom_gen.getTaxYear());

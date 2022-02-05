@@ -88,7 +88,12 @@ public class MessagesService {
 			String paramValues = m.group(2);
 			if ( paramValues != null ) {
 				paramValues = paramValues.replace(")", "").substring(1);
-				params.addAll(Arrays.asList(paramValues.split("\\(")));
+				if (paramValues.contains("("))
+					// the message includes multiple parameters separated by different sets of parenthesis
+					params.addAll(Arrays.asList(paramValues.split("\\(")));
+				else
+					// the message includes multiple parameters separated by commas
+					params.addAll(Arrays.asList(paramValues.split(",")));
 			}
 
 			//Replace any reference to messages inside a parameter for a language specific message

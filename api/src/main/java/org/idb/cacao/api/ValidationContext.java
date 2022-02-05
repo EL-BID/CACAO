@@ -437,6 +437,9 @@ public class ValidationContext {
 			if (String.class.equals(type)) {
 				anyvalue = toString(anyvalue);
 			}
+			if (Number.class.equals(type)) {
+				anyvalue = toNumber(anyvalue);
+			}
 		}
 		return (T)anyvalue;
 

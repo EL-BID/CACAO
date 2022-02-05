@@ -23,6 +23,7 @@ import org.idb.cacao.account.elements.AccountCategory;
 import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.AccountSubcategory;
 import org.idb.cacao.account.elements.DebitCredit;
+import org.idb.cacao.account.elements.ShareType;
 import org.idb.cacao.account.elements.StatementComprehensiveIncome;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
@@ -53,6 +54,13 @@ public class AccountBuiltInDomainTables {
 	public static DomainTable DEBIT_CREDIT = DomainTable.fromEnum("Debit/Credit", /*version*/"1.0", 
 			/*enumeration with values*/DebitCredit.class); 
 	
+	/**
+	 * Domain table for types of shares (i.e. ORDINARY, PREFERENCE, FOUNDER)
+	 */
+	public static DomainTable SHARE_TYPE = DomainTable.fromEnum("Share Type", /*version*/"1.0", 
+			/*enumeration with values*/ShareType.class,
+			/*getKey*/ShareType::getKey); 
+
 	/**
 	 * Return the account standard related to the chosen domain table name
 	 */

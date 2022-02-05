@@ -199,7 +199,7 @@ public class Validations {
 
 		String value = ValidationContext.toString(fieldValue);
 
-		Integer maxLength = Math.min(field.getMaxLength(),value.length());
+		Integer maxLength = (field.getMaxLength()==null) ? null : Math.min(field.getMaxLength(),value.length());
 
 		if (maxLength != null && maxLength.intValue() > 0) {
 			value = value.substring(0, maxLength);
@@ -224,7 +224,7 @@ public class Validations {
 
 		String value = ValidationContext.toString(fieldValue);
 
-		Integer maxLength = Math.min(field.getMaxLength(),value.length());
+		Integer maxLength = (field.getMaxLength()==null) ? null : Math.min(field.getMaxLength(),value.length());
 
 		if (maxLength != null && maxLength.intValue() > 0) {
 			value = value.substring(0, maxLength);
@@ -259,7 +259,7 @@ public class Validations {
 			return parseTimestamp(value);
 
 		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
 		return value;
 	}
 
@@ -300,7 +300,7 @@ public class Validations {
 				return toRet;
 		}		
 		
-		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
 		return value;		
 		
 	}
@@ -325,7 +325,7 @@ public class Validations {
 			return Long.parseLong(value);
 
 		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
 		return value;
 
 	}
@@ -352,9 +352,12 @@ public class Validations {
 
 		if (isDecimalWithComma(value))
 			return Double.parseDouble(value.replace(".", "").replace(",", "."));
+		
+		if (isInteger(value))
+			return Double.parseDouble(value);
 
 		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
 		return fieldValue;
 	}
 
@@ -385,7 +388,7 @@ public class Validations {
 		if (isYMD(value))
 			return parseYMD(value);
 		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
 		return value;
 	}
 
@@ -409,7 +412,7 @@ public class Validations {
 		if (isBoolean(value))
 			return Boolean.parseBoolean(value);
 
-		addLogError("{field.value.invalid(" + value + ")(" + fieldName + ")}");
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
 		return fieldValue;
 
 	}

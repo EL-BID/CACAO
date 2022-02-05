@@ -49,6 +49,8 @@ public interface DomainTableRepository extends ElasticsearchRepository<DomainTab
 	Page<DomainTable> findByNameContaining(String name, Pageable pageable);
 	
 	default public <S extends DomainTable> S saveWithTimestamp(S entity) {
+		if (entity.getDomainTableCreateTime()==null)
+			entity.setDomainTableCreateTime(DateTimeUtils.now());
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
