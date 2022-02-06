@@ -195,6 +195,8 @@ Para eliminar un contribuyente de CACAO, seleccione el icono de la "papelera" ju
 <div class="content markdown">
 ## ¿Para qué sirve un análisis vertical y horizontal?
 
+Los análisis verticales y horizontales permiten visualizar el estado de un solo contribuyente. La fuente de datos para estos análisis es el diario cargado por el Contribuyente.
+
 A **análise vertical** apresenta a ficha financeira para o período de modo a que o nível 1 da ficha (Categoria) seja igual a 100%, e depois é apresentada a percentagem que cada elemento do item 2 (subcategoria) representa destes 100%, e assim por diante.
 
 Por ejemplo:
@@ -223,8 +225,6 @@ También es posible realizar **ambos análisis** simultáneamente. En esta situa
 |2|Activo|Efectivo y equivalentes de efectivo|1000|66,67%|450|45%|
 |2|Activo|Inventario|500|33,33%|600|120%|
 
-1.256 / 5.000
-Resultados de tradução
 ## Uso del análisis vertical y horizontal
 
 Para usar el análisis vertical y horizontal, seleccione la opción `Análisis` ubicada en el menú de la barra lateral, luego seleccione `Análisis vertical y horizontal`.
@@ -250,6 +250,57 @@ El último paso es seleccionar los niveles del plan de cuentas que se mostrarán
 Es posible mostrar cuentas con saldo *cero*, seleccionando la opción `Mostrar cuentas con saldo CERO`.
 
 Con todas las selecciones realizadas, seleccione `Buscar` para recuperar los datos y el análisis deseado. 
+
+</div>
+</div>
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">Análisis general</span>
+</div>
+<div class="content markdown">
+## ¿Para qué sirve un Análisis General?
+
+El Análisis General permite evaluar el resultado de un grupo de contribuyentes. La fuente de datos para el análisis general puede ser el diario enviado por los contribuyentes, o la declaración de renta declarada del año. Con este análisis es posible visualizar gráficamente los patrones de comportamiento de los contribuyentes, así como identificar aquellos con comportamiento discrepante.
+
+Para un grupo dado de contribuyentes que comparten un calificador común, el análisis general muestra para cada asiento del Diario/Declaración de Renta Declarada un **diagrama de caja** que representa la dispersión de los contribuyentes.
+
+```
+¡Atención! Los calificadores son definidos por la Administración Tributaria y pueden diferir para cada jurisdicción.
+```
+
+El **diagrama de caja** es un método para demostrar gráficamente los grupos de localidad, dispersión y asimetría de datos numéricos a través de sus cuartiles. En CACAO, el diagrama de caja muestra:
+
+* **Mínimo** (Q0 o percentil 0): el punto de datos más bajo en el conjunto de datos excluyendo cualquier valor atípico
+* **Máximo** (Q4 o percentil 100): el punto de datos más alto en el conjunto de datos excluyendo cualquier valor atípico
+* **Mediana** (Q2 o percentil 50): el valor medio en el conjunto de datos
+* **Primer cuartil** (Q1 o percentil 25): es la mediana de la mitad inferior del conjunto de datos.
+* **Tercer cuartil** (Q3 o percentil 75): es la mediana de la mitad superior del conjunto de datos.
+* **Valores atípicos**: los puntos de datos que difieren significativamente del resto del conjunto de datos se trazan como puntos individuales más allá de los bigotes en el diagrama de caja.
+
+Si pasa el puntero del ratón por encima de un boxplot en CACAO, se mostrará un tooltip con la información detallada que representa el boxplot.
+
+Siempre que se identifique un valor atípico, se mostrará en el boxplot como un **punto**, y la identificación del contribuyente para este valor atípico también se detallará en la tabla auxiliar junto a los boxplots.
+
+La imagen que contiene todos los boxplots puede descargarse seleccionando el botón `...` situado en la parte superior derecha del área de boxplots. Los datos de la tabla auxiliar pueden descargarse seleccionando el botón `XLS` en la esquina inferior izquierda de la tabla.
+
+## Uso del análisis general
+
+Para usar el análisis general, seleccione la opción `Análisis` ubicada en el menú de la barra lateral, luego seleccione `Análisis general`.
+
+El primer paso para el Análisis General es elegir el calificador para el grupo de contribuyentes que será objeto del análisis. Eso se puede lograr desplazándose por el menú **Calificadores**.
+
+Una vez que se selecciona el calificador, el valor del calificador debe elegirse en el menú **Valores del calificador**.
+
+El tercer paso es seleccionar la fuente de datos, que puede ser:
+
+* Los datos calculados por CACAO del **Diario** de cada contribuyente
+* Los datos presentados por el contribuyente en la **Declaración de Renta Declarada**
+
+El último paso es elegir el período base para crear el Análisis General, en el menú **Periodo Base**.
+
+Con todas las selecciones realizadas, seleccione `Buscar` para recuperar los datos y el análisis deseado.
 
 </div>
 </div>
