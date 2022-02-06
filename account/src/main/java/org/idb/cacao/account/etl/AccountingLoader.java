@@ -690,6 +690,7 @@ public class AccountingLoader {
 							normalizedRecord_GL.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
 						}
 					}
+					normalizedRecord_GL.remove("tax_payer_id"); // ambiguous field with 'taxpayer_id'
 					normalizedRecord_GL.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 					normalizedRecord_GL.put(publishedTimestamp, date);
 					normalizedRecord_GL.put(lineNumber, countRecordsInGeneralLedger.longValue());

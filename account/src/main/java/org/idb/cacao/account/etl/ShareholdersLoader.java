@@ -191,6 +191,7 @@ public class ShareholdersLoader {
 						}
 					}
 
+					normalizedRecord_SH.remove("tax_payer_id"); // ambiguous field with 'taxpayer_id'
 					normalizedRecord_SH.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 					normalizedRecord_SH.put(publishedTimestamp, timestampForView);
 					normalizedRecord_SH.put(lineNumber, countRecordsOverall.longValue());
