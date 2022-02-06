@@ -196,6 +196,8 @@ Attention! The Taxpayer´s deletion procedure cannot be undone. If necessary, th
 <div class="content markdown">
 ## What's the purpose of a Vertical and Horizontal Analysis?
 
+The vertical and horizontal analysis allows the visualization of the state of single taxpayer. The data source for these analysis is the journal uploaded by the TaxPayer.
+
 The **vertical analysis** presents the financial statement for the period so that level 1 of the statement (Category) equals 100%, and then the percentage that each element of item 2 (subcategory) represents of this 100% is presented, and so on.
 
 For instance:
@@ -253,6 +255,56 @@ With all the selections made, select `Search` to retrieve the data and the analy
 </div>
 </div>
 
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">General Analysis</span>
+</div>
+<div class="content markdown">
+## What's the purpose of a General Analysis?
+
+The General Analysis allows you to evaluate the result of a group of taxpayers. The data source for the general analysis can be the journal sent by the taxpayers, or the statement of income for the year. With this analysis, it is possible to graphically visualize the behavior patterns of the taxpayers, as well as identify those with discrepant behavior.
+
+For a given group of taxpayers that share a common qualifier, the general analysis shows for each entry of the Journal/Declared Income Statement a **boxplot** representing the dispersion of the taxpayers.
+
+```
+Attention! The qualifiers are defined by the Tax Administration and may differ for each jurisdiction. 
+```
+
+The **boxplot** is a method for graphically demonstrating the locality, spread and skewness groups of numerical data through their quartiles. On CACAO, the boxplot shows:
+
+* **Minimum** (Q0 or 0th percentile): the lowest data point in the data set excluding any outliers
+* **Maximum** (Q4 or 100th percentile): the highest data point in the data set excluding any outliers
+* **Median** (Q2 or 50th percentile): the middle value in the data set
+* **First quartile** (Q1 or 25th percentile): it is the median of the lower half of the dataset.
+* **Third quartile** (Q3 or 75th percentile): it is the median of the upper half of the dataset.
+* **Outliers**: data points that differ significantly from the rest of the dataset are plotted as individual points beyond the whiskers on the boxplot.
+
+If you hover your mouse pointer over a boxplot on CACAO, a tooltip will be shown with the detailed information represented by the boxplot.
+
+Whenever a outlier is identified, it will be shown on the boxplot as a **dot**, and the taxypayer identification for this outlier will also be detailed on the auxiliary table next to the boxplots.
+
+The image containing all boxplots can be downloaded selecting the `...` button on the upper right of the boxplot area. The data on the auxiliary table can be downloaded selecting the `XLS` button on the lower left corner of the table.
+
+## Using the General Analysis
+
+To use the General  analysis, select the `Analysis` option located at the sidebar menu, then select `General Analysis`.
+ 
+The first step for the General Analysis is to choose the qualifier for the taxpayer's group that will be subjected to the analysis. That's achievable scrolling through the **Qualifiers** menu. 
+
+Once the Qualifier is selected, the qualifier value must be chosen from the **Qualifier Values** menu.
+
+The third step is selecting the data source, which can be:
+
+* The data calculated by CACAO from the **Journal** of each taxpayer
+* The data submitted by the taxpayer on the **Declared Income Statment**
+
+The last step is to choose the base period for creating the General Analysis, on the **Base Period** menu. 
+
+With all the selections made, select `Search` to retrieve the data and the analysis desired.    
+
+</div>
+</div>
 
 
 <!-- <div>

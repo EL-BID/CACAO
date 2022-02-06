@@ -78,7 +78,7 @@ public class AnalysisUIController {
     	model.addAttribute("errorYearsNotFound", 
     			messages.getMessage("years.missing", null, LocaleContextHolder.getLocale()));
     	model.addAttribute("errorQualifierValuesNotFound", 
-    			messages.getMessage("qualilfier.values.missing", null, LocaleContextHolder.getLocale()));
+    			messages.getMessage("qualifier.values.missing", null, LocaleContextHolder.getLocale()));
     	model.addAttribute("errorNoDataAvailable", 
     			messages.getMessage("no.data.available", null, LocaleContextHolder.getLocale()));
 		
