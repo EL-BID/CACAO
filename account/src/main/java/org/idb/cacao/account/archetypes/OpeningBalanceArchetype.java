@@ -177,7 +177,9 @@ public class OpeningBalanceArchetype implements TemplateArchetype {
 		return Arrays.asList(AccountingLoader.INDEX_PUBLISHED_ACCOUNTING_FLOW,
 				AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET,
 				AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER,
-				AccountingLoader.INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME);
+				AccountingLoader.INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME,
+				AccountingLoader.INDEX_PUBLISHED_CUSTOMERS,
+				AccountingLoader.INDEX_PUBLISHED_SUPPLIERS);
 	}
 	
 	/*

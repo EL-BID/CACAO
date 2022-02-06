@@ -109,6 +109,18 @@ public class AccountingLoader {
 	public static final String INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Computed Statement Income");
 
 	/**
+	 * Index name for published (denormalized) data regarding customers aggregated values.<BR>
+	 * There is one record for each month, taxpayer and customer.
+	 */
+	public static final String INDEX_PUBLISHED_CUSTOMERS = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Customers");
+
+	/**
+	 * Index name for published (denormalized) data regarding suppliers aggregated values.<BR>
+	 * There is one record for each month, taxpayer and supplier.
+	 */
+	public static final String INDEX_PUBLISHED_SUPPLIERS = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Suppliers");
+
+	/**
 	 * Ignores differences lesser than half of a cent	
 	 */
 	private static final double EPSILON = 0.005;		
@@ -575,6 +587,13 @@ public class AccountingLoader {
 			computedStatementIncome.setCountRecordsOverall(countRecordsOverall);
 			computedStatementIncome.setDocumentUploadedForGeneralLedger(gl);
 			computedStatementIncome.setDeclarantInformation(declarantInformation);
+			
+			// Computes aggregations over customers and suppliers
+			final CustomersSuppliersProcessor customersSuppliers = new CustomersSuppliersProcessor(context, lookupChartOfAccounts, lookupTaxpayers,
+					account_standard, timestamp);
+			customersSuppliers.setCountRecordsOverall(countRecordsOverall);
+			customersSuppliers.setDocumentUploadedForGeneralLedger(gl);
+			customersSuppliers.setDeclarantInformation(declarantInformation);
 
 			// Search for the validated general ledger related to the matching template
 			// Reads the validated general ledger in chronological order. For each day order by ledger entry ID.
@@ -588,7 +607,11 @@ public class AccountingLoader {
 			// Deletes previous published data
 			for (String index: new String[] {
 				INDEX_PUBLISHED_GENERAL_LEDGER,
-				INDEX_PUBLISHED_BALANCE_SHEET
+				INDEX_PUBLISHED_BALANCE_SHEET,
+				INDEX_PUBLISHED_ACCOUNTING_FLOW,
+				INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME,
+				INDEX_PUBLISHED_CUSTOMERS,
+				INDEX_PUBLISHED_SUPPLIERS
 			}) {
 
 				try {
@@ -645,6 +668,16 @@ public class AccountingLoader {
 					// Computes Statement of Incomes
 					
 					computedStatementIncome.computeEntry(date, accountCode, amount, is_debit);
+					
+					// Aggregates information about customers and suppliers
+					Object customerSupplierId = record.get(publishedCustomerSupplierId);
+					Object customerSupplierName = record.get(publishedCustomerSupplierName);
+					if (customerSupplierId!=null) {
+						customersSuppliers.computeEntry(date, accountCode, 
+								ValidationContext.toString(customerSupplierId), 
+								ValidationContext.toString(customerSupplierName), 
+								amount, is_debit);
+					}
 
 					// Publish denormalized GENERAL LEDGER record
 					
@@ -697,6 +730,8 @@ public class AccountingLoader {
 				// After processing all the General Ledger, let's finish computing the Statement of Income
 				computedStatementIncome.finish();
 				
+				// After processing all the General Ledger, let's finish computing aggregations over Customers and Suppliers
+				customersSuppliers.finish();
 			}
 			finally {
 				gl_data.close();
