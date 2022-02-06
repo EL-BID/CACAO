@@ -20,10 +20,6 @@
 package org.idb.cacao.web.dto;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.collections4.comparators.ComparableComparator;
 
 /**
  * A representation of an aggregate of accounting flow
