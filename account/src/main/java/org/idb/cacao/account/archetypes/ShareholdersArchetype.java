@@ -104,7 +104,9 @@ public class ShareholdersArchetype implements TemplateArchetype {
 		
 		ShareQuantity,
 		
-		SharePercentage;
+		SharePercentage,
+		
+		EquityMethodResult;
 		
 	}
 
@@ -162,12 +164,14 @@ public class ShareholdersArchetype implements TemplateArchetype {
 				.withFieldName(ShareClass.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withMaxLength(128)
-				.withDescription("Class of share"));
+				.withDescription("Class of share")
+				.withRequired(false));
 		
 		fields.add(new DocumentField()
 				.withFieldName(ShareAmount.name())
 				.withFieldType(FieldType.DECIMAL)
-				.withDescription("Total amount of shares held"));
+				.withDescription("Total amount of shares held")
+				.withRequired(false));
 
 		fields.add(new DocumentField()
 				.withFieldName(ShareQuantity.name())
@@ -181,6 +185,12 @@ public class ShareholdersArchetype implements TemplateArchetype {
 				.withDescription("Percentage of shares held (100 = 100%)")
 				.withRequired(true));
 		
+		fields.add(new DocumentField()
+				.withFieldName(EquityMethodResult.name())
+				.withFieldType(FieldType.DECIMAL)
+				.withDescription("Amount of profit (positive) or loss (negative) in the reporting period according to equity method of accounting, whenever appliable")
+				.withRequired(false));
+
 		return fields;		
 	}
 

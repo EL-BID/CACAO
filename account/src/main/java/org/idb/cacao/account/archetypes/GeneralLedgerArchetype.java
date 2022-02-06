@@ -105,7 +105,9 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 		
 		CustomerSupplierId,
 		
-		CustomerSupplierName;
+		CustomerSupplierName,
+		
+		InvoiceNumber;
 		
 	}
 
@@ -182,7 +184,13 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 				.withDescription("Customer/supplier name (whenever applicable)")
 				.withMaxLength(1024)
 				.withRequired(false)
-				.withPersonalData(true)
+				.withPersonalData(true),
+			new DocumentField()
+				.withFieldName(InvoiceNumber.name())
+				.withFieldType(FieldType.CHARACTER)
+				.withDescription("Invoice number for sales or purchases (whenever applicable)")
+				.withMaxLength(1024)
+				.withRequired(false)
 
 		);
 	}
