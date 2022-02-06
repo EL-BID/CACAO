@@ -3,6 +3,7 @@ package org.idb.cacao.web.controllers.services;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,9 +40,11 @@ import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.dto.AnalysisItem;
 import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.dto.Outlier;
+import org.idb.cacao.web.dto.StatementIncomeItem;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -67,7 +70,6 @@ public class AnalysisService {
 	private final String TAXPAYER_INDEX = "cacao_taxpayers";
 	
 	private final static int SOURCE_JOURNAL = 1;
-	@SuppressWarnings("unused")
 	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
 	
 	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Flow Daily");
@@ -120,11 +122,11 @@ public class AnalysisService {
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
 				AggregationBuilders.terms("byCategory").size(10_000).field("account_category.keyword")
 						.subAggregation(AggregationBuilders.terms("byCategoryName").size(10_000)
-								.field("account_category_name.keyword")
+								.field(translate("account_category_name") +".keyword")
 								.subAggregation(AggregationBuilders.terms("bySubCategory").size(10_000)
 										.field("account_subcategory.keyword")
 										.subAggregation(AggregationBuilders.terms("bySubCategoryName").size(10_000)
-												.field("account_subcategory_name.keyword")
+												.field(translate("account_subcategory_name")+".keyword")
 												.subAggregation(AggregationBuilders.terms("byAccount").size(10_000)
 														.field("account_code.keyword")
 														.subAggregation(AggregationBuilders.terms("byAccountName")
@@ -462,7 +464,7 @@ public class AnalysisService {
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
 			AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
-				.subAggregation(AggregationBuilders.terms("byName").size(10_000).field("statement_name.keyword")
+				.subAggregation(AggregationBuilders.terms("byName").size(10_000).field(translate("statement_name")+".keyword")
 					.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
 					.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
 					.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation").field("amount_relative")
@@ -951,11 +953,30 @@ public class AnalysisService {
 
 	/**
 	 * @param sourceData	An indication of source data (index) to use
+	 * 						If sourceData isn't #SOURCE_JOURNAL or #SOURCE_DECLARED_INCOME_STATEMENT, search for booth
+	 * 						to return.
 	 * 
-	 * @return A list of years present in Accounting Computed Statement Income index
+	 * @return A list of years present in Accounting Statement Income indexes
 	 */
 	@Cacheable("years")	
 	public List<Integer> getYears(int sourceData) {
+		
+		if ( sourceData <= SOURCE_DECLARED_INCOME_STATEMENT )
+			return getYearsByIndex(sourceData);
+		
+		
+		List<Integer> toRet = getYearsByIndex(SOURCE_JOURNAL);
+		toRet.addAll(getYearsByIndex(SOURCE_DECLARED_INCOME_STATEMENT));
+
+		return toRet.stream().distinct().map(Integer::intValue).sorted().collect(Collectors.toList());
+	}
+
+	/**
+	 * 
+	 * @param sourceData	An indication of source data (index) to use
+	 * @return	A list of years present in Accounting Statement Income indexes
+	 */
+	private List<Integer> getYearsByIndex(int sourceData) {
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
 				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
@@ -1058,5 +1079,159 @@ public class AnalysisService {
 		
 		return result;
 
+	}
+	
+	/**
+	 * Build the query object used by {@link #getAccounts(String, int, String)}
+	 * @param taxpayerId	A taxpayer to filter for
+	 * @param sourceData	An indication of source data (index) to use
+	 * @param year	A year to filter for	  
+	 * @return A {@link SearchRequest} with all parameters and filters
+	 */
+	private SearchRequest searchComputedStatementIncomeValues(String taxpayerId, int sourceData, int year) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
+				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+
+		// Filter by taxpayer id
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		List<String> taxpayerIds = Arrays.asList(taxpayerId);
+		for (String argument : taxpayerIds) {
+			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);
+
+		// Filter for year
+		query = query.must(new TermQueryBuilder("year", year));
+
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
+			AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
+				.subAggregation(AggregationBuilders.terms("byName").size(10_000).field(translate("statement_name") + ".keyword")
+					.subAggregation(AggregationBuilders.sum("amount").field("amount")
+				)
+			);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+
+		searchRequest.source(searchSourceBuilder);
+
+		return searchRequest;
+
+	}	
+
+	/**
+	 * Given a field name, translate it (add suffix) for current language
+	 * @param fieldName	A field name to translate
+	 * @return	Translated field name
+	 */
+	private String translate(String fieldName) {
+
+		String language = LocaleContextHolder.getLocale().getLanguage();
+		
+		if ( "en".equalsIgnoreCase(language) )
+			return fieldName;
+		
+		return fieldName + "_" + language;
+	}
+
+	/**
+	 * Search and return Statement Income for a specified taxpayer and year
+	 * @param taxpayerId	Taxpayer to search statement income
+	 * @param year			Year to search statement income
+	 * @return	A {@link List} of {@link StatementIncomeItem}
+	 * 			
+	 */
+	public List<StatementIncomeItem> getStatementIncomeDeclaredAndCalculated(String taxpayerId, int year) {
+		
+		if (taxpayerId == null || taxpayerId.isEmpty()) {
+			log.log(Level.INFO, "No valid taxpayer received");
+			return null; // No data found
+		}
+		
+		if (year == 0) {
+			log.log(Level.INFO, "No valid year received");
+			return null; // No data found
+		}
+		
+		//Search statement income values
+		Map<String,StatementIncomeItem> items = new HashMap<>();
+		getStatementIncomeValues(taxpayerId, year, SOURCE_JOURNAL,  items);
+		getStatementIncomeValues(taxpayerId, year, SOURCE_DECLARED_INCOME_STATEMENT, items);
+		List<StatementIncomeItem> values = new ArrayList<>(items.values());
+		values.sort(null);
+		return values;
+	}
+
+	/**
+	 * Search and store values for Stated Income calculated or declared, according with received parameters
+	 * @param taxpayerId	A taxpayer to filter for
+	 * @param year			A year to filter for
+	 * @param sourceData	Indicates a source index (calculated or declared)
+	 * @param items			A {@link Map} to store values
+	 */
+	private void getStatementIncomeValues(String taxpayerId, int year, int sourceData, Map<String,StatementIncomeItem> items) {
+		
+		//Define a search request according with parameters
+		SearchRequest searchRequest = searchComputedStatementIncomeValues(taxpayerId, sourceData, year);
+		
+		// Execute a search
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting accounts", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No data found");
+			return; // No data found		
+		} else {
+
+			//Add values for statement income items
+			Terms statementsNumbers = sresp.getAggregations().get("byNumber");
+
+			for (Terms.Bucket statementNumberBucket : statementsNumbers.getBuckets()) {
+
+				String statementNumber = statementNumberBucket.getKeyAsString();
+				if (statementNumber == null || statementNumber.isEmpty() )
+					continue;				
+
+				Terms statementsNames = statementNumberBucket.getAggregations().get("byName");
+
+				for (Terms.Bucket statementNameBucket : statementsNames.getBuckets()) {
+
+					String statementName = statementNameBucket.getKeyAsString();
+					if (statementName == null || statementName.isEmpty())
+						continue;
+					
+					Sum sum = statementNameBucket.getAggregations().get("amount");
+
+					if (sum != null) {
+						StatementIncomeItem item = items.getOrDefault(statementNumber, new StatementIncomeItem());
+						item.setStatementOrder(statementNumber);
+						item.setStatementName(statementName);
+						if ( SOURCE_JOURNAL == sourceData)
+							item.setCalculatedValue(sum.getValue());
+						else
+							item.setDeclaredValue(sum.getValue());
+						item.setDifference(item.getDeclaredValue()-item.getCalculatedValue());
+						items.put(statementNumber, item);
+					}
+
+				} // Loop over statement name
+				
+			} // Loop over statement number
+			
+		}
+			
 	}
 }

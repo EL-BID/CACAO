@@ -41,6 +41,8 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 	
 	private double deviation;
 	
+	private double value;
+	
 	private transient List<Outlier> outliers;
 
 	private List<Outlier> normalizedOutliers;
@@ -140,6 +142,14 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 
 	public void setDeviation(double deviation) {
 		this.deviation = deviation;
+	}
+
+	public double getValue() {
+		return value;
+	}
+
+	public void setValue(double value) {
+		this.value = value;
 	}
 
 	@Override

@@ -1,0 +1,238 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<head
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui"
+	href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"></script>
+<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+<script src="/js/vega.min.js"></script>
+<script src="/js/vega-lite.min.js"></script>
+<script src="/js/vega-embed.min.js"></script>
+</head>
+<body>
+
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<div class="ui breadcrumb">
+			<a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+			<div class="divider">/</div>
+			<div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
+		</div>
+		<h2 class="ui header">
+			<i class="search dollar icon"></i> <span class="content"
+				th:text="#{taxpayers.analysis.statement.income}">Statement Income Analysis</span>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form action="#" name="form" id="form" th:action="@{/general-analysis-data}"
+					class="ui form" method="post">
+
+					<div class="ui field" id="search1">
+						<label th:text="#{taxpayer.name}">TaxPayer name</label>
+                        <div style="width: 100%">
+						   <div class="ui search selection dropdown" id="select"  style="width:calc(100% - 35px)">
+							<input id="taxpayer" type="hidden" name="personId">
+							<div class="default text" th:text="#{select}">Select</div>
+							<i class="dropdown icon"></i>
+							<div class="menu"></div>
+						  </div>
+                         <i class="large link copy outline icon" id="copyTaxpayer"></i>
+                       </div> 
+					</div>
+
+					<div class="ui field">
+						<label th:text="#{base.period}">Base Period</label> <select
+							class="ui dropdown" id="year">
+						</select>
+					</div>
+
+					<div class="row">
+						<input type="submit" class="ui blue button" th:value="#{search}"
+							value="Search">
+					</div>
+				</form>
+			</div>
+		</div>
+		
+		<div id="showtable" style="display: none">
+			<div id="table" class="ui orange table"></div>
+		</div>
+		
+	</div>
+	
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+		
+		//Define number format
+		decimalChar = /*[[${decimalChar}]]*/ ',';
+		decimalGroupSeparator = /*[[${decimalGroupSeparator}]]*/ '.';
+		
+		//Define error message var
+		errorYearsNotFound = /*[[${errorYearsNotFound}]]*/ '';
+		errorNoDataAvailable = /*[[${errorNoDataAvailable}]]*/ '';
+	
+    	$('#copyTaxpayer').click( function() {
+    	    navigator.clipboard.writeText($('#taxpayer').val())
+    	})
+    	
+		$('#select').dropdown({
+			apiSettings: {
+	        	url: '/api/taxpayers/autocomplete?term={query}',
+	        	method: 'GET',
+	        	//dataType: 'text',
+	        	cache: false,
+	        	onResponse: function(result) {
+					results = []
+	            	$.each(result.results, function(index, item) {
+	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+					})
+					result.results = results
+					return result
+	        	},
+	     	},
+	     	onChange: function(value) {
+				$("#showtable").hide() 
+				$('#form').submit();
+	     	},
+	    	action: 'activate',
+	    	clearable: true
+		})    	
+		
+		$('#year').on('change', function() {
+			$("#showtable").hide();
+			$('#form').submit();
+	    });
+		
+		function updateYears() {		
+			$('#year').find('option').remove();
+			$.get('/api/analysis/years', {sourceData: '3'}, //data to submit
+			    function (data, status, xhr) {
+					if ( data.length == 0 ) {						
+						$('#modal_failed').find('.description').html(errorYearsNotFound);
+						$('#modal_failed').modal('show');
+						console.log("ERROR : "+errorYearsNotFound);	
+					}
+					else {
+						$.each(data, function (i, item) {						
+						    $('#year').append($('<option>', { 
+					        	value: item,
+					        	text : item
+					    	}));
+						});
+					}
+			    }
+			);			
+		}
+		
+		$(document).ready(function() {
+			updateYears();
+			updateAll();
+	    });
+		
+		function updateAll() {
+			$('.ui.form').form({
+				fields: {
+					taxpayer: {
+	                	identifier  : 'taxpayer',
+	                	rules: [{
+	                    	type   : 'empty',
+	                    	prompt : /*[[#{taxpayer.missing.taxpayer.id}]]*/ ''
+	                  	}]
+	              	},					
+					year: {
+	                	identifier  : 'year',
+	                	rules: [{
+	                    	type   : 'empty',
+	                    	prompt : /*[[#{year.missing}]]*/ ''
+	                  	}]
+	              	},
+	          	},
+				onSuccess: (function(event,fields){
+					event.preventDefault();				
+					table.replaceData()
+						.then(function(){
+							$("#showtable").show()	
+						})					
+	          	})
+	        });
+		}
+		
+		let table = new Tabulator('#table', {
+			index: 'id',			
+			layout: "fitColumns", //fit columns to width of table (optional)
+		    pagination: true,
+			paginationMode: "local", //enable local pagination
+			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+			ajaxURL: /*[[@{/api/analysis/statement_income_analysis}]]*/ "/api/analysis/statement_income_analysis", //set url for ajax request
+			ajaxURLGenerator: function(url, config, params ){
+				console.log(config)
+				console.log(params)
+				p = new URLSearchParams()
+				p.set('taxpayerId', document.getElementById("taxpayer").value)
+				p.set('year', $('#year').val())
+				console.log(url + '?' + p.toString())		
+				return url + '?' + p.toString()
+			},
+			ajaxContentType: "json",
+			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+			locale:'xx',
+			langs:{
+		        "xx":{
+		            "pagination":{
+		                "first":/*[[#{pagination.first.button}]]*/ "First",
+		                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+		                "last":/*[[#{pagination.last.button}]]*/ "Last",
+		                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+		                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+		                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+		                "next":/*[[#{pagination.next.button}]]*/ "Next",
+		                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+		                "all":/*[[#{pagination.all}]]*/ "All",
+		                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+		            }
+		        }
+		    },	
+		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+			columns:[ //Define Table Columns
+					{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false},
+					{title: /*[[#{taxpayers.analysis.statement.income.declared}]]*/ "Declared Value", field:"declaredValue", headerSort:false, formatter: "money", 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+					{title: /*[[#{taxpayers.analysis.statement.income.calculated}]]*/ "Calculated Value", field:"calculatedValue", headerSort:false, formatter: "money", 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+					{title: /*[[#{taxpayers.analysis.statement.income.difference}]]*/ "Difference", field:"difference", formatter: "money", 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
+			]
+		});
+		
+		table.on("tableBuilt", function(){
+			document.getElementById('exportXLS').addEventListener("click", function(){
+				table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.statement.income}]]*/''});				    
+			});
+		});
+		
+		function getFileName() {
+			var fileName =/*[[#{taxpayers.analysis.statement.income}]]*/ null;
+			return  fileName + ".xlsx";
+		}
+		
+	</script>
+</body>
+</html>

@@ -208,7 +208,7 @@
 		
 		function updateData() {
 
-			$.get('/api/analysis/general-analysis', 
+			$.get('/api/analysis/general_analysis', 
 					{ qualifier: $('#qualifiers').val(),
 						qualifierValue: $('#qualifierValues').val(),
 						sourceData: $('#sourceData').val(),
@@ -325,7 +325,7 @@
 			    pagination: true,
 				paginationMode: "local", //enable local pagination
 				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, true],
+				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
 				data: values,
 				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
 				locale:'xx',

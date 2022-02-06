@@ -31,6 +31,7 @@
 			<div class="ui orange segment">
 				<form action="#" name="form" id="form"
 					th:action="@{/vertical-analysis-data}" class="ui form" method="post">
+					
 					<div class="ui field" id="search1">
 						<label th:text="#{taxpayer.name}">TaxPayer name</label>
                         <div style="width: 100%">
@@ -137,12 +138,7 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-	
-		$('#qualifiers').on('change', function() {
-			$("#dataView").hide();
-			updateQualifiersValues(true);
-	 	});	
-	
+
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})
@@ -262,7 +258,7 @@
 		var columnsFormat = {};		
 		
 		function updateColumns() {
-			$.get('/api/analysis/vertical-horizontal-view-columns', 
+			$.get('/api/analysis/vertical_horizontal_view_columns', 
 					{ finalDate: $('#finalDate').calendar('get date'), 
 			    	  comparisonPeriods: $('#period').val(),
 			    	  analysisType: $('#analysisType').val() } ,  // data to submit
@@ -288,7 +284,7 @@
 			paginationMode: "local", //enable local pagination
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-			ajaxURL: /*[[@{/api/analysis/vertical-horizontal-analysis}]]*/ "/api/analysis/vertical-horizontal-analysis", //set url for ajax request
+			ajaxURL: /*[[@{/api/analysis/vertical_horizontal_analysis}]]*/ "/api/analysis/vertical_horizontal_analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)

@@ -85,4 +85,24 @@ public class AnalysisUIController {
         return "analysis/general_analysis";
 	}		
 	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/statement_income_analysis"})
+	public String getStatementIncomeAnalysis(Model model) {
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	model.addAttribute("decimalChar", messages.getMessage("decimal.char", null, LocaleContextHolder.getLocale()));
+    	model.addAttribute("decimalGroupSeparator", messages.getMessage("decimal.grouping.separator", null, LocaleContextHolder.getLocale()));
+    	model.addAttribute("errorYearsNotFound", 
+    			messages.getMessage("years.missing", null, LocaleContextHolder.getLocale()));
+    	model.addAttribute("errorNoDataAvailable", 
+    			messages.getMessage("no.data.available", null, LocaleContextHolder.getLocale()));
+		
+        return "analysis/statement_income_analysis";
+	}		
 }
