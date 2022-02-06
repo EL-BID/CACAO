@@ -72,15 +72,17 @@ public class PublishedDataLoader implements ETLContext.LoadDataStrategy {
 			query.must(new TermQueryBuilder(PublishedDataFieldNames.TAXPERIOD_NUMBER.toString(), taxPeriodNumber));
 		DeleteByQueryRequest request = new DeleteByQueryRequest(indexName)
 				.setQuery(query);
-		try {
-			elasticsearchClient.deleteByQuery(request, RequestOptions.DEFAULT);
-		}
-		catch (Exception ex) {
-			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
-				return; // ignore these errors
-			else
-				throw ex;
-		}
+		CommonErrors.doESWriteOpWithRetries(()->{
+			try {
+				elasticsearchClient.deleteByQuery(request, RequestOptions.DEFAULT);
+			}
+			catch (Exception ex) {
+				if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
+					return; // ignore these errors
+				else
+					throw ex;
+			}
+		});
 	}
 
 	/*
