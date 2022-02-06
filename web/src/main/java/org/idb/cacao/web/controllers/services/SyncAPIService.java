@@ -42,7 +42,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -91,6 +94,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.Repository;
@@ -109,6 +113,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.io.CountingInputStream;
 
 /**
  * Service methods for 'synchronization' with other cacao servers.
@@ -133,11 +138,19 @@ public class SyncAPIService {
 	 */
 	private static final int BULK_LOAD_BATCH_COMMIT = 10_000;
 
+	/**
+	 * Default paralelism for SYNC operations
+	 */
+	public static int DEFAULT_SYNC_PARALELISM = 1;
+
     @Autowired
     private MessageSource messages;
 
 	@Autowired
 	private ApplicationContext app;
+
+	@Autowired
+	private Environment env;
 
 	@Autowired
 	private ConfigSyncService configSyncService;
@@ -148,9 +161,6 @@ public class SyncAPIService {
 	@Autowired
 	private FileSystemStorageService fileSystemStorageService;
 	
-	@Autowired
-	private PublishedDataService publishedDataService;
-
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
 	
@@ -198,26 +208,59 @@ public class SyncAPIService {
 		
 		Optional<Long> end = Optional.of(System.currentTimeMillis());
 		
-		try {
-			// SYNC original files
-			syncOriginalFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.ORIGINAL_FILES.getEndpoint(),0L):0L, end);
-		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
-		}
+		final int parallelism = Integer.parseInt(env.getProperty("sync.consumer.threads", String.valueOf(DEFAULT_SYNC_PARALELISM)));
+		ExecutorService executor = (parallelism<=1) ? null : Executors.newFixedThreadPool(parallelism);
 		
-		// SYNC bases (data kept in repositories, except documents)
-		List<Class<?>> all_sync_repos = getAllSyncRepositories();
-		for (Class<?> repository_class: all_sync_repos) {
+		final LongAdder bytesReceived = new LongAdder(); 
+		final long startTime = System.currentTimeMillis();
+
+		// SYNC original files
+		// -------------------------------------------------------------------------------
+
+		Runnable run_syncOriginalFiles = ()->{
 			try {
-				syncBase(tokenApi, repository_class, (resumeFromLastSync)?getStartForNextSync(SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName()),0L):0L, end);
+				syncOriginalFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.ORIGINAL_FILES.getEndpoint(),0L):0L, 
+						end, bytesReceived);
 			}
 			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for "+repository_class.getSimpleName(), ex);
+				log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
 			}
+		};
+		
+		if (executor==null)
+			run_syncOriginalFiles.run();
+		else
+			executor.submit(run_syncOriginalFiles);
+		
+		// SYNC bases (data kept in repositories, except documents)
+		// -------------------------------------------------------------------------------
+		
+		List<Class<?>> all_sync_repos = getAllSyncRepositories();
+		for (Class<?> repository_class: all_sync_repos) {
+			Runnable run_syncBase = ()->{
+				try {
+					syncBase(tokenApi, repository_class, (resumeFromLastSync)?getStartForNextSync(SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName()),0L):0L, 
+							end, bytesReceived);
+				}
+				catch (Throwable ex) {
+					log.log(Level.SEVERE, "Error while performing SYNC for "+repository_class.getSimpleName(), ex);
+				}
+			};
+			if (executor==null)
+				run_syncBase.run();
+			else
+				executor.submit(run_syncBase);
+		}
+		
+		// Before we continue, we must wait for completion of previous SYNC operations, because we need an updated list of templates
+		if (executor!=null) {
+			awaitTerminationAfterShutdown(executor);
+			executor = Executors.newFixedThreadPool(parallelism); // we need a new object after shutdown
 		}
 				
 		// SYNC validated data for all templates and versions
+		// -------------------------------------------------------------------------------
+		
 		List<DocumentTemplate> templates;
 		try {
 			templates = StreamSupport.stream(templateRepository.findAll().spliterator(), false)
@@ -230,19 +273,32 @@ public class SyncAPIService {
 				templates = Collections.emptyList();
 		}
 		
-		Set<String> archetypesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		Set<String> archetypesNames = Collections.synchronizedSet(new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
 		for (DocumentTemplate template: templates) {
-			try {
-				syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, end);
-				if (template.getArchetype()!=null && template.getArchetype().trim().length()>0)
-					archetypesNames.add(template.getArchetype());
-			}
-			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
-			}
+			Runnable syncValidated = ()->{
+				try {
+					syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, 
+							end, bytesReceived);
+					if (template.getArchetype()!=null && template.getArchetype().trim().length()>0)
+						archetypesNames.add(template.getArchetype());
+				}
+				catch (Throwable ex) {
+					log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
+				}
+			};
+			if (executor==null)
+				syncValidated.run();
+			else
+				executor.submit(syncValidated);
 		}
 		
-		List<String> indices_for_published_data;
+		// Before we continue, we must wait for completion of previous SYNC operations, because we need an updated list of archetypes names
+		if (executor!=null) {
+			awaitTerminationAfterShutdown(executor);
+			executor = Executors.newFixedThreadPool(parallelism); // we need a new object after shutdown
+		}
+
+		final List<String> indices_for_published_data;
 		
 		if (!archetypesNames.isEmpty()) {
 			TemplateArchetype[] archetypes = archetypesNames.stream()
@@ -263,21 +319,44 @@ public class SyncAPIService {
 		}
 		
 		// SYNC published data for all indices produced by ETL phases
+		// -------------------------------------------------------------------------------
+		
 		for (String indexname: indices_for_published_data) {
-			try {
-				syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, end);
-			}
-			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
-			}
+			Runnable syncPublished = ()->{
+				try {
+					syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, 
+							end, bytesReceived);
+				}
+				catch (Throwable ex) {
+					log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
+				}
+			};
+			if (executor==null)
+				syncPublished.run();
+			else
+				executor.submit(syncPublished);
 		}
 
 		// SYNC Kibana assets
+		// -------------------------------------------------------------------------------
+		
 		try {
-			syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, end);
+			syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, 
+					end, bytesReceived);
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error while performing SYNC for Kibana assets", ex);
+		}
+
+		// Before we finish, we must wait for completion of previous SYNC operations
+		if (executor!=null) {
+			awaitTerminationAfterShutdown(executor);
+		}
+		
+		if (log.isLoggable(Level.INFO)) {
+			final long endTime = System.currentTimeMillis();
+			final long elapsedTime = endTime - startTime;
+			log.log(Level.INFO, "Total bytes received after all SYNC operations: "+bytesReceived.longValue()+"  Elapsed time (ms): "+elapsedTime);
 		}
 	}
 
@@ -290,29 +369,61 @@ public class SyncAPIService {
 	public void syncSome(String tokenApi, boolean resumeFromLastSync, List<String> endpoints) {
 		
 		Optional<Long> end = Optional.of(System.currentTimeMillis());
-		
+
+		final int parallelism = Integer.parseInt(env.getProperty("sync.consumer.threads", String.valueOf(DEFAULT_SYNC_PARALELISM)));
+		ExecutorService executor = (parallelism<=1) ? null : Executors.newFixedThreadPool(parallelism);
+
+		final LongAdder bytesReceived = new LongAdder(); 
+		final long startTime = System.currentTimeMillis();
+
+		// SYNC original files
+		// -------------------------------------------------------------------------------
+
 		try {
-			// SYNC original files
-			if (SyncContexts.hasContext(endpoints, SyncContexts.ORIGINAL_FILES))
-				syncOriginalFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.ORIGINAL_FILES.getEndpoint(),0L):0L, end);
+			if (SyncContexts.hasContext(endpoints, SyncContexts.ORIGINAL_FILES)) {
+				Runnable run_syncOriginalFiles = ()->{
+					syncOriginalFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.ORIGINAL_FILES.getEndpoint(),0L):0L, 
+							end, bytesReceived);
+				};
+				if (executor==null)
+					run_syncOriginalFiles.run();
+				else
+					executor.submit(run_syncOriginalFiles);
+			}
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
 		}
 		
 		// SYNC bases (data kept in repositories, except documents)
+		// -------------------------------------------------------------------------------
 		List<Class<?>> all_sync_repos = getAllSyncRepositories();
 		for (Class<?> repository_class: all_sync_repos) {
-			try {
-				if (SyncContexts.hasContext(endpoints, SyncContexts.REPOSITORY_ENTITIES, repository_class.getSimpleName()))
-					syncBase(tokenApi, repository_class, (resumeFromLastSync)?getStartForNextSync(SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName()),0L):0L, end);
-			}
-			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for "+repository_class.getSimpleName(), ex);
+			if (SyncContexts.hasContext(endpoints, SyncContexts.REPOSITORY_ENTITIES, repository_class.getSimpleName())) {
+				Runnable run_syncBase = ()->{
+					try {
+						syncBase(tokenApi, repository_class, (resumeFromLastSync)?getStartForNextSync(SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName()),0L):0L, 
+									end, bytesReceived);
+					}
+					catch (Throwable ex) {
+						log.log(Level.SEVERE, "Error while performing SYNC for "+repository_class.getSimpleName(), ex);
+					}
+				};
+				if (executor==null)
+					run_syncBase.run();
+				else
+					executor.submit(run_syncBase);
 			}
 		}
 				
+		// Before we continue, we must wait for completion of previous SYNC operations, because we need an updated list of templates
+		if (executor!=null) {
+			awaitTerminationAfterShutdown(executor);
+			executor = Executors.newFixedThreadPool(parallelism); // we need a new object after shutdown
+		}
+
 		// SYNC validated data for all templates and versions
+		// -------------------------------------------------------------------------------
 		List<DocumentTemplate> templates;
 		try {
 			templates = StreamSupport.stream(templateRepository.findAll().spliterator(), false)
@@ -324,52 +435,102 @@ public class SyncAPIService {
 			else
 				templates = Collections.emptyList();
 		}
-		for (DocumentTemplate template: templates) {
-			try {
-				if (SyncContexts.hasContext(endpoints, SyncContexts.VALIDATED_DATA, template.getName()+"/"+template.getVersion()))
-					syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, end);
-			}
-			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
-			}
-		}
 		
-		// SYNC published data for all indices produced by ETL phases
-		List<String> indices_for_published_data;
-		try {
-			indices_for_published_data = publishedDataService.getIndicesForPublishedData().stream().sorted().collect(Collectors.toList());
-		} catch (Throwable ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
-				throw new RuntimeException(ex);
-			else
-				indices_for_published_data = Collections.emptyList();
-		}
-		for (String indexname: indices_for_published_data) {
-			try {
-				if (SyncContexts.hasContext(endpoints, SyncContexts.PUBLISHED_DATA, indexname))
-					syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, end);
+		Set<String> archetypesNames = Collections.synchronizedSet(new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+		for (DocumentTemplate template: templates) {
+			if (SyncContexts.hasContext(endpoints, SyncContexts.VALIDATED_DATA, template.getName()+"/"+template.getVersion())) {
+				Runnable syncValidated = ()->{
+					try {
+						syncValidatedData(tokenApi, template, (resumeFromLastSync)?getStartForNextSync(SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(),template.getVersion()),0L):0L, 
+									end, bytesReceived);
+						if (template.getArchetype()!=null && template.getArchetype().trim().length()>0)
+							archetypesNames.add(template.getArchetype());
+					}
+					catch (Throwable ex) {
+						log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
+					}
+				};
+				if (executor==null)
+					syncValidated.run();
+				else
+					executor.submit(syncValidated);
 			}
-			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
+		}
+
+		// Before we continue, we must wait for completion of previous SYNC operations, because we need an updated list of archetypes names
+		if (executor!=null) {
+			awaitTerminationAfterShutdown(executor);
+			executor = Executors.newFixedThreadPool(parallelism); // we need a new object after shutdown
+		}
+
+		final List<String> indices_for_published_data;
+		
+		if (!archetypesNames.isEmpty()) {
+			TemplateArchetype[] archetypes = archetypesNames.stream()
+					.map(TemplateArchetypes::getArchetype)
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.toArray(TemplateArchetype[]::new);
+			Set<String> published_indices = TemplateArchetypes.getRelatedPublishedDataIndices(archetypes);
+			if (published_indices!=null && !published_indices.isEmpty()) {
+				indices_for_published_data = new ArrayList<>(published_indices);
+			}
+			else {
+				indices_for_published_data = Collections.emptyList();
+			}
+		}
+		else {
+			indices_for_published_data = Collections.emptyList();
+		}
+
+		// SYNC published data for all indices produced by ETL phases
+		// -------------------------------------------------------------------------------
+		for (String indexname: indices_for_published_data) {
+			if (SyncContexts.hasContext(endpoints, SyncContexts.PUBLISHED_DATA, indexname)) {
+				Runnable syncPublished = ()->{
+					try {
+						syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, 
+									end, bytesReceived);
+					}
+					catch (Throwable ex) {
+						log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
+					}
+				};
+				if (executor==null)
+					syncPublished.run();
+				else
+					executor.submit(syncPublished);
 			}
 		}
 
 		try {
 			// SYNC Kibana assets
+			// -------------------------------------------------------------------------------
 			if (SyncContexts.hasContext(endpoints, SyncContexts.KIBANA_ASSETS))
-				syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, end);
+				syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, 
+						end, bytesReceived);
 		}
 		catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error while performing SYNC for Kibana assets", ex);
 		}
 
+		// Before we finish, we must wait for completion of previous SYNC operations
+		if (executor!=null) {
+			awaitTerminationAfterShutdown(executor);
+		}
+		
+		if (log.isLoggable(Level.INFO)) {
+			final long endTime = System.currentTimeMillis();
+			final long elapsedTime = endTime - startTime;
+			log.log(Level.INFO, "Total bytes received after all SYNC operations: "+bytesReceived.longValue()+"  Elapsed time (ms): "+elapsedTime);
+		}
 	}
 
 	/**
 	 * Retrieves and saves locally all original files created or changed between a time interval
 	 */
 	@Transactional
-	public void syncOriginalFiles(String tokenApi, long start, Optional<Long> end) {
+	public void syncOriginalFiles(String tokenApi, long start, Optional<Long> end, LongAdder bytesReceived) {
 		
 		final File original_files_dir;
 		try {
@@ -391,7 +552,7 @@ public class SyncAPIService {
 		LongAdder sum_bytes = new LongAdder();
 		final long timestamp = System.currentTimeMillis();
 		
-		syncSomething(tokenApi, SyncContexts.ORIGINAL_FILES.getEndpoint(), start, end, /*limit*/-1,
+		syncSomething(tokenApi, SyncContexts.ORIGINAL_FILES.getEndpoint(), start, end, /*limit*/-1, bytesReceived,
 		/*consumer*/(entry,input)->{
 			String entry_name = entry.getName();
 			Matcher matcher_name_entry = pattern_name_entry.matcher(entry_name);
@@ -421,7 +582,7 @@ public class SyncAPIService {
 	 * Retrieves and saves locally all entity instances created or changed between a time interval
 	 */
 	@Transactional
-	public void syncBase(String tokenApi, Class<?> repository_class, long start, Optional<Long> end) {
+	public void syncBase(String tokenApi, Class<?> repository_class, long start, Optional<Long> end, LongAdder bytesReceived) {
 		
 		final Class<?> entity = ReflectUtils.getParameterType(repository_class);
 		if (entity==null) {
@@ -440,7 +601,8 @@ public class SyncAPIService {
 		
 		final BatchSave batch_to_save = new BatchSave(BATCH_SIZE, entity.getSimpleName(), repository);
 
-		syncSomething(tokenApi, uri, start, end, /*limit*/-1,
+		long bytes_received_here =
+		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -458,7 +620,7 @@ public class SyncAPIService {
 		batch_to_save.saveBatch();
 		
 		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+batch_to_save.counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
+		log.log(Level.INFO, "Finished copying "+batch_to_save.counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
 		if (batch_to_save.count_errors.longValue()>0)
 			log.log(Level.INFO, "Number of errors while copying "+batch_to_save.counter.longValue()+" files from "+uri+": "+batch_to_save.count_errors.longValue());
 	}
@@ -560,7 +722,7 @@ public class SyncAPIService {
 	 * Retrieves and saves locally all parsed documents created or changed between a time interval
 	 */
 	@Transactional
-	public void syncValidatedData(String tokenApi, DocumentTemplate template, long start, Optional<Long> end) {
+	public void syncValidatedData(String tokenApi, DocumentTemplate template, long start, Optional<Long> end, LongAdder bytesReceived) {
 		
     	if (template==null) {
     		throw new InvalidParameter("template");
@@ -609,7 +771,8 @@ public class SyncAPIService {
 		
 		final LongAdder recordsForCommit = new LongAdder();
 
-		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT,
+		long bytes_received_here =
+		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -640,14 +803,14 @@ public class SyncAPIService {
 		commitBulkRequest(bulkRequest, index_name);
 
 		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
+		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
 	}
 
 	/**
 	 * Retrieves and saves locally all published (denormalized) data created or changed between a time interval
 	 */
 	@Transactional
-	public void syncPublishedData(String tokenApi, String indexname, long start, Optional<Long> end) {
+	public void syncPublishedData(String tokenApi, String indexname, long start, Optional<Long> end, LongAdder bytesReceived) {
 		
     	if (indexname==null || indexname.trim().length()==0 || !indexname.startsWith(IndexNamesUtils.PUBLISHED_DATA_INDEX_PREFIX)) {
     		throw new InvalidParameter("indexname");
@@ -691,7 +854,8 @@ public class SyncAPIService {
 
 		final LongAdder recordsForCommit = new LongAdder();
 
-		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT,
+		long bytes_received_here =
+		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -722,14 +886,14 @@ public class SyncAPIService {
 		commitBulkRequest(bulkRequest, indexname);
 		
 		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms");
+		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
 	}
 
 	/**
 	 * Retrieves and saves locally all Kibana assets created or changed between a time interval
 	 */
 	@Transactional
-	public void syncKibana(String tokenApi, long start, Optional<Long> end) {
+	public void syncKibana(String tokenApi, long start, Optional<Long> end, LongAdder bytesReceived) {
 		
 		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -739,7 +903,7 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.KIBANA_ASSETS.getEndpoint();
 
-		syncSomething(tokenApi, uri, start, end, /*limit*/-1,
+		syncSomething(tokenApi, uri, start, end, /*limit*/-1, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// The entry name includes the index used for Kibana. We need to keep it. The rest of the entry name
@@ -832,7 +996,10 @@ public class SyncAPIService {
 		}
 	}
 
-	private void syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end, long limit,
+	/**
+	 * Process the SYNC request. Automatically resume partial responses. Returns the number of bytes received (considering compression in transfer).
+	 */
+	private long syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end, long limit, LongAdder bytesReceived,
 			ConsumeSyncContents consumer) {
 		
 		ConfigSync config = configSyncService.getActiveConfig();
@@ -858,6 +1025,7 @@ public class SyncAPIService {
 		OffsetDateTime lastTimeStart = (start==0) ? null : new Date(start).toInstant().atOffset(ZoneOffset.UTC);
 
 		final LongAdder count_incoming_objects_overall = new LongAdder();
+		final LongAdder count_bytes_overall = new LongAdder();
 
 		do {
 			
@@ -870,7 +1038,7 @@ public class SyncAPIService {
 			final OffsetDateTime lastTimeRun = DateTimeUtils.now();
 			
 			final LongAdder count_incoming_objects = new LongAdder();
-			
+						
 			boolean successful = false; // will be set to TRUE after 'restTemplate.execute' completes
 			
 			try {
@@ -880,7 +1048,8 @@ public class SyncAPIService {
 					// Got the synchronized contents in a local temporary file. Let's open it and read its contents
 		
 					InputStream file_input = new BufferedInputStream(clientHttpResponse.getBody());
-					CheckedInputStream chk_input = new CheckedInputStream(file_input, new Adler32());
+					CountingInputStream counting_input = new CountingInputStream(file_input);
+					CheckedInputStream chk_input = new CheckedInputStream(counting_input, new Adler32());
 					ZipInputStream zip_input = new ZipInputStream(chk_input);
 					
 					try {
@@ -909,6 +1078,9 @@ public class SyncAPIService {
 							//ex.printStackTrace();
 							throw ex;
 						}
+					} finally {
+						bytesReceived.add(counting_input.getCount());
+						count_bytes_overall.add(counting_input.getCount());
 					}
 						
 					return Boolean.TRUE;
@@ -920,7 +1092,7 @@ public class SyncAPIService {
 			}
 			finally {
 
-				if (sync_info.get()!=null) {
+				if (sync_info.get()!=null && log.isLoggable(Level.FINE)) {
 					log.log(Level.FINE, "SYNC info for endpoint '"+endPoint+"': "+sync_info.get());
 				}
 	
@@ -948,13 +1120,14 @@ public class SyncAPIService {
 				if (end!=null && end.isPresent())
 					uri +="&end="+end.get();
 				if (log.isLoggable(Level.INFO))
-					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri+" (got "+count_incoming_objects_overall.longValue()+" objects so far)");
+					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri+" (got "+count_incoming_objects_overall.longValue()+" objects in "+count_bytes_overall.longValue()+" bytes so far)");
 				has_more = true; // will repeat SYNC with remaining data
 				lastTimeStart = sync_info.get().getNextStart().toInstant().atOffset(ZoneOffset.UTC);
 			}
 			
 		} while (has_more);
 		
+		return count_bytes_overall.longValue();
 	}
 	
 	/**
@@ -1220,4 +1393,20 @@ public class SyncAPIService {
 			bulkRequest.requests().clear();
 		}		
 	}
+
+	/**
+	 * Awaits termination of all submitted threads
+	 */
+	public static void awaitTerminationAfterShutdown(ExecutorService threadPool) {
+	    threadPool.shutdown();
+	    try {
+	        if (!threadPool.awaitTermination(1, TimeUnit.DAYS)) {
+	            threadPool.shutdownNow();
+	        }
+	    } catch (InterruptedException ex) {
+	        threadPool.shutdownNow();
+	        Thread.currentThread().interrupt();
+	    }
+	}
+	
 }
