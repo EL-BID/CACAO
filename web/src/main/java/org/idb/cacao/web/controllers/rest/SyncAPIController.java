@@ -350,6 +350,7 @@ public class SyncAPIController {
 	 * The 'type' indicates the class name of a known repository. <BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
+	 * The 'limit' parameter is the maximum number of records to return from this request.<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -359,6 +360,7 @@ public class SyncAPIController {
 			@ApiParam("The 'type' indicates the class name of a known repository.") @PathVariable("type") String type,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
+			@ApiParam(value="The 'limit' parameter is the maximum number of records to return from this request.",required=false) @RequestParam("limit") Optional<Long> opt_limit,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -408,13 +410,15 @@ public class SyncAPIController {
 				+") and ending at timestamp "+end
 				+" ("+ParserUtils.formatTimestamp(new Date(end))
 				+") IP ADDRESS: "
-				+remote_ip_addr);
+				+remote_ip_addr				
+				+" LIMIT: "+((opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST));
 
     	final String streaming_out_filename = (type.toLowerCase())+"_"+start.toString()+".zip";
 		StreamingResponseBody responseBody = outputStream -> {
 			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
 			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncCopyBaseRecords(repository_class, start, end, zip_out);
+			long copied_files = syncCopyBaseRecords(repository_class, start, end, zip_out,
+					(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST);
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
@@ -438,7 +442,8 @@ public class SyncAPIController {
 	 */
 	@SuppressWarnings("unchecked")
 	public long syncCopyBaseRecords(Class<?> repository_class,
-			long start, long end, ZipOutputStream zip_out) throws IOException {
+			long start, long end, ZipOutputStream zip_out,
+			long limit) throws IOException {
 		
 		// Previous validations
 		
@@ -494,7 +499,7 @@ public class SyncAPIController {
 		Stream<?> query_results;
 		
 		if (isESDocument(entity)) {
-			query_results = queryESEntity(entity, timestamp_field, start, end);
+			query_results = queryESEntity(entity, timestamp_field, start, end, limit);
 		}
 		else {
 			log.log(Level.WARNING, "Class '"+entity.getName()+"' is not an Entity and neither a Document!");
@@ -506,7 +511,8 @@ public class SyncAPIController {
 				timestamp_field_getter,
 				ignorableFieldSetters,
 				zip_out,
-				isFullDebugEnabled());
+				isFullDebugEnabled(),
+				limit);
 		
 		try {
 			
@@ -521,7 +527,7 @@ public class SyncAPIController {
 		if (start==0L) {
 			Stream<?> query_more_results = null;
 			try {
-				query_more_results = queryESEntityWithNullTimestamp(entity, timestamp_field);
+				query_more_results = queryESEntityWithNullTimestamp(entity, timestamp_field, limit);
 
 				sync_data.iterateResults(query_more_results, /*checkLimit*/false);
 				
@@ -573,13 +579,15 @@ public class SyncAPIController {
 		private final ZipOutputStream zip_out;
 		private final Set<String> included_entries;
 		private final boolean full_debug_info;
+		private final long limit;
 
 		SyncData(String entity_simple_name,
 				Function<Object,Object> id_field_getter,
 				Function<Object,Object> timestamp_field_getter,
 				BiConsumer<Object,Object> ignorableFieldSetters[],
 				ZipOutputStream zip_out,
-				boolean full_debug_info) {
+				boolean full_debug_info,
+				long limit) {
 			
 	    	counter = new LongAdder();
 	    	
@@ -598,6 +606,7 @@ public class SyncAPIController {
 			this.zip_out = zip_out;
 			this.included_entries = new HashSet<>();
 			this.full_debug_info = full_debug_info;
+			this.limit = limit;
 			
 		}
 
@@ -628,7 +637,7 @@ public class SyncAPIController {
 
 	    		Object timestamp_obj = timestamp_field_getter.apply(record);
 	    		Date timestamp = ValidationContext.toDate(timestamp_obj);
-				if (checkLimit && counter.intValue()+1>=MAX_RESULTS_PER_REQUEST) {
+				if (checkLimit && counter.longValue()+1>=limit) {
 					if (prev_timestamp!=null && prev_timestamp.equals(timestamp)) {
 						// If we reached the limit, but the timestamp is still the same as before, we
 						// need to keep going on. Otherwise we won't be able to continue later from this point in another request.						
@@ -638,7 +647,7 @@ public class SyncAPIController {
 							pending_timestamp.set(timestamp.getTime());
 						}
 		    			if (full_debug_info) {
-		    				log.log(Level.INFO, "SYNC iterating results of "+entity_simple_name+" reached the records limit of: "+MAX_RESULTS_PER_REQUEST+", current count is "+counter.intValue()+", last timestamp: "+ParserUtils.formatTimestamp(timestamp));
+		    				log.log(Level.INFO, "SYNC iterating results of "+entity_simple_name+" reached the records limit of: "+limit+", current count is "+counter.intValue()+", last timestamp: "+ParserUtils.formatTimestamp(timestamp));
 		    			}
 						return;
 					}
@@ -690,7 +699,7 @@ public class SyncAPIController {
 	/**
 	 * Queries for ElasticSearch entities with timestamp informed in a given interval
 	 */
-	public Stream<?> queryESEntity(Class<?> entity, String timestamp_field, long start, long end) throws IOException {
+	public Stream<?> queryESEntity(Class<?> entity, String timestamp_field, long start, long end, long limit) throws IOException {
 		
 		Document doc_anon = entity.getAnnotation(Document.class);
 		String indexName = doc_anon.indexName();
@@ -711,15 +720,16 @@ public class SyncAPIController {
     	
     	return SearchUtils.findWithScroll(entity, indexName, elasticsearchClient, searchSourceBuilder->{
     		searchSourceBuilder.query(query);
-            searchSourceBuilder.sort(timestamp_field, SortOrder.ASC);    		
-    		searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST); // since we are 'scrolling', this is only for determining a 'batch size'
+            searchSourceBuilder.sort(timestamp_field, SortOrder.ASC);
+            if (limit<=MAX_RESULTS_PER_REQUEST)
+            	searchSourceBuilder.size((int)limit); // since we are 'scrolling', this is only for determining a 'batch size'
     	});
 	}
 	
 	/**
 	 * Queries for ElasticSearch entities with no timestamp information (NULL values)
 	 */
-	public Stream<?> queryESEntityWithNullTimestamp(Class<?> entity, String timestamp_field) throws IOException {
+	public Stream<?> queryESEntityWithNullTimestamp(Class<?> entity, String timestamp_field, long limit) throws IOException {
 		
 		Document doc_anon = entity.getAnnotation(Document.class);
 		String indexName = doc_anon.indexName();
@@ -728,7 +738,8 @@ public class SyncAPIController {
 	    	BoolQueryBuilder query = QueryBuilders.boolQuery();
 	    	query = query.mustNot(QueryBuilders.existsQuery(timestamp_field));
 	    	searchSourceBuilder.query(query); 
-    		searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST); // since we are 'scrolling', this is only for determining a 'batch size'
+            if (limit<=MAX_RESULTS_PER_REQUEST)
+            	searchSourceBuilder.size((int)limit); // since we are 'scrolling', this is only for determining a 'batch size'
 		});
 	}
 
@@ -1504,7 +1515,7 @@ public class SyncAPIController {
 			Stream<?> query_results;
 			
 			if (SyncAPIController.isESDocument(entity)) {
-				query_results = queryESEntityWithNullTimestamp(entity, timestamp_field);
+				query_results = queryESEntityWithNullTimestamp(entity, timestamp_field, MAX_RESULTS_PER_REQUEST);
 			}
 			else {
 				continue;

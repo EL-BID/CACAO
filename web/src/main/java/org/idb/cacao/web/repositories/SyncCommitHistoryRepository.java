@@ -19,7 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
-import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.SyncCommitHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
 public interface SyncCommitHistoryRepository extends ElasticsearchRepository<SyncCommitHistory, String> {
 
 	Page<SyncCommitHistory> findByMaster(String master, Pageable pageable);

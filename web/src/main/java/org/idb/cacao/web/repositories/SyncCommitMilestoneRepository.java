@@ -21,7 +21,6 @@ package org.idb.cacao.web.repositories;
 
 import java.util.Optional;
 
-import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.entities.SyncCommitMilestone;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
 public interface SyncCommitMilestoneRepository extends ElasticsearchRepository<SyncCommitMilestone, Long> {
 
 	public Optional<SyncCommitMilestone> findByEndPoint(String endPoint);
