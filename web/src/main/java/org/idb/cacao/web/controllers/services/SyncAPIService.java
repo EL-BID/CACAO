@@ -22,6 +22,7 @@ package org.idb.cacao.web.controllers.services;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,6 +61,7 @@ import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.IOUtils;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
@@ -87,6 +89,7 @@ import org.idb.cacao.web.repositories.SyncCommitHistoryRepository;
 import org.idb.cacao.web.repositories.SyncCommitMilestoneRepository;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
+import org.idb.cacao.web.utils.LoadFromParquet;
 import org.idb.cacao.web.utils.ReflectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -140,6 +143,11 @@ public class SyncAPIService {
 	 * Too high means more time waiting response, what could potentially result in response timeout.
 	 */
 	private static final int MAX_RESULTS_PER_REQUEST = 100_000;
+	
+	/**
+	 * Tells if it should use PARQUET format for SYNC of some high volume data (e.g. validated and for published data)
+	 */
+	private static final boolean SYNC_WITH_PARQUET = true;
 
 	/**
 	 * Default paralelism for SYNC operations
@@ -556,6 +564,7 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		
 		syncSomething(tokenApi, SyncContexts.ORIGINAL_FILES.getEndpoint(), start, end, /*limit*/-1, bytesReceived,
+		/*parquet*/false,
 		/*consumer*/(entry,input)->{
 			String entry_name = entry.getName();
 			Matcher matcher_name_entry = pattern_name_entry.matcher(entry_name);
@@ -606,6 +615,7 @@ public class SyncAPIService {
 
 		long bytes_received_here =
 		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
+		/*parquet*/false,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -776,14 +786,8 @@ public class SyncAPIService {
 
 		long bytes_received_here =
 		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
-		/*consumer*/(entry,input)->{
-			
-			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
-			// also have inside de JSON contents
-
-			// Let's deserialize the JSON contents
-			@SuppressWarnings("unchecked")
-			Map<String, Object> parsed_contents = (Map<String, Object>)mapper.readValue(input, Map.class);
+		/*parquet*/SYNC_WITH_PARQUET,
+		/*consumer*/new ConsumeSyncContents((parsed_contents)->{
 			
 			String id = (String)parsed_contents.get("id");
 			if (id==null)
@@ -801,7 +805,7 @@ public class SyncAPIService {
 			}
 
 			counter.increment();
-		});
+		}));
 
 		commitBulkRequest(bulkRequest, index_name);
 
@@ -845,10 +849,6 @@ public class SyncAPIService {
         	log.log(Level.WARNING, "Ignoring error while checking existence of index '"+indexname+"' ", ex);
         }
 
-		final ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.registerModule(new JavaTimeModule());
-
 		LongAdder counter = new LongAdder();
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.PUBLISHED_DATA.getEndpoint(indexname);
@@ -859,15 +859,12 @@ public class SyncAPIService {
 
 		long bytes_received_here =
 		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
-		/*consumer*/(entry,input)->{
+		/*parquet*/SYNC_WITH_PARQUET,
+		/*consumer*/new ConsumeSyncContents((parsed_contents)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
 			// also have inside de JSON contents
 
-			// Let's deserialize the JSON contents
-			@SuppressWarnings("unchecked")
-			Map<String, Object> parsed_contents = (Map<String, Object>)mapper.readValue(input, Map.class);
-			
 			String id = (String)parsed_contents.get("id");
 			if (id==null)
 				return;
@@ -884,7 +881,7 @@ public class SyncAPIService {
 			}
 
 			counter.increment();
-		});
+		}));
 		
 		commitBulkRequest(bulkRequest, indexname);
 		
@@ -907,6 +904,7 @@ public class SyncAPIService {
 		final String uri = SyncContexts.KIBANA_ASSETS.getEndpoint();
 
 		syncSomething(tokenApi, uri, start, end, /*limit*/-1, bytesReceived,
+		/*parquet*/false,
 		/*consumer*/(entry,input)->{
 			
 			// The entry name includes the index used for Kibana. We need to keep it. The rest of the entry name
@@ -1003,7 +1001,8 @@ public class SyncAPIService {
 	 * Process the SYNC request. Automatically resume partial responses. Returns the number of bytes received (considering compression in transfer).
 	 */
 	private long syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end, long limit, LongAdder bytesReceived,
-			ConsumeSyncContents consumer) {
+			boolean parquet,
+			ConsumeSyncContentsInterface consumer) {
 		
 		ConfigSync config = configSyncService.getActiveConfig();
 		if (config==null || config.getMaster()==null || config.getMaster().trim().length()==0) 
@@ -1020,6 +1019,8 @@ public class SyncAPIService {
 			uri +="&end="+end.get();
 		if (limit>0)
 			uri += "&limit="+limit;
+		if (parquet)
+			uri += "&format=parquet";
 		
 		boolean has_more = false; // will be set to TRUE if there is more data to SYNC for
 		
@@ -1065,11 +1066,22 @@ public class SyncAPIService {
 								continue;
 							}
 							
-							// Populates the local base with incoming data
-							
-							consumer.load(ze, new NoClosingInputStream(zip_input));
-							count_incoming_objects.increment();
-							count_incoming_objects_overall.increment();
+							// If entry corresponds to Parquet file, read and store this information accordingly
+							if (parquet && SyncAPIController.DATA_PARQUET_FILENAME.equals(ze.getName())) {
+								
+								readParquetFileContents(zip_input, consumer, count_incoming_objects, count_incoming_objects_overall);
+								continue;
+								
+							}
+							else {
+								
+								// Populates the local base with incoming data
+								
+								consumer.load(ze, new NoClosingInputStream(zip_input));
+								count_incoming_objects.increment();
+								count_incoming_objects_overall.increment();
+								
+							}
 							
 						} // LOOP through zip contents
 					} catch (IOException ex) {
@@ -1124,6 +1136,8 @@ public class SyncAPIService {
 					uri +="&end="+end.get();
 				if (limit>0)
 					uri += "&limit="+limit;
+				if (parquet)
+					uri += "&format=parquet";
 				if (log.isLoggable(Level.INFO))
 					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri+" (got "+count_incoming_objects_overall.longValue()+" objects in "+count_bytes_overall.longValue()+" bytes so far)");
 				has_more = true; // will repeat SYNC with remaining data
@@ -1233,12 +1247,69 @@ public class SyncAPIService {
 	 *
 	 */
 	@FunctionalInterface
-	public static interface ConsumeSyncContents {
+	public static interface ConsumeSyncContentsInterface {
 		
 		/**
-		 * Method called for each ZIP entry from incoming synchronized data
+		 * Method called for each ZIP entry from incoming synchronized data (NOT applicable
+		 * when using PARQUET for transport data format)
 		 */
 		public void load(ZipEntry entry, InputStream input) throws IOException;
+		
+		/**
+		 * Method called for record from incoming synchronized data (applicable when
+		 * using PARQUET for transport data format)
+		 */
+		default public void load(Map<String,Object> record) throws IOException {
+			throw new UnsupportedOperationException();
+		}
+	}
+	
+	/**
+	 * Functional interface to be used together with 'ConsumeSyncContents'
+	 */
+	@FunctionalInterface
+	public static interface ConsumeRecordsInterface {
+		public void load(Map<String,Object> record) throws IOException;
+	}
+	
+	/**
+	 * Default implementation of ConsumeSyncContentsInterface supporting incoming data either
+	 * in PARQUET file format or not.
+	 */
+	public static class ConsumeSyncContents implements ConsumeSyncContentsInterface {
+		
+		private final ObjectMapper mapper;
+		
+		private final ConsumeRecordsInterface consumer;
+
+		public ConsumeSyncContents(ConsumeRecordsInterface consumer) {
+			this.mapper = new ObjectMapper();
+			mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+			mapper.registerModule(new JavaTimeModule());
+			this.consumer = consumer;
+		}
+
+		public ConsumeSyncContents(ObjectMapper mapper, ConsumeRecordsInterface consumer) {
+			this.mapper = mapper;
+			this.consumer = consumer;
+		}
+
+		@Override
+		public void load(ZipEntry entry, InputStream input) throws IOException {
+			
+			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
+			// also have inside de JSON contents
+
+			// Let's deserialize the JSON contents
+			@SuppressWarnings("unchecked")
+			Map<String, Object> parsed_contents = (Map<String, Object>)mapper.readValue(input, Map.class);
+			load(parsed_contents);
+		}
+
+		@Override
+		public void load(Map<String, Object> record) throws IOException {
+			consumer.load(record);
+		}
 		
 	}
 
@@ -1413,5 +1484,48 @@ public class SyncAPIService {
 	        Thread.currentThread().interrupt();
 	    }
 	}
-	
+
+	/**
+	 * Read SYNC data stored as Parquet file format
+	 */
+	public static void readParquetFileContents(InputStream input,
+			ConsumeSyncContentsInterface consumer,
+			LongAdder... counters) throws IOException {
+		// We have to save the incoming data at a temporary file in order to read it
+		
+		File tempFile = java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile();
+		
+		LoadFromParquet loadParquet = null;
+
+		try {
+			
+			// Read the zip entry entirely and save it as a temporary local file
+			try (FileOutputStream out=new FileOutputStream(tempFile)) {
+				IOUtils.copy(input, out);
+			}
+			
+			loadParquet = new LoadFromParquet();
+			loadParquet.setInputFile(tempFile);
+			
+			Map<String,Object> record;
+			while ((record=loadParquet.next())!=null) {
+				consumer.load(record);
+				for (LongAdder counter: counters) {
+					counter.increment();
+				}
+			}
+			
+		}
+		finally {
+			if (loadParquet!=null) {
+				try {
+					loadParquet.close();
+				} catch (Throwable ex) {
+					log.log(Level.WARNING, "Error closing temporary file with PARQUET format!", ex);
+				}
+			}
+			if (!tempFile.delete())
+				tempFile.deleteOnExit();
+		}
+	}
 }

@@ -22,10 +22,12 @@ package org.idb.cacao.web.controllers.rest;
 import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import com.google.common.io.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -109,6 +111,7 @@ import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.ReflectUtils;
+import org.idb.cacao.web.utils.SaveToParquet;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -173,6 +176,11 @@ public class SyncAPIController {
 	 * Ignore Kibana indices with these names
 	 */
 	public static final Pattern KIBANA_IGNORE_PATTERNS = Pattern.compile("^\\.kibana(?>-event-log|_task_manager)");
+	
+	/**
+	 * Default filename for storing SYNC data in Parquet file format
+	 */
+	public static final String DATA_PARQUET_FILENAME = "data.snappy.parquet";
 
 
 	@Autowired
@@ -322,7 +330,7 @@ public class SyncAPIController {
 				
 				try {
 					zip_out.putNextEntry(ze);
-					Files.copy(file, zip_out);
+					com.google.common.io.Files.copy(file, zip_out);
 					counter.increment();
 				} catch (IOException e) {
 					throw new RuntimeException(e);
@@ -789,6 +797,7 @@ public class SyncAPIController {
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.<BR>
 	 * The 'limit' parameter is the maximum number of records to return from this request.<BR>
+	 * The 'format' parameter is used to inform the format of output data. It can be either 'parquet' or 'json' (default is 'json').<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -801,6 +810,7 @@ public class SyncAPIController {
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
 			@ApiParam(value="The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.",required=false) @RequestParam("line_start") Optional<Long> opt_line_start,
 			@ApiParam(value="The 'limit' parameter is the maximum number of records to return from this request.",required=false) @RequestParam("limit") Optional<Long> opt_limit,
+			@ApiParam(value="The 'format' parameter is used to inform the format of output data. It can be either 'parquet' or 'json' (default is 'json').",required=false) @RequestParam("format") Optional<String> opt_format,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -882,7 +892,8 @@ public class SyncAPIController {
 					ValidatedDataFieldNames.LINE.getFieldName(),
 					(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
 					zip_out,
-					(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST);
+					(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST,
+					/*parquet*/"parquet".equalsIgnoreCase(opt_format.orElse("json")));
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
@@ -903,13 +914,15 @@ public class SyncAPIController {
 
 	/**
 	 * Copies all stored data submitted or changed between two timestamps. May be data produced by the 'validation' phase or by 'ETL' phase
+	 * @param parquet If TRUE will save all data in one PARQUET file inside ZIP. If FALSE will save all data in multiple JSON files inside ZIP.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public long syncIndexedData(String index_name, 
 			String timestampFieldName, long start, long end,
 			String lineFieldName, long lineStart,
 			ZipOutputStream zip_out,
-			long limit) throws IOException {
+			long limit,
+			boolean parquet) throws IOException {
 		
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
 		RangeQueryBuilder b = new RangeQueryBuilder(timestampFieldName)
@@ -1008,7 +1021,27 @@ public class SyncAPIController {
 		
 		if (stream!=null) {
 			final AtomicBoolean shouldBreak = new AtomicBoolean(false);
+			File tempFile = null;
+			Closeable finalization = null;
+			
 			try {
+				
+				final SaveToParquet saveToParquet;
+				if (parquet) {
+					// We need a temporary local file to store Parquet data. Later we will move it to the zip file after we finish.
+					saveToParquet = new SaveToParquet();
+					tempFile = java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile();
+					saveToParquet.setOutputFile(tempFile);
+					Map<String,Object> mappings = ESUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
+					Map<?,?> properties = (Map<?,?>)mappings.get("properties");
+					saveToParquet.setSchemaFromProperties(properties);
+					saveToParquet.init();
+					finalization = saveToParquet;
+				}
+				else {
+					saveToParquet = null;
+				}
+				
 				Spliterator<Map<?,?>> spliterator = stream.spliterator();
 				boolean hadNext = true;
 				while (hadNext && !shouldBreak.get()) {
@@ -1038,22 +1071,29 @@ public class SyncAPIController {
 						}
 			
 						String entry_name = (String)map.get("id");
-						ZipEntry ze = new ZipEntry(entry_name);
-						
-			    		if (timestamp_as_date!=null) {
-			    			long t = timestamp_as_date.getTime();
-							if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
-								actual_start_timestamp.set(t);
-							if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
-								actual_end_timestamp.set(t);
-							ze.setTime(t);
-			    		}
 			
 						try {
-							zip_out.putNextEntry(ze);
-							String json = mapper.writeValueAsString(map);
-							IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zip_out);
-							counter.increment();
+				    		if (parquet) {
+				    			saveToParquet.write(map);
+								counter.increment();
+				    		}
+				    		else {
+								ZipEntry ze = new ZipEntry(entry_name);
+								
+					    		if (timestamp_as_date!=null) {
+					    			long t = timestamp_as_date.getTime();
+									if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
+										actual_start_timestamp.set(t);
+									if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
+										actual_end_timestamp.set(t);
+									ze.setTime(t);
+					    		}
+					    		
+								zip_out.putNextEntry(ze);
+								String json = mapper.writeValueAsString(map);
+								IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zip_out);
+								counter.increment();
+				    		}
 						} catch (IOException e) {
 							throw new RuntimeException(e);
 						}
@@ -1062,6 +1102,28 @@ public class SyncAPIController {
 			}
 			finally {
 				stream.close();
+				if (finalization!=null) {
+					try {
+						finalization.close();
+					} catch (Throwable ex) {
+						log.log(Level.WARNING, "Error closing temporary file with PARQUET format!", ex);
+					}
+				}
+				if (tempFile!=null) {
+					if (tempFile.length()>0) {
+						try {
+							ZipEntry ze = new ZipEntry(DATA_PARQUET_FILENAME);
+							zip_out.putNextEntry(ze);
+							try (InputStream fileInput = new FileInputStream(tempFile)) {
+								IOUtils.copy(fileInput, zip_out);
+							}
+						} catch (Throwable ex) {
+							log.log(Level.WARNING, "Error writing PARQUET contents into ZIP file!", ex);
+						}
+					}
+					if (!tempFile.delete())
+						tempFile.deleteOnExit();
+				}
 			}
 		}
 
@@ -1091,6 +1153,7 @@ public class SyncAPIController {
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
 	 * The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.<BR>
 	 * The 'limit' parameter is the maximum number of records to return from this request.<BR>
+	 * The 'format' parameter is used to inform the format of output data. It can be either 'parquet' or 'json' (default is 'json').<BR>
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
@@ -1102,6 +1165,7 @@ public class SyncAPIController {
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
 			@ApiParam(value="The 'line_start' parameter is number of the line to start, in case we stopped before at the middle of a file and we want to resume.",required=false) @RequestParam("line_start") Optional<Long> opt_line_start,
 			@ApiParam(value="The 'limit' parameter is the maximum number of records to return from this request.",required=false) @RequestParam("limit") Optional<Long> opt_limit,
+			@ApiParam(value="The 'format' parameter is used to inform the format of output data. It can be either 'parquet' or 'json' (default is 'json').",required=false) @RequestParam("format") Optional<String> opt_format,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -1160,7 +1224,8 @@ public class SyncAPIController {
 				/*lineFieldName*/PublishedDataFieldNames.LINE.getFieldName(),
 				(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
 				zip_out,
-				(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST);
+				(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST,
+				/*parquet*/"parquet".equalsIgnoreCase(opt_format.orElse("json")));
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();

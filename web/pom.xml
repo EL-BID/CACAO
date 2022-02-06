@@ -166,6 +166,32 @@
 		    <version>1.0.2</version>
 		</dependency>
 
+		<!-- This dependency is due to use of PARQUET format for SYNC operations for better performance transmitting data with lower footprint --> 
+		<!-- https://mvnrepository.com/artifact/org.apache.parquet/parquet-hadoop -->
+		<dependency>
+    		<groupId>org.apache.parquet</groupId>
+    		<artifactId>parquet-hadoop</artifactId>
+    		<version>1.12.2</version>
+		</dependency>
+
+		<!-- This dependency is due to use of PARQUET format for SYNC operations for better performance transmitting data with lower footprint --> 
+		<!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-client -->
+		<dependency>
+    		<groupId>org.apache.hadoop</groupId>
+    		<artifactId>hadoop-client</artifactId>
+    		<version>3.3.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jersey</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
 	</dependencies>
 
 	<build>
