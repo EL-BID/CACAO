@@ -1506,6 +1506,7 @@ public class SyncAPIService {
 			
 			loadParquet = new LoadFromParquet();
 			loadParquet.setInputFile(tempFile);
+			loadParquet.init();
 			
 			Map<String,Object> record;
 			while ((record=loadParquet.next())!=null) {

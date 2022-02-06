@@ -1032,11 +1032,23 @@ public class SyncAPIController {
 					saveToParquet = new SaveToParquet();
 					tempFile = java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile();
 					saveToParquet.setOutputFile(tempFile);
-					Map<String,Object> mappings = ESUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
-					Map<?,?> properties = (Map<?,?>)mappings.get("properties");
-					saveToParquet.setSchemaFromProperties(properties);
-					saveToParquet.init();
-					finalization = saveToParquet;
+					try {
+						Map<String,Object> mappings = ESUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
+						Map<?,?> properties = (Map<?,?>)mappings.get("properties");
+						saveToParquet.setSchemaFromProperties(properties);
+						saveToParquet.init();
+						finalization = saveToParquet;
+					}
+					catch (Throwable ex) {
+						if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
+							saveToParquet.setSchemaFromProperties(Collections.emptyMap());
+							saveToParquet.init();
+							finalization = saveToParquet;
+						}
+						else {
+							throw ex;
+						}
+					}
 				}
 				else {
 					saveToParquet = null;
@@ -1071,7 +1083,15 @@ public class SyncAPIController {
 						}
 			
 						String entry_name = (String)map.get("id");
-			
+
+			    		if (timestamp_as_date!=null) {
+			    			long t = timestamp_as_date.getTime();
+							if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
+								actual_start_timestamp.set(t);
+							if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
+								actual_end_timestamp.set(t);
+			    		}
+
 						try {
 				    		if (parquet) {
 				    			saveToParquet.write(map);
@@ -1082,10 +1102,6 @@ public class SyncAPIController {
 								
 					    		if (timestamp_as_date!=null) {
 					    			long t = timestamp_as_date.getTime();
-									if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
-										actual_start_timestamp.set(t);
-									if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
-										actual_end_timestamp.set(t);
 									ze.setTime(t);
 					    		}
 					    		
@@ -1118,7 +1134,12 @@ public class SyncAPIController {
 								IOUtils.copy(fileInput, zip_out);
 							}
 						} catch (Throwable ex) {
-							log.log(Level.WARNING, "Error writing PARQUET contents into ZIP file!", ex);
+							if (ex.getMessage()!=null && ex.getMessage().contains("Broken pipe")) {
+								// peer has disconnected, do not need to write to LOG
+							}
+							else {
+								log.log(Level.WARNING, "Error writing PARQUET contents into ZIP file!", ex);
+							}
 						}
 					}
 					if (!tempFile.delete())
