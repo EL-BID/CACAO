@@ -127,16 +127,19 @@ public class SyncAPIService {
 	private static final Logger log = Logger.getLogger(SyncAPIService.class.getName());
 	
 	/**
-	 * Number of instances to put in the same 'batch' for saving in local database (improves performance over individual saves)
-	 */
-	private static final int BATCH_SIZE = 100;
-	
-	/**
 	 * Number of records before partial commits while doing SYNC with validated or published data (using bulk load).<BR>
 	 * Too low means more delays between batches.<BR>
-	 * Too high means more memory consumed.
+	 * Too high means more memory to load, what could potentially cause the error 'HTTP/1.1 413 Request Entity Too Large' at
+	 * ElasticSearch.
 	 */
-	private static final int BULK_LOAD_BATCH_COMMIT = 100_000;
+	private static final int BULK_LOAD_BATCH_COMMIT = 10_000;
+
+	/**
+	 * Number of records to return at each request from the server.<BR>
+	 * Too low means more requests, with more overhead for each one of them.<BR>
+	 * Too high means more time waiting response, what could potentially result in response timeout.
+	 */
+	private static final int MAX_RESULTS_PER_REQUEST = 100_000;
 
 	/**
 	 * Default paralelism for SYNC operations
@@ -599,10 +602,10 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName());
 		
-		final BatchSave batch_to_save = new BatchSave(BATCH_SIZE, entity.getSimpleName(), repository);
+		final BatchSave batch_to_save = new BatchSave(BULK_LOAD_BATCH_COMMIT, entity.getSimpleName(), repository);
 
 		long bytes_received_here =
-		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT, bytesReceived,
+		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -772,7 +775,7 @@ public class SyncAPIService {
 		final LongAdder recordsForCommit = new LongAdder();
 
 		long bytes_received_here =
-		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT, bytesReceived,
+		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
@@ -855,7 +858,7 @@ public class SyncAPIService {
 		final LongAdder recordsForCommit = new LongAdder();
 
 		long bytes_received_here =
-		syncSomething(tokenApi, uri, start, end, /*limit*/BULK_LOAD_BATCH_COMMIT, bytesReceived,
+		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
 		/*consumer*/(entry,input)->{
 			
 			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
