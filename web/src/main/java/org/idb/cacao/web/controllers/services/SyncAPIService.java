@@ -136,7 +136,7 @@ public class SyncAPIService {
 	 * Too low means more delays between batches.<BR>
 	 * Too high means more memory consumed.
 	 */
-	private static final int BULK_LOAD_BATCH_COMMIT = 10_000;
+	private static final int BULK_LOAD_BATCH_COMMIT = 100_000;
 
 	/**
 	 * Default paralelism for SYNC operations

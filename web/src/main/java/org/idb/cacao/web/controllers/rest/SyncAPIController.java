@@ -723,6 +723,8 @@ public class SyncAPIController {
             searchSourceBuilder.sort(timestamp_field, SortOrder.ASC);
             if (limit<=MAX_RESULTS_PER_REQUEST)
             	searchSourceBuilder.size((int)limit); // since we are 'scrolling', this is only for determining a 'batch size'
+            else
+            	searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST); // batch size
     	});
 	}
 	
@@ -740,6 +742,8 @@ public class SyncAPIController {
 	    	searchSourceBuilder.query(query); 
             if (limit<=MAX_RESULTS_PER_REQUEST)
             	searchSourceBuilder.size((int)limit); // since we are 'scrolling', this is only for determining a 'batch size'
+            else
+            	searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST); // batch size
 		});
 	}
 
@@ -985,6 +989,7 @@ public class SyncAPIController {
 			        else {
 			        	searchSourceBuilder.sort(timestampFieldName, SortOrder.ASC);
 			        }
+			        searchSourceBuilder.size(MAX_RESULTS_PER_REQUEST); // batch size
 			        if (log.isLoggable(Level.FINE))
 			        	log.log(Level.FINE, "Index: "+index_name+", Scroll: "+searchSourceBuilder.toString());
 				});
