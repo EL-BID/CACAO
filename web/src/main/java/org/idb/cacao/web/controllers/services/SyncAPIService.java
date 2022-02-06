@@ -1119,6 +1119,8 @@ public class SyncAPIService {
 					uri += "&line_start="+sync_info.get().getNextLineStart();
 				if (end!=null && end.isPresent())
 					uri +="&end="+end.get();
+				if (limit>0)
+					uri += "&limit="+limit;
 				if (log.isLoggable(Level.INFO))
 					log.log(Level.INFO, "URI for resuming partial SYNC: "+uri+" (got "+count_incoming_objects_overall.longValue()+" objects in "+count_bytes_overall.longValue()+" bytes so far)");
 				has_more = true; // will repeat SYNC with remaining data
