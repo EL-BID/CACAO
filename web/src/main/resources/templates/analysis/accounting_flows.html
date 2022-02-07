@@ -1,0 +1,422 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
+	th:lang="${lang}">
+<head
+	th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script src="/js/d3.v7.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+		<div class="ui breadcrumb">
+			<a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+			<div class="divider">/</div>
+			<div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
+		</div>
+		<h2 class="ui header">
+			<i class="retweet icon"></i> <span class="content"
+				th:text="#{taxpayers.analysis.flows}">Accounting Flows</span>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form action="#" name="form" id="form" th:action="@{/accounting_flows}"
+					class="ui form" method="post">
+
+                    <div class="ui field" id="search1">
+                        <label th:text="#{taxpayer.name}">TaxPayer name</label>
+                        <div style="width: 100%">
+                           <div class="ui search selection dropdown" id="select"  style="width:calc(100% - 35px)">
+                            <input id="taxpayer" type="hidden" name="taxpayerId">
+                            <div class="default text" th:text="#{select}">Select</div>
+                            <i class="dropdown icon"></i>
+                            <div class="menu"></div>
+                          </div>
+                         <i class="large link copy outline icon" id="copyTaxpayer"></i>
+                       </div> 
+                    </div>
+                    <div class="ui fields">
+                     <div class="ui six field" id="rangestart">
+                      <label>Initial Date</label>
+                      <div class="ui input left icon" style="position:auto">
+                        <i class="calendar icon"></i>
+                        <input type="text" placeholder="Start">
+                      </div>
+                     </div>
+                     <div class="ui six field" id="rangeend">
+                      <label>Final Date</label>
+                      <div class="ui input left icon" style="position:auto">
+                        <i class="calendar icon"></i>
+                        <input type="text" placeholder="Final">
+                      </div>
+                     </div>
+                     <div class="ui six field">
+                      <label>Minimum amount</label>
+                      <div class="ui input" style="position:auto">
+                        <input type="number" step=1000 min=0 value=4000 name="minimim" id="minimum">
+                      </div>
+                     </div>
+                    </div>
+				</form>
+			</div>
+		</div>
+        <div id="my_dataviz"></div>
+		
+	</div>
+	<div id="tooltip" style="display:none; position: absolute;">
+      <table class="ui compact table">
+        <tbody>
+        <tr><td>Credited:</td><td id="tt_credited">x</td></tr>
+        <tr><td>Debited:</td><td id="tt_debited">y</td></tr>
+        <tr><td>Amount:</td><td id="tt_amount">1</td></tr>
+        </tbody>
+      </table>
+      </div>
+	
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
+		SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
+		ALERT</div>
+
+<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+//Define number format
+decimalChar = /*[[${decimalChar}]]*/ ',';
+decimalGroupSeparator = /*[[${decimalGroupSeparator}]]*/ '.';
+
+errorNoDataAvailable = /*[[${errorNoDataAvailable}]]*/ '';
+
+function onFormChange() {
+	let taxpayer = $('#taxpayer').val()
+	let startDate = $('#rangestart').calendar('get date')
+    let finalDate = $('#rangeend').calendar('get date')
+    if (!taxpayer || !startDate || !finalDate)
+    	return
+    var p = new URLSearchParams()
+    $.get([[@{/api/analysis/accounting_flows}]], 
+            { taxpayerId: taxpayer,
+              startDate: luxon.DateTime.fromJSDate($('#rangestart').calendar('get date')).toISODate(),
+              finalDate: luxon.DateTime.fromJSDate($('#rangeend').calendar('get date')).endOf('month').toISODate() },  // data to submit
+        function (data, status, xhr) {
+            processFlows(data)
+        }
+    );
+}
+
+$('#minimum').change(onFormChange)
+
+$('#select').dropdown({
+    apiSettings: {
+        url: '/api/taxpayers/autocomplete?term={query}',
+        method: 'GET',
+        //dataType: 'text',
+        cache: false,
+        onResponse: function(result) {
+            results = []
+            $.each(result.results, function(index, item) {
+                results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+            })
+            result.results = results
+            return result
+        },
+    },
+    onChange: onFormChange,
+    action: 'activate',
+    clearable: true
+})
+
+$('#rangestart').calendar({
+    type: 'month', 
+    endCalendar: $('#rangeend'),
+    popupOptions: {position: 'bottom left'},
+    initialDate: new Date(2021,0,1),
+    formatter: {
+      date: function (date, settings) {
+        if(!date) return ''
+        return luxon.DateTime.fromJSDate(date).toISODate()
+      }
+    },
+    onChange: onFormChange
+})
+
+$('#rangeend').calendar({
+    type: 'month', 
+    startCalendar: $('#rangestart'),
+    popupOptions: { position: 'bottom left'},
+    initialDate: new Date(2021,11,31),
+    formatter: {
+      date: function (date, settings) {
+        if(!date) return ''
+        return luxon.DateTime.fromJSDate(date).endOf('month').toISODate()
+      }
+    },
+    onChange: function() {
+    	$('#minimum').focus().blur()
+    	onFormChange()
+    }
+
+})
+
+const nodeSize = 25
+const nodeHeight = 20
+const dx = 12
+var margin = {top: 20, right: 30, bottom: 20, left: 30},
+width = $('#my_dataviz').width() - margin.left - margin.right,
+height = 600 - margin.top - margin.bottom;
+const right_pos = width - 350
+let svg = d3.select("#my_dataviz")
+  .append("svg")
+
+function addAccount(row, parent, idField, nameField, addChildren=true) {
+	id = row[idField]
+	node = parent.get(id)
+	if (!node) {
+		node = { id: id, name: row[nameField] }
+		node['children'] = new Map()
+		parent.set(id, node)
+	}
+	return node
+}
+
+function toSortedArray(nodes) {
+	arr = Array.from(nodes.values())
+	return arr.sort((a,b) => a.id.localeCompare(b.id))
+}
+
+function processFlows(data) {
+  let nodes = new Map()
+  data = data
+    .filter(n => n.amount>=$('#minimum').val())
+
+  data
+    .forEach(n => {
+    	category = addAccount(n, nodes, 'creditCategoryCode', 'creditCategoryName')
+    	subCategory = addAccount(n, category.children, 'creditSubcategoryCode', 'creditSubcategoryName')
+    	account = addAccount(n, subCategory.children, 'creditAccountCode', 'creditAccountName')
+    	category = addAccount(n, nodes, 'debitCategoryCode', 'debitCategoryName')
+        subCategory = addAccount(n, category.children, 'debitSubcategoryCode', 'debitSubcategoryName')
+        account = addAccount(n, subCategory.children, 'debitAccountCode', 'debitAccountName')
+  })
+  nodes.forEach( n => {
+  	n.children = toSortedArray(n.children)
+  	n.children.forEach( n2 => n2.children = toSortedArray(n2.children))
+  })
+  let contas = { name: "Accounts", children: toSortedArray(nodes) }
+
+  console.log(contas)
+  let flows = data.map(row => ({ src: row['creditAccountCode'], dst: row['debitAccountCode'], value: row['amount'] }) )
+  
+  let left = right = 0
+  let root = d3.hierarchy(contas).eachBefore(d => {
+      if(d.depth==0) {
+          return
+      }
+      if(d.data.id.startsWith("1")) {
+          d.index = 3 * left++
+          d.pos = 0
+      } else {
+          d.index = right++
+          d.pos = 1
+      }
+  })
+  
+  nodes = root.descendants().filter(d => d.depth>0)
+  
+  let nodesIds = root.leaves().map(d => d.data.id)
+  
+  let selected = null
+  
+  svg
+    .attr("viewBox", [-nodeSize , -nodeSize , width, (nodes.length + 1) * nodeSize])
+    .attr("font-family", "arial")
+    .attr("font-size", 16)
+    .style("overflow", "visible")
+    .on('click', release);
+  
+  svg.selectAll("g").remove()
+  
+  let g_nodes = svg
+    .selectAll("g")
+    .data(nodes, d => d.id)
+    .enter()
+    .append("g")      
+      .attr("transform", d => `translate(${d.pos*right_pos},${d.index * nodeSize})`)
+    
+  g_nodes.exit().remove()      
+      
+  let map = new Object()
+  
+  //let color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, nodesIds.length)).domain(nodesIds)
+  let color = d3.scaleOrdinal(d3.schemeCategory10).domain(nodesIds)
+  
+  let valuesExtent = d3.extent(flows, d=> d.value)
+  
+  let widthScale = d3.scaleLog().domain(valuesExtent).range([.8, 5])
+  
+  let src_groups = d3.group(flows, d => d.src)
+  let dst_groups = d3.group(flows, d => d.dst)
+  
+  let texts = g_nodes.append("text")
+  .attr("dy", "0.32em")
+  .attr("x", d => dx + d.depth * nodeSize/2 - nodeSize)
+  //.attr("fill", d => d.children ? "#000" : color(d.data.id))
+  .text(d => d.data.id + " " + d.data.name)
+  .on("mouseover", mouseover)
+  .on("mouseout", mouseOut)
+  .on("click", onclick )
+  
+  texts
+  .each(function(d,i) {
+    d.end = d.pos == 0 ? this.getBBox().width + this.getBBox().x + dx : + d.depth * nodeSize/2 - nodeSize
+    d.edges = 0
+    srcs = src_groups.get(d.data.id, [])
+    srcs = srcs != null ? srcs.map(d=>d.dst) : []
+    dsts = dst_groups.get(d.data.id, [])
+    dsts = dsts !=null ? dsts.map(d=>d.src) : []
+    edges = srcs.concat(dsts)
+    if(edges.length>0) {
+      map[d.data.id] = d
+      edges = edges.sort((a,b) => d3.ascending(a,b))
+      d.band = d3.scaleBand().range([-nodeHeight/2,nodeHeight/2]).domain(edges)
+    }
+  })
+  
+  flows.forEach(d => {
+    node = map[d.src]
+    d.srcPos = node.edges++
+  })
+  
+  flows.forEach(d => {
+    node = map[d.dst]
+    d.dstPos = node.edges++
+  })
+  
+  let circles = g_nodes.filter(d=> d.band).append("circle")
+  .attr("cx", d => d.end)
+  .attr("r", nodeHeight/2)
+  .attr("fill", d => d.children ? "#999" : color(d.data.id))
+  
+  function getY(node) {
+      return node.index * nodeSize
+  }
+  
+  function getX(node) {
+      return node.pos*right_pos + node.end
+  }
+  
+  let line = d3.line().curve(d3.curveBundle.beta(0.85))
+  let link = d3.linkHorizontal().source(d=> d.s).target(d=>d.d).x(d=>d[0]).y(d=>d[1])
+  
+  function drawLine(edge) {
+      nSrc = map[edge.src]
+      nDst = map[edge.dst]
+      var x0=nSrc.pos*right_pos + nSrc.end + 1.4*(nSrc.pos==0 ? dx : -dx)
+      var y0=nSrc.index * nodeSize + nSrc.band(edge.dst) + nSrc.band.bandwidth()/2
+      var x1=nDst.pos*right_pos + nDst.end + (nDst.pos==0 ? dx : -dx)
+      var y1=nDst.index * nodeSize + nDst.band(edge.src) + nDst.band.bandwidth()/2
+      if(nSrc.pos != nDst.pos)  {
+        return link({s:[x0,y0], d:[x1,y1]})
+      }
+      x2 = nSrc.pos==0 ? x0 + width/5 : x0 - width/5
+      return line([ [x0, y0],[x2,(y0+y1)/2],[x1, y1] ]) 
+  }
+  
+  svg
+    .append('defs')
+    .append('marker')
+    .attr('id', 'arrow')
+    .attr('viewBox', [0, 0, 4, 4])
+    .attr('refX', 2)
+    .attr('refY', 2)
+    .attr('markerUnits','userSpaceOnUse')
+    .attr('markerWidth', 5)
+    .attr('markerHeight', 5)
+    .attr('orient', 'auto')
+    .append('path')
+    .attr('d', "M 0 0 L 4 2 L 0 4 z")
+    .attr("stroke-width", 1)
+  
+  let tooltip = d3.select('#tooltip')
+  
+  let paths = svg
+    .selectAll('path.flow')
+    .data(flows, d => d.src + "|" + d.dst)
+  
+  paths
+    .exit()
+    .remove()
+    
+  paths = paths
+    .enter()
+    .append('path')
+    .merge(paths)
+    .attr('d', function (d) {
+        return drawLine(d)
+    })
+    .attr("stroke", function(d){ return color(d.src)})
+    .attr('marker-end', 'url(#arrow)')
+    .style("fill", "none")
+    .style("mix-blend-mode", "multiply")
+    .classed('flow', true)
+    .attr("stroke-width", d => widthScale(d.value))
+    .attr("fill-opacity", 0.75)  
+    .on("mouseover", showTooltip)
+    .on("mouseout", () => tooltip.style("display", "none"))
+  
+  function showTooltip(d,i) {
+	flow = d3.select(this).data()[0]
+	src = map[flow.src].data
+	dst = map[flow.dst].data
+	$('#tt_credited').text(src.id + " " + src.name)
+	$('#tt_debited').text(dst.id + " " + dst.name)
+	$('#tt_amount').text(flow.value)
+	tooltip
+	  .style("left", (d.pageX + 10) + "px")
+	  .style("top", (d.pageY + 10) + "px")
+      .style("display", "block")
+      .style("z-index", "10")
+  }
+    
+  function mouseover(ev, n) {
+    if(selected!=null || n.depth<3)
+      return
+    let id = n.data.id
+    paths.classed("fade", function(p) {
+      return p.src != id && p.dst != id;
+    });
+  }
+  
+  function mouseOut(ev, n) {
+    if(selected!=null)
+      return
+    paths.classed("fade", false)
+    //console.log("fade", n)
+  }
+  
+  function onclick(ev, n) {
+    //console.log("click", n)
+    selected=null
+    if(selected==n.data.id) {
+      return
+    }
+    mouseover(ev,n)
+    selected = n.data.id
+    ev.stopPropagation()
+  }
+  
+  function release(ev, n) {
+    //console.log("release", ev)
+    selected = null
+    mouseOut(ev, n)
+  }
+}
+</script>
+</body>
+</html>

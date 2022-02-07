@@ -20,9 +20,12 @@
 package org.idb.cacao.web.controllers.rest;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -348,7 +351,9 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<AggregatedAccountingFlow> values = analysisService.getAccountingFlow(taxpayerId, startDate.getYear());
+    	List<AggregatedAccountingFlow> values = analysisService.getAccountingFlow(taxpayerId, 
+    			Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()),
+    			Date.from(finalDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant()));
     	
     	return ResponseEntity.ok().body(values);    
 		
