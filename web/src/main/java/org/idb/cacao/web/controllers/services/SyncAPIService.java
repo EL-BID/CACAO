@@ -1046,7 +1046,7 @@ public class SyncAPIService {
 			boolean successful = false; // will be set to TRUE after 'restTemplate.execute' completes
 			
 			try {
-
+				
 				restTemplate.execute(uri, HttpMethod.GET, requestCallback, clientHttpResponse->{
 		
 					// Got the synchronized contents in a local temporary file. Let's open it and read its contents
@@ -1497,6 +1497,8 @@ public class SyncAPIService {
 		
 		LoadFromParquet loadParquet = null;
 
+		long timestamp_before_parquet_read = System.currentTimeMillis();
+
 		try {
 			
 			// Read the zip entry entirely and save it as a temporary local file
@@ -1504,10 +1506,24 @@ public class SyncAPIService {
 				IOUtils.copy(input, out);
 			}
 			
+			if (log.isLoggable(Level.FINEST)) {
+				long timestamp_after_parquet_read = System.currentTimeMillis();
+				long time_elapsed = timestamp_after_parquet_read-timestamp_before_parquet_read;
+				log.log(Level.FINEST, "Time elapsed saving temporary FILE "+time_elapsed+" ms");
+				timestamp_before_parquet_read = timestamp_after_parquet_read;
+			}
+
 			loadParquet = new LoadFromParquet();
 			loadParquet.setInputFile(tempFile);
 			loadParquet.init();
 			
+			if (log.isLoggable(Level.FINEST)) {
+				long timestamp_after_parquet_read = System.currentTimeMillis();
+				long time_elapsed = timestamp_after_parquet_read-timestamp_before_parquet_read;
+				log.log(Level.FINEST, "Time elapsed reading FOOTER "+time_elapsed+" ms");
+				timestamp_before_parquet_read = timestamp_after_parquet_read;
+			}
+
 			Map<String,Object> record;
 			while ((record=loadParquet.next())!=null) {
 				consumer.load(record);
@@ -1516,6 +1532,13 @@ public class SyncAPIService {
 				}
 			}
 			
+			if (log.isLoggable(Level.FINEST)) {
+				long timestamp_after_parquet_read = System.currentTimeMillis();
+				long time_elapsed = timestamp_after_parquet_read-timestamp_before_parquet_read;
+				log.log(Level.FINEST, "Time elapsed iterating PARQUET "+time_elapsed+" ms");
+				timestamp_before_parquet_read = timestamp_after_parquet_read;
+			}
+
 		}
 		finally {
 			if (loadParquet!=null) {

@@ -188,6 +188,8 @@ public class LoadFromParquet implements Closeable {
 			
 			recordReader = columnIO.getRecordReader(pages, new GroupRecordConverter(schema));
 			rows = pages.getRowCount();
+			currentRow = 0;
+			System.out.println("===================> MORE "+rows+" ROWS");
 		}
 
 		finished = true;
