@@ -111,6 +111,38 @@ public class ESUtils {
 	public static final String SETTING_READ_ONLY = "index.blocks.read_only";
 
 	/**
+	 * Whether or not to fsync and commit the translog after every index, delete, update, or bulk request.
+	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-translog.html 
+	 */
+	public static final String SETTING_INDEX_TRANSLOG_DURABILITY = "index.translog.durability";
+	
+	/**
+	 * The translog stores all operations that are not yet safely persisted in Lucene (i.e., are not part of 
+	 * a Lucene commit point). Although these operations are available for reads, they will need to be reindexed 
+	 * if the shard was to shutdown and has to be recovered. This settings controls the maximum total size of 
+	 * these operations, to prevent recoveries from taking too long. Once the maximum size has been reached a 
+	 * flush will happen, generating a new Lucene commit point.
+	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-translog.html
+	 */
+	public static final String SETTING_INDEX_TRANSLOG_FLUSH_THRESHOLD_SIZE = "index.translog.flush_threshold_size";
+
+	/**
+	 * The number of replicas each primary shard has.
+	 */
+	public static final String SETTING_INDEX_NUMBER_OF_REPLICAS = "index.number_of_replicas";
+	
+	/**
+	 * How often to perform a refresh operation, which makes recent changes to the index visible to search. 
+	 * Defaults to 1s. Can be set to -1 to disable refresh. If this setting is not explicitly set, shards that 
+	 * haven’t seen search traffic for at least index.search.idle.after seconds will not receive background refreshes 
+	 * until they receive a search request. 
+	 * Searches that hit an idle shard where a refresh is pending will wait for the next background refresh (within 1s). 
+	 * This behavior aims to automatically optimize bulk indexing in the default case when no searches are performed. 
+	 * In order to opt out of this behavior an explicit value of 1s should set as the refresh interval.
+	 */
+	public static final String SETTING_INDEX_REFRESH_INTERVAL = "index.refresh_interval";
+
+	/**
 	 * Change index-scoped boolean setting
 	 * @param elasticsearchClient Object for RESTful communication with ElasticSearch
 	 * @param index_name Index name
@@ -125,7 +157,39 @@ public class ESUtils {
 					.put(setting_name, setting_value)
 					.build(),
 				closeAndReopenIndex);
-	}	
+	}
+	
+	/**
+	 * Change index settings for faster Bulk Loads
+	 */
+	public static void changeIndexSettingsForFasterBulkLoad(RestHighLevelClient elasticsearchClient, String index_name) throws IOException {
+		// fsync and commit in the background every sync_interval. In the event of a failure, all acknowledged writes since the last automatic commit will be discarded.
+		changeIndexSettings(elasticsearchClient,
+				index_name,
+				Settings.builder()
+					.put(SETTING_INDEX_TRANSLOG_DURABILITY, "async")
+					.put(SETTING_INDEX_TRANSLOG_FLUSH_THRESHOLD_SIZE, "2gb")
+					.put(SETTING_INDEX_REFRESH_INTERVAL,"-1")
+					.put(SETTING_INDEX_NUMBER_OF_REPLICAS, "0")
+					.build(),
+				/*closeAndReopenIndex*/false);		
+	}
+	
+	/**
+	 * Change index settings to default values (undo 'changeIndexSettingsForFasterBulkLoad')
+	 */
+	public static void changeIndexSettingsForDefaultBulkLoad(RestHighLevelClient elasticsearchClient, String index_name) throws IOException {
+		// fsync and commit after every request. In the event of hardware failure, all acknowledged writes will already have been committed to disk.
+		changeIndexSettings(elasticsearchClient,
+				index_name,
+				Settings.builder()
+					.put(SETTING_INDEX_TRANSLOG_DURABILITY, "request")
+					.put(SETTING_INDEX_TRANSLOG_FLUSH_THRESHOLD_SIZE, "512mb")
+					.put(SETTING_INDEX_REFRESH_INTERVAL,(String)null)
+					.put(SETTING_INDEX_NUMBER_OF_REPLICAS, "1")
+					.build(),
+				/*closeAndReopenIndex*/false);				
+	}
 	
 	/**
 	 * Change index-scoped settings

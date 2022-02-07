@@ -47,9 +47,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -145,9 +147,39 @@ public class SyncAPIService {
 	private static final int MAX_RESULTS_PER_REQUEST = 100_000;
 	
 	/**
-	 * Tells if it should use PARQUET format for SYNC of some high volume data (e.g. validated and for published data)
+	 * Tells if each Bulk Request should be executed asynchronously. If it's set to TRUE, it will try to execute one Bulk Request
+	 * while performing the next request of SYNC data. If it's set to FALSE, it will finish one Bulk Request before issuing the next request.
 	 */
-	private static final boolean SYNC_WITH_PARQUET = true;
+	public static boolean BULK_REQUEST_ASYNC = true;
+	
+	/**
+	 * Tells if it should use PARQUET format for SYNC for validated or for published data. Usually these SYNC operations are greatly improved
+	 * by using PARQUET format. The data may be shrunk to about 2% of original size. It does not affect SYNC for other types of data. 
+	 * If it's set to FALSE, it will use the standard 'JSON content' for every SYNC operation.
+	 */
+	public static boolean SYNC_WITH_PARQUET = true;
+
+	/**
+	 * If SYNC_WITH_PARQUET is 'true', this parameter indicates if it should create a temporary file with the Parquet contents (if it's set to TRUE).
+	 * Otherwise it will keep all the incoming Parquet file contents in memory (if it's set to FALSE).
+	 */
+	public static boolean SYNC_PARQUET_USE_TEMPORARY_FILE = true;
+	
+	/**
+	 * Tells if it should change index settings while performing Bulk operations for fine tuning.
+	 */
+	public static boolean SYNC_BULK_LOAD_TUNE_SETTINGS = true;
+	
+	/**
+	 * Number of concurrent Bulk Load request per base it may execute (only if BULK_REQUEST_ASYNC is TRUE).
+	 */
+	public static int SYNC_BULK_LOAD_CONCURRENCY = 2;
+
+	/**
+	 * Level for additional logging related to profiling internal methods for reading Parquet contents. Should be set to 'FINE' or 'FINEST' for production
+	 * environment.
+	 */
+	public static Level LEVEL_FOR_PROFILING_PARQUET_READ = Level.FINEST;	
 
 	/**
 	 * Default paralelism for SYNC operations
@@ -777,40 +809,98 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.VALIDATED_DATA.getEndpoint(template.getName(), template.getVersion());
 		
-		final BulkRequest bulkRequest = new BulkRequest();
-		if (elasticSearchConnectionTimeout!=null
-			&& elasticSearchConnectionTimeout.trim().length()>0)
-			bulkRequest.timeout(elasticSearchConnectionTimeout);
+		final Supplier<BulkRequest> bulkRequestFactory = ()->{
+			BulkRequest r = new BulkRequest();
+			if (elasticSearchConnectionTimeout!=null
+					&& elasticSearchConnectionTimeout.trim().length()>0)
+					r.timeout(elasticSearchConnectionTimeout);
+			return r;
+		};
+		
+		final AtomicReference<BulkRequest> currentBulkRequest = new AtomicReference<>(bulkRequestFactory.get());
 		
 		final LongAdder recordsForCommit = new LongAdder();
+		
+		final BulkLoadAsyncCriticalSection semaphoreForAsyncBulkLoad = (BULK_REQUEST_ASYNC) ? new BulkLoadAsyncCriticalSection(SYNC_BULK_LOAD_CONCURRENCY) : null;
+		
+		if (SYNC_BULK_LOAD_TUNE_SETTINGS) {
+			try {
+				ESUtils.changeIndexSettingsForFasterBulkLoad(elasticsearchClient, index_name);
+			}
+			catch (Throwable ex) {
+				if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
+					log.log(Level.WARNING, "Error while changing index settings for faster Bulk Loads at index "+index_name, ex);
+				}
+			}
+		}
+		
+		try {
 
-		long bytes_received_here =
-		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
-		/*parquet*/SYNC_WITH_PARQUET,
-		/*consumer*/new ConsumeSyncContents((parsed_contents)->{
-			
-			String id = (String)parsed_contents.get("id");
-			if (id==null)
-				return;
-			
-			bulkRequest.add(new IndexRequest(index_name)
-					.id(id)
-					.source(parsed_contents));
+			long bytes_received_here =
+			syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
+			/*parquet*/SYNC_WITH_PARQUET,
+			/*consumer*/new ConsumeSyncContents((parsed_contents)->{
+				
+				String id = (String)parsed_contents.get("id");
+				if (id==null)
+					return;
+				
+				if (semaphoreForAsyncBulkLoad!=null && semaphoreForAsyncBulkLoad.isRunningBulkLoadAtMaxLoad()) {
+					// If we are running Bulk Load asynchronously, wait until the previous one has finished
+					semaphoreForAsyncBulkLoad.waitAnyBulkLoad();
+				}
+				
+				BulkRequest bulkRequest = currentBulkRequest.get();
+				bulkRequest.add(new IndexRequest(index_name)
+						.id(id)
+						.source(parsed_contents));
+	
+				recordsForCommit.increment();
+				
+				if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
+					if (BULK_REQUEST_ASYNC) {
+						commitBulkRequestAsync(bulkRequest, index_name, semaphoreForAsyncBulkLoad);
+						if (SYNC_BULK_LOAD_CONCURRENCY>1) {
+							// if we may have more than one concurrent bulk load operations, we need to create
+							// a new BulkRequest for each, so that they don't interfere with each other
+							currentBulkRequest.set(bulkRequestFactory.get());
+						}
+					}
+					else {
+						commitBulkRequest(bulkRequest, index_name);
+					}
+					recordsForCommit.reset();
+				}
+	
+				counter.increment();
+			}));
+	
+			if (BULK_REQUEST_ASYNC) {
+				if (semaphoreForAsyncBulkLoad!=null && semaphoreForAsyncBulkLoad.isRunningBulkLoadAtMaxLoad()) {
+					// If we are running Bulk Load asynchronously, wait until the previous one has finished
+					semaphoreForAsyncBulkLoad.waitAllBulkLoad();
+				}
+			}
+			commitBulkRequest(currentBulkRequest.get(), index_name);
 
-			recordsForCommit.increment();
+			final long elapsed_time = System.currentTimeMillis() - timestamp;
+			log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
+		}
+		finally {
 			
-			if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
-				commitBulkRequest(bulkRequest, index_name);
-				recordsForCommit.reset();
+			if (SYNC_BULK_LOAD_TUNE_SETTINGS) {
+				try {
+					ESUtils.changeIndexSettingsForDefaultBulkLoad(elasticsearchClient, index_name);
+				}
+				catch (Throwable ex) {
+					if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
+						log.log(Level.WARNING, "Error while changing index settings for default Bulk Loads at index "+index_name, ex);
+					}
+				}
 			}
 
-			counter.increment();
-		}));
+		}
 
-		commitBulkRequest(bulkRequest, index_name);
-
-		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
 	}
 
 	/**
@@ -853,40 +943,101 @@ public class SyncAPIService {
 		final long timestamp = System.currentTimeMillis();
 		final String uri = SyncContexts.PUBLISHED_DATA.getEndpoint(indexname);
 
-		final BulkRequest bulkRequest = new BulkRequest();
+		final Supplier<BulkRequest> bulkRequestFactory = ()->{
+			BulkRequest r = new BulkRequest();
+			if (elasticSearchConnectionTimeout!=null
+					&& elasticSearchConnectionTimeout.trim().length()>0)
+					r.timeout(elasticSearchConnectionTimeout);
+			return r;
+		};
+
+		final AtomicReference<BulkRequest> currentBulkRequest = new AtomicReference<>(bulkRequestFactory.get());
 
 		final LongAdder recordsForCommit = new LongAdder();
 
-		long bytes_received_here =
-		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
-		/*parquet*/SYNC_WITH_PARQUET,
-		/*consumer*/new ConsumeSyncContents((parsed_contents)->{
-			
-			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
-			// also have inside de JSON contents
+		final BulkLoadAsyncCriticalSection semaphoreForAsyncBulkLoad = (BULK_REQUEST_ASYNC) ? new BulkLoadAsyncCriticalSection(SYNC_BULK_LOAD_CONCURRENCY) : null;
 
-			String id = (String)parsed_contents.get("id");
-			if (id==null)
-				return;
+		if (SYNC_BULK_LOAD_TUNE_SETTINGS) {
+			try {
+				ESUtils.changeIndexSettingsForFasterBulkLoad(elasticsearchClient, indexname);
+			}
+			catch (Throwable ex) {
+				if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
+					log.log(Level.WARNING, "Error while changing index settings for faster Bulk Loads at index "+indexname, ex);
+				}
+			}
+		}
+		
+		try {
+
+			long bytes_received_here =
+			syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
+			/*parquet*/SYNC_WITH_PARQUET,
+			/*consumer*/new ConsumeSyncContents((parsed_contents)->{
+				
+				// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
+				// also have inside de JSON contents
+	
+				String id = (String)parsed_contents.get("id");
+				if (id==null)
+					return;
+				
+				if (semaphoreForAsyncBulkLoad!=null && semaphoreForAsyncBulkLoad.isRunningBulkLoadAtMaxLoad()) {
+					// If we are running Bulk Load asynchronously, wait until the previous one has finished
+					semaphoreForAsyncBulkLoad.waitAnyBulkLoad();
+				}
+	
+				BulkRequest bulkRequest = currentBulkRequest.get();
+				bulkRequest.add(new IndexRequest(indexname)
+						.id(id)
+						.source(parsed_contents));
+				
+				recordsForCommit.increment();
+				
+				if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
+					if (BULK_REQUEST_ASYNC) {
+						commitBulkRequestAsync(bulkRequest, indexname, semaphoreForAsyncBulkLoad);
+						if (SYNC_BULK_LOAD_CONCURRENCY>1) {
+							// if we may have more than one concurrent bulk load operations, we need to create
+							// a new BulkRequest for each, so that they don't interfere with each other
+							currentBulkRequest.set(bulkRequestFactory.get());
+						}
+					}
+					else {
+						commitBulkRequest(bulkRequest, indexname);
+					}
+					recordsForCommit.reset();
+				}
+	
+				counter.increment();
+			}));
 			
-			bulkRequest.add(new IndexRequest(indexname)
-					.id(id)
-					.source(parsed_contents));
+			if (BULK_REQUEST_ASYNC) {
+				if (semaphoreForAsyncBulkLoad!=null && semaphoreForAsyncBulkLoad.isRunningBulkLoadAtMaxLoad()) {
+					// If we are running Bulk Load asynchronously, wait until the previous one has finished
+					semaphoreForAsyncBulkLoad.waitAllBulkLoad();
+				}
+			}
+			commitBulkRequest(currentBulkRequest.get(), indexname);
 			
-			recordsForCommit.increment();
+			final long elapsed_time = System.currentTimeMillis() - timestamp;
+			log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
 			
-			if (recordsForCommit.longValue()>BULK_LOAD_BATCH_COMMIT) {
-				commitBulkRequest(bulkRequest, indexname);
-				recordsForCommit.reset();
+		}
+		finally {
+			
+			if (SYNC_BULK_LOAD_TUNE_SETTINGS) {
+				try {
+					ESUtils.changeIndexSettingsForDefaultBulkLoad(elasticsearchClient, indexname);
+				}
+				catch (Throwable ex) {
+					if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
+						log.log(Level.WARNING, "Error while changing index settings for default Bulk Loads at index "+indexname, ex);
+					}
+				}
 			}
 
-			counter.increment();
-		}));
-		
-		commitBulkRequest(bulkRequest, indexname);
-		
-		final long elapsed_time = System.currentTimeMillis() - timestamp;
-		log.log(Level.INFO, "Finished copying "+counter.longValue()+" files from "+uri+" in "+elapsed_time+" ms and "+bytes_received_here+" bytes");
+		}
 	}
 
 	/**
@@ -1030,7 +1181,7 @@ public class SyncAPIService {
 
 		final LongAdder count_incoming_objects_overall = new LongAdder();
 		final LongAdder count_bytes_overall = new LongAdder();
-
+		
 		do {
 			
 			has_more = false; // resets the flag if we are repeating SYNC
@@ -1060,7 +1211,7 @@ public class SyncAPIService {
 						ZipEntry ze;
 						while (((ze = zip_input.getNextEntry()) != null)) {
 							
-							// If entry corresponds to SyncDto, read and store this information (should be only one per ZIP file)
+							// If entry corresponds to SyncDto, read and store this information (there should be only one per ZIP file)
 							if (SyncDto.DEFAULT_FILENAME.equals(ze.getName())) {
 								sync_info.set(readSyncDto(zip_input));
 								continue;
@@ -1436,7 +1587,10 @@ public class SyncAPIService {
 		}
 		
 	}
-	
+
+	/**
+	 * Performs the Elastic 'bulk request'
+	 */
 	private void commitBulkRequest(BulkRequest bulkRequest, String index_name) {
 		if (bulkRequest.numberOfActions()>0) {
 			bulkRequest.setRefreshPolicy(RefreshPolicy.NONE);
@@ -1471,6 +1625,67 @@ public class SyncAPIService {
 	}
 
 	/**
+	 * Performs the Elastic 'bulk request' asynchronously
+	 */
+	private void commitBulkRequestAsync(BulkRequest bulkRequest, String index_name, BulkLoadAsyncCriticalSection semaphore) {
+		if (bulkRequest.numberOfActions()>0) {
+			semaphore.startedBulkLoad();
+			bulkRequest.setRefreshPolicy(RefreshPolicy.NONE);
+			new Thread("AsyncBulkLoad") {
+				public void run() {
+					try {
+						commitBulkRequest(bulkRequest, index_name);
+					}
+					finally {
+						bulkRequest.requests().clear();
+						semaphore.finishedBulkLoad();						
+					}
+				}
+			}.start();
+		}
+	}
+	
+	/**
+	 * Object used for controlling a critical section related to Bulk Load (only used if configured for asynchronous Bulk Load)
+	 */
+	private static class BulkLoadAsyncCriticalSection {
+		private final AtomicInteger runningBulkLoad;
+		private final int concurrent;
+		BulkLoadAsyncCriticalSection(int concurrent) {
+			runningBulkLoad = new AtomicInteger(0);
+			this.concurrent = concurrent;
+		}
+		public synchronized void startedBulkLoad() {
+			runningBulkLoad.incrementAndGet();
+		}
+		public synchronized void finishedBulkLoad() {
+			runningBulkLoad.decrementAndGet();
+			this.notifyAll();
+		}
+		public boolean isRunningBulkLoadAtMaxLoad() {
+			return runningBulkLoad.intValue()>=concurrent;
+		}
+		public synchronized void waitAnyBulkLoad() {
+			while (runningBulkLoad.intValue()>=concurrent) {
+				try {
+					this.wait();
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		}
+		public synchronized void waitAllBulkLoad() {
+			while (runningBulkLoad.intValue()>=0) {
+				try {
+					this.wait();
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		}
+	}
+
+	/**
 	 * Awaits termination of all submitted threads
 	 */
 	public static void awaitTerminationAfterShutdown(ExecutorService threadPool) {
@@ -1488,39 +1703,52 @@ public class SyncAPIService {
 	/**
 	 * Read SYNC data stored as Parquet file format
 	 */
-	public static void readParquetFileContents(InputStream input,
+	public static void readParquetFileContents(
+			InputStream input,
 			ConsumeSyncContentsInterface consumer,
 			LongAdder... counters) throws IOException {
-		// We have to save the incoming data at a temporary file in order to read it
 		
-		File tempFile = java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile();
+		// If SYNC_PARQUET_USE_TEMPORARY_FILE is TRUE, we have to save the incoming data at a temporary file in order to read it		
+		final File tempFile = (SYNC_PARQUET_USE_TEMPORARY_FILE) ? java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile() : null;
 		
 		LoadFromParquet loadParquet = null;
 
 		long timestamp_before_parquet_read = System.currentTimeMillis();
-
+		
 		try {
 			
-			// Read the zip entry entirely and save it as a temporary local file
-			try (FileOutputStream out=new FileOutputStream(tempFile)) {
-				IOUtils.copy(input, out);
+			final byte[] in_memory_contents;
+			
+			if (tempFile!=null) {
+				in_memory_contents = null;
+				// Read the zip entry entirely and save it as a temporary local file
+				try (FileOutputStream out=new FileOutputStream(tempFile)) {
+					IOUtils.copy(input, out);
+				}
+			}
+			else {
+				// Read the zip entry entirely and save to byte buffer in memory
+				in_memory_contents = IOUtils.toByteArray(input);
 			}
 			
-			if (log.isLoggable(Level.FINEST)) {
+			if (log.isLoggable(LEVEL_FOR_PROFILING_PARQUET_READ)) {
 				long timestamp_after_parquet_read = System.currentTimeMillis();
 				long time_elapsed = timestamp_after_parquet_read-timestamp_before_parquet_read;
-				log.log(Level.FINEST, "Time elapsed saving temporary FILE "+time_elapsed+" ms");
+				log.log(LEVEL_FOR_PROFILING_PARQUET_READ, "Time elapsed saving temporary FILE "+time_elapsed+" ms");
 				timestamp_before_parquet_read = timestamp_after_parquet_read;
 			}
 
 			loadParquet = new LoadFromParquet();
-			loadParquet.setInputFile(tempFile);
+			if (in_memory_contents!=null)
+				loadParquet.setInputContents(in_memory_contents);
+			else
+				loadParquet.setInputFile(tempFile);
 			loadParquet.init();
 			
-			if (log.isLoggable(Level.FINEST)) {
+			if (log.isLoggable(LEVEL_FOR_PROFILING_PARQUET_READ)) {
 				long timestamp_after_parquet_read = System.currentTimeMillis();
 				long time_elapsed = timestamp_after_parquet_read-timestamp_before_parquet_read;
-				log.log(Level.FINEST, "Time elapsed reading FOOTER "+time_elapsed+" ms");
+				log.log(LEVEL_FOR_PROFILING_PARQUET_READ, "Time elapsed reading FOOTER "+time_elapsed+" ms");
 				timestamp_before_parquet_read = timestamp_after_parquet_read;
 			}
 
@@ -1532,10 +1760,10 @@ public class SyncAPIService {
 				}
 			}
 			
-			if (log.isLoggable(Level.FINEST)) {
+			if (log.isLoggable(LEVEL_FOR_PROFILING_PARQUET_READ)) {
 				long timestamp_after_parquet_read = System.currentTimeMillis();
 				long time_elapsed = timestamp_after_parquet_read-timestamp_before_parquet_read;
-				log.log(Level.FINEST, "Time elapsed iterating PARQUET "+time_elapsed+" ms");
+				log.log(LEVEL_FOR_PROFILING_PARQUET_READ, "Time elapsed iterating PARQUET "+time_elapsed+" ms");
 				timestamp_before_parquet_read = timestamp_after_parquet_read;
 			}
 
@@ -1548,7 +1776,7 @@ public class SyncAPIService {
 					log.log(Level.WARNING, "Error closing temporary file with PARQUET format!", ex);
 				}
 			}
-			if (!tempFile.delete())
+			if (tempFile!=null && !tempFile.delete())
 				tempFile.deleteOnExit();
 		}
 	}

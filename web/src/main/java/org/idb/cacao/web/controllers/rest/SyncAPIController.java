@@ -791,7 +791,7 @@ public class SyncAPIController {
 	
 	/**
 	 * Downloads recently validated documents stored in database for synchronization purpose with other CACAO Server.<BR>
-	 * The 'template' indicates the template name associated to the index where the validated documents are stored. <BR>
+	 * The 'template' indicates the template name associated to the index where the validated documents are stored. Optionally admits the index name corresponding to the validated documents.<BR>
 	 * The 'version' indicates the template version.<BR>
 	 * The 'start' parameter is the 'unix epoch' of starting instant. <BR>
 	 * The 'end' parameter is the 'unix epoch' of end instant.<BR>
@@ -804,7 +804,7 @@ public class SyncAPIController {
 	@GetMapping(value = "/sync/validated/{template}/{version}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	@ApiOperation("Downloads recently validated documents stored in database for synchronization purpose with other CACAO Server.")
 	public ResponseEntity<StreamingResponseBody> getValidatedDocuments(
-			@ApiParam("The 'template' indicates the template name associated to the index where the documents are stored.") @PathVariable("template") String template_name,
+			@ApiParam("The 'template' indicates the template name associated to the index where the documents are stored. Optionally admits the index name corresponding to the validated documents.") @PathVariable("template") String template_name,
 			@ApiParam("The 'version' indicates the template version.") @PathVariable("version") String version,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
@@ -825,34 +825,47 @@ public class SyncAPIController {
     		throw new InvalidParameter("template="+template_name);
     	}
     	
-    	final DocumentTemplate template;
+    	final String index_name;
     	
-    	if (version!=null && version.trim().length()>0) {
-        	Optional<DocumentTemplate> template_version = templateRepository.findByNameAndVersion(template_name, version);
-    		if (template_version==null || !template_version.isPresent()) {
-    			throw new InvalidParameter("template="+template_name+", version="+version);				
-    		}    	
-    		template = template_version.get();
+    	if (template_name.startsWith(IndexNamesUtils.VALIDATED_DATA_INDEX_PREFIX)
+    		&& !template_name.contains(" ")
+    		&& template_name.contains("_v_")
+    		&& template_name.equals(IndexNamesUtils.formatIndexName(template_name))) {
+    		
+    		// If the provided 'template_name' looks like an index name, let's treat it this way
+    		index_name = template_name;
     	}
     	else {
-    		List<DocumentTemplate> template_versions = templateRepository.findByName(template_name);
-    		if (template_versions==null || template_versions.isEmpty()) {
-    			throw new InvalidParameter("template="+template_name);				
-    		}    		
-    		if (template_versions.size()>1) {
-    			// if we have more than one possible choice, let's give higher priority to most recent ones
-    			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
-    		}
-    		template = template_versions.get(0);
+    	
+	    	final DocumentTemplate template;
+	    	
+	    	if (version!=null && version.trim().length()>0) {
+	        	Optional<DocumentTemplate> template_version = templateRepository.findByNameAndVersion(template_name, version);
+	    		if (template_version==null || !template_version.isPresent()) {
+	    			throw new InvalidParameter("template="+template_name+", version="+version);				
+	    		}    	
+	    		template = template_version.get();
+	    	}
+	    	else {
+	    		List<DocumentTemplate> template_versions = templateRepository.findByName(template_name);
+	    		if (template_versions==null || template_versions.isEmpty()) {
+	    			throw new InvalidParameter("template="+template_name);				
+	    		}    		
+	    		if (template_versions.size()>1) {
+	    			// if we have more than one possible choice, let's give higher priority to most recent ones
+	    			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
+	    		}
+	    		template = template_versions.get(0);
+	    	}
+			
+			index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);			
     	}
-		
-		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);
 
     	final long end = opt_end.orElseGet(System::currentTimeMillis);
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		if (!isSyncPublisherEnabled()) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
@@ -863,7 +876,7 @@ public class SyncAPIController {
 		}
 
 		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
@@ -873,7 +886,7 @@ public class SyncAPIController {
 			throw new InsufficientPrivilege();			
 		}
 
-		log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
+		log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
 				+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 				+") "
 				+(opt_line_start.isPresent()?("and line_start ("+opt_line_start.get()+") "):"")
@@ -897,7 +910,7 @@ public class SyncAPIController {
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template.getName()+" documents starting from timestamp "+start
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
