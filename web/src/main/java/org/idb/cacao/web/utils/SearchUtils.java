@@ -817,6 +817,29 @@ public class SearchUtils {
 		return filters.get().splitFilters(filterNames);
 	}
 	
+	/**
+	 * Create an {@link TermsAggregationBuilder} for ES search based on fields and scripts received as parameters. 
+	 * 
+	 * @param parentAggregation	Parent aggregation
+	 * @param fields			An array with field names or {@link Script} objects for aggregation
+	 * @param metrics			Metrics to aggregate for each field combination
+	 * @return					{@link TermsAggregationBuilder} with all field and script aggregations
+	 */
+	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, Object[] fields, 
+			AggregationBuilder... metrics) {
+		TermsAggregationBuilder agg = fields[0] instanceof Script ? AggregationBuilders.terms(((Script)fields[0]).getId()).size(10_000).script(((Script)fields[0]).getScript()) :
+			AggregationBuilders.terms((String)fields[0]).size(10_000).field((String)fields[0]);
+		
+		if (fields.length>1) {
+			agg = agg.subAggregation(aggregationBuilder(agg, Arrays.copyOfRange(fields, 1, fields.length), metrics));
+		} else {
+			final TermsAggregationBuilder groupAgg = agg;
+			Arrays.stream(metrics)
+			  .forEach(m -> groupAgg.subAggregation(m));
+		}
+		return agg;
+	}
+	
 	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, String[] fields, AggregationBuilder... metrics) {
 		TermsAggregationBuilder agg = AggregationBuilders.terms(fields[0]).size(10_000).field(fields[0]);
 		if (fields.length>1) {
@@ -829,10 +852,11 @@ public class SearchUtils {
 		return agg;
 	}
 	
-	private static <R> void collectAggregationLevel(Aggregations aggregations, String[] fields, BiFunction<Aggregations, String[], R> function, 
+	private static <R> void collectAggregationLevel(Aggregations aggregations, Object[] fields, BiFunction<Aggregations, String[], R> function, 
 			int level, String[] values, List<R> results) {
-		Terms terms = aggregations.get(fields[level]);
+		Terms terms = aggregations.get(fields[level] instanceof Script ? ((Script)fields[level]).getId() : (String)fields[level]);
 		boolean lastLevel = level == (fields.length-1);
+		
 		for(Terms.Bucket bucket: terms.getBuckets()) {
 			values[level] = bucket.getKeyAsString();
 			if (lastLevel) {
@@ -840,11 +864,11 @@ public class SearchUtils {
 			}
 			else {
 				collectAggregationLevel(bucket.getAggregations(), fields, function, level+1, values, results);
-			}
+			}		
 		}
 	}
 	
-	public static <R> List<R> collectAggregations(Aggregations agg, String[] fields, BiFunction<Aggregations, String[], R> function) {
+	public static <R> List<R> collectAggregations(Aggregations agg, Object[] fields, BiFunction<Aggregations, String[], R> function) {
 		List<R> result = Lists.newArrayList();
 		String[] values = new String[fields.length];
 		collectAggregationLevel(agg, fields, function, 0, values, result);

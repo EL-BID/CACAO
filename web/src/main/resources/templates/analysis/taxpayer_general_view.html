@@ -28,8 +28,8 @@
 			<div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
 		</div>
 		<h2 class="ui header">
-			<i class="search dollar icon"></i> <span class="content"
-				th:text="#{taxpayers.analysis.statement.income}">Statement Income Analysis</span>
+			<i class="street view icon"></i> <span class="content"
+				th:text="#{taxpayers.analysis.general.view}">Taxpayer General View</span>
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
@@ -63,10 +63,16 @@
 			</div>
 		</div>
 		
-		<div id="showtable" style="display: none">
-			<div id="table" class="ui orange table"></div>
+		<div>
+			<br>
 		</div>
 		
+		<div id="showtable" style="display: none">
+			<div class="ui container">
+				<div th:replace="analysis/taxpayer_general_view_shareholding"></div>
+				<div th:replace="analysis/taxpayer_general_view_shareholders"></div>				
+			</div>
+		</div>
 	</div>
 	
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR
@@ -75,6 +81,10 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		$('.ui.accordion')
+		  .accordion()
+		;
 		
 		//Define number format
 		decimalChar = /*[[${decimalChar}]]*/ ',';
@@ -118,7 +128,7 @@
 		
 		function updateYears() {		
 			$('#year').find('option').remove();
-			$.get('/api/analysis/years', {sourceData: '3'}, //data to submit
+			$.get('/api/analysis/years', {sourceData: '4'}, //data to submit
 			    function (data, status, xhr) {
 					if ( data.length == 0 ) {						
 						$('#modal_failed').find('.description').html(errorYearsNotFound);
@@ -161,76 +171,14 @@
 	              	},
 	          	},
 				onSuccess: (function(event,fields){
-					event.preventDefault();				
-					table.replaceData()
-						.then(function(){
-							$("#showtable").show()	
-						})					
+					event.preventDefault();
+					
+					updateShareHolding();
+					updateShareHolders();						
+					$("#showtable").show();
+					
 	          	})
 	        });
-		}
-		
-		let table = new Tabulator('#table', {
-			index: 'id',			
-			layout: "fitColumns", //fit columns to width of table (optional)
-		    pagination: true,
-			paginationMode: "local", //enable local pagination
-			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-			ajaxURL: /*[[@{/api/analysis/statement_income_analysis}]]*/ "/api/analysis/statement_income_analysis", //set url for ajax request
-			ajaxURLGenerator: function(url, config, params ){
-				console.log(config)
-				console.log(params)
-				p = new URLSearchParams()
-				p.set('taxpayerId', document.getElementById("taxpayer").value)
-				p.set('year', $('#year').val())
-				console.log(url + '?' + p.toString())		
-				return url + '?' + p.toString()
-			},
-			ajaxContentType: "json",
-			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
-			locale:'xx',
-			langs:{
-		        "xx":{
-		            "pagination":{
-		                "first":/*[[#{pagination.first.button}]]*/ "First",
-		                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-		                "last":/*[[#{pagination.last.button}]]*/ "Last",
-		                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-		                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-		                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-		                "next":/*[[#{pagination.next.button}]]*/ "Next",
-		                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-		                "all":/*[[#{pagination.all}]]*/ "All",
-		                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-		            }
-		        }
-		    },	
-		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
-			columns:[ //Define Table Columns
-					{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false},
-					{title: /*[[#{taxpayers.analysis.statement.income.declared}]]*/ "Declared Value", field:"declaredValue", headerSort:false, formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
-					{title: /*[[#{taxpayers.analysis.statement.income.calculated}]]*/ "Calculated Value", field:"calculatedValue", headerSort:false, formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
-					{title: /*[[#{taxpayers.analysis.statement.income.difference}]]*/ "Difference", field:"difference", formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
-			]
-		});
-		
-		table.on("tableBuilt", function(){
-			document.getElementById('exportXLS').addEventListener("click", function(){
-				table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.statement.income}]]*/''});				    
-			});
-		});
-		
-		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.statement.income}]]*/ null;
-			return  fileName + ".xlsx";
 		}
 		
 	</script>

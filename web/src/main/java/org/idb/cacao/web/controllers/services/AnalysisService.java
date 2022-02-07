@@ -40,7 +40,10 @@ import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.dto.AnalysisItem;
 import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.dto.Outlier;
+import org.idb.cacao.web.dto.Shareholding;
 import org.idb.cacao.web.dto.StatementIncomeItem;
+import org.idb.cacao.web.dto.TaxpayerData;
+import org.idb.cacao.web.utils.Script;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -67,12 +70,18 @@ public class AnalysisService {
 			.formatIndexNameForPublishedData("Accounting Computed Statement Income");
 	private final String DECLARED_STATEMENT_INCOME_INDEX = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Declared Statement Income");
+	private final String SHAREHOLDING_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Shareholders");
 	private final String TAXPAYER_INDEX = "cacao_taxpayers";
 	
 	private final static int SOURCE_JOURNAL = 1;
 	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
+	private final static int SOURCE_BOOTH_INCOME_STATEMENT = 3;
+	private final static int SOURCE_SHAREHOLDERS = 4;
 	
 	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Flow Daily");
+	
+	public final static int SEARCH_SHAREHOLDINGS = 1;
+	public final static int SEARCH_SHAREHOLDERS = 2;
 
 	/**
 	 * Retrieves and return a balance sheet for a given taxpayer and period (month
@@ -961,14 +970,14 @@ public class AnalysisService {
 	@Cacheable("years")	
 	public List<Integer> getYears(int sourceData) {
 		
-		if ( sourceData <= SOURCE_DECLARED_INCOME_STATEMENT )
-			return getYearsByIndex(sourceData);
+		if ( sourceData == SOURCE_BOOTH_INCOME_STATEMENT ) {
+			List<Integer> toRet = getYearsByIndex(SOURCE_JOURNAL);
+			toRet.addAll(getYearsByIndex(SOURCE_DECLARED_INCOME_STATEMENT));
+			return toRet.stream().distinct().map(Integer::intValue).sorted().collect(Collectors.toList());
+		}
 		
+		return getYearsByIndex(sourceData);
 		
-		List<Integer> toRet = getYearsByIndex(SOURCE_JOURNAL);
-		toRet.addAll(getYearsByIndex(SOURCE_DECLARED_INCOME_STATEMENT));
-
-		return toRet.stream().distinct().map(Integer::intValue).sorted().collect(Collectors.toList());
 	}
 
 	/**
@@ -978,8 +987,22 @@ public class AnalysisService {
 	 */
 	private List<Integer> getYearsByIndex(int sourceData) {
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
-				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
+		String index = null;
+		switch (sourceData) {
+		case SOURCE_JOURNAL:
+			index = COMPUTED_STATEMENT_INCOME_INDEX;
+			break;
+		case SOURCE_DECLARED_INCOME_STATEMENT:
+			index = DECLARED_STATEMENT_INCOME_INDEX;
+			break;
+		case SOURCE_SHAREHOLDERS:
+			index = SHAREHOLDING_INDEX;
+			break;
+		default:
+			index = COMPUTED_STATEMENT_INCOME_INDEX;
+			break;
+		}
+		SearchRequest searchRequest = new SearchRequest(index);
 
 		//Configure the aggregations 
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by qualifier field
@@ -1056,7 +1079,6 @@ public class AnalysisService {
 		searchSourceBuilder.size(0);
 
 		searchRequest.source(searchSourceBuilder);
-
 
 		SearchResponse sresp = null;
 		try {
@@ -1234,4 +1256,177 @@ public class AnalysisService {
 		}
 			
 	}
+
+	/**
+	 * Search and return all data about a taxpayer specified in parameter
+	 * @param taxpayerId	A taxpayer to search data for
+	 * @param year			A specific year to search
+	 * 
+	 * @return	All data about a specified taxpayer
+	 */
+	public List<?> getTaxpayerData(String taxpayerId, int year, int searchType) {
+		
+		TaxpayerData data = new TaxpayerData();
+		data.setTaxpayerId(taxpayerId);
+		data.setYear(year);
+		
+		switch (searchType) {
+		case SEARCH_SHAREHOLDINGS:
+			addShareholdings(data);
+			return data.getShareholdings();
+		case SEARCH_SHAREHOLDERS:
+			addShareholders(data);
+			return data.getShareholders();			
+		default:
+			break;
+		}
+		
+		return Collections.emptyList();
+		
+	}
+
+	/**
+	 * Search and add shareholding information for a specified taxpayer and year
+	 * 
+	 * @param data	Information about taxpayer and year
+	 */
+	private void addShareholdings(TaxpayerData data) {
+		
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		//Filter by taxpayer
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", data.getTaxpayerId()));
+
+		// Filter for year
+		query = query.must(new TermQueryBuilder("year", data.getYear()));
+		
+    	// Script in 'painless' language for identifying confirmations and returning the confirmed payment value
+    	// We return '0' in case this property not being defined, so that we can have aggregation of 'zeroes' over
+    	// slips with no corresponding confirmations.
+    	org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
+    			  "if (doc['share_class.keyword'].size()==0) return '';"
+    			  +"else return doc['share_class.keyword'].value; "); 		
+
+		//Define group by fields
+		Object[] groupBy = {
+				"shareholder_id.keyword", 
+				"shareholder_name.keyword", 
+	            translate("share_type_name")+".keyword",
+	            new Script(scriptletShareClass, "byShareClass") };
+		
+		//Define aggregations
+		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
+		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
+		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
+	
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, 
+				shareAmount, sharePercentage, shareQuantity);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+		
+		//Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting flows", ex);
+		}
+		
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No shaholding information found for taxPayer " + data.getTaxpayerId() + " for period " + data.getYear());
+			return; // No flows found
+		} 
+
+		//Retrieve information from result
+		BiFunction<Aggregations, String[], Shareholding> function = (agg, values) -> {
+			Sum amount = agg.get("shareAmount");
+			Sum percentage = agg.get("sharePercentage");
+			Sum quantity = agg.get("shareQuantity");
+			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue());
+		};
+		
+		//Update shareholding information for this taxpayer
+		data.setShareholdings(SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function));
+		
+	}
+	
+	/**
+	 * Search and add shareholders information for a specified taxpayer and year
+	 * 
+	 * @param data	Information about taxpayer and year
+	 */
+	private void addShareholders(TaxpayerData data) {
+		
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		//Filter by taxpayer
+		query = query.must(new TermQueryBuilder("shareholder_id.keyword", data.getTaxpayerId()));		
+
+		// Filter for year
+		query = query.must(new TermQueryBuilder("year", data.getYear()));
+		
+    	// Script in 'painless' language for identifying confirmations and returning the confirmed payment value
+    	// We return '0' in case this property not being defined, so that we can have aggregation of 'zeroes' over
+    	// slips with no corresponding confirmations.
+    	org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
+    			  "if (doc['share_class.keyword'].size()==0) return '';"
+    			  +"else return doc['share_class.keyword'].value; ");    	
+
+		//Define group by fields
+		Object[] groupBy = {
+				"taxpayer_id.keyword", 
+				"taxpayer_name.keyword", 
+	            translate("share_type_name")+".keyword",
+	            new Script(scriptletShareClass, "byShareClass") };
+	
+		//Define aggregations
+		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
+		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
+		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
+	
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, 
+				shareAmount, sharePercentage, shareQuantity);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+		
+		//Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting flows", ex);
+		}
+		
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No shaholding information found for taxPayer " + data.getTaxpayerId() + " for period " + data.getYear());
+			return; // No flows found
+		} 
+
+		//Retrieve information from result
+		BiFunction<Aggregations, String[], Shareholding> function = (agg, values) -> {
+			Sum amount = agg.get("shareAmount");
+			Sum percentage = agg.get("sharePercentage");
+			Sum quantity = agg.get("shareQuantity");
+			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue());
+		};
+		
+		//Update shareholding information for this taxpayer
+		data.setShareholders(SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function));
+		
+	}
+		
 }

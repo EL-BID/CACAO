@@ -83,7 +83,7 @@ public class AnalysisAPIController {
 			@RequestParam("finalDate") String finalDate, @RequestParam("zeroBalance") String zeroBalance, 
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
 		
-		if ( taxpayerId == null ) {
+		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -252,7 +252,7 @@ public class AnalysisAPIController {
 	public ResponseEntity<Object> getGeneralAnalysis(@RequestParam("qualifier") String qualifier,
 			@RequestParam("qualifierValue") String qualifierValue,
 			@RequestParam("sourceData") int sourceData,
-			@RequestParam("year") int year) {
+			@RequestParam("year") String year) {
 		
 		if ( qualifier == null || qualifier.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'qualifier'");
@@ -269,7 +269,7 @@ public class AnalysisAPIController {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( year == 0 ) {
+		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -281,7 +281,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, sourceData, year);
+    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, sourceData, Integer.valueOf(year));
 	
     	return ResponseEntity.ok().body(analysisData);    	
 	}
@@ -310,7 +310,7 @@ public class AnalysisAPIController {
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/years"})
-	public ResponseEntity<Object> getYars(@RequestParam("sourceData") int sourceData) {
+	public ResponseEntity<Object> getYears(@RequestParam("sourceData") int sourceData) {
 		
 		if ( sourceData == 0 ) {
 			log.log(Level.WARNING, "Missing parameter 'sourceData'");
@@ -336,7 +336,7 @@ public class AnalysisAPIController {
 			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate, 
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
 		
-		if ( taxpayerId == null ) {
+		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -357,14 +357,14 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/statement_income_analysis"})
 	public ResponseEntity<Object> getStatementIncomeAnalysis(@RequestParam("taxpayerId") String taxpayerId,
-			@RequestParam("year") int year ) {
+			@RequestParam("year") String year ) {
 		
-		if ( taxpayerId == null ) {
+		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( year == 0 ) {
+		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -377,8 +377,44 @@ public class AnalysisAPIController {
     		throw new UserNotFoundException();
     	
     	List<StatementIncomeItem> statements = analysisService.getStatementIncomeDeclaredAndCalculated(
-    			taxpayerId,year);
+    			taxpayerId,Integer.valueOf(year));
 	
     	return ResponseEntity.ok().body(statements);    	
-	}	
+	}
+	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/taxpayer_general_view"})
+	public ResponseEntity<Object> getTaxpayerGeneralView(
+			@RequestParam("searchType") int searchType,
+			@RequestParam("taxpayerId") String taxpayerId,
+			@RequestParam("year") String year ) {
+		
+		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
+			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
+			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		if ( searchType == 0 ) {
+			searchType = AnalysisService.SEARCH_SHAREHOLDINGS;
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	List<?> result = analysisService.getTaxpayerData(taxpayerId,Integer.valueOf(year),searchType);
+    	
+    	if ( result == null || result.isEmpty() )  
+    		result = Collections.emptyList();
+    	
+    	return ResponseEntity.ok().body(result);    	
+	}		
 }
