@@ -1034,14 +1034,23 @@ public class SyncAPIController {
 					saveToParquet.setOutputFile(tempFile);
 					try {
 						Map<String,Object> mappings = ESUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
-						Map<?,?> properties = (Map<?,?>)mappings.get("properties");
+						Map<Object,Object> properties = (Map<Object,Object>)mappings.get("properties");
+						if (properties==null) {
+							properties = new TreeMap<>();
+						}
+						else if (!(properties instanceof TreeMap)) {
+							properties = new TreeMap<>(properties);
+						}
+						if (!properties.containsKey("id")) {
+							properties.put("id", Collections.singletonMap("type", "text"));
+						}
 						saveToParquet.setSchemaFromProperties(properties);
 						saveToParquet.init();
 						finalization = saveToParquet;
 					}
 					catch (Throwable ex) {
 						if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
-							saveToParquet.setSchemaFromProperties(Collections.emptyMap());
+							saveToParquet.setSchemaFromProperties(Collections.singletonMap("id", Collections.singletonMap("type", "text")));
 							saveToParquet.init();
 							finalization = saveToParquet;
 						}
