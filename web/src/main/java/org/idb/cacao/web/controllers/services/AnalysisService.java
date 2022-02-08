@@ -1,7 +1,6 @@
 package org.idb.cacao.web.controllers.services;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,12 +28,17 @@ import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.Avg;
 import org.elasticsearch.search.aggregations.metrics.MedianAbsoluteDeviation;
 import org.elasticsearch.search.aggregations.metrics.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.Sum;
+import org.elasticsearch.search.aggregations.pipeline.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.dto.Account;
@@ -57,12 +61,8 @@ public class AnalysisService {
 
 	private static final Logger log = Logger.getLogger(AnalysisService.class.getName());
 
-	/**
-	 * Maximum number of records that we will return for a given parameter. Should
-	 * not be too high because it would compromise queries whenever used as query
-	 * criteria
-	 */
-	public static final int MAX_TAXPAYERS_PER_TAXMANAGER = 10_000;
+	private static final String ACCOUNT_SUBCATEGORY_TAX_PROVISION = "3.2.1";
+	private static final String ACCOUNT_CATEGORY_EXPENSE = "5";
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -72,18 +72,24 @@ public class AnalysisService {
 			.formatIndexNameForPublishedData("Accounting Computed Statement Income");
 	private final String DECLARED_STATEMENT_INCOME_INDEX = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Declared Statement Income");
-	private final String SHAREHOLDING_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Shareholding");
+	private final String SHAREHOLDING_INDEX = IndexNamesUtils
+			.formatIndexNameForPublishedData("Accounting Shareholding");
 	private final String TAXPAYER_INDEX = "cacao_taxpayers";
-	
+
 	private final static int SOURCE_JOURNAL = 1;
 	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
 	private final static int SOURCE_BOOTH_INCOME_STATEMENT = 3;
 	private final static int SOURCE_SHAREHOLDERS = 4;
-	
-	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Flow Daily");
-	
+
+	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils
+			.formatIndexNameForPublishedData("Accounting Flow Daily");
+
 	public final static int SEARCH_SHAREHOLDINGS = 1;
 	public final static int SEARCH_SHAREHOLDERS = 2;
+	public final static int REVENUE_NET_AND_GROSS_PROFIT_DECLARED = 3;
+	public final static int REVENUE_NET_AND_GROSS_PROFIT_COMPUTED = 4;
+	public final static int TAX_PROVISION = 5;
+	public final static int ANALYTICS_ACCOUNTS = 6;
 
 	/**
 	 * Retrieves and return a balance sheet for a given taxpayer and period (month
@@ -107,12 +113,14 @@ public class AnalysisService {
 	}
 
 	/**
-	 * Build the query object used by {@link #getAccounts(String, YearMonth, boolean)}
-	 * @param taxpayerId	A taxpayer to filter for
-	 * @param year			A year to filter for
-	 * @param period		A period to filter for
+	 * Build the query object used by
+	 * {@link #getAccounts(String, YearMonth, boolean)}
 	 * 
-	 *  @return A {@link SearchRequest} with all parameters and filters
+	 * @param taxpayerId A taxpayer to filter for
+	 * @param year       A year to filter for
+	 * @param period     A period to filter for
+	 * 
+	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
 	private SearchRequest searchBalance(final String taxpayerId, YearMonth period) {
 
@@ -133,11 +141,11 @@ public class AnalysisService {
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
 				AggregationBuilders.terms("byCategory").size(10_000).field("account_category.keyword")
 						.subAggregation(AggregationBuilders.terms("byCategoryName").size(10_000)
-								.field(translate("account_category_name") +".keyword")
+								.field(translate("account_category_name") + ".keyword")
 								.subAggregation(AggregationBuilders.terms("bySubCategory").size(10_000)
 										.field("account_subcategory.keyword")
 										.subAggregation(AggregationBuilders.terms("bySubCategoryName").size(10_000)
-												.field(translate("account_subcategory_name")+".keyword")
+												.field(translate("account_subcategory_name") + ".keyword")
 												.subAggregation(AggregationBuilders.terms("byAccount").size(10_000)
 														.field("account_code.keyword")
 														.subAggregation(AggregationBuilders.terms("byAccountName")
@@ -160,10 +168,11 @@ public class AnalysisService {
 	 * Retrive and return a list of accounts with it's attributes for conditions on
 	 * parameters
 	 * 
-	 * @param taxpayerId	A taxpayer to filter for
-	 * @param year			A year to filter for
-	 * @param period		A period to filter for 
-	 * @param fetchZeroBalance If true, fetches and return accounts with ZERO balance
+	 * @param taxpayerId       A taxpayer to filter for
+	 * @param year             A year to filter for
+	 * @param period           A period to filter for
+	 * @param fetchZeroBalance If true, fetches and return accounts with ZERO
+	 *                         balance
 	 * 
 	 * @return A {@link List} of {@link Account}
 	 */
@@ -285,7 +294,7 @@ public class AnalysisService {
 	/**
 	 * Add informations about category, subcategory and percentage of each account
 	 * 
-	 * @param accounts	A {@link List} of {@link Account} to add a subcategory
+	 * @param accounts A {@link List} of {@link Account} to add a subcategory
 	 */
 	private void addCategorySubcategoryData(List<Account> accounts) {
 
@@ -373,26 +382,30 @@ public class AnalysisService {
 	}
 
 	/**
-	 * Search and return a {@link Map} of accounts for a specific taxpayerid and period. 
-	 * @param taxpayerId	Taxpayer id to search accounts for
-	 * @param period		Period to be searched
-	 * @param fetchZeroBalance	Indicates if accounts with ZERO balance will be included
-	 * @param additionalPeriods	A list os additional periods to search balance values
+	 * Search and return a {@link Map} of accounts for a specific taxpayerid and
+	 * period.
+	 * 
+	 * @param taxpayerId        Taxpayer id to search accounts for
+	 * @param period            Period to be searched
+	 * @param fetchZeroBalance  Indicates if accounts with ZERO balance will be
+	 *                          included
+	 * @param additionalPeriods A list os additional periods to search balance
+	 *                          values
 	 * @return
 	 */
 	public List<Map<String, Object>> getMapOfAccounts(String taxpayerId, YearMonth period, boolean fetchZeroBalance,
 			List<YearMonth> additionalPeriods) {
 
-		//Get balance for initial period
+		// Get balance for initial period
 		BalanceSheet balanceP0 = getBalance(taxpayerId, period, fetchZeroBalance);
 
-		//If there is no accounts for the initial period, there is nothing to return
+		// If there is no accounts for the initial period, there is nothing to return
 		if (balanceP0 == null || balanceP0.getAccounts() == null || balanceP0.getAccounts().isEmpty())
 			return Collections.emptyList();
-		
+
 		Map<String, Map<String, Object>> accountsToRet = new HashMap<>();
 
-		//For each account add balance and vertical analysis value
+		// For each account add balance and vertical analysis value
 		for (Account account : balanceP0.getAccounts()) {
 			String key = account.getKey();
 			Map<String, Object> accountData = account.getAccountData();
@@ -402,13 +415,13 @@ public class AnalysisService {
 		}
 
 		int i = 1;
-		//For each adittional period
+		// For each adittional period
 		for (YearMonth p : additionalPeriods) {
 
-			//Get balance for period
+			// Get balance for period
 			BalanceSheet balance = getBalance(taxpayerId, p, fetchZeroBalance);
 
-			//If there is no data for this period, go next
+			// If there is no data for this period, go next
 			if (balance == null || balance.getAccounts() == null || balance.getAccounts().isEmpty())
 				continue;
 
@@ -416,7 +429,7 @@ public class AnalysisService {
 			String prefixVerticalAnalysis = "V" + i;
 			String prefixHorizontalAnalysis = "H" + i;
 
-			//For each account add balance, vertical and horizontal analysis values
+			// For each account add balance, vertical and horizontal analysis values
 			for (Account account : balance.getAccounts()) {
 				String key = account.getKey();
 				Map<String, Object> accountData = accountsToRet.get(key);
@@ -438,7 +451,7 @@ public class AnalysisService {
 
 		}
 
-		//Sort accounts 
+		// Sort accounts
 		List<String> accountKeys = new ArrayList<>(accountsToRet.keySet());
 		accountKeys.sort(null);
 		List<Map<String, Object>> accounts = new ArrayList<>(accountKeys.size());
@@ -448,16 +461,17 @@ public class AnalysisService {
 
 	/**
 	 * Build the query object used by {@link #getAccounts(String, int, String)}
-	 * @param taxpayerIds	A {@link List} of taxpayers to tilter for
-	 * @param sourceData	An indication of source data (index) to use
-	 * @param year	A year to filter for	 * 
+	 * 
+	 * @param taxpayerIds A {@link List} of taxpayers to tilter for
+	 * @param sourceData  An indication of source data (index) to use
+	 * @param year        A year to filter for *
 	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
 	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int sourceData, int year) {
 
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
-				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
+		SearchRequest searchRequest = new SearchRequest(
+				SOURCE_JOURNAL == sourceData ? COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
@@ -474,13 +488,13 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-			AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
-				.subAggregation(AggregationBuilders.terms("byName").size(10_000).field(translate("statement_name")+".keyword")
-					.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
-					.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
-					.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation").field("amount_relative")
-				)
-			);
+				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
+						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
+								.field(translate("statement_name") + ".keyword")
+								.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
+								.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
+								.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation")
+										.field("amount_relative")));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -500,13 +514,14 @@ public class AnalysisService {
 	 * 
 	 * @param qualifier      A name of qualifier to search values
 	 * @param qualifierValue A value for qualifier
-	 * @param sourceData	 An indication of source values (index) to use
+	 * @param sourceData     An indication of source values (index) to use
 	 * @param year           A year of values to search
-	 * @return A {@link AnalysisData} with all data about all taxpayers for specified parameters
+	 * @return A {@link AnalysisData} with all data about all taxpayers for
+	 *         specified parameters
 	 */
 	public AnalysisData getGeneralAnalysisValues(String qualifier, String qualifierValue, int sourceData, int year) {
-		
-		if ( qualifier == null || qualifier.isEmpty() || qualifierValue == null || qualifierValue.isEmpty() ) {
+
+		if (qualifier == null || qualifier.isEmpty() || qualifierValue == null || qualifierValue.isEmpty()) {
 			log.log(Level.SEVERE, "No parameters provided");
 			return null;
 		}
@@ -531,7 +546,7 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No data found for qualifier " + qualifier + " for year " + year);
-			return null; // No data found		
+			return null; // No data found
 		} else {
 
 			// Let's fill the resulting list with values
@@ -543,8 +558,8 @@ public class AnalysisService {
 			for (Terms.Bucket statementNumberBucket : statementsNumbers.getBuckets()) {
 
 				String statementNumber = statementNumberBucket.getKeyAsString();
-				if (statementNumber == null || statementNumber.isEmpty() )
-					continue;				
+				if (statementNumber == null || statementNumber.isEmpty())
+					continue;
 
 				Terms statementsNames = statementNumberBucket.getAggregations().get("byName");
 
@@ -557,12 +572,14 @@ public class AnalysisService {
 					AnalysisItem analysisItem = new AnalysisItem();
 					analysisItem.setStatementOrder(statementNumber);
 					analysisItem.setStatementName(statementName);
-					
+
 					Avg average = statementNameBucket.getAggregations().get("average");
 					MedianAbsoluteDeviation deviation = statementNameBucket.getAggregations().get("deviation");
-					
-					double averegaValue = average == null ? 0d: Precision.round(average.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
-					double deviationValue = deviation == null ? 0d : Precision.round(deviation.value(), 2, BigDecimal.ROUND_HALF_DOWN);
+
+					double averegaValue = average == null ? 0d
+							: Precision.round(average.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
+					double deviationValue = deviation == null ? 0d
+							: Precision.round(deviation.value(), 2, BigDecimal.ROUND_HALF_DOWN);
 
 					Percentiles percentile = statementNameBucket.getAggregations().get("amount");
 					if (percentile != null) {
@@ -589,15 +606,15 @@ public class AnalysisService {
 					}
 
 				} // Loop over statement name
-				
+
 			} // Loop over statement number
 
 			// Add outliers
 			for (AnalysisItem item : items) {
 				addOutliers(item, sourceData, year, taxpayerIds);
 			}
-			
-			AnalysisData data = new AnalysisData();			
+
+			AnalysisData data = new AnalysisData();
 			data.setItems(items);
 			updateScale(data);
 
@@ -609,94 +626,97 @@ public class AnalysisService {
 
 	/**
 	 * Calculate and store a scale in with graph will be displayed
-	 * @param data	All data to be used in graph
+	 * 
+	 * @param data All data to be used in graph
 	 */
 	private void updateScale(AnalysisData data) {
-		
+
 		double min = -100d;
 		double max = 200d;
-		
-		//Get max an min values in graph data
-		for ( AnalysisItem item : data.getItems() ) {
+
+		// Get max an min values in graph data
+		for (AnalysisItem item : data.getItems()) {
 			min = Math.min(min, item.getMin());
 			max = Math.max(max, item.getMax());
 		}
-		
-		//Add and subtract a value of 100 from max and min value 
-		data.setScaleMin(min-100);
-		data.setScaleMax(max+100);		
-		
-		//Normalize data		
-		for ( AnalysisItem item : data.getItems() ) {
-			
+
+		// Add and subtract a value of 100 from max and min value
+		data.setScaleMin(min - 100);
+		data.setScaleMax(max + 100);
+
+		// Normalize data
+		for (AnalysisItem item : data.getItems()) {
+
 			double bigger = 0;
 			double smaller = 0;
-			for ( Outlier outlier : item.getOutliers() ) {
+			for (Outlier outlier : item.getOutliers()) {
 				bigger = Math.max(bigger, outlier.getValue());
 				smaller = Math.min(smaller, outlier.getValue());
 			}
-			
-			for ( Outlier outlier : item.getOutliers() ) {
-			
+
+			for (Outlier outlier : item.getOutliers()) {
+
 				outlier.setStatementName(item.getStatementName());
 				data.addOutlier(outlier);
-				
+
 				double value = outlier.getValue();
-				if ( value < min )
-					value = normalize(value, item.getMin(), item.getMax(), smaller, false /*superior*/);
-				else if ( value > max )
-					value = normalize(value, item.getMin(), item.getMax(), bigger, true /*superior*/);					
-				
+				if (value < min)
+					value = normalize(value, item.getMin(), item.getMax(), smaller, false /* superior */);
+				else if (value > max)
+					value = normalize(value, item.getMin(), item.getMax(), bigger, true /* superior */);
+
 				value = Precision.round(value, 2, BigDecimal.ROUND_HALF_DOWN);
-				
+
 				Outlier copy = new Outlier(outlier.getTaxpayerId(),
-						outlier.getTaxpayerName() + " : " + outlier.getValue(), item.getStatementName(), item.getStatementOrder(), value);
-				item.addNormalizedOutlier(copy);				
+						outlier.getTaxpayerName() + " : " + outlier.getValue(), item.getStatementName(),
+						item.getStatementOrder(), value);
+				item.addNormalizedOutlier(copy);
 			}
-			
-		}		
-		
-		//data.getOutliers().sort(null);		
-		//data.getItems().sort(null);
-	}	
-	
+
+		}
+
+		// data.getOutliers().sort(null);
+		// data.getItems().sort(null);
+	}
+
 	/**
 	 * Normalize values to be used in graphics
-	 * @param value	A value to compare
-	 * @param min	Minimal value
-	 * @param max	Maximal value
-	 * @param limit	Limit for view (graph scale)
-	 * @param superior	Indicates if it's about superior limit
-	 * @return	A value between max/min and limit
+	 * 
+	 * @param value    A value to compare
+	 * @param min      Minimal value
+	 * @param max      Maximal value
+	 * @param limit    Limit for view (graph scale)
+	 * @param superior Indicates if it's about superior limit
+	 * @return A value between max/min and limit
 	 */
 	private double normalize(double value, double min, double max, double limit, boolean superior) {
-		
-		if ( superior ) {
-		
+
+		if (superior) {
+
 			double viewLimit = (max + 100) * 0.9d;
-			return Precision.round(( ( (value - max) * viewLimit) / (limit-max)), 2, BigDecimal.ROUND_HALF_DOWN);
-					
+			return Precision.round((((value - max) * viewLimit) / (limit - max)), 2, BigDecimal.ROUND_HALF_DOWN);
+
 		}
-		
+
 		double viewLimit = (min - 100) * 0.9d;
-		return Precision.round(( ( (value - min) * viewLimit ) / (limit-min)), 2, BigDecimal.ROUND_HALF_DOWN);
- 		
-	}	
+		return Precision.round((((value - min) * viewLimit) / (limit - min)), 2, BigDecimal.ROUND_HALF_DOWN);
+
+	}
 
 	/**
 	 * Add outliers to analysis data
 	 * 
-	 * @param item 			Analysis item
-	 * @param sourceData	An indication of source data (index) to use
-	 * @param year 			Year of analysis
-	 * @param taxpayerIds	A {@link List} of taxpayers to filter for
+	 * @param item        Analysis item
+	 * @param sourceData  An indication of source data (index) to use
+	 * @param year        Year of analysis
+	 * @param taxpayerIds A {@link List} of taxpayers to filter for
 	 */
 	private void addOutliers(AnalysisItem item, int sourceData, int year, List<String> taxpayerIds) {
 
 		if (item.getStatementName() == null)
 			return;
 
-		//Add outliers for minimal value
+		// Add outliers for minimal value
 		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementOrder(), item.getMin(),
 				sourceData, year, taxpayerIds);
 
@@ -732,7 +752,8 @@ public class AnalysisService {
 						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					}
 
-					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(), item.getStatementOrder(), value);
+					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(),
+							item.getStatementOrder(), value);
 					item.addOutlier(outlier);
 
 				}
@@ -741,8 +762,9 @@ public class AnalysisService {
 
 		}
 
-		//Add outliers for maximal value
-		searchRequest = getRequestForOutliers(false /* min */, item.getStatementOrder(), item.getMax(), sourceData, year, taxpayerIds);
+		// Add outliers for maximal value
+		searchRequest = getRequestForOutliers(false /* min */, item.getStatementOrder(), item.getMax(), sourceData,
+				year, taxpayerIds);
 
 		// Execute a search
 		sresp = null;
@@ -777,7 +799,8 @@ public class AnalysisService {
 						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					}
 
-					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(), item.getStatementOrder(), value);
+					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(),
+							item.getStatementOrder(), value);
 					item.addOutlier(outlier);
 
 				}
@@ -791,31 +814,32 @@ public class AnalysisService {
 	/**
 	 * Create and return a search request for getting outliers
 	 * 
-	 * @param min	A minimal value to consider
-	 * @param statement	A statement to search
-	 * @param value	A value to compare
-	 * @param sourceData	An indication of source data (index) to use 
-	 * @param year	A year to filter for
-	 * @param taxpayerIds	A list of taxpayers to filter for
-	 * @return A {@link SearchRequest} with all configurations	
+	 * @param min         A minimal value to consider
+	 * @param statement   A statement to search
+	 * @param value       A value to compare
+	 * @param sourceData  An indication of source data (index) to use
+	 * @param year        A year to filter for
+	 * @param taxpayerIds A list of taxpayers to filter for
+	 * @return A {@link SearchRequest} with all configurations
 	 */
-	private SearchRequest getRequestForOutliers(boolean min, String statement, double value, int sourceData, int year, List<String> taxpayerIds) {
+	private SearchRequest getRequestForOutliers(boolean min, String statement, double value, int sourceData, int year,
+			List<String> taxpayerIds) {
 
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
-				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
-		
+		SearchRequest searchRequest = new SearchRequest(
+				SOURCE_JOURNAL == sourceData ? COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
+
 		// Filter by statementCode
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		query = query.must(new TermQueryBuilder("statement_number.keyword", statement));
-		
+
 		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 		for (String argument : taxpayerIds) {
 			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
 		}
 		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);		
+		query = query.must(subquery);
 
 		// Filter by year
 		query = query.must(new TermQueryBuilder("year", year));
@@ -851,10 +875,10 @@ public class AnalysisService {
 	 * @return A {@link List} of taxpayers
 	 */
 	private List<String> getTaxPayersId(String qualifier, String qualifierValue) {
-		
+
 		// Index over 'taxpayer' objects
 		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
-		
+
 		// Filter by qualifier
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		query = query.should(new TermQueryBuilder(qualifier + ".keyword", qualifierValue));
@@ -913,7 +937,7 @@ public class AnalysisService {
 	@Cacheable("qualifierValues")
 	public List<String> getQualifierValues(String qualifier) {
 
-		//Index over 'taxpayer' objects
+		// Index over 'taxpayer' objects
 		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
 
 		// Configure the aggregations
@@ -963,29 +987,29 @@ public class AnalysisService {
 	}
 
 	/**
-	 * @param sourceData	An indication of source data (index) to use
-	 * 						If sourceData isn't #SOURCE_JOURNAL or #SOURCE_DECLARED_INCOME_STATEMENT, search for booth
-	 * 						to return.
+	 * @param sourceData An indication of source data (index) to use If sourceData
+	 *                   isn't #SOURCE_JOURNAL or #SOURCE_DECLARED_INCOME_STATEMENT,
+	 *                   search for booth to return.
 	 * 
 	 * @return A list of years present in Accounting Statement Income indexes
 	 */
-	@Cacheable("years")	
+	@Cacheable("years")
 	public List<Integer> getYears(int sourceData) {
-		
-		if ( sourceData == SOURCE_BOOTH_INCOME_STATEMENT ) {
+
+		if (sourceData == SOURCE_BOOTH_INCOME_STATEMENT) {
 			List<Integer> toRet = getYearsByIndex(SOURCE_JOURNAL);
 			toRet.addAll(getYearsByIndex(SOURCE_DECLARED_INCOME_STATEMENT));
 			return toRet.stream().distinct().map(Integer::intValue).sorted().collect(Collectors.toList());
 		}
-		
+
 		return getYearsByIndex(sourceData);
-		
+
 	}
 
 	/**
 	 * 
-	 * @param sourceData	An indication of source data (index) to use
-	 * @return	A list of years present in Accounting Statement Income indexes
+	 * @param sourceData An indication of source data (index) to use
+	 * @return A list of years present in Accounting Statement Income indexes
 	 */
 	private List<Integer> getYearsByIndex(int sourceData) {
 		// Index over 'Accounting Computed Statement Income' objects
@@ -1006,7 +1030,7 @@ public class AnalysisService {
 		}
 		SearchRequest searchRequest = new SearchRequest(index);
 
-		//Configure the aggregations 
+		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by qualifier field
 				AggregationBuilders.terms("byYear").size(10_000).field("year");
 
@@ -1062,20 +1086,18 @@ public class AnalysisService {
 		// Filter for period
 		String from = ParserUtils.formatTimestampES(startDate);
 		String to = ParserUtils.formatTimestampES(finalDate);
-		RangeQueryBuilder dateRange = new RangeQueryBuilder("date")
-				.from(from)
-				.to(to);
+		RangeQueryBuilder dateRange = new RangeQueryBuilder("date").from(from).to(to);
 		query = query.must(dateRange);
 
-		String[] groupBy = {"credited_account_category.keyword", "credited_account_category_name.keyword", 
-		            "credited_account_subcategory.keyword", "credited_account_subcategory_name.keyword",
-		            "credited_account_code.keyword", "credited_account_name.keyword",
-		            "debited_account_category.keyword", "debited_account_category_name.keyword",
-		            "debited_account_subcategory.keyword", "debited_account_subcategory_name.keyword",
-		            "debited_account_code.keyword", "debited_account_name.keyword" };
-		
+		String[] groupBy = { "credited_account_category.keyword", "credited_account_category_name.keyword",
+				"credited_account_subcategory.keyword", "credited_account_subcategory_name.keyword",
+				"credited_account_code.keyword", "credited_account_name.keyword", "debited_account_category.keyword",
+				"debited_account_category_name.keyword", "debited_account_subcategory.keyword",
+				"debited_account_subcategory_name.keyword", "debited_account_code.keyword",
+				"debited_account_name.keyword" };
+
 		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field("amount");
-		
+
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
@@ -1092,35 +1114,37 @@ public class AnalysisService {
 		} catch (Throwable ex) {
 			log.log(Level.SEVERE, "Error getting flows", ex);
 		}
-		
+
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
 			return Collections.emptyList(); // No flows found
-		} 
+		}
 
 		BiFunction<Aggregations, String[], AggregatedAccountingFlow> function = (agg, values) -> {
 			Sum sum = agg.get("totalFlow");
 			return new AggregatedAccountingFlow(values, sum.getValue());
 		};
-		
-		List<AggregatedAccountingFlow> result = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
-		
+
+		List<AggregatedAccountingFlow> result = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
+				function);
+
 		return result;
 
 	}
-	
+
 	/**
 	 * Build the query object used by {@link #getAccounts(String, int, String)}
-	 * @param taxpayerId	A taxpayer to filter for
-	 * @param sourceData	An indication of source data (index) to use
-	 * @param year	A year to filter for	  
+	 * 
+	 * @param taxpayerId A taxpayer to filter for
+	 * @param sourceData An indication of source data (index) to use
+	 * @param year       A year to filter for
 	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
 	private SearchRequest searchComputedStatementIncomeValues(String taxpayerId, int sourceData, int year) {
 
 		// Index over 'Accounting Computed Statement Income' objects
-		SearchRequest searchRequest = new SearchRequest(SOURCE_JOURNAL == sourceData ? 
-				COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
+		SearchRequest searchRequest = new SearchRequest(
+				SOURCE_JOURNAL == sourceData ? COMPUTED_STATEMENT_INCOME_INDEX : DECLARED_STATEMENT_INCOME_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
@@ -1138,11 +1162,10 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-			AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
-				.subAggregation(AggregationBuilders.terms("byName").size(10_000).field(translate("statement_name") + ".keyword")
-					.subAggregation(AggregationBuilders.sum("amount").field("amount")
-				)
-			);
+				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
+						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
+								.field(translate("statement_name") + ".keyword")
+								.subAggregation(AggregationBuilders.sum("amount").field("amount")));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -1154,45 +1177,47 @@ public class AnalysisService {
 
 		return searchRequest;
 
-	}	
+	}
 
 	/**
 	 * Given a field name, translate it (add suffix) for current language
-	 * @param fieldName	A field name to translate
-	 * @return	Translated field name
+	 * 
+	 * @param fieldName A field name to translate
+	 * @return Translated field name
 	 */
 	private String translate(String fieldName) {
 
 		String language = LocaleContextHolder.getLocale().getLanguage();
-		
-		if ( "en".equalsIgnoreCase(language) )
+
+		if ("en".equalsIgnoreCase(language))
 			return fieldName;
-		
+
 		return fieldName + "_" + language;
 	}
 
 	/**
 	 * Search and return Statement Income for a specified taxpayer and year
-	 * @param taxpayerId	Taxpayer to search statement income
-	 * @param year			Year to search statement income
-	 * @return	A {@link List} of {@link StatementIncomeItem}
-	 * 			
+	 * 
+	 * @param taxpayerId Taxpayer to search statement income
+	 * @param year       Year to search statement income
+	 * @return A {@link List} of {@link StatementIncomeItem}
+	 * 
 	 */
 	public List<StatementIncomeItem> getStatementIncomeDeclaredAndCalculated(String taxpayerId, int year) {
-		
+
 		if (taxpayerId == null || taxpayerId.isEmpty()) {
 			log.log(Level.INFO, "No valid taxpayer received");
 			return null; // No data found
 		}
-		
+
 		if (year == 0) {
 			log.log(Level.INFO, "No valid year received");
 			return null; // No data found
 		}
-		
-		//Search statement income values
-		Map<String,StatementIncomeItem> items = new HashMap<>();
-		getStatementIncomeValues(taxpayerId, year, SOURCE_JOURNAL,  items);
+
+		// Search statement income values
+		Map<String, StatementIncomeItem> items = new HashMap<>();
+		getStatementIncomeValues(taxpayerId, year, SOURCE_JOURNAL, items);
 		getStatementIncomeValues(taxpayerId, year, SOURCE_DECLARED_INCOME_STATEMENT, items);
 		List<StatementIncomeItem> values = new ArrayList<>(items.values());
 		values.sort(null);
@@ -1200,17 +1225,20 @@ public class AnalysisService {
 	}
 
 	/**
-	 * Search and store values for Stated Income calculated or declared, according with received parameters
-	 * @param taxpayerId	A taxpayer to filter for
-	 * @param year			A year to filter for
-	 * @param sourceData	Indicates a source index (calculated or declared)
-	 * @param items			A {@link Map} to store values
+	 * Search and store values for Stated Income calculated or declared, according
+	 * with received parameters
+	 * 
+	 * @param taxpayerId A taxpayer to filter for
+	 * @param year       A year to filter for
+	 * @param sourceData Indicates a source index (calculated or declared)
+	 * @param items      A {@link Map} to store values
 	 */
-	private void getStatementIncomeValues(String taxpayerId, int year, int sourceData, Map<String,StatementIncomeItem> items) {
-		
-		//Define a search request according with parameters
+	private void getStatementIncomeValues(String taxpayerId, int year, int sourceData,
+			Map<String, StatementIncomeItem> items) {
+
+		// Define a search request according with parameters
 		SearchRequest searchRequest = searchComputedStatementIncomeValues(taxpayerId, sourceData, year);
-		
+
 		// Execute a search
 		SearchResponse sresp = null;
 		try {
@@ -1221,17 +1249,17 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No data found");
-			return; // No data found		
+			return; // No data found
 		} else {
 
-			//Add values for statement income items
+			// Add values for statement income items
 			Terms statementsNumbers = sresp.getAggregations().get("byNumber");
 
 			for (Terms.Bucket statementNumberBucket : statementsNumbers.getBuckets()) {
 
 				String statementNumber = statementNumberBucket.getKeyAsString();
-				if (statementNumber == null || statementNumber.isEmpty() )
-					continue;				
+				if (statementNumber == null || statementNumber.isEmpty())
+					continue;
 
 				Terms statementsNames = statementNumberBucket.getAggregations().get("byName");
 
@@ -1240,90 +1268,103 @@ public class AnalysisService {
 					String statementName = statementNameBucket.getKeyAsString();
 					if (statementName == null || statementName.isEmpty())
 						continue;
-					
+
 					Sum sum = statementNameBucket.getAggregations().get("amount");
 
 					if (sum != null) {
 						StatementIncomeItem item = items.getOrDefault(statementNumber, new StatementIncomeItem());
 						item.setStatementOrder(statementNumber);
 						item.setStatementName(statementName);
-						if ( SOURCE_JOURNAL == sourceData)
+						if (SOURCE_JOURNAL == sourceData)
 							item.setCalculatedValue(sum.getValue());
 						else
 							item.setDeclaredValue(sum.getValue());
-						item.setDifference(item.getDeclaredValue()-item.getCalculatedValue());
+						item.setDifference(item.getDeclaredValue() - item.getCalculatedValue());
 						items.put(statementNumber, item);
 					}
 
 				} // Loop over statement name
-				
+
 			} // Loop over statement number
-			
+
 		}
-			
+
 	}
 
 	/**
 	 * Search and return all data about a taxpayer specified in parameter
-	 * @param taxpayerId	A taxpayer to search data for
-	 * @param year			A specific year to search
-	 * @param searchType 	A specific search to do 
 	 * 
-	 * @return	Data about a specified taxpayer for a specific year according with specified search type.
+	 * @param taxpayerId A taxpayer to search data for
+	 * @param year       A specific year to search
+	 * @param searchType A specific search to do
+	 * 
+	 * @return Data about a specified taxpayer for a specific year according with
+	 *         specified search type.
 	 */
 	public List<?> getTaxpayerData(String taxpayerId, int year, int searchType) {
-		
+
 		switch (searchType) {
-		case SEARCH_SHAREHOLDINGS:			
+		case SEARCH_SHAREHOLDINGS:
 			return getShareholdings(taxpayerId, year);
 		case SEARCH_SHAREHOLDERS:
-			return getShareholders(taxpayerId, year);			
+			return getShareholders(taxpayerId, year);
+		case REVENUE_NET_AND_GROSS_PROFIT_DECLARED:
+			return getRevenueNetAndGrossProfit(taxpayerId, year, DECLARED_STATEMENT_INCOME_INDEX);
+		case REVENUE_NET_AND_GROSS_PROFIT_COMPUTED:
+			return getRevenueNetAndGrossProfit(taxpayerId, year, COMPUTED_STATEMENT_INCOME_INDEX);
+		case TAX_PROVISION:
+			return getTaxProvision(taxpayerId, year);
+		case ANALYTICS_ACCOUNTS:
+			return getAnalyticsAccounts(taxpayerId, year);
 		default:
 			break;
 		}
-		
+
 		return Collections.emptyList();
-		
+
 	}
 
 	/**
 	 * Search and add shareholding information for a specified taxpayer and year
 	 * 
-	 * @param data	Information about taxpayer and year
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Shareholding} itens with shareholding
+	 *         information
 	 */
 	private List<Shareholding> getShareholdings(String taxpayerId, int year) {
-		
+
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		//Filter by taxpayer
+		// Filter by taxpayer
 		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
-		
-    	// Script in 'painless' language for identifying confirmations and returning the confirmed payment value
-    	// We return '0' in case this property not being defined, so that we can have aggregation of 'zeroes' over
-    	// slips with no corresponding confirmations.
-    	org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
-    			  "if (doc['share_class.keyword'].size()==0) return '';"
-    			  +"else return doc['share_class.keyword'].value; "); 		
 
-		//Define group by fields
-		Object[] groupBy = {
-				"shareholding_id.keyword", 
-				"shareholding_name.keyword", 
-	            translate("share_type_name")+".keyword",
-	            new Script(scriptletShareClass, "byShareClass") };
-		
-		//Define aggregations
+		// Script in 'painless' language for identifying confirmations and returning the
+		// confirmed payment value
+		// We return '0' in case this property not being defined, so that we can have
+		// aggregation of 'zeroes' over
+		// slips with no corresponding confirmations.
+		org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
+				"if (doc['share_class.keyword'].size()==0) return '';"
+						+ "else return doc['share_class.keyword'].value; ");
+
+		// Define group by fields
+		Object[] groupBy = { "shareholding_id.keyword", "shareholding_name.keyword",
+				translate("share_type_name") + ".keyword", new Script(scriptletShareClass, "byShareClass") };
+
+		// Define aggregations
 		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
 		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
 		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
-	
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, 
-				shareAmount, sharePercentage, shareQuantity);
+
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount,
+				sharePercentage, shareQuantity);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -1331,71 +1372,74 @@ public class AnalysisService {
 		// We are not interested on individual documents
 		searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
-		
-		//Search results
+
+		// Search results
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting flows", ex);
+			log.log(Level.SEVERE, "Error getting shareholdings", ex);
 		}
-		
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No shaholding information found for taxPayer " + taxpayerId + " for period " + year);
-			return Collections.emptyList(); // No flows found
-		} 
 
-		//Retrieve information from result
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No shareholding information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No shareholding found
+		}
+
+		// Retrieve information from result
 		BiFunction<Aggregations, String[], Shareholding> function = (agg, values) -> {
 			Sum amount = agg.get("shareAmount");
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");
 			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue());
 		};
-		
-		//Update shareholding information for this taxpayer
+
+		// Update shareholding information for this taxpayer
 		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
-		
+
 	}
-	
+
 	/**
 	 * Search and add shareholders information for a specified taxpayer and year
 	 * 
-	 * @param data	Information about taxpayer and year
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Shareholding} itens with shareholders
+	 *         information
 	 */
 	private List<Shareholding> getShareholders(String taxpayerId, int year) {
-		
+
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		//Filter by taxpayer
-		query = query.must(new TermQueryBuilder("shareholding_id.keyword", taxpayerId));		
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder("shareholding_id.keyword", taxpayerId));
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
-		
-    	// Script in 'painless' language for identifying confirmations and returning the confirmed payment value
-    	// We return '0' in case this property not being defined, so that we can have aggregation of 'zeroes' over
-    	// slips with no corresponding confirmations.
-    	org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
-    			  "if (doc['share_class.keyword'].size()==0) return '';"
-    			  +"else return doc['share_class.keyword'].value; ");    	
 
-		//Define group by fields
-		Object[] groupBy = {
-				"taxpayer_id.keyword", 
-				"taxpayer_name.keyword", 
-	            translate("share_type_name")+".keyword",
-	            new Script(scriptletShareClass, "byShareClass") };
-	
-		//Define aggregations
+		// Script in 'painless' language for identifying confirmations and returning the
+		// confirmed payment value
+		// We return '0' in case this property not being defined, so that we can have
+		// aggregation of 'zeroes' over
+		// slips with no corresponding confirmations.
+		org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
+				"if (doc['share_class.keyword'].size()==0) return '';"
+						+ "else return doc['share_class.keyword'].value; ");
+
+		// Define group by fields
+		Object[] groupBy = { "taxpayer_id.keyword", "taxpayer_name.keyword", translate("share_type_name") + ".keyword",
+				new Script(scriptletShareClass, "byShareClass") };
+
+		// Define aggregations
 		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
 		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
 		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
-	
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, 
-				shareAmount, sharePercentage, shareQuantity);
+
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount,
+				sharePercentage, shareQuantity);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -1403,31 +1447,267 @@ public class AnalysisService {
 		// We are not interested on individual documents
 		searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
-		
-		//Search results
+
+		// Search results
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting flows", ex);
+			log.log(Level.SEVERE, "Error getting shareholders", ex);
 		}
-		
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No shaholding information found for taxPayer " + taxpayerId + " for period " + year);
-			return Collections.emptyList(); // No flows found
-		} 
 
-		//Retrieve information from result
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No shareholders information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No shareholders found
+		}
+
+		// Retrieve information from result
 		BiFunction<Aggregations, String[], Shareholding> function = (agg, values) -> {
 			Sum amount = agg.get("shareAmount");
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");
 			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue());
 		};
-		
-		//Update shareholding information for this taxpayer
+
+		// Update shareholding information for this taxpayer
 		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
-		
+
 	}
-		
+
+	/**
+	 * Search and return Revenue Net and Gross Profit information for a specified
+	 * taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * @param index      An index to search in
+	 * 
+	 * @return A {@link List} of {@link Map} with revenue net and gross profit
+	 *         information for a taxpayer and specified year and previous periods
+	 */
+	private List<Map<String, Object>> getRevenueNetAndGrossProfit(String taxpayerId, int year, String index) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(index);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+
+		// Filter by year
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		for (int i = year; i > (year - 5); i--) {
+			subquery = subquery.should(new TermQueryBuilder("year", i));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);
+
+		// Filter by statement
+		subquery = QueryBuilders.boolQuery();
+		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "01"));
+		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "03"));
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);
+
+		// Define group by fields
+		Object[] groupBy = { "year", "statement_number.keyword", translate("statement_name") + ".keyword" };
+
+		// Define aggregations
+		AggregationBuilder shareAmount = AggregationBuilders.sum("amount").field("amount");
+
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO, "No revenue net and gross profit information found for taxPayer " + taxpayerId
+					+ " for period " + year);
+			return Collections.emptyList(); // No data found
+		}
+
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			Sum amount = agg.get("amount");
+			Map<String, Object> instance = new HashMap<>();
+			instance.put("year", values[0]);
+			instance.put("statementOrder", values[1]);
+			instance.put("statementName", values[2]);
+			instance.put("value", amount.getValue());
+			return instance;
+		};
+
+		// Get information
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+
+	}
+
+	/**
+	 * Search and return Revenue Net and Gross Profit information for a specified
+	 * taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Map} with tax provision information for a
+	 *         taxpayer and specified year and previous periods
+	 */
+	private List<Map<String, Object>> getTaxProvision(String taxpayerId, int year) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(BALANCE_SHEET_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+
+		// Filter by subcategory
+		query = query.must(new TermQueryBuilder("account_subcategory.keyword", ACCOUNT_SUBCATEGORY_TAX_PROVISION));
+
+		// Filter by month
+		query = query.must(new TermQueryBuilder("month_number", 12));
+
+		// Filter by year
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		for (int i = year; i > (year - 5); i--) {
+			subquery = subquery.should(new TermQueryBuilder("year", i));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);
+
+		// Filter by statement
+		subquery = QueryBuilders.boolQuery();
+		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "01"));
+		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "03"));
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);
+
+		// Define group by fields
+		Object[] groupBy = { "year", "account_subcategory.keyword" };
+
+		// Define aggregations
+		AggregationBuilder shareAmount = AggregationBuilders.sum("balance").field("final_balance");
+
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting tax provision", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO,
+					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No data found
+		}
+
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			Sum balance = agg.get("balance");
+			Map<String, Object> instance = new HashMap<>();
+			instance.put("year", values[0]);
+			instance.put("value", balance.getValue());
+			return instance;
+		};
+
+		// Get information
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+
+	}
+
+	/**
+	 * Search and return Revenue Net and Gross Profit information for a specified
+	 * taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Map} with tax provision information for a
+	 *         taxpayer and specified year and previous periods
+	 */
+	private List<Map<String, Object>> getAnalyticsAccounts(String taxpayerId, int year) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(BALANCE_SHEET_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+
+		// Filter by expense category
+		query = query.must(new TermQueryBuilder("account_category.keyword", ACCOUNT_CATEGORY_EXPENSE));
+
+		// Filter by month
+		query = query.must(new TermQueryBuilder("month_number", 12));
+
+		// Filter by year
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+		for (int i = year; i > (year - 5); i--) {
+			subquery = subquery.should(new TermQueryBuilder("year", i));
+		}
+		subquery = subquery.minimumShouldMatch(1);
+		query = query.must(subquery);
+
+		// Define group by fields
+		Object[] groupBy = { "year", "account_code.keyword", translate("account_name") + ".keyword" };
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
+
+		// We are not interested on individual documents
+		//searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting tax provision", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO,
+					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No data found
+		}
+
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			Sum balance = agg.get("balance");
+			Map<String, Object> instance = new HashMap<>();
+			instance.put("year", values[0]);
+			instance.put("accountCode", values[1]);
+			instance.put("accountName", values[2]);
+			instance.put("value", balance.getValue());
+			System.err.println(values[0] + " => " + values[1] + " => " + balance.getValue());
+			return instance;
+		};
+
+		// Get information
+		List<Map<String, Object>> objects = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		return objects;
+
+	}
 }

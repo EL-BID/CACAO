@@ -1,0 +1,213 @@
+ <!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+
+	<div th:fragment="shareholding" class="ui segment">
+		<div class="ui fluid accordion">
+			<div class="active title">				
+				<i class="dropdown icon"></i> 
+				<span id="titleRevenueNetGrossProfit" th:text="#{taxpayers.analysis.general.view.revenue}"></span>							
+			</div>							
+			<div class="content">
+				<div class="ui segment">
+					<div class="ui two column very relaxed grid unbounded">
+					    <div class="column unbounded">
+					      <div id="tableRevenueNetGrossProfitDeclared" class="ui orange table"></div>
+					    </div>
+					    <div class="column unbounded">
+					      <div id="tableRevenueNetGrossProfitCalculated" class="ui orange table"></div>
+					    </div>
+					</div>
+					<div class="ui vertical divider">
+					    <span th:text="#{versus}">VS</span>
+					</div>	
+				</div>
+			</div>
+		</div>
+	</div>	
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		fileName = /*[[#{taxpayers.analysis.general.view.revenue}]]*/ ''; 
+	 	sheetNameDeclared = /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ '';
+	 	sheetNameCalculated = /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ '';
+	
+		//Custom accessor
+		function nullConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    return value;
+		}
+		
+		function updateRevenueNetAndGrossProfit() {
+			updateRevenueNetAndGrossProfitDeclared();
+			updateRevenueNetAndGrossProfitCalculated();
+		}
+	
+		function updateRevenueNetAndGrossProfitDeclared() {
+			
+			let tableRevenueNetGrossProfitDeclared = new Tabulator('#tableRevenueNetGrossProfitDeclared', {
+				index: 'order',			
+				layout: "fitColumns", //fit columns to width of table (optional)
+			    pagination: false,
+				paginationMode: "local", //enable local pagination
+				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+				ajaxURL: /*[[@{/api/analysis/taxpayer_general_view}]]*/ "/api/analysis/taxpayer_general_view", //set url for ajax request
+				ajaxURLGenerator: function(url, config, params ){
+					console.log(config)
+					console.log(params)
+					p = new URLSearchParams()
+					p.set('searchType', '3')
+					p.set('taxpayerId', document.getElementById("taxpayer").value)
+					p.set('year', $('#year').val())
+					console.log(url + '?' + p.toString())		
+					return url + '?' + p.toString()
+				},
+				ajaxContentType: "json",
+			    ajaxResponse:function(url, params, response){
+			        //url - the URL of the request
+			        //params - the parameters passed with the request
+			        //response - the JSON object returned in the body of the response.
+		
+			        console.log(response);
+			        return response; //return the tableData property of a response json object
+			    },
+				footerElement: "<button id='exportXLSRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				locale:'xx',
+				langs:{
+			        "xx":{
+			            "pagination":{
+			                "first":/*[[#{pagination.first.button}]]*/ "First",
+			                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+			                "last":/*[[#{pagination.last.button}]]*/ "Last",
+			                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+			                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+			                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+			                "next":/*[[#{pagination.next.button}]]*/ "Next",
+			                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+			                "all":/*[[#{pagination.all}]]*/ "All",
+			                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+			                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+			            }
+			        }
+			    },	
+			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+			    groupBy:"statementName",
+			    groupHeader:function(value, count, data, group){
+			        //value - the value all members of this group share
+			        //count - the number of rows in this group
+			        //data - an array of all the row data objects in this group
+			        //group - the group component for the group
+			        return value;
+			    },			    
+			    columns:[ //Define Table Columns
+					{ title: /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ "Declared Values", headerHozAlign:"center", cssClass:"my-background",
+						columns:[
+							{title: /*[[#{account.statement}]]*/ "Statement Order", field:"statementOrder", hozAlign:"left", headerSort:true, visible:false},
+							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:true, visible:false},
+							{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
+							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"center", formatter: "money", hozAlign:"right", headerSort:true, 
+								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2", symbol:"$", symbolAfter:true}},
+						],
+					},
+				],
+			    initialSort:[
+			        {column:"statementOrder", dir:"asc"}, //sort by this first
+			        {column:"year", dir:"desc"}, //sort by this first
+			    ],
+			});
+			
+			tableRevenueNetGrossProfitDeclared.on("tableBuilt", function(){
+				document.getElementById('exportXLSRevenueNetGrossProfitDeclared').addEventListener("click", function(){
+					tableRevenueNetGrossProfitDeclared.download("xlsx", fileName + "_" + sheetNameDeclared + ".xlsx", 
+							{sheetName:sheetNameDeclared});				    
+				});
+			});
+		
+		}
+		
+		function updateRevenueNetAndGrossProfitCalculated() {
+			
+			let tableRevenueNetGrossProfitCalculated = new Tabulator('#tableRevenueNetGrossProfitCalculated', {
+				index: 'order',			
+				layout: "fitColumns", //fit columns to width of table (optional)
+			    pagination: false,
+				paginationMode: "local", //enable local pagination
+				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+				ajaxURL: /*[[@{/api/analysis/taxpayer_general_view}]]*/ "/api/analysis/taxpayer_general_view", //set url for ajax request
+				ajaxURLGenerator: function(url, config, params ){
+					console.log(config)
+					console.log(params)
+					p = new URLSearchParams()
+					p.set('searchType', '4')
+					p.set('taxpayerId', document.getElementById("taxpayer").value)
+					p.set('year', $('#year').val())
+					console.log(url + '?' + p.toString())		
+					return url + '?' + p.toString()
+				},
+				ajaxContentType: "json",
+			    ajaxResponse:function(url, params, response){
+			        //url - the URL of the request
+			        //params - the parameters passed with the request
+			        //response - the JSON object returned in the body of the response.
+		
+			        console.log(response);
+			        return response; //return the tableData property of a response json object
+			    },
+				footerElement: "<button id='exportXLSRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				locale:'xx',
+				langs:{
+			        "xx":{
+			            "pagination":{
+			                "first":/*[[#{pagination.first.button}]]*/ "First",
+			                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+			                "last":/*[[#{pagination.last.button}]]*/ "Last",
+			                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+			                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+			                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+			                "next":/*[[#{pagination.next.button}]]*/ "Next",
+			                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+			                "all":/*[[#{pagination.all}]]*/ "All",
+			                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+			                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+			            }
+			        }
+			    },	
+			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+			    groupBy:"statementName",
+			    groupHeader:function(value, count, data, group){
+			        //value - the value all members of this group share
+			        //count - the number of rows in this group
+			        //data - an array of all the row data objects in this group
+			        //group - the group component for the group
+			        return value;
+			    },			    
+			    columns:[ //Define Table Columns
+					{ title: /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ "Calculated Values", headerHozAlign:"center", cssClass:"my-background",
+						columns:[
+							{title: /*[[#{account.statement}]]*/ "Statement Order", field:"statementOrder", hozAlign:"left", headerSort:true, visible:false},
+							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:true, visible:false},
+							{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
+							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"center", formatter: "money", hozAlign:"right", headerSort:true, symbol:"$", symbolAfter:true, 
+								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2", symbol:"$", symbolAfter:true}},
+						],
+					},
+				],
+			    initialSort:[
+			        {column:"order", dir:"asc"}, //sort by this first
+			        {column:"year", dir:"desc"}, //sort by this first
+			    ],
+			});
+			
+			tableRevenueNetGrossProfitCalculated.on("tableBuilt", function(){
+				document.getElementById('exportXLSRevenueNetGrossProfitCalculated').addEventListener("click", function(){
+					tableRevenueNetGrossProfitCalculated.download("xlsx", fileName + "_" + sheetNameCalculated + ".xlsx", 
+							{sheetName:sheetNameCalculated});				    
+				});
+			});
+		
+		}		
+		
+	</script>
+</html>

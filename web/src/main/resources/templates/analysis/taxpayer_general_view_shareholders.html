@@ -7,13 +7,13 @@
 				<i class="dropdown icon"></i>							
 				<span id="titleShareholder" th:text="#{taxpayers.analysis.general.view.shareholders}"></span>
 			</div>
-			<div class="active content">
+			<div class="content">
 				<div id="tableShareholders" class="ui orange table"></div>	
 			</div>
 		</div>
 	</div>	
 
-	<script th:nonce="${cspNonce}">
+	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){

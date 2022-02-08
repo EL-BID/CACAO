@@ -5,18 +5,18 @@
 		<div class="ui fluid accordion">
 			<div class="active title">				
 				<i class="dropdown icon"></i> 
-				<span id="titleShareholding" th:text="#{taxpayers.analysis.general.view.shareholdings}"></span>							
+				<span id="titleTaxProvision" th:text="#{taxpayers.analysis.general.view.tax.provision}"></span>							
 			</div>							
 			<div class="content">
-				<div id="tableShareholding" class="ui orange table"></div>				
+				<div id="tableTaxProvision" class="ui orange table"></div>				
 			</div>
 		</div>
 	</div>	
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		let fileName = /*[[#{taxpayers.analysis.general.view.tax.shareholdings}]]*/ ''; 
-		let sheetName = /*[[#{taxpayers.analysis.general.view.tax.shareholdings}]]*/ '';	
+		let fileName = /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ ''; 
+ 		let sheetName = /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';	
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
@@ -25,10 +25,10 @@
 		    return value;
 		}	
 	
-		function updateShareHolding() {
+		function updateTaxProvision() {
 			
-			let tableShareholding = new Tabulator('#tableShareholding', {
-				index: 'shareholderName',			
+			let tableTaxProvision = new Tabulator('#tableTaxProvision', {
+				index: 'id',			
 				layout: "fitColumns", //fit columns to width of table (optional)
 			    pagination: true,
 				paginationMode: "local", //enable local pagination
@@ -39,7 +39,7 @@
 					console.log(config)
 					console.log(params)
 					p = new URLSearchParams()
-					p.set('searchType', '1')
+					p.set('searchType', '5')
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
 					console.log(url + '?' + p.toString())		
@@ -54,7 +54,7 @@
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSShareholding' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSTaxProvision' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -75,28 +75,19 @@
 			    },	
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 				columns:[ //Define Table Columns
-						{title: /*[[#{shareholding.name}]]*/ "Company Name", field:"shareholderName", hozAlign:"left", headerSort:true},
-						{title: /*[[#{share.class}]]*/ "Share Class", field:"shareClass", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
-						{title: /*[[#{share.type}]]*/ "Share Type", field:"shareType", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
-						{title: /*[[#{share.amount}]]*/ "Share Amout", field:"shareAmount", headerSort:true, formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-							hozAlign:"right", headerSort:true, headerHozAlign:"right"},
-						{title: /*[[#{share.percentage}]]*/ "Share %", field:"sharePercentage", headerSort:false, formatter: "money", 
-								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"%", symbolAfter:true, precision:"2"}, 
-								hozAlign:"right", headerSort:true, headerHozAlign:"right"},
-						{title: /*[[#{share.quantity}]]*/ "Share Quantity", field:"shareQuantity", formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2"}, 
-							hozAlign:"right", headerSort:true, headerHozAlign:"right"}
+						{title: /*[[#{year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
+						{title: /*[[#{value}]]*/ "Value", field:"value", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
+							headerHozAlign:"right", 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}},
 				],
 			    initialSort:[
-			        {column:"shareAmount", dir:"desc"}, //sort by this first
-			        //{column:"shareholderName", dir:"asc"}, //then sort by this second
+			        {column:"year", dir:"desc"}, //sort by this first
 			    ]
 			});
 			
-			tableShareholding.on("tableBuilt", function(){
-				document.getElementById('exportXLSShareholding').addEventListener("click", function(){
-					tableShareholding.download("xlsx", fileName + ".xlsx", {sheetName:sheetName});				    
+			tableTaxProvision.on("tableBuilt", function(){
+				document.getElementById('exportXLSTaxProvision').addEventListener("click", function(){
+					tableTaxProvision.download("xlsx", fileName + ".xlsx", {sheetName:sheetName});				    
 				});
 			});
 		
