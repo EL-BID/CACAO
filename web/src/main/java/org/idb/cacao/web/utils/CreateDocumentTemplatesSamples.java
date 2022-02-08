@@ -249,8 +249,8 @@ public class CreateDocumentTemplatesSamples {
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("PDF Lalur");
-		input.setFormat(DocumentFormat.PDF);
+		input = new DocumentInput("JSON Lalur");
+		input.setFormat(DocumentFormat.JSON);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
@@ -331,6 +331,10 @@ public class CreateDocumentTemplatesSamples {
 
 		input = new DocumentInput("PDF Chart Of Accounts");
 		input.setFormat(DocumentFormat.PDF);
+		docTemplate.addInput(input);
+
+		input = new DocumentInput("XML Chart Of Accounts");
+		input.setFormat(DocumentFormat.XML);
 		docTemplate.addInput(input);
 
 		List<DocumentInputFieldMapping> mappings = Arrays.asList(

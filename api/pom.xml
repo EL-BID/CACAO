@@ -70,6 +70,7 @@
 			<version>2.12.4</version>
 		</dependency>
 
+
 		<!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-elasticsearch -->
 		<dependency>
 			<groupId>org.springframework.data</groupId>
@@ -129,6 +130,15 @@
     		<artifactId>jackson-datatype-jsr310</artifactId>
     		<version>2.12.4</version>
 		</dependency>
+	
+		<!-- https://mvnrepository.com/artifact/com.github.javadev/underscore -->
+		<dependency>
+			<groupId>com.github.javadev</groupId>
+			<artifactId>underscore</artifactId>
+			<version>1.74</version>
+		</dependency>
+
+
 
 	</dependencies>
 

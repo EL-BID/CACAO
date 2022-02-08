@@ -20,11 +20,7 @@
 package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,13 +28,10 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.github.underscore.U;
 import org.apache.commons.io.input.BOMInputStream;
-import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
-import org.idb.cacao.validator.fileformats.FileFormat;
-import org.idb.cacao.validator.fileformats.FileFormatFactory;
+
 
 /**
  * Implements {@link FileParser} interface to parse XML files. <br>
@@ -126,11 +119,10 @@ public class XMLParser implements FileParser {
 			
 			}
 
-			final String xml = xmlText.toString();
+			String xml = xmlText.toString();
 
-			final Map<String,Object> result =
-					new ObjectMapper().readValue(xml, HashMap.class);
-			
+			Map<String, Object> result = U.fromXmlMap(xml);
+		
 			ReflexiveConverterToTable flattener = new ReflexiveConverterToTable();
 			flattener.parse(result);
 			List<Object[]> flattenedTable = flattener.getTable();
@@ -141,7 +133,7 @@ public class XMLParser implements FileParser {
 			entries = flattenedTable.iterator();
 			tab.parseColumnNames(titles.toArray());
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
 		}
 	}
@@ -198,6 +190,5 @@ public class XMLParser implements FileParser {
 		entries = null;
 		
 	}
-
 
 }

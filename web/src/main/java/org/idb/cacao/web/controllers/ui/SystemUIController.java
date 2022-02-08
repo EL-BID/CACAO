@@ -375,13 +375,6 @@ public class SystemUIController {
 				kafkaAdminClient.metrics().entrySet().stream().collect(Collectors.toMap(e->e.getKey().group()+"."+e.getKey().name(), e->ResourceMonitorService.getKafkaMetricDesc(e.getValue())));
 				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.version")).withActive(false).withChild(metrics.get("app-info.version")));
 				
-				String count = metrics.get("admin-client-metrics.request-total");
-				if (count==null)
-					count = metrics.get("admin-client-node-metrics.request-total");
-				if (count==null)
-					count = "";
-				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.requests")).withActive(false).withChild(count));
-				
 				int number_nodes = kafkaAdminClient.describeCluster().nodes().get().size();
 				kafka_info.addChild(new MenuItem(text("sysinfo.kafka.nodes")).withActive(false).withChild(formatValue(number_nodes)));
 		

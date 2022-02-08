@@ -36,6 +36,7 @@ services:
     restart: always
   web:
     container_name: web
+    hostname: 'web'
     build:
       args:
         - USE_PROXY
@@ -66,6 +67,7 @@ services:
     restart: always
   validator:
     container_name: validator
+    hostname: 'validator'
     build:
       args:
         - USE_PROXY
@@ -94,6 +96,7 @@ services:
     restart: always
   etl:
     container_name: etl
+    hostname: 'etl'
     build:
       args:
         - USE_PROXY
@@ -144,7 +147,7 @@ services:
       - ./conf/es.yml:/usr/share/elasticsearch/config/elasticsearch.yml
       - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
       - ./conf/es.misc.options:/usr/share/elasticsearch/config/jvm.options.d/es.misc.options
-#    restart: always
+    restart: always
   es02:
     container_name: es02
     hostname: 'es02'
@@ -169,7 +172,7 @@ services:
       - ./conf/es.yml:/usr/share/elasticsearch/config/elasticsearch.yml
       - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
       - ./conf/es.misc.options:/usr/share/elasticsearch/config/jvm.options.d/es.misc.options
-#   restart: always
+    restart: always
   es03:
     container_name: es03
     hostname: 'es03'
@@ -194,7 +197,7 @@ services:
       - ./conf/es.yml:/usr/share/elasticsearch/config/elasticsearch.yml
       - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
       - ./conf/es.misc.options:/usr/share/elasticsearch/config/jvm.options.d/es.misc.options
-#    restart: always
+    restart: always
   kibana:
     container_name: kibana
     build:
