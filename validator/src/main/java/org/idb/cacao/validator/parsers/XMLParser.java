@@ -20,9 +20,7 @@
 package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,14 +29,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.github.underscore.U;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.Converter;
-import com.thoughtworks.xstream.converters.MarshallingContext;
-import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import com.thoughtworks.xstream.io.HierarchicalStreamReader;
-import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
-import com.thoughtworks.xstream.io.xml.DomDriver;
-
 import org.apache.commons.io.input.BOMInputStream;
 import org.idb.cacao.api.templates.DocumentInput;
 
