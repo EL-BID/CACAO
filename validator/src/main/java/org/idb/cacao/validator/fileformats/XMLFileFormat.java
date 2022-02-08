@@ -55,7 +55,14 @@ public class XMLFileFormat implements FileFormat {
 	 */
 	@Override
 	public Boolean matchFilename(String filename) {
-		return COMMON_FILE_EXTENSION.matcher(getFileExtension(filename)).find();
+		final String ext = getFileExtension(filename);
+		if (ExcelFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
+			|| PDFFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
+			|| WordFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find()
+			|| JSONFileFormat.COMMON_FILE_EXTENSION.matcher(ext).find())
+			return false;
+
+		return COMMON_FILE_EXTENSION.matcher(getFileExtension(filename)).find(); // for any other extension, may be a CSV or may be not
 	}
 
 	/*

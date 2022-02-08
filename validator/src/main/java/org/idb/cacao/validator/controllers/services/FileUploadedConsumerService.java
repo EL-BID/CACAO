@@ -139,12 +139,14 @@ public class FileUploadedConsumerService {
 		ValidationContext validationContext = new ValidationContext();
 
 		try {
-
+			// Recovering the document from the database
 			DocumentUploaded doc = documentsUploadedRepository.findById(documentId).orElse(null);
 
+			// Tests if the real document exists 
 			if (doc == null)
 				throw new DocumentNotFoundException("Document with id " + documentId + " wasn't found in database.");
 
+			// Sets the document to validation context
 			validationContext.setDocumentUploaded(doc);
 			
 			Validations validations = new Validations(validationContext, domainTableRepository);

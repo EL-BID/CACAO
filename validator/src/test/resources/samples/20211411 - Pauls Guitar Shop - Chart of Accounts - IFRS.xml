@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<root>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>1.1.1</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>1</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>1.10</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Cash</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Cash and Cash Equivalents</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>1.2.1</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>1</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>1.9</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>ChartOfAccountss Receivable</ChartOfAccountsName>
+    <ChartOfAccountsDescription>ChartOfAccountss, Notes And Loans Receivable</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>1.3.1</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>1</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>1.7</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Inventory</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Merchandise in Inventory</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>2.1.1</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>3</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>3.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>ChartOfAccountss Payable</ChartOfAccountsName>
+    <ChartOfAccountsDescription>ChartOfAccountss and Trade Payables</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>2.3.2</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>3</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>3.4</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Loans</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Loans Payable</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>3.5.2</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>2</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>2.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Stock</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Subscribed Stock Receivables</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>4.1.1</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>4</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>4.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Revenue Goods</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Revenue from selling Goods</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>4.1.2</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>4</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>4.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Revenue Services</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Revenue from Services</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>5.1.2</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>5</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>5.2.2</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Employee</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Employee Benefits</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>5.1.3</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>5</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>5.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Services</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Expenses for Services</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>5.1.4</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>5</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>5.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Rent</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Rent, Depreciation, Amortization And Depletion</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>5.2.1</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>5</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>5.2.1</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Sales Expenses</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Cost Of Sales</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>5.2.2</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>5</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>5.2.2</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Adminitrative Expenses</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Selling, General And Administrative </ChartOfAccountsDescription>
+  </ChartOfAccounts>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <ChartOfAccountsCode>6.1.2</ChartOfAccountsCode>
+    <ChartOfAccountsCategory>X</ChartOfAccountsCategory>
+    <ChartOfAccountsSubcategory>X.X</ChartOfAccountsSubcategory>
+    <ChartOfAccountsName>Other Expenses</ChartOfAccountsName>
+    <ChartOfAccountsDescription>Other non-operating expenses</ChartOfAccountsDescription>
+  </ChartOfAccounts>
+</root>
