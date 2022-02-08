@@ -44,21 +44,21 @@
                     </div>
                     <div class="ui fields">
                      <div class="ui six field" id="rangestart">
-                      <label>Initial Date</label>
+                      <label th:text="#{date.initial}">Initial Date</label>
                       <div class="ui input left icon" style="position:auto">
                         <i class="calendar icon"></i>
-                        <input type="text" placeholder="Start">
+                        <input type="text">
                       </div>
                      </div>
                      <div class="ui six field" id="rangeend">
-                      <label>Final Date</label>
+                      <label th:text="#{date.initial}">Final Date</label>
                       <div class="ui input left icon" style="position:auto">
                         <i class="calendar icon"></i>
-                        <input type="text" placeholder="Final">
+                        <input type="text">
                       </div>
                      </div>
                      <div class="ui six field">
-                      <label>Minimum amount</label>
+                      <label th:text="#{taxpayers.analysis.flows.minimum.amount}">Minimum amount</label>
                       <div class="ui input" style="position:auto">
                         <input type="number" step=1000 min=0 value=4000 name="minimim" id="minimum">
                       </div>
@@ -73,9 +73,9 @@
 	<div id="tooltip" style="display:none; position: absolute;">
       <table class="ui compact table">
         <tbody>
-        <tr><td>Credited:</td><td id="tt_credited">x</td></tr>
-        <tr><td>Debited:</td><td id="tt_debited">y</td></tr>
-        <tr><td>Amount:</td><td id="tt_amount">1</td></tr>
+        <tr><td th:text="#{taxpayers.analysis.flows.credited}">Credited:</td><td id="tt_credited" style="font-weight: bold">x</td></tr>
+        <tr><td th:text="#{taxpayers.analysis.flows.debited}">Debited:</td><td id="tt_debited" style="font-weight: bold">y</td></tr>
+        <tr><td th:text="#{taxpayers.analysis.flows.amount}">Amount:</td><td id="tt_amount" style="font-weight: bold">1</td></tr>
         </tbody>
       </table>
       </div>
@@ -88,10 +88,14 @@
 <script th:nonce="${cspNonce}" th:inline="javascript">
 	
 //Define number format
-decimalChar = /*[[${decimalChar}]]*/ ',';
-decimalGroupSeparator = /*[[${decimalGroupSeparator}]]*/ '.';
+d3.formatDefaultLocale({
+	decimal: /*[[#{decimal.char}]]*/ ',',
+	thousands: /*[[#{decimal.grouping.separator}]]*/ '.',
+	"grouping": [3],
+	"currency": ["$ ", ""]
+})
 
-errorNoDataAvailable = /*[[${errorNoDataAvailable}]]*/ '';
+let currencyFormat = d3.format("$,.0f")
 
 function onFormChange() {
 	let taxpayer = $('#taxpayer').val()
@@ -187,7 +191,7 @@ function addAccount(row, parent, idField, nameField, addChildren=true) {
 
 function toSortedArray(nodes) {
 	arr = Array.from(nodes.values())
-	return arr.sort((a,b) => a.id.localeCompare(b.id))
+	return arr.sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}))
 }
 
 function processFlows(data) {
@@ -210,7 +214,7 @@ function processFlows(data) {
   })
   let contas = { name: "Accounts", children: toSortedArray(nodes) }
 
-  console.log(contas)
+  //console.log(contas)
   let flows = data.map(row => ({ src: row['creditAccountCode'], dst: row['debitAccountCode'], value: row['amount'] }) )
   
   let left = right = 0
@@ -219,9 +223,11 @@ function processFlows(data) {
           return
       }
       if(d.data.id.startsWith("1")) {
-          d.index = 3 * left++
+          d.index = left++
+          if(d.depth==3) left += 3
           d.pos = 0
       } else {
+          if(d.depth==1 && right>0) right += .2
           d.index = right++
           d.pos = 1
       }
@@ -254,7 +260,7 @@ function processFlows(data) {
   let map = new Object()
   
   //let color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, nodesIds.length)).domain(nodesIds)
-  let color = d3.scaleOrdinal(d3.schemeCategory10).domain(nodesIds)
+  let color = d3.scaleOrdinal(d3.schemeCategory10.concat(d3.schemeDark2.concat(d3.schemeSet3))).domain(nodesIds)
   
   let valuesExtent = d3.extent(flows, d=> d.value)
   
@@ -266,8 +272,7 @@ function processFlows(data) {
   let texts = g_nodes.append("text")
   .attr("dy", "0.32em")
   .attr("x", d => dx + d.depth * nodeSize/2 - nodeSize)
-  //.attr("fill", d => d.children ? "#000" : color(d.data.id))
-  .text(d => d.data.id + " " + d.data.name)
+  .text(d => (d.depth==3 ? d.data.id + " " : "") + d.data.name)
   .on("mouseover", mouseover)
   .on("mouseout", mouseOut)
   .on("click", onclick )
@@ -298,7 +303,7 @@ function processFlows(data) {
     d.dstPos = node.edges++
   })
   
-  let circles = g_nodes.filter(d=> d.band).append("circle")
+  let circles = g_nodes.filter(d=> !d.children).append("circle")
   .attr("cx", d => d.end)
   .attr("r", nodeHeight/2)
   .attr("fill", d => d.children ? "#999" : color(d.data.id))
@@ -374,9 +379,9 @@ function processFlows(data) {
 	flow = d3.select(this).data()[0]
 	src = map[flow.src].data
 	dst = map[flow.dst].data
-	$('#tt_credited').text(src.id + " " + src.name)
-	$('#tt_debited').text(dst.id + " " + dst.name)
-	$('#tt_amount').text(flow.value)
+	$('#tt_credited').text(src.id + " " + src.name).css('color', color(src.id))
+	$('#tt_debited').text(dst.id + " " + dst.name).css('color', color(dst.id))
+	$('#tt_amount').text(currencyFormat(flow.value))
 	tooltip
 	  .style("left", (d.pageX + 10) + "px")
 	  .style("top", (d.pageY + 10) + "px")
