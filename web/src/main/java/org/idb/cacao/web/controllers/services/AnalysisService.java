@@ -42,7 +42,6 @@ import org.idb.cacao.web.dto.BalanceSheet;
 import org.idb.cacao.web.dto.Outlier;
 import org.idb.cacao.web.dto.Shareholding;
 import org.idb.cacao.web.dto.StatementIncomeItem;
-import org.idb.cacao.web.dto.TaxpayerData;
 import org.idb.cacao.web.utils.Script;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +69,7 @@ public class AnalysisService {
 			.formatIndexNameForPublishedData("Accounting Computed Statement Income");
 	private final String DECLARED_STATEMENT_INCOME_INDEX = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Declared Statement Income");
-	private final String SHAREHOLDING_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Shareholders");
+	private final String SHAREHOLDING_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Shareholding");
 	private final String TAXPAYER_INDEX = "cacao_taxpayers";
 	
 	private final static int SOURCE_JOURNAL = 1;
@@ -500,7 +499,7 @@ public class AnalysisService {
 	 * @param qualifierValue A value for qualifier
 	 * @param sourceData	 An indication of source values (index) to use
 	 * @param year           A year of values to search
-	 * @return A {@link Map} of values separated by taxpayers
+	 * @return A {@link AnalysisData} with all data about all taxpayers for specified parameters
 	 */
 	public AnalysisData getGeneralAnalysisValues(String qualifier, String qualifierValue, int sourceData, int year) {
 		
@@ -1261,22 +1260,17 @@ public class AnalysisService {
 	 * Search and return all data about a taxpayer specified in parameter
 	 * @param taxpayerId	A taxpayer to search data for
 	 * @param year			A specific year to search
+	 * @param searchType 	A specific search to do 
 	 * 
-	 * @return	All data about a specified taxpayer
+	 * @return	Data about a specified taxpayer for a specific year according with specified search type.
 	 */
 	public List<?> getTaxpayerData(String taxpayerId, int year, int searchType) {
 		
-		TaxpayerData data = new TaxpayerData();
-		data.setTaxpayerId(taxpayerId);
-		data.setYear(year);
-		
 		switch (searchType) {
-		case SEARCH_SHAREHOLDINGS:
-			addShareholdings(data);
-			return data.getShareholdings();
+		case SEARCH_SHAREHOLDINGS:			
+			return getShareholdings(taxpayerId, year);
 		case SEARCH_SHAREHOLDERS:
-			addShareholders(data);
-			return data.getShareholders();			
+			return getShareholders(taxpayerId, year);			
 		default:
 			break;
 		}
@@ -1290,17 +1284,17 @@ public class AnalysisService {
 	 * 
 	 * @param data	Information about taxpayer and year
 	 */
-	private void addShareholdings(TaxpayerData data) {
+	private List<Shareholding> getShareholdings(String taxpayerId, int year) {
 		
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		//Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", data.getTaxpayerId()));
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter for year
-		query = query.must(new TermQueryBuilder("year", data.getYear()));
+		query = query.must(new TermQueryBuilder("year", year));
 		
     	// Script in 'painless' language for identifying confirmations and returning the confirmed payment value
     	// We return '0' in case this property not being defined, so that we can have aggregation of 'zeroes' over
@@ -1311,8 +1305,8 @@ public class AnalysisService {
 
 		//Define group by fields
 		Object[] groupBy = {
-				"shareholder_id.keyword", 
-				"shareholder_name.keyword", 
+				"shareholding_id.keyword", 
+				"shareholding_name.keyword", 
 	            translate("share_type_name")+".keyword",
 	            new Script(scriptletShareClass, "byShareClass") };
 		
@@ -1340,8 +1334,8 @@ public class AnalysisService {
 		}
 		
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No shaholding information found for taxPayer " + data.getTaxpayerId() + " for period " + data.getYear());
-			return; // No flows found
+			log.log(Level.INFO, "No shaholding information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No flows found
 		} 
 
 		//Retrieve information from result
@@ -1353,7 +1347,7 @@ public class AnalysisService {
 		};
 		
 		//Update shareholding information for this taxpayer
-		data.setShareholdings(SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function));
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 		
 	}
 	
@@ -1362,17 +1356,17 @@ public class AnalysisService {
 	 * 
 	 * @param data	Information about taxpayer and year
 	 */
-	private void addShareholders(TaxpayerData data) {
+	private List<Shareholding> getShareholders(String taxpayerId, int year) {
 		
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		//Filter by taxpayer
-		query = query.must(new TermQueryBuilder("shareholder_id.keyword", data.getTaxpayerId()));		
+		query = query.must(new TermQueryBuilder("shareholding_id.keyword", taxpayerId));		
 
 		// Filter for year
-		query = query.must(new TermQueryBuilder("year", data.getYear()));
+		query = query.must(new TermQueryBuilder("year", year));
 		
     	// Script in 'painless' language for identifying confirmations and returning the confirmed payment value
     	// We return '0' in case this property not being defined, so that we can have aggregation of 'zeroes' over
@@ -1412,8 +1406,8 @@ public class AnalysisService {
 		}
 		
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No shaholding information found for taxPayer " + data.getTaxpayerId() + " for period " + data.getYear());
-			return; // No flows found
+			log.log(Level.INFO, "No shaholding information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No flows found
 		} 
 
 		//Retrieve information from result
@@ -1425,7 +1419,7 @@ public class AnalysisService {
 		};
 		
 		//Update shareholding information for this taxpayer
-		data.setShareholders(SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function));
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 		
 	}
 		

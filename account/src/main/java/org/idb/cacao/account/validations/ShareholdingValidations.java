@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.account.validations;
 
-import static org.idb.cacao.account.archetypes.ShareholdersArchetype.FIELDS_NAMES.*;
+import static org.idb.cacao.account.archetypes.ShareholdingArchetype.FIELDS_NAMES.*;
 import static org.idb.cacao.api.ValidationContext.getParsedRequiredContent;
 
 import java.util.List;
@@ -28,12 +28,12 @@ import java.util.Map;
 import org.idb.cacao.api.ValidationContext;
 
 /**
- * Performs some validation tests over incoming file related to Shareholders
+ * Performs some validation tests over incoming file related to Shareholding
  * 
  * @author Gustavo Figueiredo
  *
  */
-public class ShareholdersValidations {
+public class ShareholdingValidations {
 
 	/**
 	 * Performs domain-specific validations over the uploaded file contents.
@@ -74,12 +74,12 @@ public class ShareholdersValidations {
 				}
 			}
 			
-			String shareholderName = getParsedRequiredContent(context, String.class, record, ShareholderName.name());
-			String shareholderId = getParsedRequiredContent(context, String.class, record, ShareholderId.name());
-			if ((shareholderName==null || shareholderName.trim().length()==0)
-				&& (shareholderId==null || shareholderId.trim().length()==0)) {
+			String shareholdingName = getParsedRequiredContent(context, String.class, record, ShareholdingName.name());
+			String shareholdingId = getParsedRequiredContent(context, String.class, record, ShareholdingId.name());
+			if ((shareholdingName==null || shareholdingName.trim().length()==0)
+				&& (shareholdingId==null || shareholdingId.trim().length()==0)) {
 				
-				context.addAlert("{account.error.shareholder.unidentified}");
+				context.addAlert("{account.error.shareholding.unidentified}");
 				return false;
 			}
 		}

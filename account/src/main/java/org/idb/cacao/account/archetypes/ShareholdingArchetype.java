@@ -19,16 +19,16 @@
  *******************************************************************************/
 package org.idb.cacao.account.archetypes;
 
-import static org.idb.cacao.account.archetypes.ShareholdersArchetype.FIELDS_NAMES.*;
+import static org.idb.cacao.account.archetypes.ShareholdingArchetype.FIELDS_NAMES.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.idb.cacao.account.elements.StatementComprehensiveIncome;
-import org.idb.cacao.account.etl.ShareholdersLoader;
-import org.idb.cacao.account.generator.ShareholdersGenerator;
-import org.idb.cacao.account.validations.ShareholdersValidations;
+import org.idb.cacao.account.etl.ShareholdingLoader;
+import org.idb.cacao.account.generator.ShareholdingGenerator;
+import org.idb.cacao.account.validations.ShareholdingValidations;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.CustomDataGenerator;
@@ -41,14 +41,14 @@ import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.templates.TemplateArchetype;
 
 /**
- * This is the archetype for DocumentTemplate's related to SHAREHOLDERS STATEMENT
+ * This is the archetype for DocumentTemplate's related to SHAREHOLDING STATEMENT
  * 
  * @author Gustavo Figueiredo
  *
  */
-public class ShareholdersArchetype implements TemplateArchetype {
+public class ShareholdingArchetype implements TemplateArchetype {
 
-	public static final String NAME = "accounting.shareholders";
+	public static final String NAME = "accounting.shareholding";
 
 	/*
 	 * (non-Javadoc)
@@ -92,9 +92,9 @@ public class ShareholdersArchetype implements TemplateArchetype {
 		
 		TaxYear,
 		
-		ShareholderName,
+		ShareholdingName,
 		
-		ShareholderId,
+		ShareholdingId,
 		
 		ShareType,
 
@@ -138,17 +138,17 @@ public class ShareholdersArchetype implements TemplateArchetype {
 				.withFileUniqueness(true));
 
 		fields.add(new DocumentField()
-				.withFieldName(ShareholderName.name())
+				.withFieldName(ShareholdingName.name())
 				.withFieldType(FieldType.CHARACTER)
-				.withDescription("Shareholder's name")
+				.withDescription("Shareholding's name")
 				.withMaxLength(1024)
 				.withPersonalData(true));
 
 		fields.add(new DocumentField()
-				.withFieldName(ShareholderId.name())
+				.withFieldName(ShareholdingId.name())
 				.withFieldType(FieldType.CHARACTER)
 				.withFieldMapping(FieldMapping.TAXPAYER_ID)
-				.withDescription("Shareholder's Identification Number")
+				.withDescription("Shareholding's Identification Number")
 				.withMaxLength(128)
 				.withPersonalData(true));
 
@@ -200,7 +200,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public boolean validateDocumentUploaded(ValidationContext context) {
-		return ShareholdersValidations.validateDocumentUploaded(context, context.getParsedContents());
+		return ShareholdingValidations.validateDocumentUploaded(context, context.getParsedContents());
 	}
 
 	/*
@@ -209,7 +209,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public boolean performETL(ETLContext context) {
-		return ShareholdersLoader.performETL(context);
+		return ShareholdingLoader.performETL(context);
 	}
 
 	/*
@@ -218,7 +218,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public List<String> getRelatedPublishedDataIndices() {
-		return Arrays.asList(ShareholdersLoader.INDEX_PUBLISHED_SHAREHOLDERS);
+		return Arrays.asList(ShareholdingLoader.INDEX_PUBLISHED_SHAREHOLDING);
 	}
 
 	/*
@@ -227,7 +227,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public boolean hasCustomGenerator(DocumentTemplate template, DocumentFormat format) {
-		return ShareholdersArchetype.NAME.equalsIgnoreCase(template.getArchetype());
+		return ShareholdingArchetype.NAME.equalsIgnoreCase(template.getArchetype());
 	}
 
 	/*
@@ -238,7 +238,7 @@ public class ShareholdersArchetype implements TemplateArchetype {
 	public CustomDataGenerator getCustomGenerator(DocumentTemplate template, DocumentFormat format, long seed,
 			long records) throws Exception {
 		if (hasCustomGenerator(template, format))
-			return new ShareholdersGenerator(template, format, seed, records);
+			return new ShareholdingGenerator(template, format, seed, records);
 		else
 			return null;
 	}

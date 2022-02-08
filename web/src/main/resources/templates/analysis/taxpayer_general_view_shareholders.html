@@ -5,7 +5,7 @@
 		<div class="ui fluid accordion">			
 			<div class="active title">				
 				<i class="dropdown icon"></i>							
-				<span th:text="#{taxpayers.analysis.general.view.shareholders}"></span>
+				<span id="titleShareholder" th:text="#{taxpayers.analysis.general.view.shareholders}"></span>
 			</div>
 			<div class="active content">
 				<div id="tableShareholders" class="ui orange table"></div>	
@@ -13,7 +13,14 @@
 		</div>
 	</div>	
 
-	<script th:nonce="${cspNonce}"> 
+	<script th:nonce="${cspNonce}">
+	
+		//Custom accessor
+		function nullConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    return value;
+		}
 
 		function updateShareHolders() {
 	
@@ -44,7 +51,7 @@
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -66,8 +73,8 @@
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 				columns:[ //Define Table Columns
 						{title: /*[[#{shareholder.name}]]*/ "Shareholder Name", field:"shareholderName", hozAlign:"left", headerSort:true},
-						{title: /*[[#{share.class}]]*/ "Share Class", field:"shareClass", hozAlign:"left", headerSort:true},
-						{title: /*[[#{share.type}]]*/ "Share Type", field:"shareType", hozAlign:"left", headerSort:true},
+						{title: /*[[#{share.class}]]*/ "Share Class", field:"shareClass", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
+						{title: /*[[#{share.type}]]*/ "Share Type", field:"shareType", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
 						{title: /*[[#{share.amount}]]*/ "Share Amout", field:"shareAmount", headerSort:true, formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
 							hozAlign:"right", headerSort:true, headerHozAlign:"right"},
@@ -77,16 +84,21 @@
 						{title: /*[[#{share.quantity}]]*/ "Share Quantity", field:"shareQuantity", formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2"}, 
 							hozAlign:"right", headerSort:true, headerHozAlign:"right"}
-				]
+				],
+			    initialSort:[
+			        {column:"shareAmount", dir:"desc"}, //sort by this first
+			        //{column:"shareholderName", dir:"asc"}, //then sort by this second
+			    ]
 			});
 			
 			tableShareholders.on("tableBuilt", function(){
-				document.getElementById('exportXLS').addEventListener("click", function(){
-					tableShareholders.download("xlsx", /*[[#{taxpayers.analysis.general.view.shareholders}]]*/'' , 
-							{sheetName:/*[[#{taxpayers.analysis.general.view.shareholders}]]*/''});				    
+				document.getElementById('exportXLSShareholders').addEventListener("click", function(){
+					tableShareholders.download("xlsx", document.getElementById("titleShareholder").innerText + ".xlsx", 
+							{sheetName:document.getElementById("titleShareholder").innerText});				    
 				});
 			});		
 			
 		}
+		
 	</script>
 </html>

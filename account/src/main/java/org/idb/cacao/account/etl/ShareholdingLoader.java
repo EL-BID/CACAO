@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
-import org.idb.cacao.account.archetypes.ShareholdersArchetype;
+import org.idb.cacao.account.archetypes.ShareholdingArchetype;
 import org.idb.cacao.account.etl.AccountingLoader.AccountingFieldNames;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.ETLContext;
@@ -51,21 +51,21 @@ import org.idb.cacao.api.utils.IndexNamesUtils;
 import com.google.common.cache.LoadingCache;
 
 /**
- * Projects Shareholders information into Database after validation phases. Performs denormalization
+ * Projects Shareholdg information into Database after validation phases. Performs denormalization
  * of data.
  * 
  * @author Gustavo Figueiredo
  *
  */
-public class ShareholdersLoader {
+public class ShareholdingLoader {
 
-	private static final Logger log = Logger.getLogger(ShareholdersLoader.class.getName());
+	private static final Logger log = Logger.getLogger(ShareholdingLoader.class.getName());
 
 	/**
-	 * Index name for published (denormalized) data regarding the Shareholders information.<BR>
-	 * There is one record for each year and each Shareholder entry.
+	 * Index name for published (denormalized) data regarding the Shareholding information.<BR>
+	 * There is one record for each year and each Shareholding entry.
 	 */
-	public static final String INDEX_PUBLISHED_SHAREHOLDERS = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Shareholders");
+	public static final String INDEX_PUBLISHED_SHAREHOLDING = IndexNamesUtils.formatIndexNameForPublishedData("Accounting Shareholding");
 
 	/**
 	 * The field name for date/time of published data
@@ -105,17 +105,17 @@ public class ShareholdersLoader {
 	/**
 	 * The field name for published data regarding share type
 	 */
-	private static final String publishedShareType = IndexNamesUtils.formatFieldName(ShareholdersArchetype.FIELDS_NAMES.ShareType.name());
+	private static final String publishedShareType = IndexNamesUtils.formatFieldName(ShareholdingArchetype.FIELDS_NAMES.ShareType.name());
 
 	/**
-	 * The field name for published data regarding Shareholder Identification number
+	 * The field name for published data regarding Shareholding Identification number
 	 */
-	private static final String publishedShareholderId = IndexNamesUtils.formatFieldName(ShareholdersArchetype.FIELDS_NAMES.ShareholderId.name());
+	private static final String publishedShareholdingId = IndexNamesUtils.formatFieldName(ShareholdingArchetype.FIELDS_NAMES.ShareholdingId.name());
 
 	/**
-	 * The field name for published data regarding Shareholder Name
+	 * The field name for published data regarding Shareholding Name
 	 */
-	private static final String publishedShareholderName = IndexNamesUtils.formatFieldName(ShareholdersArchetype.FIELDS_NAMES.ShareholderName.name());
+	private static final String publishedShareholdingName = IndexNamesUtils.formatFieldName(ShareholdingArchetype.FIELDS_NAMES.ShareholdingName.name());
 
 	/**
 	 * Performs the Extract/Transform/Load operations with available data
@@ -139,8 +139,10 @@ public class ShareholdersLoader {
 
 	        final OffsetDateTime timestamp = context.getDocumentUploaded().getTimestamp();
 
-			// Search for the validated shareholders list related to the matching template
-			Stream<Map<String, Object>> data = context.getValidatedDataRepository().getValidatedData(context.getDocumentTemplate().getName(), context.getDocumentTemplate().getVersion(), context.getDocumentUploaded().getFileId(),
+			// Search for the validated shareholding list related to the matching template
+			Stream<Map<String, Object>> data = context.getValidatedDataRepository().getValidatedData(
+					context.getDocumentTemplate().getName(), context.getDocumentTemplate().getVersion(), 
+					context.getDocumentUploaded().getFileId(),
 					/*sortBy*/Optional.empty(),
 					/*sortOrder*/Optional.empty());
 			
@@ -149,9 +151,9 @@ public class ShareholdersLoader {
 
 			// Deletes previous published data
 			try {
-				context.getLoadDataStrategy().delete(INDEX_PUBLISHED_SHAREHOLDERS, taxPayerId, taxPeriodNumber);
+				context.getLoadDataStrategy().delete(INDEX_PUBLISHED_SHAREHOLDING, taxPayerId, taxPeriodNumber);
 			} catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while deleting previous published data at "+INDEX_PUBLISHED_SHAREHOLDERS+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
+				log.log(Level.SEVERE, "Error while deleting previous published data at "+INDEX_PUBLISHED_SHAREHOLDING+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
 			}
 
 			// Use the domain table (either the built-in or the one configured at application)
@@ -175,11 +177,11 @@ public class ShareholdersLoader {
 			boolean success = true;
 			try {
 				
-				// Pass through data in order to collect all the entries for Shareholders
+				// Pass through data in order to collect all the entries for Shareholding
 				
 				data.forEach(record->{
 					
-					// Publish denormalized SHAREHOLDERS record
+					// Publish denormalized SHAREHOLDING record
 					
 					String rowId_SH = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsOverall.incrementAndGet());
 					Map<String,Object> normalizedRecord_SH = new HashMap<>(record);
@@ -209,31 +211,31 @@ public class ShareholdersLoader {
 					if (shareType!=null)
 						ETLContext.denormalizeDomainEntryNames(share_type_mlmap.get(shareType), publishedShareType, normalizedRecord_SH);
 
-					// If the shareholder is identified, includes information according to the taxpayers registry
-					String shareholderId = ValidationContext.toString(record.get(publishedShareholderId));
-					if (shareholderId!=null) {
-						final Optional<Map<String,Object>> shareholderInformation = lookupTaxpayers.getUnchecked(shareholderId);
-						if (shareholderInformation.isPresent() && !shareholderInformation.get().isEmpty()) {
-							for (Map.Entry<String,Object> entry: shareholderInformation.get().entrySet()) {
+					// If the shareholding is identified, includes information according to the taxpayers registry
+					String shareholdingId = ValidationContext.toString(record.get(publishedShareholdingId));
+					if (shareholdingId!=null) {
+						final Optional<Map<String,Object>> shareholdingInformation = lookupTaxpayers.getUnchecked(shareholdingId);
+						if (shareholdingInformation.isPresent() && !shareholdingInformation.get().isEmpty()) {
+							for (Map.Entry<String,Object> entry: shareholdingInformation.get().entrySet()) {
 								String fieldName = entry.getKey();
 								if ("taxpayer_id".equals(fieldName))
-									continue; // we already got this information in 'shareholder_id' field
+									continue; // we already got this information in 'shareholding_id' field
 								if ("taxpayer_name".equals(fieldName)) {
-									String shareholderName = ValidationContext.toString(record.get(publishedShareholderName));
-									if (shareholderName!=null && shareholderName.trim().length()>0)
-										continue; // we already got this information in 'shareholder_name' field
-									normalizedRecord_SH.put(publishedShareholderName, entry.getValue());
+									String shareholdingName = ValidationContext.toString(record.get(publishedShareholdingName));
+									if (shareholdingName!=null && shareholdingName.trim().length()>0)
+										continue; // we already got this information in 'shareholding_name' field
+									normalizedRecord_SH.put(publishedShareholdingName, entry.getValue());
 									continue;
 								}
-								// All the other fields will be stored as 'shareholder_XXXXX'
+								// All the other fields will be stored as 'shareholding_XXXXX'
 								if (fieldName.startsWith("taxpayer")) {
-									normalizedRecord_SH.put(fieldName.replace("taxpayer", "shareholder"), entry.getValue());
+									normalizedRecord_SH.put(fieldName.replace("taxpayer", "shareholding"), entry.getValue());
 								}
-							} // LOOP over fields of shareholder according to the taxpayers registry
+							} // LOOP over fields of shareholding according to the taxpayers registry
 						}
 					}
 					
-					loader.add(new IndexRequest(INDEX_PUBLISHED_SHAREHOLDERS)
+					loader.add(new IndexRequest(INDEX_PUBLISHED_SHAREHOLDING)
 							.id(rowId_SH)
 							.source(normalizedRecord_SH));
 

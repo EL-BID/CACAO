@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.Random;
 
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
-import org.idb.cacao.account.archetypes.ShareholdersArchetype;
+import org.idb.cacao.account.archetypes.ShareholdingArchetype;
 import org.idb.cacao.account.elements.ShareType;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
@@ -36,14 +36,14 @@ import org.idb.cacao.api.utils.RandomDataGenerator;
 import org.idb.cacao.api.utils.RandomDataGenerator.DomainTableRepository;
 
 /**
- * Custom implementation of a 'random data generator' for data related to the shareholders archetype.
+ * Custom implementation of a 'random data generator' for data related to the shareholding archetype.
  * 
  * @author Gustavo Figueiredo
  *
  */
-public class ShareholdersGenerator implements CustomDataGenerator {
+public class ShareholdingGenerator implements CustomDataGenerator {
 
-	public static final int DEFAULT_NUMBER_OF_SHAREHOLDERS = 5;
+	public static final int DEFAULT_NUMBER_OF_SHAREHOLDING = 5;
 
 	private final RandomDataGenerator randomDataGenerator;
 
@@ -67,12 +67,12 @@ public class ShareholdersGenerator implements CustomDataGenerator {
 	 */
 	private Random genSeed;
 
-	public ShareholdersGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
+	public ShareholdingGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
 			throws Exception {
 		
-		this.records = (records<0) ? DEFAULT_NUMBER_OF_SHAREHOLDERS : records;
+		this.records = (records<0) ? DEFAULT_NUMBER_OF_SHAREHOLDING : records;
 
-		this.taxPayerIdField = template.getField(ShareholdersArchetype.FIELDS_NAMES.TaxPayerId.name());
+		this.taxPayerIdField = template.getField(ShareholdingArchetype.FIELDS_NAMES.TaxPayerId.name());
 		this.numDigitsForTaxpayerId = (taxPayerIdField==null) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdField.getMaxLength()).orElse(10)));
 		this.randomDataGenerator = new RandomDataGenerator(seed);
 	}
@@ -152,37 +152,37 @@ public class ShareholdersGenerator implements CustomDataGenerator {
 		
 		Map<String, Object> record = new HashMap<>();
 
-		record.put(ShareholdersArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
-		record.put(ShareholdersArchetype.FIELDS_NAMES.TaxYear.name(), year);
+		record.put(ShareholdingArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
+		record.put(ShareholdingArchetype.FIELDS_NAMES.TaxYear.name(), year);
 		
-		// The 'shareholder ID' is created based on the 'overall seed' because we need to create something
+		// The 'shareholding ID' is created based on the 'overall seed' because we need to create something
 		// related to other instances
-		Number shareholderId = null;
+		Number shareholdingId = null;
 		if (genSeed!=null) {
-			while (shareholderId==null || shareholderId.equals(taxpayerId)) {				
+			while (shareholdingId==null || shareholdingId.equals(taxpayerId)) {				
 				long doc_seed = genSeed.nextLong();
 				RandomDataGenerator doc_random = new RandomDataGenerator(doc_seed);
-				shareholderId = doc_random.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
+				shareholdingId = doc_random.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
 			}
 		}
 		else {
-			while (shareholderId==null || shareholderId.equals(taxpayerId)) {	
-				shareholderId = randomDataGenerator.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
+			while (shareholdingId==null || shareholdingId.equals(taxpayerId)) {	
+				shareholdingId = randomDataGenerator.nextRandomNumberFixedLength(numDigitsForTaxpayerId);
 			}
 		}		
-		record.put(ShareholdersArchetype.FIELDS_NAMES.ShareholderId.name(), shareholderId.toString());
+		record.put(ShareholdingArchetype.FIELDS_NAMES.ShareholdingId.name(), shareholdingId.toString());
 		
 		String shareType = randomDataGenerator.nextRandomDomain(
 				AccountBuiltInDomainTables.SHARE_TYPE.getName(), AccountBuiltInDomainTables.SHARE_TYPE.getVersion());
-		record.put(ShareholdersArchetype.FIELDS_NAMES.ShareType.name(), shareType);
+		record.put(ShareholdingArchetype.FIELDS_NAMES.ShareType.name(), shareType);
 		if (ShareType.ORDINARY.getKey().equals(shareType)) {
 			String shareClass = String.valueOf((char)('A' + randomDataGenerator.getRandomGenerator().nextInt(3)));
-			record.put(ShareholdersArchetype.FIELDS_NAMES.ShareClass.name(), shareClass);			
+			record.put(ShareholdingArchetype.FIELDS_NAMES.ShareClass.name(), shareClass);			
 		}
 		
-		record.put(ShareholdersArchetype.FIELDS_NAMES.ShareQuantity.name(), randomDataGenerator.getRandomGenerator().nextInt(10)*1000+1000);
-		record.put(ShareholdersArchetype.FIELDS_NAMES.ShareAmount.name(), roundDecimals(randomDataGenerator.nextRandomDecimal()));
-		record.put(ShareholdersArchetype.FIELDS_NAMES.SharePercentage.name(), Math.min(100.0,Math.max(1.0,roundDecimals(randomDataGenerator.nextRandomGauss()*10.0+20.0))));
+		record.put(ShareholdingArchetype.FIELDS_NAMES.ShareQuantity.name(), randomDataGenerator.getRandomGenerator().nextInt(10)*1000+1000);
+		record.put(ShareholdingArchetype.FIELDS_NAMES.ShareAmount.name(), roundDecimals(randomDataGenerator.nextRandomDecimal()));
+		record.put(ShareholdingArchetype.FIELDS_NAMES.SharePercentage.name(), Math.min(100.0,Math.max(1.0,roundDecimals(randomDataGenerator.nextRandomGauss()*10.0+20.0))));
 
 		recordsCreated++;
 		

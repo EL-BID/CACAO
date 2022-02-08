@@ -30,7 +30,7 @@ import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
-import org.idb.cacao.account.archetypes.ShareholdersArchetype;
+import org.idb.cacao.account.archetypes.ShareholdingArchetype;
 import org.idb.cacao.account.elements.StatementComprehensiveIncome;
 import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.templates.DocumentField;
@@ -177,18 +177,18 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setFields(fields);
 		addInputsIncomeStatement(docTemplate);
 
-		// Shareholders
+		// Shareholding
 		docTemplate = new DocumentTemplate();
-		docTemplate.setName("Shareholders");
+		docTemplate.setName("Shareholding");
 		docTemplate.setGroup("Financial Report");
 		docTemplate.setPeriodicity(Periodicity.YEARLY);
 		docTemplate.setRequired(false);
 		docTemplate.setVersion("1.0");
-		docTemplate.setArchetype("accounting.shareholders");
+		docTemplate.setArchetype("accounting.shareholding");
 
 		toRet.add(docTemplate);
-		new ShareholdersArchetype().getRequiredFields().forEach(docTemplate::addField);
-		addShareholders(docTemplate);
+		new ShareholdingArchetype().getRequiredFields().forEach(docTemplate::addField);
+		addShareholding(docTemplate);
 
 		return toRet;
 
@@ -481,33 +481,33 @@ public class CreateDocumentTemplatesSamples {
 	 *
 	 * @param docTemplate
 	 */
-	private static void addShareholders(DocumentTemplate docTemplate) {
+	private static void addShareholding(DocumentTemplate docTemplate) {
 
 		if (docTemplate == null)
 			return;
 
-		DocumentInput input = new DocumentInput("CSV Shareholders");
+		DocumentInput input = new DocumentInput("CSV Shareholding");
 		input.setFormat(DocumentFormat.CSV);
 		docTemplate.addInput(input);
 		
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("XLS Shareholders");
+		input = new DocumentInput("XLS Shareholding");
 		input.setFormat(DocumentFormat.XLS);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("PDF Shareholders");
+		input = new DocumentInput("PDF Shareholding");
 		input.setFormat(DocumentFormat.PDF);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("DOC Shareholders");
+		input = new DocumentInput("DOC Shareholding");
 		input.setFormat(DocumentFormat.DOC);
 		docTemplate.addInput(input);
 
