@@ -84,7 +84,20 @@ public class AnalysisUIController {
 		
         return "analysis/general_analysis";
 	}		
-	
+
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/accounting_flows"})
+	public String getAccountingFlows(Model model) {
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+		
+        return "analysis/accounting_flows";
+	}
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/statement_income_analysis"})
 	public String getStatementIncomeAnalysis(Model model) {

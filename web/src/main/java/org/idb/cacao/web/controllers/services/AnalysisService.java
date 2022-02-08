@@ -1,10 +1,12 @@
 package org.idb.cacao.web.controllers.services;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,6 +36,7 @@ import org.elasticsearch.search.aggregations.metrics.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.dto.Account;
 import org.idb.cacao.web.dto.AggregatedAccountingFlow;
 import org.idb.cacao.web.dto.AnalysisData;
@@ -1049,21 +1052,25 @@ public class AnalysisService {
 		return values;
 	}
 
-	public List<AggregatedAccountingFlow> getAccountingFlow(String taxpayerId, int year) {
+	public List<AggregatedAccountingFlow> getAccountingFlow(String taxpayerId, Date startDate, Date finalDate) {
 		SearchRequest searchRequest = new SearchRequest(INDEX_PUBLISHED_ACCOUNTING_FLOW);
 
 		// Filter by taxpayerId
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
-		// Filter for year
-		query = query.must(new TermQueryBuilder("year", year));
+		// Filter for period
+		String from = ParserUtils.formatTimestampES(startDate);
+		String to = ParserUtils.formatTimestampES(finalDate);
+		RangeQueryBuilder dateRange = new RangeQueryBuilder("date")
+				.from(from)
+				.to(to);
+		query = query.must(dateRange);
 
 		String[] groupBy = {"credited_account_category.keyword", "credited_account_category_name.keyword", 
-		            "credited_account_subcategory.keyword", "credited_account_subcategory.keyword",
 		            "credited_account_subcategory.keyword", "credited_account_subcategory_name.keyword",
 		            "credited_account_code.keyword", "credited_account_name.keyword",
-		            "debited_account_subcategory.keyword", "debited_account_subcategory.keyword",
+		            "debited_account_category.keyword", "debited_account_category_name.keyword",
 		            "debited_account_subcategory.keyword", "debited_account_subcategory_name.keyword",
 		            "debited_account_code.keyword", "debited_account_name.keyword" };
 		
@@ -1087,7 +1094,7 @@ public class AnalysisService {
 		}
 		
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No flows found for taxPayer " + taxpayerId + " for period " + year);
+			log.log(Level.INFO, "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
 			return Collections.emptyList(); // No flows found
 		} 
 

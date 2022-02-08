@@ -165,6 +165,8 @@ public class LoginUIController {
 					"/statement_income_analysis", "search dollar"));
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.general.view", null, LocaleContextHolder.getLocale()),
 					"/taxpayer_general_view", "street view"));
+			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.flows", null, LocaleContextHolder.getLocale()),
+					"/accounting_flows", "retweet"));
 		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {
