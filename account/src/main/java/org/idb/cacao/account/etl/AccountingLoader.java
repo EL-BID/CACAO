@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -288,6 +289,16 @@ public class AccountingLoader {
 	private static final String publishedTemplateVersion = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_VERSION.name());
 	
 	/**
+	 * The field name for the account category TAG (the 'alias' name of category that is invariant to the accounting standard - be it IRFS or GAAP)
+	 */
+	private static final String publishedCategoryTag = IndexNamesUtils.formatFieldName("AccountCategoryTag");
+
+	/**
+	 * The field name for the account subcategory TAG (the 'alias' name of category that is invariant to the accounting standard - be it IRFS or GAAP)
+	 */
+	private static final String publishedSubcategoryTag = IndexNamesUtils.formatFieldName("AccountSubcategoryTag");
+
+	/**
 	 * The field name for final balance after each General Ledger entry
 	 */
 	private static final String ledgerBalance = IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name());
@@ -388,7 +399,23 @@ public class AccountingLoader {
 	public static LoadingCache<String, Optional<Map<String, Object>>> getLookupChartOfAccounts(final ETLContext.ValidatedDataRepository repository, 
 			final Optional<DomainTable> category_domain_table,
 			final Optional<DomainTable> subcategory_domain_table,
-			final DocumentUploaded coa) {
+			final DocumentUploaded coa,
+			final AccountStandard account_standard) {
+		
+		// Maps codes of category to category 'tag' (equals to the 'constant name' according to the AccountCategory enumeration)
+		Map<String, String> mapCategoryTags = Arrays.stream(org.idb.cacao.account.elements.AccountCategory.values()).collect(Collectors.toMap(
+				/*keyMapper*/e->e.getNumber(account_standard), 
+				/*valueMapper*/org.idb.cacao.account.elements.AccountCategory::name, 
+				/*mergeFunction*/(a,b)->a, 
+				/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		
+		// Maps codes of sub-category to sub-category 'tag' (equals to the 'constant name' according to the AccountSubcategory enumeration)
+		Map<String, String> mapSubcategoryTags = Arrays.stream(org.idb.cacao.account.elements.AccountSubcategory.values()).collect(Collectors.toMap(
+				/*keyMapper*/e->e.getNumber(account_standard), 
+				/*valueMapper*/org.idb.cacao.account.elements.AccountSubcategory::name, 
+				/*mergeFunction*/(a,b)->a, 
+				/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		
 		return CacheBuilder.newBuilder()
 			.maximumSize(1000)
 			.expireAfterWrite(10, TimeUnit.MINUTES)
@@ -416,6 +443,9 @@ public class AccountingLoader {
 											accountInfo.get().put(derivedFieldName, entry.getDescription());
 										}
 									}
+									String tag = mapCategoryTags.get(category);
+									if (tag!=null)
+										accountInfo.get().put(publishedCategoryTag, tag);
 								}
 							}
 							if (accountInfo.isPresent() && subcategory_domain_table.isPresent()) {
@@ -431,6 +461,9 @@ public class AccountingLoader {
 											accountInfo.get().put(derivedFieldName, entry.getDescription());
 										}
 									}
+									String tag = mapSubcategoryTags.get(subcategory);
+									if (tag!=null)
+										accountInfo.get().put(publishedSubcategoryTag, tag);
 								}
 							}
 							return accountInfo;
@@ -534,7 +567,7 @@ public class AccountingLoader {
 
 			// Structure for loading and caching information from the provided Chart of Accounts
 			LoadingCache<String, Optional<Map<String, Object>>> lookupChartOfAccounts = getLookupChartOfAccounts(context.getValidatedDataRepository(), 
-					category_domain_table, subcategory_domain_table, coa);
+					category_domain_table, subcategory_domain_table, coa, account_standard);
 			
 			// Structure for loading and caching information from the provided Taxpayers registry
 			LoadingCache<String, Optional<Map<String, Object>>> lookupTaxpayers = getLookupTaxpayers(context.getTaxpayerRepository());
