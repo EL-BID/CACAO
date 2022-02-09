@@ -341,7 +341,7 @@ public class CreateDocumentTemplatesSamples {
 				new DocumentInputFieldMapping().withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name())
 						.withColumnNameExpression("TaxPayer"),
 				new DocumentInputFieldMapping().withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name())
-						.withColumnNameExpression("TaxPeriod"),
+						.withColumnNameExpression("TaxYear"),
 				new DocumentInputFieldMapping().withFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name())
 						.withColumnNameExpression("Code"),
 				new DocumentInputFieldMapping()
