@@ -93,8 +93,7 @@
 			
 			tableShareholders.on("tableBuilt", function(){
 				document.getElementById('exportXLSShareholders').addEventListener("click", function(){
-					tableShareholders.download("xlsx", document.getElementById("titleShareholder").innerText + ".xlsx", 
-							{sheetName:document.getElementById("titleShareholder").innerText});				    
+					tableShareholders.download("xlsx", getFileName(2), {sheetName:getSheetName(2)});				    
 				});
 			});		
 			

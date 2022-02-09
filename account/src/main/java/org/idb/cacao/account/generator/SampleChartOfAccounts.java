@@ -37,6 +37,7 @@ public enum SampleChartOfAccounts {
 	INVENTORY("1.3.1", "Inventory", "Merchandise in Inventory", AccountCategory.ASSET, AccountSubcategory.ASSET_INVENTORY),
 	PAYABLE("2.1.1", "Accounts Payable", "Accounts and Trade Payables", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_PAYABLE),
 	LOANS("2.3.2", "Loans", "Loans Payable", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_ACCRUAL),
+	TAX_PROVISION("3.2.1.1","Tax Provision", "Provision for tax payment", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_PROVISION_TAX),
 	STOCK("3.5.2", "Stock", "Subscribed Stock Receivables", AccountCategory.EQUITY, AccountSubcategory.EQUITY_OWNERS),
 	REVENUE_GOODS("4.1.1", "Revenue Goods", "Revenue from selling Goods", AccountCategory.REVENUE, AccountSubcategory.REVENUE_NET),
 	REVENUE_SERVICES("4.1.2", "Revenue Services", "Revenue from Services", AccountCategory.REVENUE, AccountSubcategory.REVENUE_NET),
@@ -44,7 +45,7 @@ public enum SampleChartOfAccounts {
 	SERVICES("5.1.3", "Services", "Expenses for Services", AccountCategory.EXPENSE, AccountSubcategory.EXPENSE_OPERATING),
 	RENT("5.1.4", "Rent", "Rent, Depreciation, Amortization And Depletion", AccountCategory.EXPENSE, AccountSubcategory.EXPENSE_OPERATING),
 	SALES_EXPENSES("5.2.1", "Sales Expenses", "Cost Of Sales", AccountCategory.EXPENSE, AccountSubcategory.EXPENSE_COST),
-	ADMINISTRATIVE_EXPENSES("5.2.2", "Adminitrative Expenses", "Selling, General And Administrative", AccountCategory.EXPENSE, AccountSubcategory.EXPENSE_ADMIN),
+	ADMINISTRATIVE_EXPENSES("5.2.2", "Adminitrative Expenses", "Selling, General And Administrative", AccountCategory.EXPENSE, AccountSubcategory.EXPENSE_ADMIN),	
 	OTHER_EXPENSES("6.1.2", "Other Expenses", "Other non-operating expenses", AccountCategory.OTHER, AccountSubcategory.OTHER);
 
 	private final String accountCode;

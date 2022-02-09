@@ -1,7 +1,7 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<div th:fragment="shareholding" class="ui segment">
+	<div th:fragment="revenue" class="ui segment">
 		<div class="ui fluid accordion">
 			<div class="active title">				
 				<i class="dropdown icon"></i> 
@@ -26,10 +26,6 @@
 	</div>	
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-	
-		fileName = /*[[#{taxpayers.analysis.general.view.revenue}]]*/ ''; 
-	 	sheetNameDeclared = /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ '';
-	 	sheetNameCalculated = /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ '';
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
@@ -119,8 +115,7 @@
 			
 			tableRevenueNetGrossProfitDeclared.on("tableBuilt", function(){
 				document.getElementById('exportXLSRevenueNetGrossProfitDeclared').addEventListener("click", function(){
-					tableRevenueNetGrossProfitDeclared.download("xlsx", fileName + "_" + sheetNameDeclared + ".xlsx", 
-							{sheetName:sheetNameDeclared});				    
+					tableRevenueNetGrossProfitDeclared.download("xlsx", getFileName(3), {sheetName:getSheetName(3)});				    
 				});
 			});
 		
@@ -202,8 +197,7 @@
 			
 			tableRevenueNetGrossProfitCalculated.on("tableBuilt", function(){
 				document.getElementById('exportXLSRevenueNetGrossProfitCalculated').addEventListener("click", function(){
-					tableRevenueNetGrossProfitCalculated.download("xlsx", fileName + "_" + sheetNameCalculated + ".xlsx", 
-							{sheetName:sheetNameCalculated});				    
+					tableRevenueNetGrossProfitCalculated.download("xlsx", getFileName(4), {sheetName:getSheetName(4)});				    
 				});
 			});
 		

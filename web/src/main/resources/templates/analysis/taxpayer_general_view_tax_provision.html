@@ -1,7 +1,7 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<div th:fragment="shareholding" class="ui segment">
+	<div th:fragment="taxProvision" class="ui segment">
 		<div class="ui fluid accordion">
 			<div class="active title">				
 				<i class="dropdown icon"></i> 
@@ -15,9 +15,6 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		let fileName = /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ ''; 
- 		let sheetName = /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';	
-	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -29,8 +26,8 @@
 			
 			let tableTaxProvision = new Tabulator('#tableTaxProvision', {
 				index: 'id',			
-				layout: "fitColumns", //fit columns to width of table (optional)
-			    pagination: true,
+				layout: "fitData", //fit columns to width of table (optional)
+			    pagination: false,
 				paginationMode: "local", //enable local pagination
 				paginationSize: 5,
 				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
@@ -75,19 +72,19 @@
 			    },	
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 				columns:[ //Define Table Columns
-						{title: /*[[#{year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
-						{title: /*[[#{value}]]*/ "Value", field:"value", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
+						{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
+						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"final_balance", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
 							headerHozAlign:"right", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}},
 				],
-			    initialSort:[
+			    initialSort:[			    	
 			        {column:"year", dir:"desc"}, //sort by this first
 			    ]
 			});
 			
 			tableTaxProvision.on("tableBuilt", function(){
 				document.getElementById('exportXLSTaxProvision').addEventListener("click", function(){
-					tableTaxProvision.download("xlsx", fileName + ".xlsx", {sheetName:sheetName});				    
+					tableTaxProvision.download("xlsx", getFileName(5), {sheetName:getSheetName(5)});				    
 				});
 			});
 		

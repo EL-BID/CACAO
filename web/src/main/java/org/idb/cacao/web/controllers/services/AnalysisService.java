@@ -61,8 +61,8 @@ public class AnalysisService {
 
 	private static final Logger log = Logger.getLogger(AnalysisService.class.getName());
 
-	private static final String ACCOUNT_SUBCATEGORY_TAX_PROVISION = "3.2.1";
-	private static final String ACCOUNT_CATEGORY_EXPENSE = "5";
+	private static final String ACCOUNT_SUBCATEGORY_TAX_PROVISION = "LIABILITY_PROVISION_TAX";
+	private static final String ACCOUNT_CATEGORY_EXPENSE = "EXPENSE";
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -1574,7 +1574,7 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter by subcategory
-		query = query.must(new TermQueryBuilder("account_subcategory.keyword", ACCOUNT_SUBCATEGORY_TAX_PROVISION));
+		query = query.must(new TermQueryBuilder("account_subcategory_tag.keyword", ACCOUNT_SUBCATEGORY_TAX_PROVISION));
 
 		// Filter by month
 		query = query.must(new TermQueryBuilder("month_number", 12));
@@ -1585,30 +1585,14 @@ public class AnalysisService {
 			subquery = subquery.should(new TermQueryBuilder("year", i));
 		}
 		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);
-
-		// Filter by statement
-		subquery = QueryBuilders.boolQuery();
-		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "01"));
-		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "03"));
-		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);
-
-		// Define group by fields
-		Object[] groupBy = { "year", "account_subcategory.keyword" };
-
-		// Define aggregations
-		AggregationBuilder shareAmount = AggregationBuilders.sum("balance").field("final_balance");
-
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount);
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
+		query = query.must(subquery);		
+		
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
 
 		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
+		//searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
-
+		
 		// Search results
 		SearchResponse sresp = null;
 		try {
@@ -1622,18 +1606,15 @@ public class AnalysisService {
 					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
-
-		// Retrieve information from result
-		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			Sum balance = agg.get("balance");
-			Map<String, Object> instance = new HashMap<>();
-			instance.put("year", values[0]);
-			instance.put("value", balance.getValue());
-			return instance;
-		};
+		
+		List<Map<String,Object>> instances = new LinkedList<>();
+		
+		sresp.getHits().forEach( hit-> {
+			instances.add(hit.getSourceAsMap());
+		});
 
 		// Get information
-		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		return instances;
 
 	}
 
@@ -1657,7 +1638,7 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter by expense category
-		query = query.must(new TermQueryBuilder("account_category.keyword", ACCOUNT_CATEGORY_EXPENSE));
+		query = query.must(new TermQueryBuilder("account_category_tag.keyword", ACCOUNT_CATEGORY_EXPENSE));
 
 		// Filter by month
 		query = query.must(new TermQueryBuilder("month_number", 12));
@@ -1669,14 +1650,20 @@ public class AnalysisService {
 		}
 		subquery = subquery.minimumShouldMatch(1);
 		query = query.must(subquery);
+		
+		AggregationBuilder sum = AggregationBuilders.sum("final_balance").field("final_balance");
+		
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
+				AggregationBuilders.terms("year").size(10_000).field("year")
+						.subAggregation(AggregationBuilders.terms("account_name").size(10_000).field("account_name.keyword")
+								.subAggregation(sum).order(BucketOrder.aggregation("final_balance", false))).size(5);
 
-		// Define group by fields
-		Object[] groupBy = { "year", "account_code.keyword", translate("account_name") + ".keyword" };
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);		
 
 		// We are not interested on individual documents
-		//searchSourceBuilder.size(0);
+		searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
 
 		// Search results
@@ -1692,22 +1679,22 @@ public class AnalysisService {
 					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
-
+		
+		String[] groupBy = { "year", "account_name" };
+		
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			Sum balance = agg.get("balance");
+			Sum amount = agg.get("final_balance");
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
-			instance.put("accountCode", values[1]);
-			instance.put("accountName", values[2]);
-			instance.put("value", balance.getValue());
-			System.err.println(values[0] + " => " + values[1] + " => " + balance.getValue());
+			instance.put("account_name", values[1]);
+			instance.put("value", amount.getValue());
 			return instance;
 		};
 
 		// Get information
-		List<Map<String, Object>> objects = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
-		return objects;
+		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		return instances;
 
 	}
 }
