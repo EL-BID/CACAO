@@ -57,16 +57,11 @@
                         <input type="text">
                       </div>
                      </div>
-                     <div class="ui six field">
-                      <label th:text="#{taxpayers.analysis.flows.minimum.amount}">Minimum amount</label>
-                      <div class="ui input" style="position:auto">
-                        <input type="number" step=1000 min=0 value=4000 name="minimim" id="minimum">
-                      </div>
-                     </div>
                     </div>
 				</form>
 			</div>
 		</div>
+        <div id="histogram" style="padding: 10px 10px"></div>
         <div id="my_dataviz"></div>
 		
 	</div>
@@ -109,7 +104,8 @@ function onFormChange() {
               startDate: luxon.DateTime.fromJSDate($('#rangestart').calendar('get date')).toISODate(),
               finalDate: luxon.DateTime.fromJSDate($('#rangeend').calendar('get date')).endOf('month').toISODate() },  // data to submit
         function (data, status, xhr) {
-            processFlows(data)
+            currentData = data 
+         	processHistogram(data)
         }
     );
 }
@@ -171,13 +167,23 @@ $('#rangeend').calendar({
 const nodeSize = 25
 const nodeHeight = 20
 const dx = 12
-var margin = {top: 20, right: 30, bottom: 20, left: 30},
-width = $('#my_dataviz').width() - margin.left - margin.right,
-height = 600 - margin.top - margin.bottom;
-const right_pos = width - 350
+let margin = {top: 20, right: 30, bottom: 20, left: 30}
+let currentData = null
+let lastWidth = 0
+let defaultFilter = null
+
+$(window).resize( function(ev) {
+	console.log(Math.abs(lastWidth-$('#my_dataviz').width()))
+	if(currentData && Math.abs(lastWidth-$('#my_dataviz').width())>100)
+		processHistogram(currentData)
+})
+
 let svg = d3.select("#my_dataviz")
   .append("svg")
 
+let svg_hist = d3.select('#histogram')
+  .append("svg")
+  
 function addAccount(row, parent, idField, nameField, addChildren=true) {
 	id = row[idField]
 	node = parent.get(id)
@@ -194,10 +200,111 @@ function toSortedArray(nodes) {
 	return arr.sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}))
 }
 
+function processHistogram(data) {
+  console.log(defaultFilter)
+  let width = $('#histogram').width() - margin.left - margin.right
+  const height_hist = 40;
+  
+  let amounts = data.map(n => n.amount).sort()
+  
+  let x = d3.scaleLog()
+    .domain(d3.extent(amounts))
+    .clamp(true)
+    .nice()
+    .range([0, width])
+    
+  if(!defaultFilter) {
+	console.log('filter')
+    defaultFilter = [width/4, width].map(x.invert)
+  }
+    
+  svg_hist
+    .attr("viewBox", [-10,0,width+margin.right, height_hist+20])
+    .attr("font-family", "arial")
+    .attr("font-size", 12)
+    
+  svg_hist.selectAll("*").remove()
+  
+  function frac(x) {
+	  return x - (x | 0)
+  }
+  function y(i) {
+    return height_hist/2 +  frac(952 * Math.sin((i + 0.5) * 876))*height_hist/5;
+  }
+  
+  
+  svg_hist
+    .append("g")
+    .attr("transform", "translate(0," + height_hist + ")")
+    .call(d3.axisBottom(x));
+  
+  svg_hist
+    .selectAll("circle")
+    .data(amounts)
+    .join("circle")
+    .attr("class", "amount")
+    .attr("r", 2)
+    .attr("stroke", "#588")
+    .attr("fill", "lightblue")
+    .attr("fill-opacity", 0.3)
+    .attr("cx", (v, i) => x(v))
+    .attr("cy", (_, i) => y(i))
+  
+  function brushed({selection}) {
+	  if(selection) {
+    	  let start = x.invert(selection[0])
+    	  let end = x.invert(selection[1])
+    	  defaultFilter = [start, end]
+    	  svg_hist.selectAll("circle.amount")
+    	    .classed("unselected", v => v<start || v>end  )
+          svg.selectAll("path.flow")
+            .classed("unselected", d => d.value<start || d.value>end)
+	  }
+  }
+
+  function brushended({sourceEvent, selection}) {
+	  if(selection) {
+        let start = x.invert(selection[0])
+        let end = x.invert(selection[1])
+  	    processFlows(data.filter(d => d.amount>=start && d.amount<=end))
+	  }
+	  else {
+		svg_hist.selectAll("circle.amount")
+          .classed("unselected", false )
+        processFlows(data)
+	  }
+  }
+  
+  const brush = d3.brushX()
+    .extent([ [0, 0], [width, height_hist-1] ])
+    .on("brush", brushed)
+    .on("end", brushended)
+    .handleSize(3)
+    
+   svg_hist
+    .append("g")
+    .attr("class", "brush")
+    .call(brush)
+    .call(brush.move, defaultFilter.map(x))
+  
+   svg_hist.selectAll("rect.selection")
+     .style("fill", "none")
+     
+   svg_hist.selectAll("rect.handle")
+   .style("fill", "gray")
+   .style("opacity", 0.4)
+   
+}
+
 function processFlows(data) {
+  console.log('processed')
+  lastWidth = $('#my_dataviz').width()
+  width = Math.max(lastWidth - margin.left - margin.right, 750)
+  
+  height = 600 - margin.top - margin.bottom
+  const right_pos = width - 350
+
   let nodes = new Map()
-  data = data
-    .filter(n => n.amount>=$('#minimum').val())
 
   data
     .forEach(n => {
@@ -242,9 +349,12 @@ function processFlows(data) {
   svg
     .attr("viewBox", [-nodeSize , -nodeSize , width, (nodes.length + 1) * nodeSize])
     .attr("font-family", "arial")
-    .attr("font-size", 16)
     .style("overflow", "visible")
-    .on('click', release);
+    .on('click', release)
+    
+  if(width<800)
+     svg.attr("font-size", 16)
+
   
   svg.selectAll("g").remove()
   
