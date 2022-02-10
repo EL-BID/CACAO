@@ -66,6 +66,14 @@
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />
     	</Logger>
+    	<Logger name="org.apache.hadoop.util.Shell" level="error" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
+    	<Logger name="org.apache.hadoop.util.NativeCodeLoader" level="error" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
         <Root level="warn">
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />
