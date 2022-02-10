@@ -183,6 +183,10 @@ public class ShareholdingGenerator implements CustomDataGenerator {
 		record.put(ShareholdingArchetype.FIELDS_NAMES.ShareQuantity.name(), randomDataGenerator.getRandomGenerator().nextInt(10)*1000+1000);
 		record.put(ShareholdingArchetype.FIELDS_NAMES.ShareAmount.name(), roundDecimals(randomDataGenerator.nextRandomDecimal()));
 		record.put(ShareholdingArchetype.FIELDS_NAMES.SharePercentage.name(), Math.min(100.0,Math.max(1.0,roundDecimals(randomDataGenerator.nextRandomGauss()*10.0+20.0))));
+		
+		if (randomDataGenerator.getRandomGenerator().nextInt(4)==0) {
+			record.put(ShareholdingArchetype.FIELDS_NAMES.EquityMethodResult.name(), roundDecimals(randomDataGenerator.nextRandomDecimal()));
+		}
 
 		recordsCreated++;
 		
