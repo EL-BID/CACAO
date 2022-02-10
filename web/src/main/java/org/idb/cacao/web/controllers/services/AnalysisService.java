@@ -28,7 +28,6 @@ import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -1378,9 +1377,10 @@ public class AnalysisService {
 		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
 		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
 		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
+		AggregationBuilder equityMethodResult = AggregationBuilders.sum("equityMethodResult").field("equity_method_result");
 
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount,
-				sharePercentage, shareQuantity);
+				sharePercentage, shareQuantity, equityMethodResult);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -1407,7 +1407,8 @@ public class AnalysisService {
 			Sum amount = agg.get("shareAmount");
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");
-			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue());
+			Sum equityResult = agg.get("equityMethodResult");
+			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue(), equityResult.getValue());
 		};
 
 		// Update shareholding information for this taxpayer
@@ -1481,8 +1482,8 @@ public class AnalysisService {
 		BiFunction<Aggregations, String[], Shareholding> function = (agg, values) -> {
 			Sum amount = agg.get("shareAmount");
 			Sum percentage = agg.get("sharePercentage");
-			Sum quantity = agg.get("shareQuantity");
-			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue());
+			Sum quantity = agg.get("shareQuantity");			
+			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue(), 0d);
 		};
 
 		// Update shareholding information for this taxpayer

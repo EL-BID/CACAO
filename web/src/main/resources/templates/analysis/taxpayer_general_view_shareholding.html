@@ -83,7 +83,10 @@
 								hozAlign:"right", headerSort:true, headerHozAlign:"right"},
 						{title: /*[[#{share.quantity}]]*/ "Share Quantity", field:"shareQuantity", formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2"}, 
-							hozAlign:"right", headerSort:true, headerHozAlign:"right"}
+							hozAlign:"right", headerSort:true, headerHozAlign:"right"},
+						{title: /*[[#{share.equity.method.result}]]*/ "Equity Method Result", field:"equityMethodResult", formatter: "money", 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+							hozAlign:"right", headerSort:true, headerHozAlign:"right"}	
 				],
 			    initialSort:[
 			        {column:"shareAmount", dir:"desc"}, //sort by this first

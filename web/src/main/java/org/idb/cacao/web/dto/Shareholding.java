@@ -16,7 +16,9 @@ public class Shareholding implements Comparable<Shareholding> {
 	
 	private double shareQuantity;
 	
-	public Shareholding(String[] values, double shareAmount, double sharePercentage, double shareQuantity) {
+	private double equityMethodResult;
+	
+	public Shareholding(String[] values, double shareAmount, double sharePercentage, double shareQuantity, double equityMethodResult) {
 		super();		
 		this.shareholderId = values.length > 0 ? values[0] : null;
 		this.shareholderName = values.length > 1 ? values[1] : null;		
@@ -25,6 +27,7 @@ public class Shareholding implements Comparable<Shareholding> {
 		this.shareAmount = shareAmount;		
 		this.sharePercentage = sharePercentage;
 		this.shareQuantity = shareQuantity;
+		this.equityMethodResult = equityMethodResult;
 	}
 
 	public Shareholding() {
@@ -85,6 +88,14 @@ public class Shareholding implements Comparable<Shareholding> {
 
 	public void setShareQuantity(double shareQuantity) {
 		this.shareQuantity = shareQuantity;
+	}
+	
+	public double getEquityMethodResult() {
+		return equityMethodResult;
+	}
+
+	public void setEquityMethodResult(double equityMethodResult) {
+		this.equityMethodResult = equityMethodResult;
 	}
 
 	@Override
