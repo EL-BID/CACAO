@@ -105,7 +105,6 @@ function onFormChange() {
               finalDate: luxon.DateTime.fromJSDate($('#rangeend').calendar('get date')).endOf('month').toISODate() },  // data to submit
         function (data, status, xhr) {
             currentData = data 
-            defaultFilter = null
          	processHistogram(data)
         }
     );
@@ -174,7 +173,6 @@ let lastWidth = 0
 let defaultFilter = null
 
 $(window).resize( function(ev) {
-	console.log(Math.abs(lastWidth-$('#my_dataviz').width()))
 	if(currentData && Math.abs(lastWidth-$('#my_dataviz').width())>100)
 		processHistogram(currentData)
 })
@@ -202,7 +200,6 @@ function toSortedArray(nodes) {
 }
 
 function processHistogram(data) {
-  console.log(defaultFilter)
   let width = $('#histogram').width() - margin.left - margin.right
   const height_hist = 40;
   
@@ -215,7 +212,6 @@ function processHistogram(data) {
     .range([0, width])
     
   if(!defaultFilter) {
-	console.log('filter')
     defaultFilter = [width/4, width].map(x.invert)
   }
     
@@ -298,7 +294,6 @@ function processHistogram(data) {
 }
 
 function processFlows(data) {
-  console.log('processed')
   lastWidth = $('#my_dataviz').width()
   width = Math.max(lastWidth - margin.left - margin.right, 750)
   
@@ -322,7 +317,6 @@ function processFlows(data) {
   })
   let contas = { name: "Accounts", children: toSortedArray(nodes) }
 
-  //console.log(contas)
   let flows = data.map(row => ({ src: row['creditAccountCode'], dst: row['debitAccountCode'], value: row['amount'] }) )
   
   let left = right = 0
@@ -513,11 +507,9 @@ function processFlows(data) {
     if(selected!=null)
       return
     paths.classed("fade", false)
-    //console.log("fade", n)
   }
   
   function onclick(ev, n) {
-    //console.log("click", n)
     selected=null
     if(selected==n.data.id) {
       return
@@ -528,7 +520,6 @@ function processFlows(data) {
   }
   
   function release(ev, n) {
-    //console.log("release", ev)
     selected = null
     mouseOut(ev, n)
   }
