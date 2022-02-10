@@ -105,6 +105,7 @@ function onFormChange() {
               finalDate: luxon.DateTime.fromJSDate($('#rangeend').calendar('get date')).endOf('month').toISODate() },  // data to submit
         function (data, status, xhr) {
             currentData = data 
+            defaultFilter = null
          	processHistogram(data)
         }
     );
