@@ -73,7 +73,8 @@
 				<div th:replace="analysis/taxpayer_general_view_shareholders"></div>
 				<div th:replace="analysis/taxpayer_general_view_revenue_net_and_gross_profit"></div>
 				<div th:replace="analysis/taxpayer_general_view_tax_provision"></div>
-				<div th:replace="analysis/taxpayer_general_view_analytics_accounts"></div>								
+				<div th:replace="analysis/taxpayer_general_view_analytics_accounts"></div>
+				<div th:replace="analysis/taxpayer_general_view_customers_suppliers"></div>
 			</div>
 		</div>
 	</div>
@@ -181,11 +182,19 @@
 					updateRevenueNetAndGrossProfit();
 					updateTaxProvision();
 					updateAnalyticsAccounts();
+					updateCustomersAndSuppliers();
 					$("#showtable").show();
 					
 	          	})
 	        });
 		}
+		
+		//Custom accessor
+		function nullConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    return value;
+		}		
 
 		function getFileName(searchType) {
 			

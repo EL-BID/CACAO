@@ -30,7 +30,9 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.metrics.Avg;
 import org.elasticsearch.search.aggregations.metrics.MedianAbsoluteDeviation;
 import org.elasticsearch.search.aggregations.metrics.Percentiles;
@@ -54,6 +56,7 @@ import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -66,6 +69,9 @@ public class AnalysisService {
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
+	
+	@Autowired
+	private Environment env;
 
 	private final String BALANCE_SHEET_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Balance Sheet Monthly");
 	private final String COMPUTED_STATEMENT_INCOME_INDEX = IndexNamesUtils
@@ -74,6 +80,10 @@ public class AnalysisService {
 			.formatIndexNameForPublishedData("Accounting Declared Statement Income");
 	private final String SHAREHOLDING_INDEX = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Shareholding");
+	public static final String CUSTOMERS_INDEX = IndexNamesUtils
+			.formatIndexNameForPublishedData("Accounting Customers");
+	public static final String SUPPLIERS_INDEX = IndexNamesUtils
+			.formatIndexNameForPublishedData("Accounting Suppliers");
 	private final String TAXPAYER_INDEX = "cacao_taxpayers";
 
 	private final static int SOURCE_JOURNAL = 1;
@@ -90,6 +100,8 @@ public class AnalysisService {
 	public final static int REVENUE_NET_AND_GROSS_PROFIT_COMPUTED = 4;
 	public final static int TAX_PROVISION = 5;
 	public final static int ANALYTICS_ACCOUNTS = 6;
+	public final static int CUSTOMERS = 7;
+	public final static int SUPPLIERS = 8;
 
 	/**
 	 * Retrieves and return a balance sheet for a given taxpayer and period (month
@@ -1316,6 +1328,10 @@ public class AnalysisService {
 			return getTaxProvision(taxpayerId, year);
 		case ANALYTICS_ACCOUNTS:
 			return getAnalyticsAccounts(taxpayerId, year);
+		case CUSTOMERS:
+			return getCustomers(taxpayerId, year);
+		case SUPPLIERS:
+			return getSuppliers(taxpayerId, year);
 		default:
 			break;
 		}
@@ -1495,15 +1511,10 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter by year
-		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-		for (int i = year; i > (year - 5); i--) {
-			subquery = subquery.should(new TermQueryBuilder("year", i));
-		}
-		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);
+		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
 
 		// Filter by statement
-		subquery = QueryBuilders.boolQuery();
+		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "01"));
 		subquery = subquery.should(new TermQueryBuilder("statement_number.keyword", "03"));
 		subquery = subquery.minimumShouldMatch(1);
@@ -1555,8 +1566,7 @@ public class AnalysisService {
 	}
 
 	/**
-	 * Search and return Revenue Net and Gross Profit information for a specified
-	 * taxpayer and year
+	 * Search and return tax provision information for a specified taxpayer and year
 	 * 
 	 * @param taxpayerId Taxpayer to search for
 	 * @param year       A year to search for
@@ -1580,19 +1590,14 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("month_number", 12));
 
 		// Filter by year
-		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-		for (int i = year; i > (year - 5); i--) {
-			subquery = subquery.should(new TermQueryBuilder("year", i));
-		}
-		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);		
-		
+		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
+
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
 
 		// We are not interested on individual documents
-		//searchSourceBuilder.size(0);
+		// searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
-		
+
 		// Search results
 		SearchResponse sresp = null;
 		try {
@@ -1606,10 +1611,10 @@ public class AnalysisService {
 					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
-		
-		List<Map<String,Object>> instances = new LinkedList<>();
-		
-		sresp.getHits().forEach( hit-> {
+
+		List<Map<String, Object>> instances = new LinkedList<>();
+
+		sresp.getHits().forEach(hit -> {
 			instances.add(hit.getSourceAsMap());
 		});
 
@@ -1619,14 +1624,14 @@ public class AnalysisService {
 	}
 
 	/**
-	 * Search and return Revenue Net and Gross Profit information for a specified
-	 * taxpayer and year
+	 * Search and return major expense analytics accounts for a specified taxpayer
+	 * and year
 	 * 
 	 * @param taxpayerId Taxpayer to search for
 	 * @param year       A year to search for
 	 * 
-	 * @return A {@link List} of {@link Map} with tax provision information for a
-	 *         taxpayer and specified year and previous periods
+	 * @return A {@link List} of {@link Map} with major expense analytics accounts
+	 *         for a taxpayer and specified year and previous periods
 	 */
 	private List<Map<String, Object>> getAnalyticsAccounts(String taxpayerId, int year) {
 
@@ -1644,23 +1649,22 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("month_number", 12));
 
 		// Filter by year
-		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-		for (int i = year; i > (year - 5); i--) {
-			subquery = subquery.should(new TermQueryBuilder("year", i));
-		}
-		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);
+		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
 		
 		AggregationBuilder sum = AggregationBuilders.sum("final_balance").field("final_balance");
 		
+		BucketSortPipelineAggregationBuilder paging = PipelineAggregatorBuilders
+				.bucketSort("paging", Arrays.asList(new FieldSortBuilder("final_balance").order(SortOrder.DESC))).from(0)
+				.size(5);		
+
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-				AggregationBuilders.terms("year").size(10_000).field("year")
-						.subAggregation(AggregationBuilders.terms("account_name").size(10_000).field("account_name.keyword")
-								.subAggregation(sum).order(BucketOrder.aggregation("final_balance", false))).size(5);
+		AbstractAggregationBuilder<?> aggregationBuilder = AggregationBuilders.terms("year").size(10_000).field("year")
+				.subAggregation(AggregationBuilders.terms("account_code").size(10_000).field("account_code.keyword")
+				.subAggregation(AggregationBuilders.terms("account_name").size(10_000).field("account_name.keyword"))
+						.subAggregation(sum).subAggregation(paging));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);		
+				.aggregation(aggregationBuilder);
 
 		// We are not interested on individual documents
 		searchSourceBuilder.size(0);
@@ -1679,22 +1683,202 @@ public class AnalysisService {
 					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
-		
-		String[] groupBy = { "year", "account_name" };
-		
+
+		String[] groupBy = { "year", "account_code" };
+
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			String accountName = getStringValueForAgg(agg,"account_name");
+			if ( accountName == null )
+				return null;
 			Sum amount = agg.get("final_balance");
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
-			instance.put("account_name", values[1]);
+			instance.put("account_code", values[1]);
+			instance.put("account_name", accountName);
 			instance.put("value", amount.getValue());
 			return instance;
 		};
 
 		// Get information
-		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
+				function);
 		return instances;
 
+	}
+
+	/**
+	 * Search and return major customers for a specified taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Map} with major customers for a taxpayer and
+	 *         specified year and previous periods
+	 */
+	private List<Map<String, Object>> getCustomers(String taxpayerId, int year) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(CUSTOMERS_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+
+		// Filter by year
+		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
+
+		AggregationBuilder sum = AggregationBuilders.sum("amount").field("amount");
+		
+		BucketSortPipelineAggregationBuilder paging = PipelineAggregatorBuilders
+				.bucketSort("paging", Arrays.asList(new FieldSortBuilder("amount").order(SortOrder.DESC))).from(0)
+				.size(5);		
+
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = AggregationBuilders.terms("year").size(10_000).field("year")
+				.subAggregation(AggregationBuilders.terms("customer_id").size(10_000).field("customer_id.keyword")
+				.subAggregation(AggregationBuilders.terms("customer_name").size(10_000).field("customer_name.keyword"))
+						.subAggregation(sum).subAggregation(paging));
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting major customers", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO,
+					"No major customers information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No data found
+		}
+
+		String[] groupBy = { "year", "customer_id" };
+
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			String customerName = getStringValueForAgg(agg,"customer_name");
+			if ( customerName == null )
+				return null;			
+			Sum amount = agg.get("amount");			
+			Map<String, Object> instance = new HashMap<>();
+			instance.put("year", values[0]);
+			instance.put("customer_id", values[1]);
+			instance.put("customer_name", customerName);			
+			instance.put("value", amount.getValue());
+			return instance;
+		};
+
+		// Get information
+		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
+				function);
+		return instances;
+
+	}
+
+	/**
+	 * Given an {@link Aggregations} and a aggregation name, search value and return it
+	 * @param agg		An {@link Aggregations} to search in
+	 * @param aggName	A parameter to search in {@link Aggregations}
+	 * @return			A value for a specified parameter, or null if it's not found
+	 */
+	private String getStringValueForAgg(Aggregations agg, String aggName) {
+		ParsedStringTerms terms = agg.get(aggName);
+		if ( terms != null ) {
+			List<? extends Bucket> buckets = terms.getBuckets();
+			if ( buckets != null && !buckets.isEmpty() )
+				return buckets.get(0).getKeyAsString();				
+		}
+		return null;
+	}
+
+	/**
+	 * Search and return major suppliers for a specified taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Map} with major suppliers for a taxpayer and
+	 *         specified year and previous periods
+	 */
+	private List<Map<String, Object>> getSuppliers(String taxpayerId, int year) {
+
+		// Index over 'Accounting Computed Statement Income' objects
+		SearchRequest searchRequest = new SearchRequest(SUPPLIERS_INDEX);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+
+		// Filter by year
+		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
+
+		AggregationBuilder sum = AggregationBuilders.sum("amount").field("amount");
+		
+		BucketSortPipelineAggregationBuilder paging = PipelineAggregatorBuilders
+				.bucketSort("paging", Arrays.asList(new FieldSortBuilder("amount").order(SortOrder.DESC))).from(0)
+				.size(5);		
+
+		// Configure the aggregations
+		AbstractAggregationBuilder<?> aggregationBuilder = AggregationBuilders.terms("year").size(10_000).field("year")
+				.subAggregation(AggregationBuilders.terms("supplier_id").size(10_000).field("supplier_id.keyword")
+				.subAggregation(AggregationBuilders.terms("supplier_name").size(10_000).field("supplier_name.keyword"))
+						.subAggregation(sum).subAggregation(paging));
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting major customers", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO,
+					"No major customers information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No data found
+		}
+
+		String[] groupBy = { "year", "supplier_id" };
+
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			String supplierName = getStringValueForAgg(agg,"supplier_name");
+			if ( supplierName == null )
+				return null;			
+			Sum amount = agg.get("amount");
+			Map<String, Object> instance = new HashMap<>();
+			instance.put("year", values[0]);
+			instance.put("supplier_id", values[1]);
+			instance.put("supplier_name", supplierName);
+			instance.put("value", amount.getValue());
+			return instance;
+		};
+
+		// Get information
+		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
+				function);
+		return instances;
+
+	}
+
+	private int getPastPeriods() {
+		String s = env.getProperty("search.past.periods");
+		return Integer.parseInt(s == null ? "5" : s);
 	}
 }

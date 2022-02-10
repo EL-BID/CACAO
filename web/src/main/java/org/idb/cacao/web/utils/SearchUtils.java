@@ -860,7 +860,9 @@ public class SearchUtils {
 		for(Terms.Bucket bucket: terms.getBuckets()) {
 			values[level] = bucket.getKeyAsString();
 			if (lastLevel) {
-				results.add(function.apply(bucket.getAggregations(), values));
+				R obj = function.apply(bucket.getAggregations(), values);
+				if ( obj != null )
+					results.add(obj);
 			}
 			else {
 				collectAggregationLevel(bucket.getAggregations(), fields, function, level+1, values, results);
