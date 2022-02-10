@@ -64,6 +64,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
@@ -91,6 +96,7 @@ import org.idb.cacao.web.repositories.SyncCommitHistoryRepository;
 import org.idb.cacao.web.repositories.SyncCommitMilestoneRepository;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
+import org.idb.cacao.web.utils.KeepAliveStrategy;
 import org.idb.cacao.web.utils.LoadFromParquet;
 import org.idb.cacao.web.utils.ReflectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,11 +112,13 @@ import org.springframework.data.repository.Repository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RequestCallback;
+import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -185,6 +193,14 @@ public class SyncAPIService {
 	 * Default paralelism for SYNC operations
 	 */
 	public static int DEFAULT_SYNC_PARALELISM = 1;
+	
+	private static final int VALIDATE_INACTIVITY_INTERVAL_MS = 30000;
+	
+	private static final int DEFAULT_RETRIES_PER_REQUEST = 3;
+
+	private static final int DEFAULT_KEEP_ALIVE_TIMEOUT_MS = 10_000;
+	
+	private static final int MAX_POOLING_SIZE_FOR_CONCURRENT_REQUESTS = 20;
 
     @Autowired
     private MessageSource messages;
@@ -228,6 +244,8 @@ public class SyncAPIService {
      * Keeps reference to 'Future' object created when we scheduled the SYNC task
      */
     private volatile ScheduledFuture<?> futureSyncScheduled;
+    
+    private volatile PoolingHttpClientConnectionManager poolingConnectionManager;
 
 	/**
 	 * Keeps reference for thread running a SYNC process started locally (at subscriber server)
@@ -236,10 +254,42 @@ public class SyncAPIService {
 	
 	@Autowired
 	public SyncAPIService(RestTemplateBuilder builder) {
+		// For improved workload in concurrent HTTP requests we will configure a pooling collection manager
+		// for dealing with our high concurrent environment
 		this.restTemplate = builder
+				.requestFactory(()->{
+					HttpClientConnectionManager mgr = getPoolingConnectionManager();
+					HttpClient client = HttpClientBuilder.create()
+							.setConnectionManager(mgr)
+							.setKeepAliveStrategy(new KeepAliveStrategy(DEFAULT_KEEP_ALIVE_TIMEOUT_MS))
+							.setRetryHandler(new DefaultHttpRequestRetryHandler(
+									/*retryCount*/DEFAULT_RETRIES_PER_REQUEST, 
+									/*requestSentRetryEnabled*/false))
+							.build();
+					HttpComponentsClientHttpRequestFactory clientFactory 
+						= new HttpComponentsClientHttpRequestFactory(client);
+					return clientFactory;
+				})
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
 				.build();
+	}
+	
+	private PoolingHttpClientConnectionManager getPoolingConnectionManager() {
+		if (poolingConnectionManager!=null)
+			return poolingConnectionManager;
+		synchronized (this) {
+			if (poolingConnectionManager!=null)
+				return poolingConnectionManager;
+			
+			PoolingHttpClientConnectionManager poolingConnManager = new PoolingHttpClientConnectionManager();
+			poolingConnManager.setMaxTotal(MAX_POOLING_SIZE_FOR_CONCURRENT_REQUESTS);
+			poolingConnManager.setDefaultMaxPerRoute(MAX_POOLING_SIZE_FOR_CONCURRENT_REQUESTS);
+			poolingConnManager.setValidateAfterInactivity(VALIDATE_INACTIVITY_INTERVAL_MS);
+
+			poolingConnectionManager = poolingConnManager;
+			return poolingConnManager;
+		}
 	}
 
 	/**
@@ -1198,7 +1248,9 @@ public class SyncAPIService {
 			
 			try {
 				
-				restTemplate.execute(uri, HttpMethod.GET, requestCallback, clientHttpResponse->{
+				ResponseExtractor<Boolean> responseExtractor = 
+						
+					(clientHttpResponse)->{
 		
 					// Got the synchronized contents in a local temporary file. Let's open it and read its contents
 		
@@ -1251,8 +1303,24 @@ public class SyncAPIService {
 						
 					return Boolean.TRUE;
 					
-				});
+				};
 				
+				// May retry the same request multiple times in case of specific errors
+				// For example, Java 11 implementation of TLS 1.3 has a bug that results in occasional failures under high concurrency
+				// @see https://bugs.openjdk.java.net/browse/JDK-8213202
+				
+				for (int retry=0; retry<DEFAULT_RETRIES_PER_REQUEST; retry++) {
+					try {
+						restTemplate.execute(uri, HttpMethod.GET, requestCallback, responseExtractor);
+						break;
+					}
+					catch (Throwable ex) {
+						if (retry+1>=DEFAULT_RETRIES_PER_REQUEST || !shouldRetryRequest(ex)) {
+							throw ex;
+						}
+					}
+				} // LOOP for each retry of the same HTTP request
+						
 				successful = true;
 				
 			}
@@ -1779,5 +1847,19 @@ public class SyncAPIService {
 			if (tempFile!=null && !tempFile.delete())
 				tempFile.deleteOnExit();
 		}
+	}
+	
+	/**
+	 * Check if it should try again the same HTTP request that has failed
+	 */
+	public static boolean shouldRetryRequest(Throwable ex) {
+		if (ex==null)
+			return false;
+		String msg = ex.getMessage();
+		if (msg!=null && (msg.contains("peer not authenticated") || msg.contains("No PSK available")))
+			return true;
+		if (ex.getCause()!=null && ex.getCause()!=ex)
+			return shouldRetryRequest(ex.getCause());
+		return false;
 	}
 }
