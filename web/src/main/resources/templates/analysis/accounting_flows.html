@@ -81,7 +81,11 @@
 		ALERT</div>
 
 <script th:nonce="${cspNonce}" th:inline="javascript">
-	
+
+$('#copyTaxpayer').click( function() {
+    navigator.clipboard.writeText($('#taxpayer').val())
+})
+
 //Define number format
 d3.formatDefaultLocale({
 	decimal: /*[[#{decimal.char}]]*/ ',',
@@ -109,8 +113,6 @@ function onFormChange() {
         }
     );
 }
-
-$('#minimum').change(onFormChange)
 
 $('#select').dropdown({
     apiSettings: {
