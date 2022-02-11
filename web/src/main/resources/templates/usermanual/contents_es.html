@@ -336,5 +336,79 @@ La tabla se mostrará con la siguiente información en cada fila:
 </div>
 </div> 
 
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">Gestión de plantillas de documentos</span>
+</div>
+<div class="content markdown">
+
+## Entrada de manual aún no completa
+
+## ¿Qué son las plantillas de documentos en CACAO?
+
+CACAO es un sistema de recepción y mantenimiento de archivos con datos contables de los contribuyentes. Para recibir correctamente los archivos y validarlos, CACAO debe conocer de antemano su diseño y cómo interpretar sus datos.
+
+> **¡Atención!**
+> Cada una de las plantillas de documentos disponibles en la funcionalidad `Cargar Documentos` debe informarse y especificarse en la opción `Plantillas de Documentos` antes de su uso.
+
+
+La **Plantilla de documento** contiene la siguiente información:
+
+* El **Nombre** de la plantilla
+* La **Versión** de la plantilla, utilizada para mantener un registro histórico de las modificaciones de la plantilla
+* La **Periodicidad** con que la información debe ser enviada por los Contribuyentes a la Administración Tributaria
+* Una identificación de **grupo** para consolidar diferentes plantillas con respecto a un objetivo común
+* Una lista de **Campos**. Para cada campo de la plantilla, se debe informar:
+	* Nombre del campo**
+	* El **tipo** de la información del campo
+	* El **Mapeo** de la información a información específica esperada por CACAO
+	* Si la información:
+		* contiene **datos personales**
+		* es **requerido** de **opcional**
+		* debe ser **único** dentro del archivo
+	* La **descripción** del campo
+
+El **tipo** del campo indica el formato que CACAO debe esperar al leer el campo. CACAO entiende diferentes tipos, tales como:
+
+* **Carácter**: una cadena de caracteres alfanuméricos
+* **Entero**: un número sin divisiones decimales, como "12"
+* **Decimal**: un número que acepta divisiones decimales, como "12.34"
+* **Booleano**: un campo que contiene solo "verdadero" o "falso"
+* **Fecha/Hora**: información con una fecha *y* una hora
+* **Fecha**: una fecha que contiene día, mes y año
+* **Mes**: la identificación de un solo mes
+* **Específico del Dominio**: un tipo especial de campo definido por la Administración Tributaria
+* **Estructura anidada**: un campo compuesto por otros campos
+
+> **¡Atención!**
+> Para obtener más información sobre el tipo de campo **Específico del dominio**, consulte la entrada `Tablas de dominio` en este manual del usuario.
+
+El **mapeo** de un campo hace coincidir su información con una de las informaciones específicas esperadas por CACAO:
+
+* Cualquier campo (cuando el campo no tiene un mapeo específico)
+* Identificación fiscal
+* Año fiscal
+* Semestre Tributario
+* Mes fiscal
+* Día de impuestos
+* Valor adeudado de impuestos
+* Código de impuestos
+* Impuesto
+
+La siguiente tabla muestra un pequeño ejemplo de una lista de Campos de un Plan de Cuentas:
+
+|Nombre|Tipo|Mapeo|Datos personales|Obligatorio|Único|Descripción|
+|-|-|-|-|-|-|-|
+|Identificación|Carácter|Identificación del Contribuyente|Sí|Sí|Sí|Número de Identificación del Contribuyente|
+|Año|Entero|Año fiscal|No|Sí|Sí|Año fiscal de este informe financiero|
+|Dirección|Carácter|Cualquier Campo|No|No|No|Dirección de trabajo del contribuyente|
+
+
+
+</div>
+</div>
+
+
 </div>
 </body>

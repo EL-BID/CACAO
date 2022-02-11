@@ -205,7 +205,7 @@ For instance:
 |-|-|-|-|
 |**1**|**Asset**||**100%**|
 |2|Asset|Cash and Cash Equivalents|66,67%|
-|2|Asset|Intenvory|33,33%|
+|2|Asset|Inventory|33,33%|
 
 The **horizontal analysis** compares two periods side by side, including a third column that shows how much the second period represents in relation to the first, which is considered 100%.
 
@@ -336,6 +336,79 @@ A table will be shown with the following information on each row:
 
 </div>
 </div> 
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">Managing Document Templates</span>
+</div>
+<div class="content markdown">
+
+## Manual entry yet not complete
+
+## What are Document Templates in CACAO?
+
+CACAO is a system for receiving and maintaining files with accounting data of taxpayers. In order to correctly receive files and validate them, CACAO must know beforehand its layout and how to interpret its data. 
+
+> **Attention!**
+> Each of the document templates available on the `Upload Documents` functionality must be informed and specified on the `Document Templates` option prior to its use.
+
+
+A **Document Template** contains the following information:
+
+* The **Name** of the template
+* The **Version** of the template, used to keep a historical log of the template modifications
+* The **Periodicity** that the information must be sent by the TaxPayers to the Tax Administration
+* A **group** identification to consolidate different templates regarding a common goal
+* A list of **Fields**. For each field of the template, it must be informed:
+	* Field **Name**
+ 	* The **type** of the information of the field
+ 	* The **Mapping** of the information to specific information expected by CACAO
+ 	* If the information:
+		* contains **Personal data**
+		* is **required** of **optional**
+		* must be **unique** inside the file
+* A **description** of the field
+
+The **type** of the field indicates the format that CACAO must expect when reading the field. CACAO understand different types, such as:
+
+* **Character**: a string of alphanumeric characters
+* **Integer**: a number without decimal divisions, such as "12"
+* **Decimal**: a number that accepts decimal divisions, such as "12,34"
+* **Boolean**: a field containing only "true" or "false"
+* **Date/Time**: information with a date *and* a time
+* **Date**: a date containing day, month and year
+* **Month**: the identification of a single month
+* **Domain Specific**: a special type of field defined by the Tax Administration
+* **Nested Structure**: a field composed by other fields
+
+> **Attention!**
+> For more information regarding the **Domain Specific** field type, please refer to the `Domain Tables` entry on this user manual.
+
+The **mapping** of a field matches its information with one of the specific information expected by CACAO:
+
+* Any Field (when the field does not have a specific mapping)
+* Taxpayer ID
+* Tax Year
+* Tax Semester
+* Tax Month
+* Tax Day
+* Tax Due Value
+* Tax Code
+* Tax 
+
+The following table shows a small example of a list of Field from a Chart of Accounts:
+
+|Name|Type|Mapping|Personal Data|Required|Unique|Description|
+|-|-|-|-|-|-|-|
+|Identification|Character|Taxpayer ID|Yes|Yes|Yes|Taxpayer Identification Number|
+|Year|Integer|Tax Year|No|Yes|Yes|Fiscal year of this financial reporting|
+|Address|Character|Any Field|No|No|No|Taxpayer work address|
+
+
+
+</div>
+</div>
 
 
 <!-- <div>
