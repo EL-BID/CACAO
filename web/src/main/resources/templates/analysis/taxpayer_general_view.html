@@ -91,12 +91,12 @@
 		;
 		
 		//Define number format
-		decimalChar = /*[[${decimalChar}]]*/ ',';
-		decimalGroupSeparator = /*[[${decimalGroupSeparator}]]*/ '.';
+		decimalChar = /*[[#{decimal.char}]]*/ ',';
+		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
 		
 		//Define error message var
-		errorYearsNotFound = /*[[${errorYearsNotFound}]]*/ '';
-		errorNoDataAvailable = /*[[${errorNoDataAvailable}]]*/ '';
+		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
+		errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
 	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())

@@ -421,5 +421,36 @@ public class AnalysisAPIController {
     		result = Collections.emptyList();
     	
     	return ResponseEntity.ok().body(result);    	
+	}
+	
+	@Secured({"ROLE_TAX_REPORT_READ"})
+	@GetMapping(value= {"/analysis/customers_vs_suppliers_analysis"})
+	public ResponseEntity<Object> getCustomersVsSuppliersView(			
+			@RequestParam("taxpayerId") String taxpayerId,
+			@RequestParam("year") String year ) {
+		
+		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
+			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
+			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
+			return ResponseEntity.ok().body(Collections.emptyList());
+		}
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	
+    	List<?> result = analysisService.getCustomersVsSuppliers(taxpayerId,Integer.valueOf(year));
+    	
+    	if ( result == null || result.isEmpty() )  
+    		result = Collections.emptyList();
+    	
+    	return ResponseEntity.ok().body(result);    	
 	}		
 }

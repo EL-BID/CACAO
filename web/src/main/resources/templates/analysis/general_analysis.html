@@ -105,13 +105,13 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
 		//Define number format
-		decimalChar = /*[[${decimalChar}]]*/ ',';
-		decimalGroupSeparator = /*[[${decimalGroupSeparator}]]*/ '.';
+		decimalChar = /*[[#{decimal.char}]]*/ ',';
+		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
 		
 		//Define error message var
-		errorQualifierValuesNotFound = /*[[${errorQualifierValuesNotFound}]]*/ '';
-		errorYearsNotFound = /*[[${errorYearsNotFound}]]*/ '';
-		errorNoDataAvailable = /*[[${errorNoDataAvailable}]]*/ '';
+		errorQualifierValuesNotFound = /*[[#{qualifier.values.missing}]]*/ '';
+		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
+		errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
 	
 		$('#qualifiers').on('change', function() {
 			$("#dataView").hide();

@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -47,6 +48,7 @@ import org.idb.cacao.web.dto.AggregatedAccountingFlow;
 import org.idb.cacao.web.dto.AnalysisData;
 import org.idb.cacao.web.dto.AnalysisItem;
 import org.idb.cacao.web.dto.BalanceSheet;
+import org.idb.cacao.web.dto.CustomerVsSupplier;
 import org.idb.cacao.web.dto.Outlier;
 import org.idb.cacao.web.dto.Shareholding;
 import org.idb.cacao.web.dto.StatementIncomeItem;
@@ -1350,7 +1352,7 @@ public class AnalysisService {
 	 */
 	private List<Shareholding> getShareholdings(String taxpayerId, int year) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1427,7 +1429,7 @@ public class AnalysisService {
 	 */
 	private List<Shareholding> getShareholders(String taxpayerId, int year) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1504,7 +1506,7 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getRevenueNetAndGrossProfit(String taxpayerId, int year, String index) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(index);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1577,7 +1579,7 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getTaxProvision(String taxpayerId, int year) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(BALANCE_SHEET_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1636,7 +1638,7 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getAnalyticsAccounts(String taxpayerId, int year) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(BALANCE_SHEET_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1719,7 +1721,7 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getCustomers(String taxpayerId, int year) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(CUSTOMERS_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1812,7 +1814,7 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getSuppliers(String taxpayerId, int year) {
 
-		// Index over 'Accounting Computed Statement Income' objects
+		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(SUPPLIERS_INDEX);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -1881,5 +1883,118 @@ public class AnalysisService {
 	private int getPastPeriods() {
 		String s = env.getProperty("search.past.periods");
 		return Integer.parseInt(s == null ? "5" : s);
+	}
+
+	/**
+	 * Search and return differences values for customers and suppliers for a specified taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Map} with differences values for customers and suppliers for a taxpayer and
+	 *         specified year
+	 */
+	public List<CustomerVsSupplier> getCustomersVsSuppliers(String taxpayerId, int year) {
+		
+		String[] groupByCustomers = { "year", "month_number", "customer_id.keyword", "customer_name.keyword" };
+		
+		List<Map<String, Object>> customers = getCustomersVsSuppliersValues(taxpayerId, year, CUSTOMERS_INDEX, groupByCustomers);
+		
+		String[] groupBySuppliers = { "year", "month_number", "taxpayer_id.keyword","taxpayer_name.keyword" };
+		
+		List<Map<String, Object>> suppliers = getCustomersVsSuppliersValues(taxpayerId, year, SUPPLIERS_INDEX, groupBySuppliers);
+		
+		Map<Pair<YearMonth,String>,CustomerVsSupplier> instances = new HashMap<>(customers.size());
+		
+		customers.forEach( item -> {
+			CustomerVsSupplier instance = new CustomerVsSupplier(item, "customer");
+			instances.put(Pair.of(instance.getMonth(),instance.getCustomerId()), instance);
+		});
+		
+		suppliers.forEach( item -> {
+			YearMonth month = YearMonth.of(Integer.valueOf(item.get("year").toString()), 
+					Integer.valueOf(item.get("month_number").toString()));
+			Pair<YearMonth,String> key = Pair.of(month,item.get("taxpayer_id.keyword").toString());
+			CustomerVsSupplier instance = instances.get(key);
+			if ( instance == null ) {
+				instance = new CustomerVsSupplier(item, "supplier");
+				instances.put(key, instance);
+			}
+			else {
+				instance.setSupplierValue(Double.parseDouble(item.get("amount").toString()));
+			}
+			instance.setDifference(instance.getCustomerValue()-instance.getSupplierValue());
+
+		}); 
+
+		return instances.values().stream()
+				.filter(instance->instance.getDifference() < 0).sorted().collect(Collectors.toList());
+	}
+
+	/**
+	 * Get values for customers os suppliers for a specified taxpayer and period
+	 * @param taxpayerId	A taxpayer to filter for
+	 * @param year			A year to filter for
+	 * @param index			An index to search in
+	 * @param groupBy		An array of fields do search
+	 * @return	A @{@link List} of {@link Map} where key is field name and value is field value. 
+	 */
+	private List<Map<String, Object>> getCustomersVsSuppliersValues(String taxpayerId, int year, String index,
+			String[] groupBy) {
+
+		// Index over 'Customers' objects
+		SearchRequest searchRequest = new SearchRequest(index);
+
+		BoolQueryBuilder query = QueryBuilders.boolQuery();		
+		
+		// Filter by taxpayer		
+		if ( CUSTOMERS_INDEX.equals(index) )
+			query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		else
+			query = query.must(new TermQueryBuilder("supplier_id.keyword", taxpayerId));
+
+		// Filter by year
+		query = query.must(new TermQueryBuilder("year", year));
+
+		// Configure the aggregations
+		AggregationBuilder sum = AggregationBuilders.sum("amount").field("amount");
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, sum);		
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Throwable ex) {
+			log.log(Level.SEVERE, "Error getting major customers", ex);
+		}
+
+		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+			log.log(Level.INFO,
+					"No customers information found for taxPayer " + taxpayerId + " for period " + year);
+			return Collections.emptyList(); // No data found
+		}
+
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
+			Sum amount = agg.get("amount");
+			Map<String, Object> instance = new HashMap<>();
+			instance.put(groupBy[0], values[0]);
+			instance.put(groupBy[1], values[1]);
+			instance.put(groupBy[2], values[2]);
+			instance.put(groupBy[3], values[3]);
+			instance.put("amount", amount.getValue());
+			return instance;
+		};
+
+		// Get customers/suppliers information
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		
 	}
 }

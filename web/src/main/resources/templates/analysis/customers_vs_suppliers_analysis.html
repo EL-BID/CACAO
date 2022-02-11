@@ -28,8 +28,8 @@
 			<div class="active section" th:text="#{taxpayers.analysis}">Analysis</div>
 		</div>
 		<h2 class="ui header">
-			<i class="search dollar icon"></i> <span class="content"
-				th:text="#{taxpayers.analysis.statement.income}">Statement Income Analysis</span>
+			<i class="balance scale right icon"></i> <span class="content"
+				th:text="#{taxpayers.analysis.customers.versus.suppliers}">Customers vs Suppliers Analysis</span>
 		</h2>
 		<div class="ui container">
 			<div class="ui orange segment">
@@ -170,14 +170,13 @@
 	        });
 		}
 		
-		let table = new Tabulator('#table', {
-			index: 'id',			
+		let table = new Tabulator('#table', {						
 			layout: "fitColumns", //fit columns to width of table (optional)
 		    pagination: true,
 			paginationMode: "local", //enable local pagination
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-			ajaxURL: /*[[@{/api/analysis/statement_income_analysis}]]*/ "/api/analysis/statement_income_analysis", //set url for ajax request
+			ajaxURL: /*[[@{/api/analysis/customers_vs_suppliers_analysis}]]*/ "/api/analysis/customers_vs_suppliers_analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)
@@ -208,28 +207,38 @@
 		        }
 		    },	
 		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+		    groupBy:"month",
+		    groupStartOpen: true,
+		    groupHeader:function(value, count, data, group){
+		        //value - the value all members of this group share
+		        //count - the number of rows in this group
+		        //data - an array of all the row data objects in this group
+		        //group - the group component for the group
+		        return value;
+		    },		    
 			columns:[ //Define Table Columns
-					{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false},
-					{title: /*[[#{taxpayers.analysis.statement.income.declared}]]*/ "Declared Value", field:"declaredValue", headerSort:false, formatter: "money", 
+				{title: /*[[#{month}]]*/ "Month", field:"month", hozAlign:"left", headerSort:false, visible:false},
+				{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customerName", hozAlign:"left", headerSort:false},
+				{title: /*[[#{customer.value}]]*/ "Declared Value", field:"customerValue", headerSort:false, formatter: "money", 
+					formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+					hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+				{title: /*[[#{supplier.value}]]*/ "Calculated Value", field:"supplierValue", headerSort:false, formatter: "money", 
 						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
 						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
-					{title: /*[[#{taxpayers.analysis.statement.income.calculated}]]*/ "Calculated Value", field:"calculatedValue", headerSort:false, formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
-					{title: /*[[#{taxpayers.analysis.statement.income.difference}]]*/ "Difference", field:"difference", formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
+				{title: /*[[#{customer.supplier.difference}]]*/ "Difference", field:"difference", formatter: "money", 
+					formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+					hozAlign:"right", headerSort:false, headerHozAlign:"right"}
 			]
 		});
 		
 		table.on("tableBuilt", function(){
 			document.getElementById('exportXLS').addEventListener("click", function(){
-				table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.statement.income}]]*/''});				    
+				table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/''});				    
 			});
 		});
 		
 		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.statement.income}]]*/ null;
+			var fileName =/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/ null;
 			return  fileName + ".xlsx";
 		}
 		
