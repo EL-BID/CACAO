@@ -1763,7 +1763,8 @@ public class SyncAPIService {
 		
 		Map<Constraints, String> map = new HashMap<>();
 		
-    	try (Stream<Map<?,?>> stream = ScrollUtils.findWithScroll(Map.class, indexName, elasticsearchClient, 
+    	try (@SuppressWarnings({ "rawtypes", "unchecked" })
+		Stream<Map<?,?>> stream = (Stream<Map<?,?>>)(Stream)ScrollUtils.findWithScroll(Map.class, indexName, elasticsearchClient, 
     		/*customizeSearch*/searchSourceBuilder->{
     	    	for (String name: uniqueConstraint)
     	    		searchSourceBuilder.fetchField(name);    			
