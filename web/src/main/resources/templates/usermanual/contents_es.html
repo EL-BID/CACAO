@@ -339,6 +339,84 @@ La tabla se mostrará con la siguiente información en cada fila:
 <div>
 <div class="title">
 <i class="dropdown icon"></i>
+<span class="ui header">Visón del Contribuyente</span>
+</div>
+<div class="content markdown">
+
+## ¿Cuál es el propósito de la Visón del Contribuyente?
+
+La **Visón del Contribuyente** presenta un resumen de diferente información sobre un contribuyente seleccionado y el estado de su negocio.
+
+Para un contribuyente determinado, la **Visón del Contribuyente** muestra, si existe:
+
+* La **participación de capital** que el contribuyente tienen en otros negocios
+* Los **Accionistas** del contribuyente seleccionado
+* Respecto a los **Ingresos por Ventas Netas y Servicios y Beneficio Bruto**, los valores declarados y los calculados por CACAO a partir del diario
+* El monto de las **Provisiones Fiscales**
+* Los **Mayores Gastos** del contribuyente
+* Los **Principales Clientes y Proveedores** del contribuyente
+
+## Uso de la Visón del Contribuyente
+
+Para usar el análisis general, seleccione la opción `Análisis` ubicada en el menú de la barra lateral, luego seleccione `Visón del Contribuyente`.
+
+En el menú **Nombre**, seleccione el contribuyente que será objeto del análisis.
+
+En el menú **Período base**, seleccione el año cuya cuenta de resultados se comparará.
+
+Con todas las selecciones realizadas, seleccione `Buscar` para recuperar los datos y el análisis deseado.
+
+</div>
+</div>
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">Flujos contables</span>
+</div>
+<div class="content markdown">
+
+## ¿Cuál es el propósito del análisis de Flujos Contables?
+
+El análisis de **Flujos Contables** muestra gráficamente la _contabilidad por partida doble_ utilizada por el contribuyente para crear el diario que presenta a la Administración Tributaria.
+
+Cada transacción financiera se registra en al menos dos cuentas contables diferentes, una es la **entrada de crédito** y la otra es una **entrada de débito**. Pueden existir múltiples entradas de créditos o débitos en una sola transacción financiera, puesto que la suma de todos los créditos de una transacción es igual a la suma de todos sus débitos.
+
+Cada transacción está representada por una _flecha_ que comienza en la cuenta que se **acredita** y termina en la cuenta que se **débita**. Si varias transacciones financieras comienzan y terminan en las mismas cuentas, sus valores se suman y la flecha que conecta los dos se vuelve más gruesa.
+
+> **¡Atención!**
+> Cuanto más **gruesa** sea la flecha que conecta dos cuentas, mayor será la suma de las transacciones financieras que conectan las dos cuentas.
+
+## Usando el análisis de Flujos Contables
+
+Para usar el análisis general, seleccione la opción `Análisis` ubicada en el menú de la barra lateral, luego seleccione `Flujos contables`.
+
+En el menú **Nombre**, seleccione el contribuyente que será objeto del análisis.
+
+Para seleccionar el período del análisis, seleccione la fecha de inicio en el menú **Fecha inicial** y la fecha de finalización en el menú **Fecha final**.
+
+Con todas las selecciones realizadas, se mostrarán los flujos contables.
+
+> **¡Atención!**
+> Si **pasa** el mouse sobre una flecha, se mostrará la suma de las transacciones financieras que conectan las dos cuentas.
+
+### Filtros
+
+**Flujos contables** tiene dos filtros principales: **cuenta seleccionada** y **rango de valores**.
+
+Si hace clic en una sola cuenta, solo se mostrarán las flechas que conectan esta cuenta. En el momento en que hace clic en cualquier lugar de los flujos contables, todas las flechas disponibles regresan.
+
+En la parte superior de los flujos contables se encuentra un gráfico de dispersión donde cada **punto** representa una flecha. Los puntos se muestran de acuerdo con su valor y el eje x del gráfico representa todos los valores posibles. Cambiar la posición de la barra izquierda y derecha del gráfico a lo largo de su eje x controla qué flechas se muestran.
+
+> **¡Atención!**
+> Ambos filtros se pueden utilizar simultáneamente. 
+
+</div>
+</div>
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
 <span class="ui header">Gestión de plantillas de documentos - Aún no Completa</span>
 </div>
 <div class="content markdown">
@@ -401,39 +479,6 @@ La siguiente tabla muestra un pequeño ejemplo de una lista de Campos de un Plan
 |Identificación|Carácter|Identificación del Contribuyente|Sí|Sí|Sí|Número de Identificación del Contribuyente|
 |Año|Entero|Año fiscal|No|Sí|Sí|Año fiscal de este informe financiero|
 |Dirección|Carácter|Cualquier Campo|No|No|No|Dirección de trabajo del contribuyente|
-
-</div>
-</div>
-
-<div>
-<div class="title">
-<i class="dropdown icon"></i>
-<span class="ui header">Visón del Contribuyente</span>
-</div>
-<div class="content markdown">
-
-## ¿Cuál es el propósito de la Visón del Contribuyente?
-
-La **Visón del Contribuyente** presenta un resumen de diferente información sobre un contribuyente seleccionado y el estado de su negocio.
-
-Para un contribuyente determinado, la **Visón del Contribuyente** muestra, si existe:
-
-* La **participación de capital** que el contribuyente tienen en otros negocios
-* Los **Accionistas** del contribuyente seleccionado
-* Respecto a los **Ingresos por Ventas Netas y Servicios y Beneficio Bruto**, los valores declarados y los calculados por CACAO a partir del diario
-* El monto de las **Provisiones Fiscales**
-* Los **Mayores Gastos** del contribuyente
-* Los **Principales Clientes y Proveedores** del contribuyente
-
-## Uso de la Visón del Contribuyente
-
-Para usar el análisis general, seleccione la opción `Análisis` ubicada en el menú de la barra lateral, luego seleccione `Visón del Contribuyente`.
-
-En el menú **Nombre**, seleccione el contribuyente que será objeto del análisis.
-
-En el menú **Período base**, seleccione el año cuya cuenta de resultados se comparará.
-
-Con todas las selecciones realizadas, seleccione `Buscar` para recuperar los datos y el análisis deseado.
 
 </div>
 </div>
