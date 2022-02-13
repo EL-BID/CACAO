@@ -417,6 +417,89 @@ En la parte superior de los flujos contables se encuentra un gráfico de dispers
 <div>
 <div class="title">
 <i class="dropdown icon"></i>
+<span class="ui header">Tablas de dominio - aún no completa</span>
+</div>
+<div class="content markdown">
+## ¿Cuál es el propósito de las Tablas de Dominio en CACAO?
+
+Algunos de los datos que recibe una Administración Tributaria deben adherirse a un dominio específico para ser debidamente validados. Por ejemplo, existen diferentes conjuntos de normas que rigen la información financiera y la contabilidad, y la Administración Tributaria debe establecer cuáles serán aceptadas y validadas.
+
+La funcionalidad de **Tablas de Dominio** le permite a la Administración Tributaria definir conjuntos de dominios personalizados para los datos que serán incluidos en los archivos que serán cargados por el contribuyente a CACAO.
+
+El dominio es la colección de todos los objetos en un sistema. En CACAO, un dominio especifica todos los valores posibles que puede representar un dato dado.
+
+## Ejemplos de tablas de dominio
+
+Uno de los dominios específicos más sencillos necesarios para un dato contable es la **naturaleza** de una transacción financiera. Normalmente este dominio contiene sólo dos valores: _debito_ o _crédito_. 
+
+Al establecer un dominio de **naturaleza de la transacción financiera** con sólo los valores _debito_ y _crédito_ se informa a CACAO que cualquier otro valor para este dominio no debe ser aceptado, y el archivo cargado a CACAO será rechazado.
+
+> **¡Atención!**
+> En CACAO, las tablas de dominio son **sensibles al idioma**. Por lo tanto, si la Administración Tributaria está ejecutando CACAO en un entorno multilingüe, las tablas de dominio deben indicar todos los valores posibles para cada idioma aceptado. Por ejemplo, una tabla de dominio de **naturaleza de las transacciones financieras** podría tener el siguiente aspecto:
+> |Clave de entrada|Lenguaje de la entrada|Descripción de la entrada|
+> |-|-|-|
+> |D|English|Debit|
+> |C|English|Debit|
+> |D|Spanish|Débito|
+> |C|Spanish|Crédito|
+
+Otro ejemplo de dominio específico es la norma contable utilizada. Una Administración Tributaria puede aceptar tanto las IFRS (Normas Internacionales de Información Financiera) como los GAAP (Principios Contables Generalmente Aceptados), por lo que CACAO debe configurarse con dos tablas de dominio, una para cada norma. Por ejemplo:
+
+**Extracto de la tabla de dominios de las categorías de cuentas IFRS**
+|Clave de entrada|Lenguaje de la entrada|Descripción de la entrada|
+|-|-|-|
+|1|English|Asset|
+|1|Spanish|Activo|
+|2|English|Equity|
+|2|Spanish|Patrimonio Neto|
+|3|English|Liability|
+|3|Spanish|Pasivo|
+
+**Extracto de la tabla de dominios de las categorías de cuentas GAAP**
+|Clave de entrada|Lenguaje de la entrada|Descripción de la entrada|
+|-|-|-|
+|1|English|Asset|
+|1|Spanish|Activo|
+|2|English|Liability|
+|2|Spanish|Passivo|
+|3|English|Equity|
+|3|Spanish|Patrimonio Neto|
+
+Una inspección minuciosa de las dos tablas de dominios muestra que las IFRS y los GAAP utilizan el mismo código de categoría de cuenta para el **Activo**, pero códigos diferentes para el **Pasivo** y el **Patrimonio**. Sin las definiciones de las tablas de dominio, CACAO no podría entender esas diferencias.
+
+## Gestión de las Tablas de Dominio
+
+Para administrar las Tablas de Dominio, seleccione la opción `Tablas de Dominio` ubicada en el menú de la barra lateral. Se mostrará una tabla con todas las Tablas de Dominio ya registradas en CACAO.
+
+Para cada tabla de dominio, se mostrará:
+* El **Nombre** de la tabla de dominio
+* La **Versión** de la tabla de dominio
+* El **Grupo** del que forma parte la tabla de dominio
+* Un icono de `papel y lápiz` que representa la función **Editar tabla de dominio**.
+* Un icono de `papelera` que representa la función **Borrar tabla de dominio**.
+
+> Atención
+> Si hace clic en una tabla de dominio, o en el icono de `papel y lápiz`, ambas acciones le llevarán a la función **Editar tabla de dominio**.
+
+Para crear una nueva **Tabla de dominio**, seleccione el botón `Nueva tabla de dominio` en la esquina inferior izquierda de la lista de tablas de dominio. 
+
+En la página **Nueva tabla de dominio**, introduzca el nombre de la tabla de dominio en el menú **Nombre**, la versión de la tabla en el menú **Versión** y el grupo (si lo hay) al que pertenece la tabla de dominio en el menú **Grupo**.
+
+Seleccione el botón `Guardar` para crear la tabla de dominio.
+
+Para añadir las entradas a la tabla de dominio, introduzca la etiqueta de la entrada en el menú **Clave de entrada**, seleccione el idioma de la entrada en el menú **Idioma de la entrada**, e introduzca la descripción de la entrada en el menú **Descripción de la entrada**.
+
+Seleccione el botón `Añadir` para introducir la entrada en la tabla de dominios.
+
+## TODO - Edit domain table
+
+</div>
+</div>
+
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
 <span class="ui header">Gestión de plantillas de documentos - Aún no Completa</span>
 </div>
 <div class="content markdown">
