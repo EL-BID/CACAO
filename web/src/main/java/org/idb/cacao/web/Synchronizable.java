@@ -52,4 +52,10 @@ public @interface Synchronizable {
 	 * May inform name of fields that should not be included in the sync copy
 	 */
 	String[] dontSync() default {};
+	
+	/**
+	 * May inform name of fields that should be considered as 'unique constraints' in the sync copy. Avoid to recreate ambiguous
+	 * records with different ID's but the same values for these fields. Do not prevent updating these records.
+	 */
+	String[] uniqueConstraint() default {};
 }

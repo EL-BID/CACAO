@@ -27,6 +27,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +59,14 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.beanutils.PropertyUtilsBean;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.HttpClientConnectionManager;
@@ -82,6 +86,7 @@ import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.controllers.rest.SyncAPIController;
 import org.idb.cacao.web.dto.SyncDto;
@@ -107,6 +112,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.Repository;
 import org.springframework.http.HttpHeaders;
@@ -694,17 +700,50 @@ public class SyncAPIService {
 		final String uri = SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName());
 		
 		final BatchSave batch_to_save = new BatchSave(BULK_LOAD_BATCH_COMMIT, entity.getSimpleName(), repository);
+		
+		final Class<?> found_interface = ReflectUtils.getInterfaceWithFilter(repository.getClass(), 
+				/*filter*/cl->cl.getAnnotation(Synchronizable.class)!=null);
+		final Synchronizable sync_anon = (found_interface==null) ? null : found_interface.getAnnotation(Synchronizable.class);
+		final String[] uniqueConstraint = (sync_anon==null) ? null : sync_anon.uniqueConstraint();	
+		
+		// If we have defined unique constraints for this synchronizable entity, we should re-map the incoming 'id's
+		// to the corresponding existent instances in order to prevent ambiguity (i.e.: different records with different
+		// id's but with the same values for the unique constraint).
+		final Map<Constraints, String> mapExistingIds = (uniqueConstraint==null || uniqueConstraint.length==0) ? null
+				: getMapOfConstraintsAndIds(entity, uniqueConstraint);	
+		final PropertyUtilsBean props = (mapExistingIds==null || mapExistingIds.isEmpty()) ? null : new PropertyUtilsBean();
 
 		long bytes_received_here =
 		syncSomething(tokenApi, uri, start, end, /*limit*/MAX_RESULTS_PER_REQUEST, bytesReceived,
 		/*parquet*/false,
 		/*consumer*/(entry,input)->{
 			
-			// We will ignore the entry name because it's supposed to be equal to the entity 'ID', which we
-			// also have inside de JSON contents
-			
 			// Let's deserialize the JSON contents
 			Object instance = mapper.readValue(input, entity);
+
+			if (mapExistingIds!=null && !mapExistingIds.isEmpty()) {
+				Constraints constraints = new Constraints(uniqueConstraint, instance, props);
+				String existentId = mapExistingIds.get(constraints);
+				if (existentId!=null) {
+					String incomingId;
+					try {
+						incomingId = (String)props.getSimpleProperty(instance, "id");
+					} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e1) {
+						incomingId = null;
+					}
+					if (!existentId.equals(incomingId)) {
+						// Incoming instance has a different ID of an existent record with the same values for the unique constraints
+						// Let's keep the same ID
+						try {
+							props.setSimpleProperty(instance, "id", existentId);
+						} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+							log.log(Level.WARNING, "Could not save locally the instance '"+entity.getName()+"' of ID '"+incomingId
+									+"' because it violates the unicity constraint "+constraints+" for an existent instance of ID '"+existentId+"'");
+							return;
+						}
+					}
+				}				
+			}
 			
 			// Add instance to batch (may also save if batch hits configured size)
 			batch_to_save.push(instance);
@@ -1714,6 +1753,36 @@ public class SyncAPIService {
 	}
 	
 	/**
+	 * Given a persistent entity (expects to find the 'Document' annotation on it) and given a set of field names
+	 * to be considered as 'unique constraints', returns a map with the values collected from existent data. For
+	 * each tuple of values this map gives the corresponding instance ID.
+	 */
+	private Map<Constraints, String> getMapOfConstraintsAndIds(Class<?> entity, final String[] uniqueConstraint) {
+		Document an_doc = entity.getAnnotation(Document.class);
+		String indexName = an_doc.indexName();
+		
+		Map<Constraints, String> map = new HashMap<>();
+		
+    	try (Stream<Map<?,?>> stream = ScrollUtils.findWithScroll(Map.class, indexName, elasticsearchClient, 
+    		/*customizeSearch*/searchSourceBuilder->{
+    	    	for (String name: uniqueConstraint)
+    	    		searchSourceBuilder.fetchField(name);    			
+    		});) {
+    		
+    		stream.forEach(instance->{
+    			
+    			String id = (String)instance.get("id");
+    			
+    			map.put(new Constraints(uniqueConstraint, instance), id);
+    			
+    		});
+    		
+    	}
+    	
+    	return map;
+	}
+	
+	/**
 	 * Object used for controlling a critical section related to Bulk Load (only used if configured for asynchronous Bulk Load)
 	 */
 	private static class BulkLoadAsyncCriticalSection {
@@ -1861,5 +1930,46 @@ public class SyncAPIService {
 		if (ex.getCause()!=null && ex.getCause()!=ex)
 			return shouldRetryRequest(ex.getCause());
 		return false;
+	}
+
+	/**
+	 * Objects that wraps a set of constraints. Useful for verifying unique constraints of incoming data in SYNC operations
+	 */
+	public static class Constraints {
+		private final Object[] constraints;
+		Constraints(String[] fieldNames, Map<?,?> record) {
+			this.constraints = new Object[fieldNames.length];
+			for (int i=0; i<fieldNames.length; i++) {
+				this.constraints[i] = record.get(fieldNames[i]);
+			}
+		}
+		Constraints(String[] fieldNames, Object bean, PropertyUtilsBean propsCacheable) {
+			this.constraints = new Object[fieldNames.length];
+			for (int i=0; i<fieldNames.length; i++) {
+				try {
+					this.constraints[i] = propsCacheable.getSimpleProperty(bean, fieldNames[i]);
+				} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+					this.constraints[i] = null;
+				}
+			}
+		}
+		public int hashCode() {
+			int hash = 17;
+			for (Object c: constraints) {
+				if (c!=null)
+					hash = 37 * (hash + c.hashCode());
+			}
+			return hash;
+		}
+		public boolean equals(Object obj) {
+			if (this==obj)
+				return true;
+			if (!(obj instanceof Constraints))
+				return false;
+			return Arrays.equals(constraints, ((Constraints)obj).constraints);
+		}
+		public String toString() {
+			return Arrays.toString(constraints);
+		}
 	}
 }

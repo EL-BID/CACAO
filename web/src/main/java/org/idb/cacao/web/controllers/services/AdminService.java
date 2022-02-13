@@ -113,7 +113,10 @@ import org.idb.cacao.web.dto.FileUploadedEvent;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
+import org.idb.cacao.web.repositories.DocumentValidationErrorMessageRepository;
 import org.idb.cacao.web.repositories.DomainTableRepository;
+import org.idb.cacao.web.repositories.SyncCommitHistoryRepository;
+import org.idb.cacao.web.repositories.SyncCommitMilestoneRepository;
 import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.idb.cacao.web.utils.ESUtils;
@@ -175,6 +178,9 @@ public class AdminService {
 	
 	@Autowired
 	private DocumentSituationHistoryRepository documentSituationHistoryRepository;
+	
+	@Autowired
+	private DocumentValidationErrorMessageRepository documentValidationErrorMessageRepository;
 
 	@Autowired
 	private DomainTableService domainTableService;
@@ -196,6 +202,12 @@ public class AdminService {
 	
 	@Autowired
 	private TaxpayerRepository taxPayerRepository;
+
+	@Autowired
+	private SyncCommitMilestoneRepository syncCommitMilestoneRepository;
+	
+	@Autowired
+	private SyncCommitHistoryRepository syncCommitHistoryRepository;
 
 	@Autowired
 	private MessageSource messages;
@@ -241,6 +253,7 @@ public class AdminService {
 				new Option("u","uploads",false, "Deletes all upload records and uploaded files."),
 				new Option("v","validated",false, "Deletes all validated records."),
 				new Option("p","published",false, "Deletes all published (denormalized) views."),
+				new Option("s","sync",false, "Deletes all history of SYNC operations."),
 				new Option("txp","taxpayers",false, "Deletes all taxpayers (their names and other information in registry)."),
 				new Option("kp","kibana_patterns",false, "Deletes all index patterns related to CACAO from all spaces of Kibana."),
 				new Option("a","all",false, "Deletes all data from ElasticSearch (corresponds to all the other options, except Kibana)")),
@@ -1429,11 +1442,23 @@ public class AdminService {
 			long count_uploads = service.documentUploadedRepository.count();
 			service.documentUploadedRepository.deleteAll();
 			service.documentSituationHistoryRepository.deleteAll();
+			service.documentValidationErrorMessageRepository.deleteAll();
 			report.append("Deleted ").append(count_uploads).append(" upload records from database.\n");
 			int deleted_files = service.fileSystemStorageService.deleteAll();
 			report.append("Deleted ").append(deleted_files).append(" uploaded files from file storage.\n");
 		}
 		
+		if (cmdLine.hasOption("s") || cmdLine.hasOption("a")) {
+			// Deletes history of SYNC operations
+			long count_history = service.syncCommitHistoryRepository.count();
+			service.syncCommitHistoryRepository.deleteAll();
+			report.append("Deleted ").append(count_history).append(" records of SYNC history.\n");
+			
+			long count_milestones = service.syncCommitMilestoneRepository.count();
+			service.syncCommitMilestoneRepository.deleteAll();
+			report.append("Deleted ").append(count_milestones).append(" records of SYNC last state (milestones).\n");			
+		}
+
 		if (cmdLine.hasOption("kp")) {
 			// Deletes all Index Patterns from all Kibana spaces
 			List<org.idb.cacao.web.utils.ESUtils.KibanaSpace> spaces = ESUtils.getKibanaSpaces(service.env, service.restTemplate);

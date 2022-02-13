@@ -32,7 +32,7 @@ import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Synchronizable(timestamp="changedTime",id="id")
+@Synchronizable(timestamp="changedTime",id="id",uniqueConstraint={"name","version"})
 public interface DomainTableRepository extends ElasticsearchRepository<DomainTable, String> {
 
 	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
