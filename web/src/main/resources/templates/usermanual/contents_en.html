@@ -418,6 +418,91 @@ On the upper side of the accounting flows, there is a dispersion graphic where e
 <div>
 <div class="title">
 <i class="dropdown icon"></i>
+<span class="ui header">Domain Tables - no yet complete</span>
+</div>
+<div class="content markdown">
+## What is the purpose of Domain Tables in CACAO?
+
+Some of the data that a Tax Administration receives must adhere to a specific domain in order to be proper validated. For instance, there are different sets of standards that govern financial reporting and accounting, and the Tax Administration must establish which ones will be accepted and validated.
+
+The **Domain Tables** functionality allows the Tax Administration to define sets of custom domains for the data that will be included in the files to be uploaded by the taxpayer to CACAO.
+
+The domain is the collection of all of the objects in a system. In CACAO, a domain specifies all the possible values a given data may represent.
+
+## Domain Tables examples
+
+One of the most simple specific domain necessary for a accounting data is the **nature** of a financial transaction. Usually this domain contains only two values: _debit_ or _credit_. 
+
+Setting up a **Financial Transaction nature** domain with only the _debit_ and _credit_ values informs CACAO that any other value for this domain must not be accepted, and the the file uploaded to CACAO will be rejected.
+
+> **Attention!**
+> In CACAO, domain tables are **language sensitive**. So it the Tax Administration is running CACAO on a multilanguage environment, the domain tables must indicate all possible values for each language accepted. For instance, a **Financial Transaction nature** domain table might looks as the following:
+> |Entry Key|Entry Language|Entry Description|
+> |-|-|-|
+> |D|English|Debit|
+> |C|English|Debit|
+> |D|Spanish|Débito|
+> |C|Spanish|Crédito|
+
+Other example of a specific domain is the accounting standard used. A Tax Administration might accept both IFRS (International Financial Reporting Standards) or GAAP (Generally Accepted Accounting Principles), and as such CACAO must be configured with two domain tables, one for each standard. For instance:
+
+**IFRS Account Category Domain Table excerpt**
+
+|Entry Key|Entry Language|Entry Description|
+|-|-|-|
+|1|English|Asset|
+|1|Spanish|Activo|
+|2|English|Equity|
+|2|Spanish|Patrimonio Neto|
+|3|English|Liability|
+|3|Spanish|Pasivo|
+
+**GAAP Account Category Domain Table excerpt**
+
+|Entry Key|Entry Language|Entry Description|
+|-|-|-|
+|1|English|Asset|
+|1|Spanish|Activo|
+|2|English|Liability|
+|2|Spanish|Passivo|
+|3|English|Equity|
+|3|Spanish|Patrimonio Neto|
+
+Close inspection of the two domain tables shows that IFRS and GAAP uses the same account category code for **Asset**, but different codes for **Liabilities** and **Equities**. Without the domain tables definitions, CACAO would not be able to understand those differences.
+
+## Managing the Domain Tables
+
+To manage the Domain Tables, select the `Domain Tables` option located at the sidebar menu. A table will be shown with all the Domain tables already registered in CACAO.
+
+For each domain table, it will be shown:
+* The **Name** of the domain table
+* The **Version** of the domain table
+* The **Group** that the domain table is part of
+* A `pen and paper` icon representing the **Edit Domain table** function
+* A `trash` icon representing the **Delete Domain table** function
+
+> **Attention!**
+> If you click on a Domain table, or on the `pen and paper` icon, both actions will take you to the **Edit Domain Table** function.
+
+In order to create a new **Domain Table**, select the `New Domain Table` button on the lower left corner of the Domain tables list.
+
+On the **New Domain Table** page, insert the name of the domain table on the **Name** menu, the version of the table on the **Version** menu, and the group (if any) that the domain table belongs on the **Group** menu.
+
+Select the `Save` button to create the Domain Table.
+
+In order to add the entries to the domain table, insert the entry label on the **Entry Key** menu, select the language of the entry on the **Entry Language** menu, and insert the entry description on the **Entry Description** menu.
+
+Select the `Add` button to insert the entry on the Domain Table.
+ 
+## TODO - Edit domain table
+
+</div>
+</div>
+
+
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
 <span class="ui header">Managing Document Templates - Not yet Complete</span>
 </div>
 <div class="content markdown">
