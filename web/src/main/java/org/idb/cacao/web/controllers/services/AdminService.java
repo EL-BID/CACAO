@@ -99,6 +99,7 @@ import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
@@ -249,7 +250,8 @@ public class AdminService {
 
 		DELETE(AdminService::delete,
 				"Delete information from the application database",
-				new Option("t","templates",false, "Deletes all templates and domain tables. Recreates domain tables automatically."),
+				new Option("t","template",true, "Deletes the template with the name provided as argument. If there is more than one version for the same template, you may inform a specific version separated from the template name by a colon. Otherwise, it will delete all versions of the same template. If provided the argument 'all', it will delete all templates."),
+				new Option("dt","domain_table",true, "Deletes the domain table with the name provided as argument. If there is more than one version for the same domain table, you may inform a specific version separated from the table name by a colon. Otherwise, it will delete all versions of the same domain table.  If provided the argument 'all', it will delete all domain tables. Recreates built-in domain tables automatically."),
 				new Option("u","uploads",false, "Deletes all upload records and uploaded files."),
 				new Option("v","validated",false, "Deletes all validated records."),
 				new Option("p","published",false, "Deletes all published (denormalized) views."),
@@ -257,7 +259,7 @@ public class AdminService {
 				new Option("txp","taxpayers",false, "Deletes all taxpayers (their names and other information in registry)."),
 				new Option("kp","kibana_patterns",false, "Deletes all index patterns related to CACAO from all spaces of Kibana."),
 				new Option("a","all",false, "Deletes all data from ElasticSearch (corresponds to all the other options, except Kibana)")),
-
+		
 		KAFKA(AdminService::kafka,
 				"Returns information about KAFKA",
 				new Option("m","metrics",false, "Collects metrics about KAFKA"),
@@ -298,6 +300,7 @@ public class AdminService {
 		SAMPLES(AdminService::samples,
 			"Add to database sample data and other configurations",
 			new Option("t","templates",false, "Adds to database sample templates according to built-in specifications. Ignores existent templates (i.e. with the same name and version)"),
+			new Option("dt","domain_tables",false, "Adds to database domain tables according to built-in specifications. Ignores existent domain tables (i.e. with the same name and version)"),
 			new Option("d","docs",true, "Adds to database sample documents with random data according to the provided template name. The template name must be informed with this option, following this parameter indication. The taxpayer ID is also created randomly and the corresponding taxpayer record is created accordingly if absent."),
 			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
@@ -305,6 +308,12 @@ public class AdminService {
 			new Option("thr","threads",true, "Number of parallel threads for generating random data (does not apply to validator/ETL phases). This parameter is only considered together with 'docs' parameter. If not informed, use "+DEFAULT_PARALLELISM_FOR_DATA_GENERATOR+" parallel threads."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
+		
+		TABLES(AdminService::tables,
+			"Lists all the domain tables registered in the system"),
+		
+		TEMPLATES(AdminService::templates,
+				"Lists all the templates registered in the system"),
 		
 		UPDATE_INDEX_PATTERN(AdminService::updateIndexPattern,
 				"Updates the index pattern mapping in Kibana according to the index fields in ElasticSearch",
@@ -789,6 +798,12 @@ public class AdminService {
 
 		StringBuilder report = new StringBuilder();
 		
+		if (cmdLine.hasOption("dt")) {
+			// Creates built-in domain tables
+			int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/false);
+			report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+		}
+		
 		if (cmdLine.hasOption("t")) {
 			// Add sample templates
 			
@@ -797,7 +812,7 @@ public class AdminService {
 			List<DocumentTemplate> samples = CreateDocumentTemplatesSamples.getSampleTemplates(service.messages, defaultLocale);
 			
 			for (DocumentTemplate s: samples) {
-				if (service.templateRepository.findByNameAndVersion(s.getName(), s.getVersion()).isPresent())
+				if (service.templateRepository.findByNameIgnoreCaseAndVersion(s.getName(), s.getVersion()).isPresent())
 					continue;
 				service.templateRepository.saveWithTimestamp(s);
 				report.append("Created template '").append(s.getName()).append("' version ").append(s.getVersion()).append("\n");
@@ -854,11 +869,43 @@ public class AdminService {
 	}
 	
 	/**
+	 * Lists the domain tables
+	 */
+	public static Object tables(AdminService service, CommandLine cmdLine) throws Exception {
+		StringBuilder report = new StringBuilder();
+		
+		report.append(String.format("%-40s\t%-10s\t%s\n", "name", "version", "group"));
+		try (Stream<DomainTable> tables = ScrollUtils.findAll(service.domainTableRepository, service.elasticsearchClient, 10).sorted();) {
+			tables.forEach(t->{
+				report.append(String.format("%-40s\t%-10s\t%s\n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
+			});
+		}
+
+		return report.toString();
+	}
+	
+	/**
+	 * Lists the templates
+	 */
+	public static Object templates(AdminService service, CommandLine cmdLine) throws Exception {
+		StringBuilder report = new StringBuilder();
+
+		report.append(String.format("%-40s\t%-10s\t%s\n", "name", "version", "group"));
+		try (Stream<DocumentTemplate> templates = ScrollUtils.findAll(service.templateRepository, service.elasticsearchClient, 10).sorted();) {
+			templates.forEach(t->{
+				report.append(String.format("%-40s\t%-10s\t%s\n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
+			});
+		}
+
+		return report.toString();
+	}
+
+	/**
 	 * Creates sample documents with random data according to the provided template
 	 */
 	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String template_name, int limit_docs, 
 			long fixed_limit_records, String seedWord, int year, StringBuilder report, int threads) throws Exception {
-		List<DocumentTemplate> templates_versions = templateRepository.findByName(template_name);
+		List<DocumentTemplate> templates_versions = templateRepository.findByNameIgnoreCase(template_name);
 		if (templates_versions==null || templates_versions.isEmpty()) {
 			report.append("Could not find a template with name: ").append(template_name).append("\n");
 			return;
@@ -1417,17 +1464,86 @@ public class AdminService {
 		}
 
 		if (cmdLine.hasOption("t") || cmdLine.hasOption("a")) {
-			// Deletes all templates and domain tables. Recreates domain tables automatically.
-			long count_templates = service.templateRepository.count();
-			service.templateRepository.deleteAll();
-			report.append("Deleted ").append(count_templates).append(" templates from database.\n");
 			
-			long count_domain_tables = service.domainTableRepository.count();
-			service.domainTableRepository.deleteAll();
-			report.append("Deleted ").append(count_domain_tables).append(" domain tables from database.\n");
+			String argument = (cmdLine.hasOption("t")) ? cmdLine.getOptionValue("t") : null;
 			
-			int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/true);
-			report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+			if (cmdLine.hasOption("a") || argument==null || "all".equalsIgnoreCase(argument)) {
+				// Deletes all templates
+				long count_templates = service.templateRepository.count();
+				service.templateRepository.deleteAll();
+				report.append("Deleted ").append(count_templates).append(" templates from database.\n");
+			}
+			else if (argument.contains(":")) {
+				// The argument includes a version
+				int sep = argument.indexOf(':');
+				String templateName = argument.substring(0, sep).trim();
+				String version = argument.substring(sep+1).trim();
+				Optional<DocumentTemplate> template = service.templateRepository.findByNameIgnoreCaseAndVersion(templateName, version);
+				if (template.isPresent()) {
+					service.templateRepository.delete(template.get());
+					report.append("Deleted template with name '").append(templateName).append("' and version '").append(version).append("'\n");
+				}
+				else {
+					report.append("ERROR: There is no template with name '").append(templateName).append("' and version '").append(version).append("'\n");
+				}
+			}
+			else {
+				// The argument does not include a version, so it should delete all versions of the same template
+				List<DocumentTemplate> templates = service.templateRepository.findByNameIgnoreCase(argument);
+				if (templates.isEmpty()) {
+					report.append("ERROR: There is no template with name '").append(argument).append("'\n");
+				}
+				else {
+					service.templateRepository.deleteAll(templates);
+					if (templates.size()>1)
+						report.append("Deleted ").append(templates.size()).append(" versions of the template with name '").append(argument).append("'\n");
+					else
+						report.append("Deleted one version of the template with name '").append(argument).append("'\n");
+				}
+			}
+		}
+
+		if (cmdLine.hasOption("dt") || cmdLine.hasOption("a")) {
+			
+			String argument = (cmdLine.hasOption("dt")) ? cmdLine.getOptionValue("dt") : null;
+			
+			if (cmdLine.hasOption("a") || argument==null || "all".equalsIgnoreCase(argument)) {
+				// Deletes all domain tables. Recreates domain tables automatically.
+				long count_domain_tables = service.domainTableRepository.count();
+				service.domainTableRepository.deleteAll();
+				report.append("Deleted ").append(count_domain_tables).append(" domain tables from database.\n");
+				
+				int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/true);
+				report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+			}
+			else if (argument.contains(":")) {
+				// The argument includes a version
+				int sep = argument.indexOf(':');
+				String tableName = argument.substring(0, sep).trim();
+				String version = argument.substring(sep+1).trim();
+				Optional<DomainTable> table = service.domainTableRepository.findByNameIgnoreCaseAndVersion(tableName, version);
+				if (table.isPresent()) {
+					service.domainTableRepository.delete(table.get());
+					report.append("Deleted domain table with name '").append(tableName).append("' and version '").append(version).append("'\n");					
+				}
+				else {
+					report.append("ERROR: There is no domain table with name '").append(tableName).append("' and version '").append(version).append("'\n");
+				}
+			}
+			else {
+				// The argument does not include a version, so it should delete all versions of the same domain table
+				List<DomainTable> tables = service.domainTableRepository.findByNameIgnoreCase(argument);
+				if (tables.isEmpty()) {
+					report.append("ERROR: There is no domain table with name '").append(argument).append("'\n");
+				}
+				else {
+					service.domainTableRepository.deleteAll(tables);
+					if (tables.size()>1)
+						report.append("Deleted ").append(tables.size()).append(" versions of the domain table with name '").append(argument).append("'\n");
+					else
+						report.append("Deleted one version of the domain table with name '").append(argument).append("'\n");
+				}
+			}
 		}
 
 		if (cmdLine.hasOption("txp") || cmdLine.hasOption("a")) {

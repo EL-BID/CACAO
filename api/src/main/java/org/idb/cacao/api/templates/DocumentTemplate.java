@@ -59,7 +59,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  *
  */
 @Document(indexName="cacao_templates")
-public class DocumentTemplate implements Serializable, Cloneable {
+public class DocumentTemplate implements Serializable, Cloneable, Comparable<DocumentTemplate> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -505,6 +505,41 @@ public class DocumentTemplate implements Serializable, Cloneable {
     public String toString() {
         return "DocumentTemplate{" + "id=" + id + ", name=" + name +", version=" + version + '}';
     }
+
+	@Override
+	public int compareTo(DocumentTemplate o) {
+		if (name!=o.name) {
+			if (name==null)
+				return -1;
+			if (o.name==null)
+				return 1;
+			int comp = String.CASE_INSENSITIVE_ORDER.compare(name, o.name);
+			if (comp!=0)
+				return comp;
+		}
+
+		if (group!=o.group) {
+			if (group==null)
+				return -1;
+			if (o.group==null)
+				return 1;
+			int comp = String.CASE_INSENSITIVE_ORDER.compare(group, o.group);
+			if (comp!=0)
+				return comp;
+		}
+		
+		if (version!=o.version) {
+			if (version==null)
+				return -1;
+			if (o.version==null)
+				return 1;
+			int comp = String.CASE_INSENSITIVE_ORDER.compare(version, o.version);
+			if (comp!=0)
+				return comp;
+		}
+		
+		return 0;
+	}
 
     /**
      * Put DocumentTemplate instances in reverse chronological order according to their timestamps

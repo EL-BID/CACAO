@@ -36,10 +36,14 @@ public interface DocumentTemplateRepository extends ElasticsearchRepository<Docu
 	@Query("{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}}")
 	public List<DocumentTemplate> findByName(String name);
 	
+	public List<DocumentTemplate> findByNameIgnoreCase(String name);
+
 	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
 	public Optional<DocumentTemplate> findByNameAndVersion(String name, String version);
 	
+	public Optional<DocumentTemplate> findByNameIgnoreCaseAndVersion(String name, String version);
+
 	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
 		if (entity.getTemplateCreateTime()==null)
 			entity.setTemplateCreateTime(DateTimeUtils.now());

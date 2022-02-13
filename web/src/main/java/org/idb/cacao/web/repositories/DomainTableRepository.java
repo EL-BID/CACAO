@@ -44,6 +44,8 @@ public interface DomainTableRepository extends ElasticsearchRepository<DomainTab
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
 	public Optional<DomainTable> findByNameAndVersion(String name, String version);
 	
+	public Optional<DomainTable> findByNameIgnoreCaseAndVersion(String name, String version);
+
 	Page<DomainTable> findByNameStartsWith(String name, Pageable pageable);
 	
 	Page<DomainTable> findByNameContaining(String name, Pageable pageable);
