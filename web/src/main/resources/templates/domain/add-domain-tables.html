@@ -175,7 +175,7 @@ var table = new Tabulator('#table', {
     columns:[ //Define Table Columns
         {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200", headerFilter: true},
         {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
-            formatterParams: languageLookup }, headerFilter: 'select', headerFilterParams: { values: languageLookup}}, 
+            formatterParams: languageLookup , headerFilter: 'select', headerFilterParams: { values: languageLookup}}, 
         {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true },
         {formatter:deleteIcon, width:50, tooltip: /*{{#{delete}}} */ "Delete", cellClick: deleteEntry, headerSort: false }
     ],
