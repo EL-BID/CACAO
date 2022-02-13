@@ -140,7 +140,7 @@ public class DomainTableAPIController {
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @DeleteMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing domain table",response=DomainTable.class)
-    public ResponseEntity<Object> deleteUser(@PathVariable("id") String id) {
+    public ResponseEntity<Object> deleteDomainTable(@PathVariable("id") String id) {
         DomainTable table = domainTableRepository.findById(id).orElse(null);
         if (table==null)
         	return ResponseEntity.notFound().build();

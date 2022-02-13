@@ -92,7 +92,6 @@ $('#cancel').click(function(){
     window.location.replace([[@{/domaintables}]]) 
 })
 var add_entry = function(event, fields) {
-	console.log(fields)
     event.preventDefault()
     var entry = {key: fields.key, language: fields.language, description: fields.description, locked: false, id: next_id++ }
     table.addRow(entry, false)
@@ -127,9 +126,12 @@ var processForm = function(event, fields) {
 }
 var deleteIcon = function(cell, formatterParams) { 
     if(!cell.getRow().getData().locked)
-        return "<i class='trash icon'></i>"
+    	return '<i class="trash icon" tooltip=[[#{delete}]]></i>'
 };  
 var deleteEntry = function(e, cell) {
+   if( !e.target.classList.contains('trash')) {
+        return
+    }
     var dlg = $('#modal_confirm')
     dlg.find('.description').html([[#{domain.entry.delete.confirm}]])
     dlg.modal({
@@ -177,7 +179,7 @@ var table = new Tabulator('#table', {
         {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
             formatterParams: languageLookup , headerFilter: 'select', headerFilterParams: { values: languageLookup}}, 
         {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true },
-        {formatter:deleteIcon, width:50, tooltip: /*{{#{delete}}} */ "Delete", cellClick: deleteEntry, headerSort: false }
+        {formatter:deleteIcon, width:50, cellClick: deleteEntry, headerSort: false }
     ],
     data: domain_table.entries
 })
