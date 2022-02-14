@@ -1,0 +1,103 @@
+ <!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+
+	<div class="ui modal one column unbounded centered grid" id="modal_shareholding_graph" th:fragment="shareholding_graph">
+		<i class="close icon"></i>
+		   <div class="column">
+       			<h1><span th:text="#{taxpayers.analysis.general.view.shareholdings}"></span></h1>	
+   			</div>	
+		<div style="display: block; width: 100%; display: flex; " id="vis"></div>
+	</div>		
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		let id = /*[[#{shareholding.id}]]*/ 'Id';
+		let amount = /*[[#{share.amount}]]*/ 'Amount';
+		let percentage = /*[[#{share.percentage}]]*/ 'Percentage';
+		let quantity = /*[[#{share.quantity}]]*/ 'Quantity';
+		
+		let tooltipValue = "{ '" + id + "': datum.shareholderId, '" + amount + "': datum.shareAmountAsString, '" + percentage + "': datum.sharePercentageAsString, '" + quantity + "': datum.shareQuantityAsString}";
+		
+		function showShareholdingGraph(width,height) {
+		
+		 	let yourVlSpec = ({
+				$schema: "https://vega.github.io/schema/vega/v5.json",
+			  	"width": width,
+			  	"height": height,
+			  	//autosize: {"contains": "padding", "resize": true, "type": "fit"},
+			  	padding: 5,
+			  	center: true,
+			  	data: [
+			    {
+			      name: "shareholding",
+			      values: shareholdingData,
+			      format: { type: "json" },
+			      transform: [
+			        { type: "nest", keys: ["shareholderId"] },
+			        {
+			          type: "treemap",
+			          field: "shareAmount",
+			          paddingInner: 1,
+			          size: [{ signal: "width" }, { signal: "height" }]
+			        }
+			      ]
+			    }
+			  ],
+
+			  scales: [
+			    {
+			      name: "color",
+			      type: "ordinal",
+			      domain: { data: "shareholding", field: "shareholderName" },
+			      range: { scheme: "category20" }
+			    }
+			  ],
+
+			  marks: [
+			    {
+			      type: "rect",
+			      from: { data: "shareholding" },
+			      encode: {
+					enter: {          
+						tooltip: {
+							signal: tooltipValue
+			            }
+			        },
+			        update: {
+			          fill: { scale: "color", field: "shareholderName", opacity: 0.5 },
+			          x: { field: "x0" },
+			          x2: { field: "x1" },
+			          y: { field: "y0" },
+			          y2: { field: "y1" }
+			        }
+			      }
+			    },
+			    {
+		        type: "text",
+		        from: {"data": "shareholding"},
+		        interactive: false,
+		        encode: {
+		          enter: {
+		            font: {"value": "Helvetica Neue, Arial"},
+		            align: {"value": "center"},
+		            baseline: {"value": "middle"},
+		            fill: {"value": "#000"},
+		            text: {"field": "shareholderName"},
+		            tooltip: {"field": "tooltip"},
+		          },
+		          update: {
+		            x: {"signal": "0.5 * (datum.x0 + datum.x1)"},
+		            y: {"signal": "0.5 * (datum.y0 + datum.y1)"}
+		          }
+		        }
+		      }
+			  ]
+			})			
+				
+			vegaEmbed('#vis', yourVlSpec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$("#vis").show()				
+			
+		}
+		
+	</script>
+</html>

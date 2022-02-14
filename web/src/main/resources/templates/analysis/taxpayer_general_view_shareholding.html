@@ -15,6 +15,9 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		// Keeps data for graph use
+		var shareholdingData = [];
+	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -46,12 +49,14 @@
 			    ajaxResponse:function(url, params, response){
 			        //url - the URL of the request
 			        //params - the parameters passed with the request
-			        //response - the JSON object returned in the body of the response.
-		
+			        //response - the JSON object returned in the body of the response.		
+			        
+			        shareholdingData = response;			        
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSShareholding' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSShareholding' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='showGraphShareholding' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -96,6 +101,15 @@
 			tableShareholding.on("tableBuilt", function(){
 				document.getElementById('exportXLSShareholding').addEventListener("click", function(){
 					tableShareholding.download("xlsx", getFileName(1), {sheetName:getSheetName(1)});				    
+				});
+				document.getElementById('showGraphShareholding').addEventListener("click", function(){					
+					$('#modal_shareholding_graph').modal('show');
+					let width = $(window).width() * .55;
+					let height = $(window).height() * .5;
+					window.dispatchEvent(new Event('resize'));
+					showShareholdingGraph(width,height);
+					window.dispatchEvent(new Event('resize'));					
+					
 				});
 			});
 		

@@ -47,7 +47,6 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.util.CloseableIterator;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;

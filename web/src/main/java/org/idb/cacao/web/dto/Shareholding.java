@@ -1,5 +1,11 @@
 package org.idb.cacao.web.dto;
 
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.util.Locale;
+
+import org.springframework.context.i18n.LocaleContextHolder;
+
 public class Shareholding implements Comparable<Shareholding> {
 	
 	private String shareholderId;
@@ -17,6 +23,21 @@ public class Shareholding implements Comparable<Shareholding> {
 	private double shareQuantity;
 	
 	private double equityMethodResult;
+	
+	private static Locale locale = LocaleContextHolder.getLocale();
+	private static NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
+	private static NumberFormat percentageFormat = NumberFormat.getPercentInstance(locale);
+	
+	static { 
+		numberFormat.setMaximumFractionDigits(2);
+		numberFormat.setMinimumFractionDigits(2);
+		numberFormat.setRoundingMode(RoundingMode.CEILING);
+		numberFormat.setGroupingUsed(true);
+		percentageFormat.setMaximumFractionDigits(2);
+		percentageFormat.setMinimumFractionDigits(2);
+		percentageFormat.setRoundingMode(RoundingMode.CEILING);
+		percentageFormat.setGroupingUsed(true);
+	}
 	
 	public Shareholding(String[] values, double shareAmount, double sharePercentage, double shareQuantity, double equityMethodResult) {
 		super();		
@@ -53,6 +74,10 @@ public class Shareholding implements Comparable<Shareholding> {
 	public double getShareAmount() {
 		return shareAmount;
 	}
+	
+	public String getShareAmountAsString() {
+		return numberFormat.format(shareAmount);
+	}
 
 	public void setShareAmount(double shareAmount) {
 		this.shareAmount = shareAmount;
@@ -77,6 +102,10 @@ public class Shareholding implements Comparable<Shareholding> {
 	public double getSharePercentage() {
 		return sharePercentage;
 	}
+	
+	public String getSharePercentageAsString() {
+		return percentageFormat.format(sharePercentage/100);
+	}
 
 	public void setSharePercentage(double sharePercentage) {
 		this.sharePercentage = sharePercentage;
@@ -84,6 +113,10 @@ public class Shareholding implements Comparable<Shareholding> {
 
 	public double getShareQuantity() {
 		return shareQuantity;
+	}
+	
+	public String getShareQuantityAsString() {
+		return numberFormat.format(shareQuantity);
 	}
 
 	public void setShareQuantity(double shareQuantity) {

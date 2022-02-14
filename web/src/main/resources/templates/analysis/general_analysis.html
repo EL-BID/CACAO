@@ -245,7 +245,7 @@
 			}
 			
 			else {
-				var yourVlSpec = {
+				let yourVlSpec = {
 					$schema: 'https://vega.github.io/schema/vega-lite/v5.json',
 		    	        description: 'A box plot chart with statements data',    	        
 		    	        "width": width,
@@ -255,7 +255,7 @@
 		    	        "config": {"mark": {"tooltip": true}},
 		    	        "mark": {"type": "rule"},
 		    	        "encoding": {
-		    	          "y": {"field": "statementName", "type": "nominal", "title": "Statement",
+		    	          "y": {"field": "statementName", "type": "nominal", "title": /*[[#{account.statement}]]*/ "Statement",
 		    	        	    "sort": {"field": "statementOrder"},
 		    	                "axis": {"title": null, "labelFontSize": 10, "labelFontWeight": "bold", "labelLimit": 100}}
 		    	        },
@@ -281,7 +281,7 @@
 		    	            "encoding": {
 		    	              "x": {"field": "q1", "type": "quantitative", "title": "Q1"},
 		    	              "x2": {"field": "q3", "title": "Q3"},
-		    	              "color": {"field": "statementName", "type": "nominal", "legend": null, "title": "Statement"}
+		    	              "color": {"field": "statementName", "type": "nominal", "legend": null, "title": /*[[#{account.statement}]]*/ "Statement"}
 		    	            }
 		    	          },
 		    	          {
@@ -292,7 +292,7 @@
 		    	            "transform": [{"flatten": ["normalizedOutliers"]}],
 		    	            "mark": {"type": "point", "style": "boxplot-outliers"},
 		    	            "encoding": {
-		    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": "Outlier"}, 
+		    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": /*[[#{taxpayers.analysis.general.outliers}]]*/ "Outliers"}, 
 		    	              		"tooltip":{"field": "normalizedOutliers.taxpayerName"}}
 		    	          }
 		    	        ]
