@@ -82,13 +82,20 @@ A table with all the documents uploaded will be presented. This table shows:
 * The **Template** indicating the type of file sent
 * The **Upload date/time**
 * The **Situation** of the file. The possible situations are:
-	* Received
-	* Accepted
-	* Valid
-	* Invalid
-	* Pending
-	* Processed
-	* Replaced
+	* **Received** - The file has been received by CACAO
+	* **Accepted** - The validation process accepted to begin reviewing the file 
+	* **Valid** - The file has been validated and its format comply with the document template
+	* **Invalid** - The file has been rejected for not complying with the document template
+	* **Pending** - The file is waiting for another file to be uploaded, in order to the ETL process to begin
+	* **Processed** - The ETL process has been executed on this file
+	* **Replaced** - This file has been replaced by another file.
+	
+> **Attention!**
+> CACAO applies **two** sequential processes: 
+> * _File validation_, when CACAO validate each file against the document template.
+> * _Data extraction, transformation and loading (ETL)_, when CACAO reads the data from the validated files, performs various calculations and transformations and stores the results on its own database.  
+> 
+> For more information on documents templates, please refer to the `Managing Document Templates` entry of this user manual. 
 	
 There are also 3 functions available for each upload:
 

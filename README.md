@@ -29,7 +29,7 @@ Pay attention to the versions of kibana and elasticsearch, kibana may not work i
 
 2. Compile/build the ***CACAO Web project*** . If you are using an IDE such as Eclipse, the automatic build should be enough. 
 
-3. Run the application using developer application properties, referring to the property file using command line arguments. You may use the internal file 'dev.properties' like this:
+3. Run the Web application (org.idb.cacao.web.WebApplication) using developer application properties, referring to the property file using command line arguments. You may use the internal file 'dev.properties' like this:
 
 > --spring.config.additional-location=classpath:dev.properties
 
@@ -42,6 +42,22 @@ Pay attention to the versions of kibana and elasticsearch, kibana may not work i
 > Login: admin@admin
 >
 > Password: 123456
+
+6. Compile/build the ***CACAO Validator project*** , just as you did with ***CACAO Web project*** .
+
+7. Run the Validator application (org.idb.cacao.validator.Application) using a different port number, so that it does not conflict with the running Web Application (both should be running simultaneously). Simply inform the following command line option:
+
+> --server.port=8081
+
+Please note the Web application should start before starting Validator application in a development environment. This is due to an additional component (KAFKA) that is part of the overall architecture. In a development environment there is an 'embedded' KAFKA broker being started alongside with the Web application. The Validator application requires this in order to work properly. 
+
+8. Compile/build the ***CACAO ETL project*** , just as you did with ***CACAO Web project*** .
+
+9. Run the ETL application (org.idb.cacao.etl.Application) using a different port number, so that it does not conflict with the running Web Application neither the Validator Application (all three should be running simultaneously). Simply inform the following command line option:
+
+> --server.port=8082
+
+Please note the Web application should start before starting ETL application in a development environment. This is due to an additional component (KAFKA) that is part of the overall architecture. In a development environment there is an 'embedded' KAFKA broker being started alongside with the Web application. The ETL application requires this in order to work properly. There is no specific order regarding ETL and Validator applications. 
 
 ___
 

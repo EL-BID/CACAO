@@ -82,14 +82,21 @@ Se presentará una tabla con todos los documentos cargados. Esta tabla muestra:
 * El **periodo fiscal** al que se refiere el fichero
 * El **Plantilla** que indica el tipo de fichero enviado
 * La **fecha/hora de carga**
-* La **Situación** del fichero. Las situaciones posibles son:
-	* Recibido
-	* Aceptado
-	* Válido
-	* Inválido
-	* Pendiente
-	* Procesado
-	* Reemplazado
+* La **Situación** del expediente. Las posibles situaciones son:
+	* **Recibido** - El archivo ha sido recibido por CACAO
+	* **Aceptado** - El proceso de validación ha aceptado comenzar a revisar el archivo
+	* **Válido** - El archivo ha sido validado y su formato cumple con la plantilla del documento
+	* **Inválido** - El archivo ha sido rechazado por no cumplir con la plantilla del documento
+	* **Pendiente**: El archivo está esperando que se cargue otro archivo para que comience el proceso de ETL
+	* **Procesado**: El proceso ETL se ha ejecutado en este archivo
+	* **Reemplazado** - Este archivo ha sido reemplazado por otro archivo.
+
+> **¡Atención!**
+> CACAO aplica **dos** procesos secuenciales:
+> * _Validación de archivos_, cuando CACAO valida cada archivo contra la plantilla del documento.
+> * _Extracción, transformación y carga de datos (ETL)_, cuando CACAO lee los datos de los archivos validados, realiza varios cálculos y transformaciones y almacena los resultados en su propia base de datos.
+>
+> Para obtener más información sobre las plantillas de documentos, consulte la entrada `Gestión de plantillas de documentos` de este manual del usuario.
 	
 También hay 3 funciones disponibles para cada Cargar:
 
