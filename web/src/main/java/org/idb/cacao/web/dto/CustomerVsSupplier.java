@@ -22,14 +22,14 @@ public class CustomerVsSupplier implements Comparable<CustomerVsSupplier> {
 	 * @param values
 	 */
 	public CustomerVsSupplier(Map<String, Object> values, String type) {		
-		this.month = YearMonth.of(Integer.valueOf(values.get("year").toString()), 
-				Integer.valueOf(values.get("month_number").toString()));
-		this.customerId = values.get(type + "_id.keyword").toString();
-		this.customerName = values.get(type + "_name.keyword").toString();
+		this.month = YearMonth.of(Integer.valueOf(values.getOrDefault("year","0").toString()), 
+				Integer.valueOf(values.getOrDefault("month_number","0").toString()));
+		this.customerId = values.getOrDefault(type + "_id.keyword","").toString();
+		this.customerName = values.getOrDefault(type + "_name.keyword","").toString();
 		if ( "customer".equalsIgnoreCase(type) )
-			this.customerValue = Double.parseDouble(values.get("amount").toString());
+			this.customerValue = Double.parseDouble(values.getOrDefault("amount","0").toString());
 		else
-			this.supplierValue = Double.parseDouble(values.get("amount").toString());
+			this.supplierValue = Double.parseDouble(values.getOrDefault("amount","0").toString());
 		difference = customerValue - supplierValue;
 	}
 

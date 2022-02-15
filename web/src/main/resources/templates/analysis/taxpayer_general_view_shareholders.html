@@ -15,6 +15,9 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		// Keeps data for graph use
+		var shareholdersData = [];	
+	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -48,10 +51,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 	
+			        shareholdersData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='showGraphShareholders' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -93,6 +98,15 @@
 			tableShareholders.on("tableBuilt", function(){
 				document.getElementById('exportXLSShareholders').addEventListener("click", function(){
 					tableShareholders.download("xlsx", getFileName(2), {sheetName:getSheetName(2)});				    
+				});
+				document.getElementById('showGraphShareholders').addEventListener("click", function(){					
+					$('#modal_shareholders_graph').modal('show');
+					let width = $("#modal_shareholders_graph").width() * .9;
+					let height = window.screen.height * .5;
+					window.dispatchEvent(new Event('height'));
+					showShareholdersGraph(width,height);
+					window.dispatchEvent(new Event('resize'));					
+					
 				});
 			});		
 			

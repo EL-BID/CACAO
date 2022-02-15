@@ -61,10 +61,13 @@
 					</div>
 				</form>
 			</div>
-		</div>
+			
+			<br>
+			
+			<div id="showtable" style="display: none">
+				<div id="table" class="ui orange table"></div>
+			</div>
 		
-		<div id="showtable" style="display: none">
-			<div id="table" class="ui orange table"></div>
 		</div>
 		
 	</div>
@@ -77,12 +80,15 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
 		//Define number format
-		decimalChar = /*[[#{decimal.char}]]*/ ',';
-		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
+		let decimalChar = /*[[#{decimal.char}]]*/ ',';
+		let decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
 		
 		//Define error message var
-		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
-		errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
+		let errorYearsNotFound = /*[[#{years.missing}]]*/ '';
+		let errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
+		
+		//Define ui messages
+		let customerId = /*[[#{customer.id}]]*/ '';
 	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
@@ -161,81 +167,104 @@
 	              	},
 	          	},
 				onSuccess: (function(event,fields){
-					event.preventDefault();				
-					table.replaceData()
-						.then(function(){
-							$("#showtable").show()	
-						})					
+					event.preventDefault();
+					showTable();
+					$("#showtable").show();
+// 					table.clearData();
+// 					table.replaceData()
+// 						.then(function(){
+// 							$("#showtable").show()	
+// 						})					
 	          	})
 	        });
 		}
 		
-		let table = new Tabulator('#table', {						
-			layout: "fitColumns", //fit columns to width of table (optional)
-		    pagination: true,
-			paginationMode: "local", //enable local pagination
-			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-			ajaxURL: /*[[@{/api/analysis/customers_vs_suppliers_analysis}]]*/ "/api/analysis/customers_vs_suppliers_analysis", //set url for ajax request
-			ajaxURLGenerator: function(url, config, params ){
-				console.log(config)
-				console.log(params)
-				p = new URLSearchParams()
-				p.set('taxpayerId', document.getElementById("taxpayer").value)
-				p.set('year', $('#year').val())
-				console.log(url + '?' + p.toString())		
-				return url + '?' + p.toString()
-			},
-			ajaxContentType: "json",
-			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
-			locale:'xx',
-			langs:{
-		        "xx":{
-		            "pagination":{
-		                "first":/*[[#{pagination.first.button}]]*/ "First",
-		                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-		                "last":/*[[#{pagination.last.button}]]*/ "Last",
-		                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-		                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-		                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-		                "next":/*[[#{pagination.next.button}]]*/ "Next",
-		                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-		                "all":/*[[#{pagination.all}]]*/ "All",
-		                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-		                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-		            }
-		        }
-		    },	
-		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
-		    groupBy:"month",
-		    groupStartOpen: true,
-		    groupHeader:function(value, count, data, group){
-		        //value - the value all members of this group share
-		        //count - the number of rows in this group
-		        //data - an array of all the row data objects in this group
-		        //group - the group component for the group
-		        return value;
-		    },		    
-			columns:[ //Define Table Columns
-				{title: /*[[#{month}]]*/ "Month", field:"month", hozAlign:"left", headerSort:false, visible:false},
-				{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customerName", hozAlign:"left", headerSort:false},
-				{title: /*[[#{customer.value}]]*/ "Declared Value", field:"customerValue", headerSort:false, formatter: "money", 
-					formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-					hozAlign:"right", headerSort:false, headerHozAlign:"right"},
-				{title: /*[[#{supplier.value}]]*/ "Calculated Value", field:"supplierValue", headerSort:false, formatter: "money", 
+		function showTable() {
+		
+			let table = new Tabulator('#table', {						
+				layout: "fitData", //fit columns to width of table (optional)
+			    pagination: true,
+				paginationMode: "local", //enable local pagination
+				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+				ajaxURL: /*[[@{/api/analysis/customers_vs_suppliers_analysis}]]*/ "/api/analysis/customers_vs_suppliers_analysis", //set url for ajax request
+				ajaxURLGenerator: function(url, config, params ){
+					console.log(config)
+					console.log(params)
+					p = new URLSearchParams()
+					p.set('taxpayerId', document.getElementById("taxpayer").value)
+					p.set('year', $('#year').val())
+					console.log(url + '?' + p.toString())		
+					return url + '?' + p.toString()
+				},
+				ajaxContentType: "json",
+			    ajaxResponse:function(url, params, response){
+			        //url - the URL of the request
+			        //params - the parameters passed with the request
+			        //response - the JSON object returned in the body of the response.		
+			        
+			        console.log(response);
+			        return response; //return the tableData property of a response json object
+			    },
+				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				locale:'xx',
+				langs:{
+			        "xx":{
+			            "pagination":{
+			                "first":/*[[#{pagination.first.button}]]*/ "First",
+			                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+			                "last":/*[[#{pagination.last.button}]]*/ "Last",
+			                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+			                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+			                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+			                "next":/*[[#{pagination.next.button}]]*/ "Next",
+			                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+			                "all":/*[[#{pagination.all}]]*/ "All",
+			                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+			                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+			            }
+			        }
+			    },	
+			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+			    groupBy:"month",
+			    groupStartOpen: true,
+			    groupHeader:function(value, count, data, group){
+			        //value - the value all members of this group share
+			        //count - the number of rows in this group
+			        //data - an array of all the row data objects in this group
+			        //group - the group component for the group
+			        return value;
+			    },		    
+			    columnDefaults:{
+					tooltip:function(cell) {
+						row = cell.getRow();
+						id = row.getCell("customerId");
+			            return customerId + ": " + id.getValue();
+			        },
+					headerTooltip:false,					
+			    },
+				columns:[ //Define Table Columns
+					{title: /*[[#{month}]]*/ "Month", field:"month", hozAlign:"left", headerSort:false, visible:false},
+					{title: /*[[#{customer.id}]]*/ "Customer Id", field:"customerId", hozAlign:"left", headerSort:false, visible:false},
+					{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customerName", hozAlign:"left", headerSort:false},
+					{title: /*[[#{customer.value}]]*/ "Declared Value", field:"customerValue", headerSort:false, formatter: "money", 
 						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
 						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
-				{title: /*[[#{customer.supplier.difference}]]*/ "Difference", field:"difference", formatter: "money", 
-					formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
-					hozAlign:"right", headerSort:false, headerHozAlign:"right"}
-			]
-		});
-		
-		table.on("tableBuilt", function(){
-			document.getElementById('exportXLS').addEventListener("click", function(){
-				table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/''});				    
+					{title: /*[[#{supplier.value}]]*/ "Calculated Value", field:"supplierValue", headerSort:false, formatter: "money", 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+					{title: /*[[#{customer.supplier.difference}]]*/ "Difference", field:"difference", formatter: "money", 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
+				]
 			});
-		});
+			
+			table.on("tableBuilt", function(){
+				document.getElementById('exportXLS').addEventListener("click", function(){
+					table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/''});				    
+				});
+			});
+		}
 		
 		function getFileName() {
 			var fileName =/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/ null;
