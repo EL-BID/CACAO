@@ -316,23 +316,28 @@ public class SearchUtils {
 		if (field instanceof AdvancedSearch.QueryFilterTerm) {
 			String argument = ((AdvancedSearch.QueryFilterTerm)field).getArgument();
 			if (argument!=null && argument.indexOf(' ')>0) {
-				List<String> multiple_terms = Arrays.stream(argument.split("\\s+")).filter(a->a.length()>0).collect(Collectors.toList());
-				if (multiple_terms.isEmpty())
-					return;
-				if (multiple_terms.size()==1) {
-					String v = multiple_terms.get(0);
-					if (v!=null)
-						v = v.toLowerCase();
-					query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
+				if (field.getName().endsWith(".keyword")) {
+					query_builder.accept(new TermQueryBuilder(field.getName(), argument));
 				}
 				else {
-					BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-					for (String sub_term: multiple_terms) {
-						if (sub_term!=null)
-							sub_term = sub_term.toLowerCase();
-						subquery = subquery.must(new WildcardQueryBuilder(field.getName(), sub_term));
+					List<String> multiple_terms = Arrays.stream(argument.split("\\s+")).filter(a->a.length()>0).collect(Collectors.toList());
+					if (multiple_terms.isEmpty())
+						return;
+					if (multiple_terms.size()==1) {
+						String v = multiple_terms.get(0);
+						if (v!=null)
+							v = v.toLowerCase();
+						query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
 					}
-					query_builder.accept(subquery);
+					else {
+						BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+						for (String sub_term: multiple_terms) {
+							if (sub_term!=null)
+								sub_term = sub_term.toLowerCase();
+							subquery = subquery.must(new WildcardQueryBuilder(field.getName(), sub_term));
+						}
+						query_builder.accept(subquery);
+					}
 				}
 			}
 			else {
@@ -405,6 +410,14 @@ public class SearchUtils {
 				addFilter(nested, nested_query::should, entity);
 			}
 			query_builder.accept(nested_query);
+		}
+		else if (field instanceof AdvancedSearch.QueryFilterExist) {
+			query_builder.accept(QueryBuilders.existsQuery(field.getName()));
+		}
+		else if (field instanceof AdvancedSearch.QueryFilterDoesNotExist) {
+			BoolQueryBuilder subquery = QueryBuilders.boolQuery();
+			subquery.mustNot(QueryBuilders.existsQuery(field.getName()));
+			query_builder.accept(subquery);			
 		}
 	}
 

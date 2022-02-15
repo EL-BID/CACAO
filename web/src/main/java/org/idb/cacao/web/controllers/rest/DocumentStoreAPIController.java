@@ -77,6 +77,7 @@ import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.FileUploadedEvent;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -572,7 +573,13 @@ public class DocumentStoreAPIController {
 		if (!readAll) {
 			// Only SYSADMIN users may see every documents. Other users are restricted to
 			// their relationships
-			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			
+			if (UserProfile.DECLARANT.equals(user.getProfile())) {
+				filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsTaxpayer(auth);
+			}
+			else {
+				filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			}
 			
 			if ( filterTaxpayersIds == null || filterTaxpayersIds.isEmpty()) {
 				return new PaginationData<DocumentUploaded>(1, Collections.emptyList());
@@ -594,7 +601,10 @@ public class DocumentStoreAPIController {
 			else
 				docs = SearchUtils.doSearch(
 						filters.orElse(new AdvancedSearch()).clone().withFilter(
-								new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds)),
+								new AdvancedSearch.QueryFilterOr(Arrays.asList(
+									new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds),
+									new AdvancedSearch.QueryFilterTerm("user.keyword", user.getName())
+									), messageSource) ),
 						DocumentUploaded.class, elasticsearchClient, page, size, sortField, direction);
 		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);

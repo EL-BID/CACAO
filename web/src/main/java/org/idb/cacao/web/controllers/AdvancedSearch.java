@@ -218,7 +218,9 @@ public class AdvancedSearch implements Cloneable {
 			  @Type(value = QueryFilterValue.class, name = "value"),
 			  @Type(value = QueryFilterList.class, name = "list"),
 			  @Type(value = QueryFilterEnum.class, name = "enum"),
-			  @Type(value = QueryFilterOr.class, name = "or")
+			  @Type(value = QueryFilterOr.class, name = "or"),
+			  @Type(value = QueryFilterExist.class, name = "exist"),
+			  @Type(value = QueryFilterDoesNotExist.class, name = "dont_exist")
 			})
 	@JsonInclude(Include.NON_NULL)
 	public static abstract class QueryFilter implements Cloneable {
@@ -852,6 +854,53 @@ public class AdvancedSearch implements Cloneable {
 		
 	}
 
+	@JsonInclude(Include.NON_NULL)
+	public static class QueryFilterExist extends QueryFilter {
+		
+		public QueryFilterExist() { }
+		
+		public QueryFilterExist(String name) { 
+			super(name);
+		}
+
+		@Override
+		public void copyArguments(QueryFilter other) {
+		}
+		
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+		
+		@Override
+		public String getPredicate() {
+			return "exists";
+		}
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public static class QueryFilterDoesNotExist extends QueryFilter {
+		
+		public QueryFilterDoesNotExist() { }
+		
+		public QueryFilterDoesNotExist(String name) { 
+			super(name);
+		}
+
+		@Override
+		public void copyArguments(QueryFilter other) {
+		}
+		
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+		
+		@Override
+		public String getPredicate() {
+			return "does not exist";
+		}
+	}
 
 	public AdvancedSearch clone() {
 		return new AdvancedSearch(this);
