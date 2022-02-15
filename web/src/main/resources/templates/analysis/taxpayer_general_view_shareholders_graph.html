@@ -1,17 +1,17 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<div class="ui modal one column unbounded centered aligned grid" id="modal_shareholding_graph" th:fragment="shareholding_graph">
+	<div class="ui modal one column unbounded centered aligned grid" id="modal_shareholders_graph" th:fragment="shareholders_graph">
 		<i class="close icon"></i>
 		   <div class="column aligned grid">
-       			<h1><span th:text="#{taxpayers.analysis.general.view.shareholdings}"></span></h1>	
+       			<h1><span th:text="#{taxpayers.analysis.general.view.shareholders}"></span></h1>	
    			</div>	
-		<div style="width: 100%; display: flex;" id="visShareholding"></div>
+		<div style="width: 100%; display: flex;" id="visShareholders"></div>
 	</div>		
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		function showShareholdingGraph(width,height) {
+		function showShareholdersGraph(width,height) {
 		
 		 	let spec = ({
 				$schema: "https://vega.github.io/schema/vega/v5.json",
@@ -21,8 +21,8 @@
 			  	center: true,
 			  	data: [
 			    {
-			      name: "shareholding",
-			      values: shareholdingData,
+			      name: "shareholders",
+			      values: shareholdersData,
 			      format: { type: "json" },
 			      transform: [
 			        { type: "nest", keys: ["shareholderId"] },
@@ -40,7 +40,7 @@
 			    {
 			      name: "color",
 			      type: "ordinal",
-			      domain: { data: "shareholding", field: "shareholderName" },
+			      domain: { data: "shareholders", field: "shareholderName" },
 			      range: { scheme: "category20" }
 			    }
 			  ],
@@ -48,11 +48,11 @@
 			  marks: [
 			    {
 			      type: "rect",
-			      from: { data: "shareholding" },
+			      from: { data: "shareholders" },
 			      encode: {
 					enter: {          
 						tooltip: {
-							signal: '{ [[#{shareholding.id}]]: datum.shareholderId, [[#{share.class}]]: datum.shareClass, [[#{share.type}]]: datum.shareType, [[#{share.amount}]]: datum.shareAmountAsString, [[#{share.percentage}]]: datum.sharePercentageAsString, [[#{share.quantity}]]: datum.shareQuantityAsString}',
+							signal: '{ [[#{shareholder.id}]]: datum.shareholderId, [[#{share.class}]]: datum.shareClass, [[#{share.type}]]: datum.shareType, [[#{share.amount}]]: datum.shareAmountAsString, [[#{share.percentage}]]: datum.sharePercentageAsString, [[#{share.quantity}]]: datum.shareQuantityAsString}',
 			            }
 			        },
 			        update: {
@@ -66,7 +66,7 @@
 			    },
 			    {
 		        type: "text",
-		        from: {"data": "shareholding"},
+		        from: {"data": "shareholders"},
 		        interactive: false,
 		        encode: {
 		          enter: {
@@ -85,8 +85,8 @@
 			  ]
 			})			
 				
-			vegaEmbed('#visShareholding', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
-			$("#visShareholding").show()				
+			vegaEmbed('#visShareholders', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$("#visShareholders").show()				
 			
 		}
 		

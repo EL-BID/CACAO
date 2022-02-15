@@ -104,9 +104,9 @@
 				});
 				document.getElementById('showGraphShareholding').addEventListener("click", function(){					
 					$('#modal_shareholding_graph').modal('show');
-					let width = $(window).width() * .55;
-					let height = $(window).height() * .5;
-					window.dispatchEvent(new Event('resize'));
+					let width = $("#modal_shareholding_graph").width() * .9;
+					let height = window.screen.height * .5;
+					window.dispatchEvent(new Event('height'));
 					showShareholdingGraph(width,height);
 					window.dispatchEvent(new Event('resize'));					
 					

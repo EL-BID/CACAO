@@ -15,6 +15,9 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		// Keeps data for graph use
+		var taxProvisionData = [];	
+	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -48,10 +51,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 		
+			        taxProvisionData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSTaxProvision' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSTaxProvision' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='showGraphTaxProvision' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -85,6 +90,15 @@
 			tableTaxProvision.on("tableBuilt", function(){
 				document.getElementById('exportXLSTaxProvision').addEventListener("click", function(){
 					tableTaxProvision.download("xlsx", getFileName(5), {sheetName:getSheetName(5)});				    
+				});
+				document.getElementById('showGraphTaxProvision').addEventListener("click", function(){					
+					$('#modal_tax_provision_graph').modal('show');
+					let width = $("#modal_tax_provision_graph").width() * .9;
+					let height = window.screen.height * .5;
+					window.dispatchEvent(new Event('height'));
+					showTaxProvisionGraph(width,height);
+					window.dispatchEvent(new Event('resize'));					
+					
 				});
 			});
 		
