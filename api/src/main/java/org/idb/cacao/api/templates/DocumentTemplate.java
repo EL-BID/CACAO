@@ -353,6 +353,16 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	}
 
 	/**
+	 * Returns all the 'assigned' fields in this template of a given type sorted by ID
+	 */
+	@JsonIgnore
+	public List<DocumentField> getFieldsOfTypeSortedById(FieldMapping type) {
+		if (fields==null)
+			return Collections.emptyList();
+		return fields.stream().filter(f->type.equals(f.getFieldMapping())).sorted(Comparator.comparing(DocumentField::getId)).collect(Collectors.toList());		
+	}
+
+	/**
 	 * Returns all the 'required' fields in this template
 	 */
 	@JsonIgnore

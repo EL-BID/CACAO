@@ -18,20 +18,25 @@ import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
 import static org.idb.cacao.api.utils.ParserUtils.*;
 
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.api.utils.StringUtils;
@@ -55,6 +60,12 @@ public class Validations {
 	 * Maximum length of field size saved to elasticsearch database
 	 */
 	private static final int MAX_ES_FIELD_SIZE = 1_000;
+	
+	private static final Pattern COMMON_TAXPAYER_ID_FIELD_NAME = Pattern.compile("^TaxPayerId$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern COMMON_TAX_PERIOD_FIELD_NAME = Pattern.compile("^(?>TaxPeriodNumber|TaxPeriod)$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern COMMON_TAX_YEAR_FIELD_NAME = Pattern.compile("^(?>Year|TaxYear)$", Pattern.CASE_INSENSITIVE);
+	private static final Pattern COMMON_TAX_MONTH_FIELD_NAME = Pattern.compile("^(?>Month|TaxMonthNumber|TaxMonth)$", Pattern.CASE_INSENSITIVE);
+
 
 	private final ValidationContext validationContext;
 	
@@ -561,55 +572,86 @@ public class Validations {
 		
 		if ( doc == null )
 			return;
-		
+				
 		// Get a list of previous parsed contents
 		List<Map<String, Object>> parsedContents = validationContext.getParsedContents();
 
 		if (parsedContents == null || parsedContents.isEmpty())
 			return;
 		
+		// Consider the first line of parsed data
 		Map<String,Object> record = parsedContents.get(0);
 
-		String[] fields =  { "TaxPayerId", "TaxPeriod", "TaxYear", "TaxMonth", "TaxPeriodNumber", "TaxMonthNumber" };
+		// If we have a DocumentField with the corresponding FieldMapping (ex: for TAXPAYERID), let's use it for the identification
+		// If we have ambiguity, let's resolve the ambiguity giving priority to the required field, and then considering the given field name.
 		
-		for ( String field : fields ) {
-			
-			Map.Entry<String,Object> found = record.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(field)).findFirst().orElse(null);
-			
-			if ( found != null ) {
-				
-				if ( found.getValue() == null )
-					continue;
-				
-				if ( "TaxPayerId".equals(field) ) {
-					doc.setTaxPayerId(ValidationContext.toString(found.getValue()));
-				}
-				else if ( "TaxYear".equals(field) ) {
-					Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(found.getValue()));
-					if ( value != null ) {
-						doc.setTaxYear(value);
-						doc.setTaxPeriodNumber(value);
-					}
-				}
-				else if ( "TaxMonth".equals(field) ) {
-					doc.setTaxMonth(ValidationContext.toString(found.getValue()));	
-				}
-				else if ( "TaxPeriodNumber".equals(field) ) {
-					Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(found.getValue()));
-					if ( value != null ) {
-						doc.setTaxPeriodNumber(value);	
-					}
-				}				
-				else if ( "TaxMonthNumber".equals(field) ) {
-					Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(found.getValue()));
-					if ( value != null ) {
-						doc.setTaxMonthNumber(value);
-						doc.setTaxPeriodNumber(value);
-					}
-				}				
-				
+		// Taxpayer Id.....
+		DocumentField field_for_taxpayer_id = getFieldForFileIdentification(validationContext.getDocumentTemplate(), FieldMapping.TAXPAYER_ID, COMMON_TAXPAYER_ID_FIELD_NAME);
+		Object taxpayer_id = (field_for_taxpayer_id==null) ? null : 
+			record.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(field_for_taxpayer_id.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
+		if (taxpayer_id!=null) {
+			doc.setTaxPayerId(ValidationContext.toString(taxpayer_id));
+		}
+		
+		// Tax year .....
+		DocumentField field_for_tax_year = getFieldForFileIdentification(validationContext.getDocumentTemplate(), FieldMapping.TAX_YEAR, COMMON_TAX_YEAR_FIELD_NAME);
+		Object tax_year = (field_for_tax_year==null) ? null : 
+			record.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(field_for_tax_year.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
+		if (tax_year!=null) {
+			Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(tax_year));
+			if ( value != null ) {
+				doc.setTaxYear(value);
+				doc.setTaxPeriodNumber(value);
 			}
-			
+		}
+		
+		// Tax month ....
+		DocumentField field_for_tax_month = getFieldForFileIdentification(validationContext.getDocumentTemplate(), FieldMapping.TAX_MONTH, COMMON_TAX_MONTH_FIELD_NAME);
+		Object tax_month = (field_for_tax_month==null) ? null : 
+			record.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(field_for_tax_month.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
+		if (tax_month!=null) {
+			String tax_month_as_text = ValidationContext.toString(tax_month);
+			if (ParserUtils.isOnlyNumbers(tax_month_as_text)) {
+				Integer value = ParserUtils.parseIntegerNE(tax_month_as_text);
+				if ( value != null ) {
+					doc.setTaxMonthNumber(value);
+					if (doc.getTaxYear()!=null) {
+						doc.setTaxPeriodNumber(doc.getTaxYear()*100+value); // YYYYMM
+					}
+				}
+			}
+			else {
+				doc.setTaxMonth(tax_month_as_text);
+				Integer value = ParserUtils.parseMonth(tax_month_as_text);
+				if ( value != null ) {
+					doc.setTaxMonthNumber(value);
+					if (doc.getTaxYear()!=null) {
+						doc.setTaxPeriodNumber(doc.getTaxYear()*100+value); // YYYYMM
+					}
+				}
+			}
+		}
+
+		// Tax period.....
+		DocumentField field_for_tax_period = getFieldForFileIdentification(validationContext.getDocumentTemplate(), null, COMMON_TAX_PERIOD_FIELD_NAME);
+		Object tax_period = (field_for_tax_period==null) ? null : 
+			record.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(field_for_tax_period.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
+		if (tax_period!=null) {
+			String tax_period_as_text = ValidationContext.toString(tax_period);
+			if (ParserUtils.isOnlyNumbers(tax_period_as_text)) {
+				Integer value = ParserUtils.parseIntegerNE(tax_period_as_text);
+				if ( value != null ) {
+					doc.setTaxPeriodNumber(value);	
+				}
+			}
+			else {
+				YearMonth yearMonth = ParserUtils.parseYearMonth(tax_period_as_text);
+				if (yearMonth!=null) {
+					doc.setTaxYear(yearMonth.getYear());
+					doc.setTaxMonthNumber(yearMonth.getMonthValue());
+					doc.setTaxPeriodNumber(yearMonth.getYear()*100+yearMonth.getMonthValue());
+				}
+			}			
 		}
 		
 		//If TaxPayerId wasn't found, add an error message
@@ -617,12 +659,57 @@ public class Validations {
 			addLogError("{taxpayerid.not.found}");
 		}
 		
-		//If TaxPeriod wasn't found, add an error message
+		//If TaxPeriod wasn't found, add an error message (unless we don't have any such field)
 		if ( doc.getTaxYear() == null && doc.getTaxMonth() == null && doc.getTaxMonthNumber() == null &&
 				doc.getTaxPeriod() == null && doc.getTaxPeriodNumber() == null ) {
-			addLogError("{taxperiod.not.found}");	
+			if (field_for_tax_year!=null || field_for_tax_month!=null || field_for_tax_period!=null)
+				addLogError("{taxperiod.not.found}");	
 		}
 		
+	}
+	
+	/**
+	 * Given the fields of template, return one particular field according to the following rules:<BR>
+	 * - Check for fields with the given field mapping. If there is only one, return it.<BR>
+	 * - If there are more fields with the given field mapping, return one given the following priority order: file uniqueness, required field, pattern of common field names, id of the field.<BR>
+	 * - If there are no matching fields according to the previous criteria, return one according to the pattern of common field names.<BR>
+	 * - Returns NULL if there is no match.
+	 */
+	public static DocumentField getFieldForFileIdentification(DocumentTemplate template, FieldMapping mapping, Pattern commonFieldNames) {
+		List<DocumentField> fields_with_mapping = (mapping==null) ? Collections.emptyList() : template.getFieldsOfTypeSortedById(mapping);
+		if (fields_with_mapping.size()==1) {
+			return fields_with_mapping.get(0);
+		}
+		else if (fields_with_mapping.size()>1) {
+			DocumentField best_guess = null;
+			for (DocumentField ambiguous_field: fields_with_mapping) {
+				if (best_guess==null) {
+					best_guess = ambiguous_field;
+				}
+				else if (Boolean.TRUE.equals(ambiguous_field.getFileUniqueness())
+					&& !Boolean.TRUE.equals(best_guess.getFileUniqueness())) {
+					best_guess = ambiguous_field;
+				}
+				else if (Boolean.TRUE.equals(ambiguous_field.getRequired())
+					&& !Boolean.TRUE.equals(best_guess.getRequired())) {
+					best_guess = ambiguous_field;
+				}
+				else if (commonFieldNames.matcher(ambiguous_field.getFieldName()).find()
+					&& !commonFieldNames.matcher(best_guess.getFieldName()).find()) {
+					best_guess = ambiguous_field;
+				}
+			}
+			return best_guess;
+		}
+		else {
+			for (DocumentField field: template.getFields()) {
+				if (field==null || field.getFieldName()==null)
+					continue;
+				if (commonFieldNames.matcher(field.getFieldName()).find())
+					return field;
+			}			
+		}
+		return null;
 	}
 
 }

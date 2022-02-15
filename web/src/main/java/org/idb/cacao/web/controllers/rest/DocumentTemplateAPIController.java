@@ -198,9 +198,11 @@ public class DocumentTemplateAPIController {
 		if (existingDocInput==null) {
 			ControllerUtils.returnBadRequest("template.input.format.not.exists", messageSource, docInput.getFormat().toString());
 		}
-		existingDocInput.setInputName(docInput.getInputName());
-		existingDocInput.setFields(docInput.getFields());
-		existingDocInput.setFieldsIdsMatchingTemplate(template);
+		else {
+			existingDocInput.setInputName(docInput.getInputName());
+			existingDocInput.setFields(docInput.getFields());
+			existingDocInput.setFieldsIdsMatchingTemplate(template);
+		}
 		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
