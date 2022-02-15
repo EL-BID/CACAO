@@ -153,7 +153,7 @@ public class DocumentTemplateService {
 	 */
 	public List<DocumentTemplate> getTemplatesWithFiles() {
 		try {
-			Page<DocumentTemplate> allTemplates = templateRepository.findAll(PageRequest.of(0, 10_000, Sort.by("name.keyword","version.keyword").ascending()));
+			Page<DocumentTemplate> allTemplates = templateRepository.findByActive(true, PageRequest.of(0, 10_000, Sort.by("name.keyword","version.keyword").ascending()));
 			return allTemplates.getContent();
 		}
 		catch (Throwable ex) {

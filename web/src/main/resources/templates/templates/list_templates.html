@@ -32,14 +32,6 @@
 	</div>
  
 <script th:nonce="${cspNonce}" th:inline="javascript">
-[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
-var editRow = function(e, cell) {
-	e.stopPropagation();
-	window.location.replace([[@{/templates/}]] +  cell.getRow().getIndex() + "/edit");
-}
-var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
-[/]
-
 var rowFormatter = function(row){
       if(!row.getData().active){
           row.getElement().style.backgroundColor = "#F0F0F0";
@@ -80,9 +72,6 @@ table = new Tabulator('#table', {
     rowFormatter: rowFormatter,
 	data: tableData,
 	columns:[ //Define Table Columns
-		[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
-		{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editRow, headerSort:false, width:45},
-		[/]
 		{title: /*[[#{template.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
 		{title: /*[[#{template.group}]]*/ "Group", field:"group", minWidth: 100, headerFilter: true},
 		{title: /*[[#{template.version}]]*/ "Version", field:"version", minWidth: 100, headerFilter: true},
