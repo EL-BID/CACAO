@@ -35,42 +35,50 @@
 				<form action="#" name="form" id="form" class="ui form"
 					th:object="${template}">
 					<div class="fields">
-						<div class="eight wide field">
+						<div class="ten wide field">
 							<label th:text="#{template.name}"
 								style="margin-bottom: 0px; text-transform: uppercase;">Declaration
 								Name</label> <input type="text" th:value="*{name}" class="form-control" readonly>
 						</div>
-						<div class="three wide field">
+						<div class="four wide field">
 							<label th:text="#{template.version}"
 								style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
 							<input type="text" th:value="*{version}" class="form-control" readonly>
 						</div>
-						<div class="five wide field">
+                        <div class="two wide field">
+                            <label th:text="#{template.active}" style="margin-bottom: 0px; text-transform: uppercase;">Active</label>
+                             <div class="ui toggle checkbox">
+                                <input type="checkbox" th:field="*{active}" class="hidden" th:checked="*{active}" readonly>
+                                <label></label>
+                            </div>
+                        </div>
+					</div>
+					<div class="fields">
+						<div class="six wide field">
 							<label th:text="#{template.periodicity}"
 								style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
 							<input type="text" th:value="#{${template.periodicity}}"
 								class="form-control" readonly>
 						</div>
-					</div>
-					<div class="fields">
 						<div class="eight wide field">
 							<label th:text="#{template.group}"
 								style="margin-bottom: 0px; text-transform: uppercase;">Group</label> <input
 								type="text" th:value="*{group}" class="form-control" readonly>
 						</div>
-                        <div class="eight wide field">
+                        <div class="two wide field">
                             <label th:text="#{template.required}" style="margin-bottom: 0px; text-transform: uppercase;">Required</label>
-                             <div class="ui toggle green checkbox">
-                                <input type="checkbox" name="required" class="hidden" th:checked="*{required}">
-                                <label>Required for group validation</label>
+                             <div class="ui toggle checkbox">
+                                <input type="checkbox" name="required" class="hidden" th:checked="*{required}" readonly>
+                                <label></label>
                             </div>
                         </div>
 					</div>
 					<div class="row">
 					</div>
                     <div class="row">
-                      <input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editTemplate"> 
-                      <input type="button" class="ui red button" th:value="#{delete}" value="Delete" id="deleteTemplate">
+                      <input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editTemplate" sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"> 
+                      <input th:if="${template.active==true}" type="button" class="ui red button" th:value="#{template.deactivate}" value="Deactivate" id="deactivateTemplate" sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')">
+                      <input th:if="${template.active!=true}" type="button" class="ui green button" th:value="#{template.activate}" value="Activate" id="activateTemplate" sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')">
                     </div>
 				</form>
 			</div>
@@ -87,7 +95,7 @@
 			</div>
 			<div class="ui tab" data-tab="tab-inputs">
 				<div id="table_inputs" class="ui compact table"></div>
-				<div class="ui dropdown blue button" id="newInput">
+				<div class="ui dropdown blue button" id="newInput" sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')">
 					<span th:text="#{doc.input.new}">>New Input</span><i class="dropdown icon"></i>
 					<div class="menu">
 						<div class="item" th:each="i : ${formats}"
@@ -107,45 +115,36 @@ let fields = [[${template.fields}]] || []
 
 let processForm = function(event, fields) {
   event.preventDefault()
-}            
+}           
 
-let sendDelete = function() {
-    $.ajax({
-        url: [[@{/api/template/{id}(id=${template.id})}]],
-        type: 'DELETE',
-        dataType: 'text',
-        contentType: 'application/json',
-        cache: false,  
-        success: onDeleteSuccess,
-        error: onDeleteError
-    })
-}
-
-let onDeleteSuccess = function(result) {
-    $('#modal_successful').modal('show')
-    setTimeout(function(){
-        window.location.replace([[@{/templates}]])
-    }, 2000);
-}
-        
-let onDeleteError = function(e) {
-    var msg = e.responseText.replace(/\n/g, "<br />");
-    $('#modal_failed').find('.description').html(msg)
-    $('#modal_failed').modal('show')
-    console.log("ERROR : "+ msg);
-}
-
-$('#deleteTemplate').click(function(e) {
+let activateTemplate = function(value) {
 	var dlg = $('#modal_confirm')
-    dlg.find('.description').html([[#{template.delete.confirm}]])
+    dlg.find('.description').html([[#{template.activate.confirm}]])
     dlg.modal({
         closable:false,
         onApprove: function() { 
-          sendDelete() 
-        }
+          if(value)
+        	  url = [[@{/api/template/{id}/activate(id=${template.id})}]]
+          else
+              url = [[@{/api/template/{id}/deactivate(id=${template.id})}]]
+          $.get( url )
+          .done( function() {
+        	  $('#modal_successful').modal('show')
+              setTimeout(()=> window.location.replace([[@{/templates/{id}(id=${template.id})}]]), 2000)
+          })
+        .fail( function(e) {
+      	  var msg = e.responseText.replace(/\n/g, "<br />");
+            $('#modal_failed').find('.description').html(msg)
+            $('#modal_failed').modal('show')
+            console.log("ERROR : "+ msg);
+         })
+       }
     })
     dlg.modal('show');
-})
+}
+
+$('#activateTemplate').click(() => activateTemplate(true))
+$('#deactivateTemplate').click(() => activateTemplate(false))
 
 $('#editTemplate').click(function(e){
 	document.location.replace([[@{/templates/{id}/edit(id=${template.id})}]])
@@ -202,25 +201,17 @@ let table = new Tabulator('#table', {
     ],
     data: fields
 })
-[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
-var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
-let editInput = function(e, cell) {
-	window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + cell.getRow().getData().format)
-}
 
 $('#newInput').dropdown({
     onChange(value, text) {
         window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+value)
     }
 })
-[/]
+
 let table_inputs = new Tabulator('#table_inputs', {
     index: 'id',
     layout: "fitDataFill", //fit columns to width of table (optional)
     columns:[ //Define Table Columns
-    	[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
-    	{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editInput, width:45, headerSort: false},
-    	[/]
         {title: /*[[#{doc.input.name}]]*/ "Name", field:"inputName", minWidth:200},
         {title: /*[[#{doc.input.format}]]*/ "Format", field:"format", minWidth:100}
     ],
@@ -229,12 +220,15 @@ let table_inputs = new Tabulator('#table_inputs', {
       [/] ]    	
 })
 
-//$('#newInput').click(function() {
-//	window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + cell.getRow().getData().inputName)
-//})
-
+table_inputs.on('rowClick', function(e, row) {
+	window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + row.getData().format)
+})
 
 $('#tab .item').tab()
+[# th:if="${showInputs}"]
+$('#tab .item').tab('change tab', 'tab-inputs');
+[/]
+
 let showHeaderFilter = true
 let toggleFilter = function() {
     showHeaderFilter = ! showHeaderFilter

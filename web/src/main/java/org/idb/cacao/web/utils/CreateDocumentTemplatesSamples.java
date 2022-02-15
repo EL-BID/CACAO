@@ -63,6 +63,7 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setRequired(true);
 		docTemplate.setVersion("1.0");
 		docTemplate.setArchetype("accounting.general.ledger");
+		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
 		new GeneralLedgerArchetype().getRequiredFields().forEach(docTemplate::addField);
@@ -76,6 +77,7 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setRequired(true);
 		docTemplate.setVersion("1.0");
 		docTemplate.setArchetype("accounting.chart.accounts");
+		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
 		new ChartOfAccountsArchetype().getRequiredFields().forEach(docTemplate::addField);
@@ -89,6 +91,7 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setRequired(true);
 		docTemplate.setVersion("1.0");
 		docTemplate.setArchetype("accounting.opening.balance");
+		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
 		new OpeningBalanceArchetype().getRequiredFields().forEach(docTemplate::addField);
@@ -101,6 +104,7 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setPeriodicity(Periodicity.YEARLY);
 		docTemplate.setRequired(false);
 		docTemplate.setVersion("1.0");
+		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
 		int fieldIndex = 1;
@@ -148,6 +152,7 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setRequired(false);
 		docTemplate.setVersion("1.0");
 		docTemplate.setArchetype("accounting.income.statement");
+		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
 		fieldIndex = 1;
@@ -185,6 +190,7 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setRequired(false);
 		docTemplate.setVersion("1.0");
 		docTemplate.setArchetype("accounting.shareholding");
+		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
 		new ShareholdingArchetype().getRequiredFields().forEach(docTemplate::addField);

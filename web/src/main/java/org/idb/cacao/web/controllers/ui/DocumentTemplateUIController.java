@@ -84,7 +84,7 @@ public class DocumentTemplateUIController {
 	}
     
     @GetMapping("/templates/{id}")
-    public String showTemplate(@PathVariable("id") String id, Model model) {
+    public String showTemplate(@PathVariable("id") String id,  @RequestParam("showInputs") Optional<Boolean> showInputs, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
         model.addAttribute("template", template);
         model.addAttribute("fieldTypes", FieldType.values());
@@ -97,6 +97,7 @@ public class DocumentTemplateUIController {
             .filter(format -> !usedFormats.contains(format))
             .collect(Collectors.toList());
         model.addAttribute("formats", availableFormats);
+        model.addAttribute("showInputs", showInputs.orElse(false));
         return "templates/show_template";
     }
 	

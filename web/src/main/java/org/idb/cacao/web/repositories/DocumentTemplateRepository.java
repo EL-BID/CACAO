@@ -25,6 +25,8 @@ import java.util.Optional;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.stereotype.Repository;
@@ -38,6 +40,8 @@ public interface DocumentTemplateRepository extends ElasticsearchRepository<Docu
 	
 	public List<DocumentTemplate> findByNameIgnoreCase(String name);
 
+	public Page<DocumentTemplate> findByActive(Boolean active, Pageable pageable);
+	
 	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")
 	public Optional<DocumentTemplate> findByNameAndVersion(String name, String version);
