@@ -166,6 +166,7 @@
         <div class="actions">
           <div class="ui approve blue button" th:text="#{continue}" type="submit">Continue</div>
           <div class="ui cancel button" th:text="#{cancel}" type="button">Cancel</div>
+          <div class="ui red button" th:text="#{delete}" type="button" id="deleteField">Delete</div>
         </div>
       </div>
 
@@ -320,10 +321,17 @@ $('.ui.dropdown.local')
    .dropdown({clearable: true})
 $('#newField').click(function() {
   $('#form_edit_field').form('clear')
+  $('#deleteField').hide()
   field={}
   showConditionalFields(null)
   showEditField()
 })
+$('#deleteField').click(function() {
+	table.getRow(field.id).delete()
+	table.redraw(true)
+	$("#modal_edit_field").modal("hide")
+})
+
 $('.ui.checkbox').checkbox()
 
 let showEditField = function() {
@@ -332,16 +340,7 @@ let showEditField = function() {
     onApprove: addField
   }).modal('show')
 }
-
-let editField = function(e, cell) {
-  field = Object.assign(cell.getRow().getData(), {})
-  setDomainTableVersions(field.domainTableName, field.domainTableVersion)
-  $('#form_edit_field').form('set values', field)
-  $('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
-  showConditionalFields(field.fieldType)
-  showEditField()
-}
-
+  
 let addField = function() {
   if(!$('#form_edit_field').form('is valid')) {
 	  console.log('validate error')
@@ -381,11 +380,33 @@ let mappingLookup = {
 let table = new Tabulator('#table', {
     index: 'id',
     layout: "fitData", //fit columns to width of table (optional)
-    responsiveLayout: "collapse",
+    //responsiveLayout: "collapse",
     //placeholder: "Empty",
+    pagination: true,
+    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+    paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
     footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+    locale:'xx',
+    langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
+
     columns:[ //Define Table Columns
-        {formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editField, width:45, headerSort: false, responsive:0},
+        //{formatter:editIcon, tooltip: /*{{#{edit}}} */ "Edit", cellClick: editField, width:45, headerSort: false, responsive:0},
         {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0, headerFilter: true},
         {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3,
         	headerFilter: 'select', headerFilterParams: { values: typeLookup }},
@@ -407,6 +428,17 @@ let toggleFilter = function() {
     $('.tabulator-header-filter').toggle(showHeaderFilter)
     $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
 }
+
+table.on('rowClick', function(e, row) {
+    field = Object.assign(row.getData(), {})
+    $('#form_edit_field').form('clear')
+    setDomainTableVersions(field.domainTableName, field.domainTableVersion)
+    $('#form_edit_field').form('set values', field)
+    $('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
+    showConditionalFields(field.fieldType)
+    $('#deleteField').toggle(!field.locked)
+    showEditField()
+})
 
 table.on("tableBuilt", function(){
     $('#filter').click( toggleFilter )

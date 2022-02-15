@@ -33,6 +33,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -141,6 +142,20 @@ public class DocumentTemplateAPIController {
     }
 
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
+    @DeleteMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Deletes an existing document template", response=DocumentTemplate.class)
+    public ResponseEntity<Object> deleteTemplate(@PathVariable("id") String id) {
+        try {
+        	templateRepository.deleteById(id);
+        } catch(Exception e) {
+        	return ControllerUtils.returnBadRequest("template.not.exists", messageSource);
+        }
+
+        return ResponseEntity.ok().body(id);
+    }
+
+	
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PostMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Creates a new document input", response=DocumentTemplate.class)
     public ResponseEntity<Object> addDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
@@ -156,7 +171,7 @@ public class DocumentTemplateAPIController {
 		
 		DocumentInput existingDocInput = template.getInputOfFormat(docInput.getFormat());
 		if (existingDocInput!=null) {
-			ControllerUtils.returnBadRequest("template.input.format.exists", messageSource, docInput.getFormat().toString());
+			return ControllerUtils.returnBadRequest("template.input.format.exists", messageSource, docInput.getFormat().toString());
 		}
 		template.addInput(docInput);
 		templateService.compatibilizeTemplateFieldsMappings(template);

@@ -43,6 +43,8 @@ public interface DocumentTemplateRepository extends ElasticsearchRepository<Docu
 	public Optional<DocumentTemplate> findByNameAndVersion(String name, String version);
 	
 	public Optional<DocumentTemplate> findByNameIgnoreCaseAndVersion(String name, String version);
+	
+	public void deleteById(String id);
 
 	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
 		if (entity.getTemplateCreateTime()==null)
