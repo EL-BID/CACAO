@@ -39,6 +39,13 @@ var editRow = function(e, cell) {
 }
 var editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
 [/]
+
+var rowFormatter = function(row){
+      if(!row.getData().active){
+          row.getElement().style.backgroundColor = "#F0F0F0";
+      }
+  }
+
 var tableData = /*[[${templates}]]*/ null;
 let periodicityLookup = {
     [# th:each="i :  ${T(org.idb.cacao.api.Periodicity).values()}"] 
@@ -70,6 +77,7 @@ table = new Tabulator('#table', {
             }
         }
     },
+    rowFormatter: rowFormatter,
 	data: tableData,
 	columns:[ //Define Table Columns
 		[# sec:authorize="hasRole('ROLE_TAX_TEMPLATE_WRITE')"]
@@ -81,7 +89,9 @@ table = new Tabulator('#table', {
 		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150,
 			headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
 		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
-			formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
+			formatter:"tickCross", formatterParams: { crossElement:false}, width:40},
+		{title: '<i class="upload icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
+            formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
 	]
 })
 table.on('rowClick', function(e, row) {

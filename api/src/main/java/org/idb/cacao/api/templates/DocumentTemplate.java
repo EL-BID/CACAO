@@ -168,6 +168,20 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	private transient Integer nextUnassignedFieldId;
 
 	/**
+	 * Indicates this document template is available for sending documents.
+	 */
+	@Field(type=Boolean)
+	private Boolean active;
+	
+	public Boolean getActive() {
+		return active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
+	}
+
+	/**
 	 * Unique identifier of this template (20 character long, URL-safe, base 64 encoded GUID)
 	 */
 	public String getId() {

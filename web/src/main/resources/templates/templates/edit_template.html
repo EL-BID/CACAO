@@ -38,18 +38,16 @@
       <div class="ui orange segment">
         <form action="#" name="form" id="form" class="ui form" th:object="${template}" method="post">
           <div class="fields">
-            <div class="ten wide field">
+            <div class="eight wide field">
               <label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label> 
               <input type="text" th:field="*{name}" th:value="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{template.name}">
                 <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-            <div class="six wide field">
+            <div class="three wide field">
               <label th:text="#{template.version}" style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
               <input type="text" th:field="*{version}" th:value="*{version}" class="form-control" id="version" placeholder="version" th:placeholder="#{template.version}"> 
               <span th:if="${#fields.hasErrors('version')}" th:errors="*{version}" class="ui warning message"></span>
             </div>
-          </div>
-          <div class="fields">
             <div class="five wide field">
               <label th:text="#{template.periodicity}" style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
               <select th:field="*{periodicity}" class="ui fluid dropdown local" id="selectPeriodicity">
@@ -61,17 +59,20 @@
               </select> 
               <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-            <div class="eleven wide field">
+          </div>
+          <div class="fields">
+            <div class="eight wide field">
               <label th:text="#{template.group}"
                 style="margin-bottom: 0px; text-transform: uppercase;">"Group</label>
               <input type="text" th:field="*{group}" th:value="*{group}" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
               <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-          </div>
-          <div class="field">
-            <div class="ui checkbox">
-              <input type="checkbox" tabindex="0" id="required"  name="required" th:checked="*{required}" value="true">
-              <label th:text="#{template.required}">Required</label>
+            <div class="eight wide field">
+                <label th:text="#{template.required}" style="margin-bottom: 0px; text-transform: uppercase;">Required</label>
+                 <div class="ui toggle green checkbox">
+                    <input type="checkbox" th:field="*{required}" class="hidden" th:checked="*{required}">
+                    <label>Required for group validation</label>
+                </div>
             </div>
           </div>
           <div class="row">

@@ -35,34 +35,38 @@
 				<form action="#" name="form" id="form" class="ui form"
 					th:object="${template}">
 					<div class="fields">
-						<div class="ten wide field">
+						<div class="eight wide field">
 							<label th:text="#{template.name}"
 								style="margin-bottom: 0px; text-transform: uppercase;">Declaration
 								Name</label> <input type="text" th:value="*{name}" class="form-control" readonly>
 						</div>
-						<div class="six wide field">
+						<div class="three wide field">
 							<label th:text="#{template.version}"
 								style="margin-bottom: 0px; text-transform: uppercase;">"Version</label>
 							<input type="text" th:value="*{version}" class="form-control" readonly>
 						</div>
-					</div>
-					<div class="fields">
 						<div class="five wide field">
 							<label th:text="#{template.periodicity}"
 								style="margin-bottom: 0px; text-transform: uppercase;">Periodicity</label>
 							<input type="text" th:value="#{${template.periodicity}}"
 								class="form-control" readonly>
 						</div>
-						<div class="eleven wide field">
+					</div>
+					<div class="fields">
+						<div class="eight wide field">
 							<label th:text="#{template.group}"
-								style="margin-bottom: 0px; text-transform: uppercase;">"Group</label> <input
+								style="margin-bottom: 0px; text-transform: uppercase;">Group</label> <input
 								type="text" th:value="*{group}" class="form-control" readonly>
 						</div>
+                        <div class="eight wide field">
+                            <label th:text="#{template.required}" style="margin-bottom: 0px; text-transform: uppercase;">Required</label>
+                             <div class="ui toggle green checkbox">
+                                <input type="checkbox" name="required" class="hidden" th:checked="*{required}">
+                                <label>Required for group validation</label>
+                            </div>
+                        </div>
 					</div>
 					<div class="row">
-						<i th:if="${template.required}" class="green check icon"></i> <i
-							th:if="${!template.required}" class="red times icon"></i> <label
-							th:text="#{template.required}">Required</label>
 					</div>
                     <div class="row">
                       <input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editTemplate"> 
@@ -141,6 +145,10 @@ $('#deleteTemplate').click(function(e) {
         }
     })
     dlg.modal('show');
+})
+
+$('#editTemplate').click(function(e){
+	document.location.replace([[@{/templates/{id}/edit(id=${template.id})}]])
 })
 
 let typeLookup = { 
