@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -158,6 +159,14 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	@Field(type=Nested)
 	private List<DocumentInput> inputs;
 	
+	/**
+	 * Holds temporarily the next available ID to be assigned to the next field included in this DocumentTemplate. If NULL,
+	 * will try to figure it out when needed.
+	 */
+	@Transient
+	@JsonIgnore
+	private transient Integer nextUnassignedFieldId;
+
 	/**
 	 * Unique identifier of this template (20 character long, URL-safe, base 64 encoded GUID)
 	 */
@@ -363,6 +372,7 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 
 	public void setFields(List<DocumentField> fields) {
 		this.fields = fields;
+		nextUnassignedFieldId = null; // will have too figure out the available id when needed
 		if (fields!=null && !fields.isEmpty()) {
 			for (DocumentField field: fields) {
 				if (field.getId()==0)
@@ -374,6 +384,7 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	public void clearFields() {
 		if (fields!=null)
 			fields.clear();
+		nextUnassignedFieldId = null; // will have too figure out the available id when needed
 	}
 	
 	public void addField(DocumentField field) {
@@ -381,6 +392,7 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 			fields = new LinkedList<>();
 		fields.add(field);
 		field.setId(getNextUnassignedFieldId());
+		nextUnassignedFieldId = field.getId()+1;	// the next available id must be the next sequential number
 	}
 	
 	public void addField(String name) {
@@ -392,6 +404,7 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 			return;
 		fields.remove(field);
 		field.setId(0);
+		nextUnassignedFieldId = null; // will have too figure out the available id when needed
 	}
 	
 	public void sortFields() {
@@ -417,9 +430,26 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	
 	@JsonIgnore
 	public int getNextUnassignedFieldId() {
-		if (fields==null || fields.isEmpty())
+		if (nextUnassignedFieldId!=null) {
+			return nextUnassignedFieldId;		// if we already know what is the next available id, return it
+		}
+		// Let's try to find out the next available ID by looping through all the existent fields. We will return
+		// one number above the highest id.
+		if (fields==null || fields.isEmpty()) {
+			nextUnassignedFieldId = 1;
 			return 1;
-		return 1 + fields.stream().mapToInt(DocumentField::getId).max().orElse(0);
+		}
+		int id = 1 + fields.stream().mapToInt(DocumentField::getId).max().orElse(0);
+		nextUnassignedFieldId = id;
+		return id;
+	}
+
+	/**
+	 * Clear the transient internal information regarding the next ID to be used for the next field<BR>
+	 * It should be called whenever the Field ID is changed outside any of the methods defined here in this class.
+	 */
+	public void evictNextUnassignedFieldId() {
+		nextUnassignedFieldId = null;
 	}
 
 	public List<DocumentInput> getInputs() {

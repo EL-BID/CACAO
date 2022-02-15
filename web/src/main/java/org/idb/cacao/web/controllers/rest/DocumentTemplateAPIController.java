@@ -15,6 +15,7 @@ import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -60,6 +61,9 @@ public class DocumentTemplateAPIController {
 	private DocumentTemplateRepository templateRepository;
 	
 	@Autowired
+	private DocumentTemplateService templateService;
+	
+	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 	
     @GetMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -97,7 +101,9 @@ public class DocumentTemplateAPIController {
 			log.log(Level.FINE, "User "+username+" attempted to create new template with name "+template.getName()+" and version "+template.getVersion()+", but there is already an existing template with the same name and version");
 			return ResponseEntity.ok().body(existing_template.get());
 		}
-        
+   
+		templateService.compatibilizeTemplateFieldsMappings(template);
+
 //        template.setTemplateCreateTime(new Date());
         
         try {
@@ -129,6 +135,7 @@ public class DocumentTemplateAPIController {
 		}
 
         template.setId(id);
+		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
     }
@@ -152,6 +159,7 @@ public class DocumentTemplateAPIController {
 			ControllerUtils.returnBadRequest("template.input.format.exists", messageSource, docInput.getFormat().toString());
 		}
 		template.addInput(docInput);
+		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
     }
@@ -178,6 +186,7 @@ public class DocumentTemplateAPIController {
 		existingDocInput.setInputName(docInput.getInputName());
 		existingDocInput.setFields(docInput.getFields());
 		existingDocInput.setFieldsIdsMatchingTemplate(template);
+		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
     }

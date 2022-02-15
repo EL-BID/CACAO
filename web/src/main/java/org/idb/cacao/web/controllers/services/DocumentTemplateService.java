@@ -20,7 +20,9 @@
 package org.idb.cacao.web.controllers.services;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +30,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.idb.cacao.api.Periodicity;
+import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
@@ -253,5 +259,108 @@ public class DocumentTemplateService {
 			return Periodicity.UNKNOWN;
 		else
 			return t.getPeriodicity();
+	}
+	
+	/**
+	 * The document template fields should match each mapping in each document input format
+	 */
+	public void compatibilizeTemplateFieldsMappings(DocumentTemplate template) {
+		if (template==null)
+			return;
+		if (template.getFields()==null 
+				|| template.getFields().isEmpty()
+				|| template.getInputs()==null
+				|| template.getInputs().isEmpty()) {
+			return;
+		}
+		
+		// Let's get all the fields information from the DocumentTemplate
+
+		Map<String,Integer> all_mapFieldNames = template.getFields().stream()
+				.filter(f->f!=null && f.getFieldName()!=null && f.getFieldName().trim().length()>0)
+				.collect(Collectors.toMap(
+					/*keyMapper*/DocumentField::getFieldName, 
+					/*valueMapper*/DocumentField::getId, 
+					/*mergeFunction*/(a,b)->a, 
+					/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+		if (all_mapFieldNames.isEmpty())
+			return;
+
+		// First of all, let's make sure every field in DocumentTemplate has an unique ID
+		Map<Integer,String> mapFieldIds = new HashMap<>();
+		for (Map.Entry<String,Integer> entry: new ArrayList<>(all_mapFieldNames.entrySet())) {
+			String fieldName = entry.getKey();
+			Integer fieldId = entry.getValue();
+			if (mapFieldIds.containsKey(fieldId)) {
+				fieldId = template.getNextUnassignedFieldId();
+				all_mapFieldNames.put(fieldName, fieldId);
+				mapFieldIds.put(fieldId, fieldName);
+				template.getField(fieldName).setId(fieldId);
+				template.evictNextUnassignedFieldId();
+			}
+			else {
+				mapFieldIds.put(fieldId, fieldName);
+			}
+		}
+
+		for (DocumentInput input: template.getInputs()) {
+			if (input==null)
+				continue;
+			
+			Map<String,Integer> mapFieldNames = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+			mapFieldNames.putAll(all_mapFieldNames);
+			
+			if (input.getFields()==null || input.getFields().isEmpty()) {
+				// If the DocumentInput has no mappings, let's include one for each DocumentField
+				for (Map.Entry<String,Integer> entry: mapFieldNames.entrySet()) {
+					DocumentInputFieldMapping map = new DocumentInputFieldMapping();
+					map.setFieldName(entry.getKey());
+					map.setFieldId(entry.getValue());
+					input.addField(map);
+				}
+			}
+			else {
+				// If the DocumentInput has some mappings, let's check what is absent and what is exceeding
+				List<DocumentInputFieldMapping> exceeding_maps = new LinkedList<>();
+				for (DocumentInputFieldMapping map: input.getFields()) {
+					if (map.getFieldName()==null || map.getFieldName().trim().length()==0)
+						continue;
+					Integer field_id = mapFieldNames.remove(map.getFieldName());
+					if (field_id==null) {
+						// This DocumentInputFieldMapping refers to a name that does not exist in DocumentTemplate
+						// Let's see check later if they have been renamed
+						exceeding_maps.add(map);
+					}
+					else {
+						// This DocumentInputFieldMapping matches a DocumentField in DocumentTemplate
+					}
+				} // LOOP over DocumentInputFieldMapping's
+				if (!mapFieldNames.isEmpty()) {
+					// Some fields are missing in DocumentInput ...
+					for (Map.Entry<String,Integer> entry: mapFieldNames.entrySet()) {
+						String fieldName = entry.getKey();
+						Integer fieldId = entry.getValue();
+						// Check for possible renamed field in FieldMappings (something with different name but the same id)
+						DocumentInputFieldMapping possible_renamed_field = exceeding_maps.stream().filter(m->fieldId.equals(m.getFieldId())).findAny().orElse(null);
+						if (possible_renamed_field!=null) {
+							// Change the name of the existent field mapping
+							possible_renamed_field.setFieldName(fieldName);
+							exceeding_maps.remove(possible_renamed_field); // it's not to be considered 'exceeding' anymore
+						}
+						else {
+							// Add a new field mapping
+							DocumentInputFieldMapping map = new DocumentInputFieldMapping();
+							map.setFieldName(fieldName);
+							map.setFieldId(fieldId);
+							input.addField(map);							
+						}
+					} // LOOP over missing DocumentInputFieldMapping's in DocumentInput
+				}
+				if (!exceeding_maps.isEmpty()) {
+					// Some fields are exceeding in DocumentInput ...
+					exceeding_maps.stream().forEach(input::removeField);
+				}
+			}
+		}
 	}
 }

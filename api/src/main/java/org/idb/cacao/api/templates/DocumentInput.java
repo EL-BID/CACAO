@@ -158,6 +158,13 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 			this.fields = new LinkedList<>();
 		this.fields.add(field);
 	}
+	
+	public void removeField(DocumentInputFieldMapping field) {
+		if (fields==null)
+			return;
+		fields.remove(field);
+		field.setFieldId(0);
+	}
 
 	@Override
 	public boolean equals(Object o) {
