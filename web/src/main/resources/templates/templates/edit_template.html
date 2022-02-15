@@ -189,7 +189,12 @@ let template = {
 let fields = template.fields || []
 let field = {}
 $('#cancel').click(function(){
-  window.location.replace([[@{/templates}]])
+	[# th:if="${template.id==null}"]
+	   window.location.replace([[@{/templates}]])
+	[/]
+    [# th:if="${template.id!=null}"]
+       window.location.replace([[@{/templates/{id}(id=${template.id})}]])
+	[/]   
 })
 
 let showConditionalFields = function(fieldType) {
@@ -230,7 +235,7 @@ let processForm = function(event, fields) {
     success: function(result) {
         $('#modal_successful').modal('show')
         setTimeout(function(){
-            window.location = [[@{/templates}]]
+            window.location = [[@{/templates/}]] + result.id
         }, 2000);
     },
     error: function(e) {
