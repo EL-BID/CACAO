@@ -132,7 +132,7 @@ public class ExcelParser implements FileParser {
 
 		try {
 			FileInputStream inputStream = new FileInputStream(path.toFile());
-			Workbook workbook = WorkbookFactory.create(inputStream);
+			workbook = WorkbookFactory.create(inputStream);
 
 			// Check if the workbook has all sheets needed
 			if (workbook.getNumberOfSheets() < MINIMUM_NUMBER_OF_SHEETS)
@@ -181,99 +181,118 @@ public class ExcelParser implements FileParser {
 					
 				}
 				
-				if ( sheet == null) {
-					// Can't use this field because the sheet could not be found
-					continue;
-				}
-
-				DataSerie dataSerie = new DataSerie();
-				dataSerie.sheet = sheet;
-				
-				if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {
-					
-					// If we have an expression for named cell intervals, let's look for this
-					Name namedCell = workbook.getName(fieldMapping.getCellName());
-					if (namedCell!=null) {
-						AreaReference aref = new AreaReference(namedCell.getRefersToFormula(), workbook.getSpreadsheetVersion());
-						dataSerie.cellReferences = aref.getAllReferencedCells();
-						if (isSameSheet(dataSerie.cellReferences)) {
-							String sheetName = dataSerie.cellReferences[0].getSheetName();
-							if (sheetName!=null) {
-								sheet = sheetsByName.get(sheetName);
-								if (sheet!=null)
-									dataSerie.sheet = sheet;
-							}
-						}
-						else {
-							dataSerie.sheets = sheetsByName;
-						}
+				if ( sheet == null && (fieldMapping.getSheetIndex()==null || fieldMapping.getSheetIndex().intValue()<=0)
+						&& (fieldMapping.getSheetNameExpression()==null || fieldMapping.getSheetNameExpression().trim().length()==0)) {
+					// If we don't have a specific sheet for this field, let's use all the available sheets
+					for (Sheet s: sheetsByNumber.values()) {
+						addDataSerie(fieldMapping, s, sheetsByName, firstRowPerSheet);
 					}
-					
-				}
-				
-				else if (fieldMapping.getRowIndex()!=null) {
-					
-					// If we have a specific row, this field may be one singular value (if we also
-					// have one specific column) or it may be an entire row of values (if we don't
-					// have one specific column)
-					
-					dataSerie.row = fieldMapping.getRowIndex();
-					
-					dataSerie.column = fieldMapping.getColumnIndex();
-					
 				}
 				else {
-					
-					// If we have no specific row, we have to start with some row 
-					Integer rowStart = firstRowPerSheet.get(sheet);
-					
-					Integer column = fieldMapping.getColumnIndex();
-					if (column==null || column.intValue()<0) {
-						// If we don't know which column to use, let's try with the 'expression for column names'
-						if (fieldMapping.getColumnNameExpression()!=null 
-								&& fieldMapping.getColumnNameExpression().trim().length()>0
-								&& rowStart.intValue()>0) {
-							
-							// Try to find a column name matching the expression in different ways
-							// Let's assume the row before data contains 'column titles'
-							final Row header = sheet.getRow(rowStart-1);
-							Iterable<Integer> colsInHeader = getColumnsInRow(sheet, rowStart);
-							column = ValidationContext.matchExpression(colsInHeader, 
-								/*toText*/colInHeader->{
-									Cell cell = header.getCell(colInHeader);
-									Object value = getCellValue(cell);
-									return (value==null) ? "" : value.toString();
-								}, 
-								fieldMapping.getColumnNameExpression())
-								.orElse(null);
-							
-						}
-					}
-					
-					if (column!=null) {
-						// Let's increment the 'rowStart' if it looks like a column title
-						Row r = sheet.getRow(rowStart);
-						Cell c = (r==null) ? null : r.getCell(column);
-						Object value = getCellValue(c);
-						String txt = (value==null) ? "" : value.toString();
-						if (ValidationContext.matchExpression(Collections.singletonList(txt), Function.identity(), fieldMapping.getFieldName()).isPresent()
-							|| ValidationContext.matchExpression(Collections.singletonList(txt), Function.identity(), fieldMapping.getColumnNameExpression()).isPresent()) {
-							rowStart++;
-						}
-					}
-					
-					dataSerie.column = column;
-					dataSerie.firstRow = rowStart;
-					
+					addDataSerie(fieldMapping, sheet, sheetsByName, firstRowPerSheet);
 				}
-				
-				mapDataSeries.put(fieldMapping, dataSerie);
 			}
 			
 		} catch (IOException | EncryptedDocumentException e) {
 			log.log(Level.SEVERE, "Error trying to read Excel file " + path.getFileName(), e);
 		}
 
+	}
+	
+	/**
+	 * Add a new 'data serie' regarding one field mapping and one worksheet
+	 */
+	private void addDataSerie(DocumentInputFieldMapping fieldMapping, Sheet sheet,
+			Map<String, Sheet> sheetsByName,
+			Map<Sheet, Integer> firstRowPerSheet) {
+		
+		if ( sheet == null) {
+			// Can't use this field because the sheet could not be found
+			return;
+		}
+
+		DataSerie dataSerie = new DataSerie();
+		dataSerie.sheet = sheet;
+		
+		if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {
+			
+			// If we have an expression for named cell intervals, let's look for this
+			Name namedCell = workbook.getName(fieldMapping.getCellName());
+			if (namedCell!=null) {
+				AreaReference aref = new AreaReference(namedCell.getRefersToFormula(), workbook.getSpreadsheetVersion());
+				dataSerie.cellReferences = aref.getAllReferencedCells();
+				if (isSameSheet(dataSerie.cellReferences)) {
+					String sheetName = dataSerie.cellReferences[0].getSheetName();
+					if (sheetName!=null) {
+						sheet = sheetsByName.get(sheetName);
+						if (sheet!=null)
+							dataSerie.sheet = sheet;
+					}
+				}
+				else {
+					dataSerie.sheets = sheetsByName;
+				}
+			}
+			
+		}
+		
+		else if (fieldMapping.getRowIndex()!=null) {
+			
+			// If we have a specific row, this field may be one singular value (if we also
+			// have one specific column) or it may be an entire row of values (if we don't
+			// have one specific column)
+			
+			dataSerie.row = fieldMapping.getRowIndex();
+			
+			dataSerie.column = fieldMapping.getColumnIndex();
+			
+		}
+		else {
+			
+			// If we have no specific row, we have to start with some row 
+			Integer rowStart = firstRowPerSheet.get(sheet);
+			
+			Integer column = fieldMapping.getColumnIndex();
+			if (column==null || column.intValue()<0) {
+				// If we don't know which column to use, let's try with the 'expression for column names'
+				if (fieldMapping.getColumnNameExpression()!=null 
+						&& fieldMapping.getColumnNameExpression().trim().length()>0
+						&& rowStart.intValue()>0) {
+					
+					// Try to find a column name matching the expression in different ways
+					// Let's assume the row before data contains 'column titles'
+					final Row header = sheet.getRow(rowStart-1);
+					Iterable<Integer> colsInHeader = getColumnsInRow(sheet, rowStart);
+					column = ValidationContext.matchExpression(colsInHeader, 
+						/*toText*/colInHeader->{
+							Cell cell = header.getCell(colInHeader);
+							Object value = getCellValue(cell);
+							return (value==null) ? "" : value.toString();
+						}, 
+						fieldMapping.getColumnNameExpression())
+						.orElse(null);
+					
+				}
+			}
+			
+			if (column!=null) {
+				// Let's increment the 'rowStart' if it looks like a column title
+				Row r = sheet.getRow(rowStart);
+				Cell c = (r==null) ? null : r.getCell(column);
+				Object value = getCellValue(c);
+				String txt = (value==null) ? "" : value.toString();
+				if (ValidationContext.matchExpression(Collections.singletonList(txt), Function.identity(), fieldMapping.getFieldName()).isPresent()
+					|| ValidationContext.matchExpression(Collections.singletonList(txt), Function.identity(), fieldMapping.getColumnNameExpression()).isPresent()) {
+					rowStart++;
+				}
+			}
+			
+			dataSerie.column = column;
+			dataSerie.firstRow = rowStart;
+			
+		}
+		
+		mapDataSeries.put(fieldMapping, dataSerie);
 	}
 	
 	/**

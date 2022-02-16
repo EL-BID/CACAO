@@ -132,11 +132,39 @@ public class DocumentTemplateAPIController {
 			// let's copy all the properties to be preserved, except the properties that might change
 			BeanUtils.copyProperties(existing_template.get(), template, 
 					/*ignoreProperties = editable properties*/
-					"name", "version", "periodicity", "required", "fields");
+					"name", "version", "periodicity", "required", "fields", "active");
 		}
 
         template.setId(id);
 		templateService.compatibilizeTemplateFieldsMappings(template);
+        templateRepository.saveWithTimestamp(template);
+        return ResponseEntity.ok().body(template);
+    }
+
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
+    @GetMapping(value="/template/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Activate an existing document template", response=DocumentTemplate.class)
+    public ResponseEntity<Object> activateTemplate(@PathVariable("id") String id) {
+        
+		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
+		if (!existing_template.isPresent())
+        	return ResponseEntity.notFound().build();
+		DocumentTemplate template = existing_template.get();
+		template.setActive(true);
+        templateRepository.saveWithTimestamp(template);
+        return ResponseEntity.ok().body(template);
+    }
+
+	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
+    @GetMapping(value="/template/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Deactivate an existing document template", response=DocumentTemplate.class)
+    public ResponseEntity<Object> deactivateTemplate(@PathVariable("id") String id) {
+        
+		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
+		if (!existing_template.isPresent())
+        	return ResponseEntity.notFound().build();
+		DocumentTemplate template = existing_template.get();
+		template.setActive(false);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
     }
@@ -198,9 +226,11 @@ public class DocumentTemplateAPIController {
 		if (existingDocInput==null) {
 			ControllerUtils.returnBadRequest("template.input.format.not.exists", messageSource, docInput.getFormat().toString());
 		}
-		existingDocInput.setInputName(docInput.getInputName());
-		existingDocInput.setFields(docInput.getFields());
-		existingDocInput.setFieldsIdsMatchingTemplate(template);
+		else {
+			existingDocInput.setInputName(docInput.getInputName());
+			existingDocInput.setFields(docInput.getFields());
+			existingDocInput.setFieldsIdsMatchingTemplate(template);
+		}
 		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);

@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -92,6 +93,9 @@ public class FileUploadedConsumerService {
 
 	@Autowired
 	private DomainTableRepository domainTableRepository;
+	
+	@Autowired
+	private UsersTaxpayersService usersTaxpayersService;
 
 	@Autowired
 	private final StreamBridge streamBridge;
@@ -312,6 +316,37 @@ public class FileUploadedConsumerService {
 
 			// Add TaxPayerId and TaxPeriod to document on database
 			validations.addTaxPayerInformation();
+			
+			if (doc.getTaxPayerId()!=null && doc.getTaxPayerId().trim().length()>0) {
+				AtomicReference<String> userTaxpayerId = new AtomicReference<>();
+				try {
+					boolean has_access = usersTaxpayersService.isUserRepresentativeOf(doc.getUser(), doc.getTaxPayerId(), userTaxpayerId);
+					if (!has_access) {
+						// Reset the taxpayer Id indication in the DocumentUploaded because we don't want to list this occurrence for him
+						String taxpayerId = doc.getTaxPayerId();
+						doc.setTaxPayerId(userTaxpayerId.get());
+						// Inform the user about the violation
+						setSituation(doc, DocumentSituation.INVALID);
+						validations.addLogError("{doc.error.user.not.representative("+doc.getUser().replaceAll("[\\,\\(\\)\\{\\}]", "")+","+taxpayerId.replaceAll("[\\,\\(\\)\\{\\}]", "")+")}");
+						saveValidationMessages(validationContext);
+						log.log(Level.SEVERE, "Exception while parsing record for file " + documentId + ": the user "+doc.getUser()+" does not represent the taxpayer "+taxpayerId);				
+						throw new ValidationException(
+								"User has no permission for uploading file " + doc.getFilename() + ".");
+					}
+				}
+				catch (ValidationException ex) {
+					throw ex;
+				}
+				catch (Throwable ex) {
+					setSituation(doc, DocumentSituation.INVALID);
+					String error_msg = (ex.getMessage()==null) ? "" : ex.getMessage().replaceAll("[\\,\\(\\)\\{\\}]", "");
+					validations.addLogError("{error.internal.server("+error_msg+")}");
+					saveValidationMessages(validationContext);
+					log.log(Level.SEVERE, "Exception while checking user permission for uploading file " + documentId, ex);				
+					throw new ValidationException(
+							"An error ocurred while attempting to check user permission for uplading file " + doc.getFilename() + ".", ex);					
+				}
+			}
 			
 			// Add unique Id according to file uniqueness criteria
 			if (fileUniquenessValues!=null && !fileUniquenessValues.isEmpty()) {

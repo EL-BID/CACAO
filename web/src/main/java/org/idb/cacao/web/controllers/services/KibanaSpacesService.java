@@ -253,6 +253,53 @@ public class KibanaSpacesService {
 		}
 
 	}
+	
+	/**
+	 * Check if already created at Kibana default space all the index patterns related to published data related to the 
+	 * index corresponding to generic template (not related to archetype). Creates a new index-pattern if none exists. Replicates the created index-pattern to all existent Kibana spaces.
+	 * @param avoidRedundantChecks If TRUE, avoids redundant check of index patterns for the provided index (i.e. do not check
+	 * again if already checked before)
+	 */	
+	public void syncKibanaIndexPatternForGenericTemplate(boolean avoidRedundantChecks, String index) {
+
+		synchronized (index.intern()) {
+
+			if (avoidRedundantChecks && checkedIndices.contains(index))
+				return;
+			
+			// We need to know all the existent index patterns
+			Map<String,KibanaSavedObject> map_patterns;
+			try {
+				List<KibanaSavedObject> saved_objects = ESUtils.getKibanaIndexPatterns(env, restTemplate, /*spaceId*/null);
+				map_patterns = saved_objects.stream().collect(
+						Collectors.toMap(
+								/*keyMapper*/s->s.getTitle(), 
+								/*valueMapper*/Function.identity(), 
+								/*mergeFunction*/(a,b)->a));
+			} catch (Throwable ex) {
+				log.log(Level.WARNING, "Failed to get Kibana index patterns for the default space", ex);
+				return;
+			}
+	
+			// We need to know all the existent Kibana spaces
+			List<KibanaSpace> spaces;
+			try {
+				spaces = ESUtils.getKibanaSpaces(env, restTemplate);
+			} catch (Throwable ex) {
+				log.log(Level.WARNING, "Failed to get Kibana spaces", ex);
+				return;
+			}
+	
+			try {
+				syncKibanaIndexPatternsInternal(index, spaces, map_patterns, /*collectCreationInfo*/null);
+			}
+			catch (Throwable ex) {
+				log.log(Level.WARNING, "Failed to synchronize index patterns at Kibana for ElasticSearch index "+index, ex);
+			}
+			
+		}
+
+	}
 
 	/**
 	 * Internal function used by {@link #syncKibanaIndexPatterns() syncKibanaIndexPatterns}<BR>

@@ -30,6 +30,7 @@ import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.errors.DocumentNotFoundException;
 import org.idb.cacao.api.errors.TemplateNotFoundException;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,6 +105,21 @@ public class FileProcessedConsumerService {
 					log.log(Level.SEVERE, "Failed to synchronize KIBANA spaces with index patterns related to the archetype "+archetype+" (may be ignored if there is no Kibana service online)", ex);
 				}
 				
+			}
+			else {
+
+				String index = IndexNamesUtils.formatIndexNameForPublishedData(template.get().getName());
+				try {
+					// Check if the index-patterns related to the index of published data have already been created
+					// If not created yet, creates automatically and synchronizes with other Kibana Spaces
+					if (kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0) {
+						kibanaSpacesService.syncKibanaIndexPatternForGenericTemplate(/*avoidRedundantChecks*/true, index);
+					}
+				}
+				catch (Throwable ex) {
+					log.log(Level.SEVERE, "Failed to synchronize KIBANA spaces with index patterns related to the index "+index+" (may be ignored if there is no Kibana service online)", ex);
+				}
+
 			}
 			
 		}
