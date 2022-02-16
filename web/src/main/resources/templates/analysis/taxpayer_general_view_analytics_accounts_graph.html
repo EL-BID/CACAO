@@ -49,32 +49,32 @@
 			    {type: "rect",
 			     from: {data: "analyticsAccounts"},
 			     encode: {
-					enter: {          
-						tooltip: {
-							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{account.name}]]: datum.values.account_name, [[#{account.finalBalance}]]: datum.values.valueAsString}',
-				        }
-				    },
 					update: {
 			        	fill: { scale: "color", field: "year", opacity: 0.4 },
 						x: {field: "x0"},
 						x2: {field: "x1"},
 						y: {field: "y0"},
 						y2: {field: "y1"}
-						//tooltip: {field: "values.valueAsString"} 
 					}
 				}
 			    },
 			    {type: "rect",
 				from: { data: "values" },
 				encode: {					
+					enter: { stroke: {value: "#fff"} },
 					update: {
-						fill: { scale: "color", field: "value", opacity: 0.4 },
+						fill: { value: "transparent" },
 			          	x: { field: "x0" },
 			          	x2: { field: "x1" },
 			          	y: { field: "y0" },
 			          	y2: { field: "y1" }
 					},
-					tooltip: { field: "valueAsString" }
+					hover: {
+						fill: {value: "orange"},
+						tooltip: {
+							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{account.name}]]: datum.values.account_name, [[#{account.finalBalance}]]: datum.values.valueAsString}',
+				        }
+					}
 				}
 			    },
 			    {type: "text",
