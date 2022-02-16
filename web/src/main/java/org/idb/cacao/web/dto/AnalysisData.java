@@ -28,6 +28,8 @@ public class AnalysisData {
 	
 	private double scaleMax;
 	
+	private String totalTaxpayers;
+	
 	private List<AnalysisItem> items;
 	
 	private List<Outlier> outliers;
@@ -46,6 +48,14 @@ public class AnalysisData {
 
 	public void setScaleMax(double scaleMax) {
 		this.scaleMax = scaleMax;
+	}
+
+	public String getTotalTaxpayers() {
+		return totalTaxpayers;
+	}
+
+	public void setTotalTaxpayers(String totalTaxpayers) {
+		this.totalTaxpayers = totalTaxpayers;
 	}
 
 	public List<AnalysisItem> getItems() {

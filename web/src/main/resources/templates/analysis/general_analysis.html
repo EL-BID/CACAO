@@ -82,14 +82,22 @@
 		
 		<div id="dataView" style="display: none">
 			<div class="ui container grid">
-				<div class="ten wide column unbounded" id="graphView">
-					<div id="vis">
-						<!-- Display graphics -->
+				<div class="row">
+					<div class="sixteen column unbounded ui header segment">
+						<span th:text="#{taxpayers.analysis.general.total}"></span>
+						<span id="totalTaxpayers"></span>
 					</div>
 				</div>
-				<div class="six wide column unbounded" id="tableView">
-					<div id="table" class="ui orange table">
-						<!-- Display table -->
+				<div class="row ui segment">
+					<div class="ten wide column unbounded" id="graphView">
+						<div id="vis">
+							<!-- Display graphics -->
+						</div>
+					</div>
+					<div class="six wide column unbounded" id="tableView">
+						<div id="table" class="ui orange table">
+							<!-- Display table -->
+						</div>
 					</div>
 				</div>
 			</div>
@@ -103,7 +111,7 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-		
+	
 		//Define number format
 		decimalChar = /*[[#{decimal.char}]]*/ ',';
 		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
@@ -222,6 +230,7 @@
 						console.log("ERROR : "+errorNoDataAvailable);	
 					}
 					else {
+						$("#totalTaxpayers").text(" " + data.totalTaxpayers);
 						showTable(data.outliers);
 						$("#dataView").show();
 						var width = $("#graphView").width() * .7;

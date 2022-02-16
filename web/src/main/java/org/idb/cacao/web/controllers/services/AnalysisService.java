@@ -654,6 +654,7 @@ public class AnalysisService {
 			AnalysisData data = new AnalysisData();
 			data.setItems(items);
 			updateScale(data);
+			data.setTotalTaxpayers(FormatUtils.quantityFormat.format(taxpayerIds.size()));
 
 			return data;
 
@@ -1796,6 +1797,9 @@ public class AnalysisService {
 		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
 				function);
 		
+		//Remove null itens
+		instances = instances.stream().filter(instance->instance != null).collect(Collectors.toList());
+		
 		for ( String key : yearValues.keySet() ) {
 			for ( Map<String, Object> map : instances ) {
 				if ( key.equals(map.get("year").toString()) ) {
@@ -1803,7 +1807,7 @@ public class AnalysisService {
 					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
 				}
 			}
-		}
+		}		
 		
 		return instances;
 
@@ -1895,6 +1899,9 @@ public class AnalysisService {
 		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
 				function);
 		
+		//Remove null itens
+		instances = instances.stream().filter(instance->instance != null).collect(Collectors.toList());		
+		
 		for ( String key : yearValues.keySet() ) {
 			for ( Map<String, Object> map : instances ) {
 				if ( key.equals(map.get("year").toString()) ) {
@@ -1903,11 +1910,6 @@ public class AnalysisService {
 				}
 			}
 		}
-		
-		instances.forEach( item-> {
-			if ( item == null )
-				instances.remove(item);
-		});		
 		
 		return instances;
 
@@ -2014,6 +2016,9 @@ public class AnalysisService {
 		// Get information
 		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
 				function);
+		
+		//Remove null itens
+		instances = instances.stream().filter(instance->instance != null).collect(Collectors.toList());		
 
 		for ( String key : yearValues.keySet() ) {
 			for ( Map<String, Object> map : instances ) {
@@ -2023,11 +2028,6 @@ public class AnalysisService {
 				}
 			}
 		}		
-		
-		instances.forEach( item-> {
-			if ( item == null )
-				instances.remove(item);
-		});
 		
 		return instances;
 

@@ -29,6 +29,7 @@ public class FormatUtils {
 
 	private static Locale locale = LocaleContextHolder.getLocale();
 	public static NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
+	public static NumberFormat quantityFormat = NumberFormat.getNumberInstance(locale);
 	public static NumberFormat percentageFormat = NumberFormat.getPercentInstance(locale);
 	
 	static { 
@@ -36,6 +37,10 @@ public class FormatUtils {
 		numberFormat.setMinimumFractionDigits(2);
 		numberFormat.setRoundingMode(RoundingMode.CEILING);
 		numberFormat.setGroupingUsed(true);
+		quantityFormat.setMaximumFractionDigits(0);
+		quantityFormat.setMinimumFractionDigits(0);
+		quantityFormat.setRoundingMode(RoundingMode.CEILING);
+		quantityFormat.setGroupingUsed(true);
 		percentageFormat.setMaximumFractionDigits(2);
 		percentageFormat.setMinimumFractionDigits(2);
 		percentageFormat.setRoundingMode(RoundingMode.CEILING);
