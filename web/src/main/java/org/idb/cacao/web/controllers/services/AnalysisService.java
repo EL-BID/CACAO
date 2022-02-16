@@ -1773,6 +1773,10 @@ public class AnalysisService {
 			if ( accountName == null )
 				return null;
 			Sum amount = agg.get("final_balance");
+			
+			if ( amount.getValue() <= 0 )
+				return null;
+			
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
 			Map<String,Object> instanceValues = new HashMap<>();
@@ -1860,24 +1864,51 @@ public class AnalysisService {
 		}
 
 		String[] groupBy = { "year", "customer_id" };
+		Map<String,Double> yearValues = new HashMap<>();
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
 			String customerName = getStringValueForAgg(agg,"customer_name");
 			if ( customerName == null )
 				return null;			
-			Sum amount = agg.get("amount");			
+			Sum amount = agg.get("amount");
+			
+			if ( amount.getValue() <= 0 )
+				return null;			
+			
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
-			instance.put("customer_id", values[1]);
-			instance.put("customer_name", customerName);			
-			instance.put("value", amount.getValue());
+			Map<String, Object> instanceValues = new HashMap<>();
+			instanceValues.put("customer_id", values[1]);
+			instanceValues.put("customer_name", customerName);			
+			instanceValues.put("value", amount.getValue());			
+			instanceValues.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));
+			instanceValues.put("title", values[0] + ": " + customerName);
+			instance.put("values", instanceValues);
+			
+			yearValues.compute((String)values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
+			
 			return instance;
 		};
 
 		// Get information
 		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
 				function);
+		
+		for ( String key : yearValues.keySet() ) {
+			for ( Map<String, Object> map : instances ) {
+				if ( key.equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", yearValues.get(key));
+					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
+				}
+			}
+		}
+		
+		instances.forEach( item-> {
+			if ( item == null )
+				instances.remove(item);
+		});		
+		
 		return instances;
 
 	}
@@ -1953,6 +1984,7 @@ public class AnalysisService {
 		}
 
 		String[] groupBy = { "year", "supplier_id" };
+		Map<String,Double> yearValues = new HashMap<>();
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
@@ -1960,17 +1992,43 @@ public class AnalysisService {
 			if ( supplierName == null )
 				return null;			
 			Sum amount = agg.get("amount");
+
+			if ( amount.getValue() <= 0 )
+				return null;
+			
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
-			instance.put("supplier_id", values[1]);
-			instance.put("supplier_name", supplierName);
-			instance.put("value", amount.getValue());
+			Map<String, Object> instanceValues = new HashMap<>();
+			instanceValues.put("supplier_id", values[1]);
+			instanceValues.put("supplier_name", supplierName);			
+			instanceValues.put("value", amount.getValue());
+			instanceValues.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));
+			instanceValues.put("title", values[0] + ": " + supplierName);
+			instance.put("values", instanceValues);
+			
+			yearValues.compute((String)values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));			
+			
 			return instance;
 		};
 
 		// Get information
 		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
 				function);
+
+		for ( String key : yearValues.keySet() ) {
+			for ( Map<String, Object> map : instances ) {
+				if ( key.equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", yearValues.get(key));
+					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
+				}
+			}
+		}		
+		
+		instances.forEach( item-> {
+			if ( item == null )
+				instances.remove(item);
+		});
+		
 		return instances;
 
 	}

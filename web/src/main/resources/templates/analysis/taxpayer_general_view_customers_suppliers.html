@@ -27,6 +27,10 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		// Keeps data for graph use
+		var majorCustomersData = [];		
+		var majorSuppliersData = [];
+		
 		function updateCustomersAndSuppliers() {
 			upadateCustomers();
 			updateSuppliers();
@@ -58,10 +62,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 		
+			        majorCustomersData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSCustomers' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSCustomers' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+											"<button id='showGraphCustomers' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -94,9 +100,9 @@
 			    	{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center", visible:false},
 					{ title: /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ "Customers", headerHozAlign:"center", cssClass:"my-background",
 						columns:[
-							{title: /*[[#{customer.id}]]*/ "Customer Id", field:"customer_id", hozAlign:"left", headerSort:true, visible:false},
-							{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customer_name", hozAlign:"left", headerSort:true},							
-							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"right", formatter: "money", hozAlign:"right", headerSort:true, 
+							{title: /*[[#{customer.id}]]*/ "Customer Id", field:"values.customer_id", hozAlign:"left", headerSort:true, visible:false},
+							{title: /*[[#{customer.name}]]*/ "Customer Name", field:"values.customer_name", hozAlign:"left", headerSort:true},							
+							{title: /*[[#{value}]]*/ "Value", field:"values.value", headerHozAlign:"right", formatter: "money", hozAlign:"right", headerSort:true, 
 								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2", symbol:"$", symbolAfter:true}},
 						],
 					},
@@ -107,45 +113,23 @@
 			});
 			
 			tableCustomers.on("tableBuilt", 
-					function() {
-						document.getElementById('exportXLSCustomers').addEventListener("click", 
-								function() {
-									tableCustomers.download("xlsx", getFileName(7), {sheetName:getSheetName(7)});				    
-								});						
+				function() {
+					document.getElementById('exportXLSCustomers').addEventListener("click", 
+						function() {
+							tableCustomers.download("xlsx", getFileName(7), {sheetName:getSheetName(7)});				    
+						});
+					
+					document.getElementById('showGraphCustomers').addEventListener("click", function(){					
+						$('#modal_major_customers_graph').modal('show');
+						let width = $("#modal_major_customers_graph").width() * .9;
+						let height = window.screen.height * .5;
+						window.dispatchEvent(new Event('height'));
+						showMajorCustomersGraph(width,height);
+						window.dispatchEvent(new Event('resize'));					
+						
 					});
-			
-			tableCustomers.on("renderComplete", function(data){				
-				hideGroups(tableCustomers);
-			});
+				});			
 		
-		}	
-		
-		function hideGroups(table) {
-			
-			//alert("complete");
-			
-			if (table == null)
-				return;
-			
-			table.off("renderComplete");
-			//table.setGroupStartOpen(false);
-			//table.getGroups().forEach(x => x._group.hide());
-			
- 			groups = table.getGroups(); 		
- 			
- 			//alert(groups.length);
- 			 			
- 			if ( groups == null || groups.length == 1 )
- 				return;
-				
- 			//groups.forEach(x => x._group.hide());
- 			//groups[0]._group.show();
- 			for ( i = 1; i < groups.length; i++ ) { 				
-  				//groups[i]._group.hide();
- 			}
- 			
- 			table.redraw(true);
-			
 		}
 		
 		function updateSuppliers() {
@@ -174,10 +158,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 		
+			        majorSuppliersData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSSuppliers' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSSuppliers' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+											"<button id='showGraphSuppliers' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -210,9 +196,9 @@
 			    	{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center", visible:false},
 					{title: /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ "Suppliers", headerHozAlign:"center", cssClass:"my-background",
 						columns:[							
-							{title: /*[[#{supplier.id}]]*/ "Supplier Id", field:"supplier_id", hozAlign:"left", headerSort:true, visible:false},
-							{title: /*[[#{supplier.name}]]*/ "Supplier Name", field:"supplier_name", hozAlign:"left", headerSort:true},							
-							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"right", formatter: "money", hozAlign:"right", headerSort:true, 
+							{title: /*[[#{supplier.id}]]*/ "Supplier Id", field:"values.supplier_id", hozAlign:"left", headerSort:true, visible:false},
+							{title: /*[[#{supplier.name}]]*/ "Supplier Name", field:"values.supplier_name", hozAlign:"left", headerSort:true},							
+							{title: /*[[#{value}]]*/ "Value", field:"values.value", headerHozAlign:"right", formatter: "money", hozAlign:"right", headerSort:true, 
 								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2", symbol:"$", symbolAfter:true}},
 						],
 					},
@@ -227,12 +213,17 @@
 					document.getElementById('exportXLSSuppliers').addEventListener("click", 
 						function() {
 						tableSuppliers.download("xlsx", getFileName(8), {sheetName:getSheetName(8)});				    
+					});
+					document.getElementById('showGraphSuppliers').addEventListener("click", function(){					
+						$('#modal_major_suppliers_graph').modal('show');
+						let width = $("#modal_major_suppliers_graph").width() * .9;
+						let height = window.screen.height * .5;
+						window.dispatchEvent(new Event('height'));
+						showMajorSuppliersGraph(width,height);
+						window.dispatchEvent(new Event('resize'));					
+						
 					});					
-				});
-		
-			tableSuppliers.on("renderComplete", function(){
-				//hideGroups(tableSuppliers);		
-			});			
+				});	
 		}		
 		
 	</script>

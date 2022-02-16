@@ -1,37 +1,37 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<div class="ui large modal one column unbounded centered aligned grid" id="modal_analytics_accounts_graph" th:fragment="analytics_accounts_graph">
+	<div class="ui large modal one column unbounded centered aligned grid" id="modal_major_suppliers_graph" th:fragment="major_suppliers_graph">
 		<i class="close icon"></i>
 		   <div class="column aligned grid">
-       			<h1><span th:text="#{taxpayers.analysis.general.view.major.analytics.accounts}"></span></h1>	
+       			<h1><span th:text="#{taxpayers.analysis.general.view.major.suppliers}"></span></h1>	
    			</div>	
-		<div style="width: 100%; display: flex;" id="visAnalyticsAccounts"></div>
+		<div style="width: 100%; display: flex;" id="visMajorSuppliers"></div>
 	</div>		
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		function showAnalyticsAccountsGraph(width,height) {
-		
+		function showMajorSuppliersGraph(width,height,) {
+			
 		 	let spec = ({
 				$schema: "https://vega.github.io/schema/vega/v5.json",
 			  	"width": width,
 			  	"height": height,			  	
-			  	padding: 5,
+			  	padding: 1,
 			  	center: true,
 			  	data: [
-			    	{name: "analyticsAccounts",
-			      	values: analyticsAccountsData,
+			    	{name: "majorSuppliers",
+			      	values: majorSuppliersData,
 			      	format: { type: "json" },
 			      	transform: [
 			        	{ type: "nest", keys: ["year"] },
-			        	{type: "treemap",
+			        	{ type: "treemap",
 						field: "values.value",
 			        	paddingInner: 1,
 			        	size: [{ signal: "width" }, { signal: "height" }]}
 			        ]},
 			        {name: "values",
-			        source: "analyticsAccounts",
+			        source: "majorSuppliers",
 			        transform: [{ type: "filter", expr: "datum.values" }]
 			        }
 			  ],
@@ -40,45 +40,45 @@
 			    {
 			      name: "color",
 			      type: "ordinal",
-			      domain: { data: "analyticsAccounts", field: "year" },
+			      domain: { data: "majorSuppliers", field: "year" },
 			      range: { scheme: "category20" }
-			    }
+			    }		    
 			  ],
 
 			  marks: [
 			    {type: "rect",
-			     from: {data: "analyticsAccounts"},
-			     encode: {
-					enter: {          
-						tooltip: {
-							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{account.name}]]: datum.values.account_name, [[#{account.finalBalance}]]: datum.values.valueAsString}',
-				        }
-				    },
+			     from: {data: "majorSuppliers"},
+			     encode: {					
 					update: {
 			        	fill: { scale: "color", field: "year", opacity: 0.4 },
 						x: {field: "x0"},
 						x2: {field: "x1"},
 						y: {field: "y0"},
-						y2: {field: "y1"}
-						//tooltip: {field: "values.valueAsString"} 
+						y2: {field: "y1"} 
 					}
 				}
 			    },
 			    {type: "rect",
 				from: { data: "values" },
-				encode: {					
+				encode: {	
+					enter: { stroke: {value: "#fff"} },
 					update: {
-						fill: { scale: "color", field: "value", opacity: 0.4 },
+						fill: { value: "transparent" },
 			          	x: { field: "x0" },
 			          	x2: { field: "x1" },
 			          	y: { field: "y0" },
 			          	y2: { field: "y1" }
 					},
-					tooltip: { field: "valueAsString" }
+					hover: {
+						fill: {value: "orange"},
+						tooltip: {
+							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{supplier.name}]]: datum.values.supplier_name, [[#{supplier.value}]]: datum.values.valueAsString}',
+				        }
+					}
 				}
 			    },
 			    {type: "text",
-		        from: {data: "analyticsAccounts"},
+		        from: {data: "majorSuppliers"},
 		        interactive: false,
 		        encode: {
 		          enter: {
@@ -94,11 +94,11 @@
 		          }
 		        }
 		      }
-			  ]
-			})			
-				
-			vegaEmbed('#visAnalyticsAccounts', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
-			$("#visAnalyticsAccounts").show()				
+				  ]
+			})	
+					
+			vegaEmbed('#visMajorSuppliers', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$('#visMajorSuppliers').show()				
 			
 		}
 		
