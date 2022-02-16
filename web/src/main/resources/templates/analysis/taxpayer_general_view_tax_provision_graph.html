@@ -1,7 +1,7 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<div class="ui modal one column unbounded centered aligned grid" id="modal_tax_provision_graph" th:fragment="tax_provision_graph">
+	<div class="ui large modal one column unbounded centered aligned grid" id="modal_tax_provision_graph" th:fragment="tax_provision_graph">
 		<i class="close icon"></i>
 		   <div class="column aligned grid">
        			<h1><span th:text="#{taxpayers.analysis.general.view.tax.provision}"></span></h1>	
@@ -12,77 +12,24 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		function showTaxProvisionGraph(width,height) {
-		
+			
 		 	let spec = ({
-				$schema: "https://vega.github.io/schema/vega/v5.json",
-			  	"width": width,
-			  	"height": height,			  	
-			  	padding: 5,
-			  	center: true,
-			  	data: [
-			    {
-			      name: "tax_provision",
-			      values: taxProvisionData,
-			      format: { type: "json" },
-			      transform: [
-			        { type: "nest", keys: ["year"] },
-			        {
-			          type: "treemap",
-			          field: "final_balance",
-			          paddingInner: 1,
-			          size: [{ signal: "width" }, { signal: "height" }]
-			        }
-			      ]
-			    }
-			  ],
-
-			  scales: [
-			    {
-			      name: "color",
-			      type: "ordinal",
-			      domain: { data: "tax_provision", field: "year" },
-			      range: { scheme: "category20" }
-			    }
-			  ],
-
-			  marks: [
-			    {
-			      type: "rect",
-			      from: { data: "tax_provision" },
-			      encode: {
-					enter: {          
-						tooltip: {
-							signal: '{ [[#{account.finalBalance}]]: datum.finalBalanceAsString}',
-			            }
-			        },
-			        update: {
-			          fill: { scale: "color", field: "year", opacity: 0.4 },
-			          x: { field: "x0" },
-			          x2: { field: "x1" },
-			          y: { field: "y0" },
-			          y2: { field: "y1" }
-			        }
-			      }
-			    },
-			    {
-		        type: "text",
-		        from: {"data": "tax_provision"},
-		        interactive: false,
-		        encode: {
-		          enter: {
-		            font: {"value": "Helvetica Neue, Arial"},
-		            align: {"value": "center"},
-		            baseline: {"value": "middle"},
-		            fill: {"value": "#000"},
-		            text: {"field": "year"}
-		          },
-		          update: {
-		            x: {"signal": "0.5 * (datum.x0 + datum.x1)"},
-		            y: {"signal": "0.5 * (datum.y0 + datum.y1)"}
-		          }
-		        }
-		      }
-			  ]
+				$schema: "https://vega.github.io/schema/vega-lite/v5.json",
+			 	width: width,
+			 	height: height,			  	
+			 	padding: 1,
+			 	center: true,
+			 	data: {
+			   		name: "tax_provision",
+			     	values: taxProvisionData,
+			     	format: { type: "json" }				     				      
+				},					
+			  	mark: "bar",
+			  	encoding: {
+			    	x: {field: "year", title: /*[[#{tax.year}]]*/''},
+			    	y: {field: "final_balance", type: "quantitative", title: /*[[#{account.finalBalance}]]*/''},
+			        tooltip: {field: "finalBalanceAsString"}			    	
+			  	}
 			})			
 				
 			vegaEmbed('#visTaxProvision', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });

@@ -1,17 +1,17 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<div class="ui large modal one column unbounded centered aligned grid" id="modal_shareholding_graph" th:fragment="shareholding_graph">
+	<div class="ui modal one column unbounded centered aligned grid" id="modal_tax_provision_graph" th:fragment="tax_provision_graph">
 		<i class="close icon"></i>
 		   <div class="column aligned grid">
-       			<h1><span th:text="#{taxpayers.analysis.general.view.shareholdings}"></span></h1>	
+       			<h1><span th:text="#{taxpayers.analysis.general.view.tax.provision}"></span></h1>	
    			</div>	
-		<div style="width: 100%; display: flex;" id="visShareholding"></div>
+		<div style="width: 100%; display: flex;" id="visTaxProvision"></div>
 	</div>		
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		function showShareholdingGraph(width,height) {
+		function showTaxProvisionGraph(width,height) {
 		
 		 	let spec = ({
 				$schema: "https://vega.github.io/schema/vega/v5.json",
@@ -21,14 +21,14 @@
 			  	center: true,
 			  	data: [
 			    {
-			      name: "shareholding",
-			      values: shareholdingData,
+			      name: "tax_provision",
+			      values: taxProvisionData,
 			      format: { type: "json" },
 			      transform: [
-			        { type: "nest", keys: ["shareholderId"] },
+			        { type: "nest", keys: ["year"] },
 			        {
 			          type: "treemap",
-			          field: "shareAmount",
+			          field: "final_balance",
 			          paddingInner: 1,
 			          size: [{ signal: "width" }, { signal: "height" }]
 			        }
@@ -40,7 +40,7 @@
 			    {
 			      name: "color",
 			      type: "ordinal",
-			      domain: { data: "shareholding", field: "shareholderName" },
+			      domain: { data: "tax_provision", field: "year" },
 			      range: { scheme: "category20" }
 			    }
 			  ],
@@ -48,15 +48,15 @@
 			  marks: [
 			    {
 			      type: "rect",
-			      from: { data: "shareholding" },
+			      from: { data: "tax_provision" },
 			      encode: {
 					enter: {          
 						tooltip: {
-							signal: '{ [[#{shareholding.id}]]: datum.shareholderId, [[#{share.class}]]: datum.shareClass, [[#{share.type}]]: datum.shareType, [[#{share.amount}]]: datum.shareAmountAsString, [[#{share.percentage}]]: datum.sharePercentageAsString, [[#{share.quantity}]]: datum.shareQuantityAsString}',
+							signal: '{ [[#{account.finalBalance}]]: datum.finalBalanceAsString}',
 			            }
 			        },
 			        update: {
-			          fill: { scale: "color", field: "shareholderName", opacity: 0.4 },
+			          fill: { scale: "color", field: "year", opacity: 0.4 },
 			          x: { field: "x0" },
 			          x2: { field: "x1" },
 			          y: { field: "y0" },
@@ -66,7 +66,7 @@
 			    },
 			    {
 		        type: "text",
-		        from: {"data": "shareholding"},
+		        from: {"data": "tax_provision"},
 		        interactive: false,
 		        encode: {
 		          enter: {
@@ -74,7 +74,7 @@
 		            align: {"value": "center"},
 		            baseline: {"value": "middle"},
 		            fill: {"value": "#000"},
-		            text: {"field": "shareholderName"}
+		            text: {"field": "year"}
 		          },
 		          update: {
 		            x: {"signal": "0.5 * (datum.x0 + datum.x1)"},
@@ -85,8 +85,8 @@
 			  ]
 			})			
 				
-			vegaEmbed('#visShareholding', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
-			$("#visShareholding").show()				
+			vegaEmbed('#visTaxProvision', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$("#visTaxProvision").show()				
 			
 		}
 		

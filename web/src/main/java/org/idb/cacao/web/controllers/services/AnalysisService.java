@@ -76,6 +76,7 @@ import org.idb.cacao.web.utils.Script;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -93,6 +94,9 @@ public class AnalysisService {
 	
 	@Autowired
 	private Environment env;
+	
+	@Autowired
+	private MessageSource messageSource;
 
 	private final String BALANCE_SHEET_INDEX = IndexNamesUtils.formatIndexNameForPublishedData("Balance Sheet Monthly");
 	private final String COMPUTED_STATEMENT_INCOME_INDEX = IndexNamesUtils
@@ -1528,7 +1532,7 @@ public class AnalysisService {
 
 		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(index);
-
+		
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		// Filter by taxpayer
 		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
@@ -1571,15 +1575,21 @@ public class AnalysisService {
 					+ " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
+		
+		final String type = DECLARED_STATEMENT_INCOME_INDEX.equals(index) ? 
+				messageSource.getMessage("taxpayers.analysis.statement.income.declared.values", null, LocaleContextHolder.getLocale()) : 
+					messageSource.getMessage("taxpayers.analysis.statement.income.calculated.values", null, LocaleContextHolder.getLocale());
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
 			Sum amount = agg.get("amount");
 			Map<String, Object> instance = new HashMap<>();
+			instance.put("type", type);
 			instance.put("year", values[0]);
 			instance.put("statementOrder", values[1]);
 			instance.put("statementName", values[2]);
 			instance.put("value", amount.getValue());
+			instance.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));			
 			return instance;
 		};
 
@@ -1641,12 +1651,56 @@ public class AnalysisService {
 			Map<String,Object> map = hit.getSourceAsMap();
 			Double value = (Double)map.getOrDefault("final_balance",0d);
 			map.put("finalBalanceAsString", FormatUtils.numberFormat.format(value));
+			removeUnecessaryFields(map);
 			instances.add(map);
 		});
 
 		// Get information
 		return instances;
 
+	}
+	
+	static String[] fieldsToRemove = {
+	        "taxperiod_number",
+	        "template_version",
+	        "line",
+	        "account_subcategory_tag",
+	        "month_number",
+	        "account_category",
+	        "amount_debits",
+	        "taxpayer_name",
+	        "account_category_name_es",
+	        "taxpayer_qualifier_5",
+	        "final_balance_debit_credit",
+	        "taxpayer_qualifier_4",
+	        "taxpayer_qualifier_3",
+	        "taxpayer_qualifier_2",
+	        "account_description",
+	        "account_name",
+	        "taxpayer_qualifier_1",
+	        "final_balance_with_sign",
+	        "timestamp",
+	        "account_subcategory",
+	        "tax_year",
+	        "tax_payer_id",
+	        "account_category_tag",
+	        "template_name",
+	        "account_category_name",
+	        "month",
+	        "book_entries",
+	        "taxpayer_id",
+	        "account_subcategory_name_es",
+	        "initial_balance_debit_credit",
+	        "account_code",
+	        "account_subcategory_name",
+	        "amount_credits",
+	        "initial_balance",
+	        "initial_balance_with_sign",
+	        "doc_timestamp" };
+	
+	private void removeUnecessaryFields(Map<String, Object> map) {	
+		for ( String field : fieldsToRemove )
+			map.remove(field);	
 	}
 
 	/**
@@ -1711,6 +1765,7 @@ public class AnalysisService {
 		}
 
 		String[] groupBy = { "year", "account_code" };
+		Map<String,Double> yearValues = new HashMap<>();
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
@@ -1720,15 +1775,32 @@ public class AnalysisService {
 			Sum amount = agg.get("final_balance");
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
-			instance.put("account_code", values[1]);
-			instance.put("account_name", accountName);
-			instance.put("value", amount.getValue());
+			Map<String,Object> instanceValues = new HashMap<>();
+			instanceValues.put("account_code", values[1]);
+			instanceValues.put("account_name", accountName);
+			instanceValues.put("value", amount.getValue());
+			instanceValues.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));
+			instanceValues.put("title", values[0] + ": " + accountName);
+			instance.put("values", instanceValues);
+			
+			yearValues.compute((String)values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
+			
 			return instance;
 		};
 
 		// Get information
 		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
 				function);
+		
+		for ( String key : yearValues.keySet() ) {
+			for ( Map<String, Object> map : instances ) {
+				if ( key.equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", yearValues.get(key));
+					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
+				}
+			}
+		}
+		
 		return instances;
 
 	}
@@ -1950,8 +2022,7 @@ public class AnalysisService {
 
 		}); 
 
-		return instances.values().stream()
-				.filter(instance->instance.getDifference() < 0).sorted().collect(Collectors.toList());
+		return instances.values().stream().sorted().collect(Collectors.toList());
 	}
 
 	/**

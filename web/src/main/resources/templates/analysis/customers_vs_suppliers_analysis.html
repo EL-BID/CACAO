@@ -234,14 +234,22 @@
 			        //data - an array of all the row data objects in this group
 			        //group - the group component for the group
 			        return value;
-			    },		    
+			    },		
+			    rowFormatter:function(row) {
+			        //row - row component
+
+			        var data = row.getData();
+			        if(data.difference < 0){
+			            row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.customers.vs.suppliers.difference')}]]*/ "#FFFDDE"; //apply css change to row element				            
+			        }
+				},
 			    columnDefaults:{
 					tooltip:function(cell) {
 						row = cell.getRow();
 						id = row.getCell("customerId");
 			            return customerId + ": " + id.getValue();
 			        },
-					headerTooltip:false,					
+					headerTooltip:false					
 			    },
 				columns:[ //Define Table Columns
 					{title: /*[[#{month}]]*/ "Month", field:"month", hozAlign:"left", headerSort:false, visible:false},

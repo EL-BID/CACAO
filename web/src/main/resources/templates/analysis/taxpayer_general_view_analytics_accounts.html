@@ -15,6 +15,9 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		// Keeps data for graph use
+		var analyticsAccountsData = [];
+	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -48,10 +51,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 		
+			        analyticsAccountsData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='showGraphShareholders' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -81,9 +86,9 @@
 			    },				    
 				columns:[ //Define Table Columns
 						{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"left", headerSort:true, headerHozAlign:"left", visible:false},
-						{title: /*[[#{account.code}]]*/ "Account Code", field:"account_code", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
-						{title: /*[[#{account.name}]]*/ "Account Name", field:"account_name", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
-						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"value", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
+						{title: /*[[#{account.code}]]*/ "Account Code", field:"values.account_code", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
+						{title: /*[[#{account.name}]]*/ "Account Name", field:"values.account_name", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
+						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"values.value", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
 							headerHozAlign:"right", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}},
 				],
@@ -97,6 +102,15 @@
 					tableAnalyticsAccounts.download("xlsx", getFileName(6/*seach type*/), 
 							{sheetName: getSheetName(6/*search type*/)});				    
 				});
+				document.getElementById('showGraphShareholders').addEventListener("click", function(){					
+					$('#modal_analytics_accounts_graph').modal('show');
+					let width = $("#modal_analytics_accounts_graph").width() * .9;
+					let height = window.screen.height * .5;
+					window.dispatchEvent(new Event('height'));
+					showAnalyticsAccountsGraph(width,height);
+					window.dispatchEvent(new Event('resize'));					
+					
+				});				
 			});
 		
 		}

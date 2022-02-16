@@ -1,0 +1,106 @@
+ <!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+
+	<div class="ui large modal one column unbounded centered aligned grid" id="modal_analytics_accounts_graph" th:fragment="analytics_accounts_graph">
+		<i class="close icon"></i>
+		   <div class="column aligned grid">
+       			<h1><span th:text="#{taxpayers.analysis.general.view.major.analytics.accounts}"></span></h1>	
+   			</div>	
+		<div style="width: 100%; display: flex;" id="visAnalyticsAccounts"></div>
+	</div>		
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		function showAnalyticsAccountsGraph(width,height) {
+		
+		 	let spec = ({
+				$schema: "https://vega.github.io/schema/vega/v5.json",
+			  	"width": width,
+			  	"height": height,			  	
+			  	padding: 5,
+			  	center: true,
+			  	data: [
+			    	{name: "analyticsAccounts",
+			      	values: analyticsAccountsData,
+			      	format: { type: "json" },
+			      	transform: [
+			        	{ type: "nest", keys: ["year"] },
+			        	{type: "treemap",
+						field: "yearValue",
+			        	paddingInner: 1,
+			        	size: [{ signal: "width" }, { signal: "height" }]}
+			        ]},
+			        {name: "values",
+			        source: "analyticsAccounts",
+			        transform: [{ type: "filter", expr: "datum.values" }]
+			        }
+			  ],
+
+			  scales: [
+			    {
+			      name: "color",
+			      type: "ordinal",
+			      domain: { data: "analyticsAccounts", field: "year" },
+			      range: { scheme: "category20" }
+			    }
+			  ],
+
+			  marks: [
+			    {type: "rect",
+			     from: {data: "analyticsAccounts"},
+			     encode: {
+					enter: {          
+						tooltip: {
+							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{account.name}]]: datum.values.account_name, [[#{account.finalBalance}]]: datum.values.valueAsString}',
+				        }
+				    },
+					update: {
+			        	fill: { scale: "color", field: "year", opacity: 0.4 },
+						x: {field: "x0"},
+						x2: {field: "x1"},
+						y: {field: "y0"},
+						y2: {field: "y1"}
+						//tooltip: {field: "values.valueAsString"} 
+					}
+				}
+			    },
+			    {type: "rect",
+				from: { data: "values" },
+				encode: {					
+					update: {
+						fill: { scale: "color", field: "value", opacity: 0.4 },
+			          	x: { field: "x0" },
+			          	x2: { field: "x1" },
+			          	y: { field: "y0" },
+			          	y2: { field: "y1" }
+					},
+					tooltip: { field: "valueAsString" }
+				}
+			    },
+			    {type: "text",
+		        from: {data: "analyticsAccounts"},
+		        interactive: false,
+		        encode: {
+		          enter: {
+		            font: {value: "Helvetica Neue, Arial"},
+		            align: {value: "center"},
+		            baseline: {value: "middle"},
+		            fill: {value: "#000"},
+		            text: {field: "values.title"}
+		          },
+		          update: {
+		            x: {signal: "0.5 * (datum.x0 + datum.x1)"},
+		            y: {signal: "0.5 * (datum.y0 + datum.y1)"}
+		          }
+		        }
+		      }
+			  ]
+			})			
+				
+			vegaEmbed('#visAnalyticsAccounts', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$("#visAnalyticsAccounts").show()				
+			
+		}
+		
+	</script>
+</html>

@@ -56,7 +56,7 @@
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
-								"<button id='showGraphShareholders' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
+								"<button id='showGraphAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -99,7 +99,7 @@
 				document.getElementById('exportXLSShareholders').addEventListener("click", function(){
 					tableShareholders.download("xlsx", getFileName(2), {sheetName:getSheetName(2)});				    
 				});
-				document.getElementById('showGraphShareholders').addEventListener("click", function(){					
+				document.getElementById('showGraphAnalyticsAccounts').addEventListener("click", function(){					
 					$('#modal_shareholders_graph').modal('show');
 					let width = $("#modal_shareholders_graph").width() * .9;
 					let height = window.screen.height * .5;

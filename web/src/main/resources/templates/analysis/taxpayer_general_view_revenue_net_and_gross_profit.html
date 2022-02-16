@@ -27,6 +27,10 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		// Keeps data for graph use
+		var declaredData = [];
+		var calculatedData = [];
+	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -65,10 +69,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 		
+			        declaredData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+											"<button id='showGraphRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -117,6 +123,16 @@
 				document.getElementById('exportXLSRevenueNetGrossProfitDeclared').addEventListener("click", function(){
 					tableRevenueNetGrossProfitDeclared.download("xlsx", getFileName(3), {sheetName:getSheetName(3)});				    
 				});
+				
+				document.getElementById('showGraphRevenueNetGrossProfitDeclared').addEventListener("click", function(){					
+					$('#modal_revenue_net_and_gross_profit_graph').modal('show');
+					let width = $("#modal_revenue_net_and_gross_profit_graph").width() * .3;
+					let height = window.screen.height * .25;
+					window.dispatchEvent(new Event('height'));
+					showRevenueNetAndGrossProfitGraph(width,height);
+					window.dispatchEvent(new Event('resize'));					
+					
+				});				
 			});
 		
 		}
@@ -147,10 +163,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.
 		
+			        calculatedData = response;
 			        console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLSRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLSRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='showGraphRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",	
 				locale:'xx',
 				langs:{
 			        "xx":{
@@ -199,6 +217,17 @@
 				document.getElementById('exportXLSRevenueNetGrossProfitCalculated').addEventListener("click", function(){
 					tableRevenueNetGrossProfitCalculated.download("xlsx", getFileName(4), {sheetName:getSheetName(4)});				    
 				});
+				
+				document.getElementById('showGraphRevenueNetGrossProfitCalculated').addEventListener("click", function(){
+					$('.large.modal');
+					$('#modal_revenue_net_and_gross_profit_graph').modal('show');
+					let width = $("#modal_revenue_net_and_gross_profit_graph").width() * .25;
+					let height = window.screen.height * .25;
+					window.dispatchEvent(new Event('height'));
+					showRevenueNetAndGrossProfitGraph(width,height);
+					window.dispatchEvent(new Event('resize'));					
+					
+				});					
 			});
 		
 		}		

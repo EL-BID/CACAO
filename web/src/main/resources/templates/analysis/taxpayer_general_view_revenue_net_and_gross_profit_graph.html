@@ -1,0 +1,92 @@
+ <!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+
+	<div class="ui large modal two column unbounded centered aligned grid" id="modal_revenue_net_and_gross_profit_graph" th:fragment="revenue_net_and_gross_profit_graph">
+		<i class="close icon"></i>
+		<div class="row">
+		<div class="one column aligned grid">
+	       		<h1><span th:text="#{account.subcategory.revenue.net}"></span></h1>	
+			</div>
+			<div class="one column aligned grid">
+	       		<h1><span th:text="#{account.gross.profit}"></span></h1>	
+			</div>
+		</div>
+		<div class="row">
+			<div class="one column aligned grid" style="width: 100%; display: flex;" id="visRevenue"></div>
+			<div class="one column aligned grid" style="width: 100%; display: flex;" id="visGrossProfit"></div>
+		</div>
+	</div>		
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		function showRevenueNetAndGrossProfitGraph(width,height) {
+			
+			let revenueData = [];
+			let grossProfitData = [];
+			
+			for ( i = 0; i < declaredData.length; i++ ) {
+				if ( declaredData[i].statementOrder=='01')
+					revenueData.push(declaredData[i]);
+				else
+					grossProfitData.push(declaredData[i]);
+			}
+			
+			for ( i = 0; i < calculatedData.length; i++ ) {
+				if ( calculatedData[i].statementOrder=='01')
+					revenueData.push(calculatedData[i]);
+				else
+					grossProfitData.push(calculatedData[i]);
+			}
+		
+		 	let specRevenue = ({
+				$schema: "https://vega.github.io/schema/vega-lite/v5.json",
+			 	width: width,
+			 	height: height,			  	
+			 	padding: 5,
+			 	center: true,
+			 	data: {
+			   		name: "revenue",
+			     	values: revenueData,
+			     	format: { type: "json" }				     				      
+				},					
+			  	mark: "bar",
+			  	encoding: {
+			    	x: {field: "year", title: /*[[#{tax.year}]]*/''},
+			    	y: {field: "value", type: "quantitative", title: /*[[#{value}]]*/''},
+			    	xOffset: {field: "type"},
+			    	color: {field: "type", "title": null, "legend": {"offset": 10, "orient": "bottom"}},
+			    	tooltip: {field: "valueAsString"}
+			  	}
+			})
+			
+			let specGrossProfit = ({
+				$schema: "https://vega.github.io/schema/vega-lite/v5.json",
+			 	width: width,
+			 	height: height,			  	
+			 	padding: 5,
+			 	center: true,
+			 	data: {
+			   		name: "grossProfit",
+			     	values: grossProfitData,
+			     	format: { type: "json" }				     				      
+				},					
+			  	mark: "bar",
+			  	encoding: {
+			    	x: {field: "year", title: /*[[#{tax.year}]]*/''},
+			    	y: {field: "value", type: "quantitative", title: /*[[#{value}]]*/''},
+			    	xOffset: {field: "type"},
+			    	color: {field: "type", "title": null, "legend": {"offset": 10, "orient": "bottom"}},
+			    	tooltip: {field: "valueAsString"}
+			  	}
+			})
+				
+			vegaEmbed('#visRevenue', specRevenue, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$("#visRevenue").show()				
+			
+			vegaEmbed('#visGrossProfit', specGrossProfit, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			$("#visGrossProfit").show()
+			
+		}
+		
+	</script>
+</html>
