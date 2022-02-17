@@ -467,6 +467,118 @@ public class ExcelParserTests {
 		
 	}
 
+	/**
+	 * Same as 'testColumnsOfNamedCells', but use cell range references instead of cell names.
+	 * 
+	 * Test the sample file 'ColumnsOfNamedCells.xlsx' with the input mapping given as cell ranges.
+	 */
+	@Test
+	void testColumnsOfNamedCells2() throws Exception {
+		
+		Resource sampleFile = new ClassPathResource("/samples/ColumnsOfNamedCells.xlsx");
+		assertTrue(sampleFile.exists());
+		
+		DocumentTemplate template = new DocumentTemplate();
+		template.setName("Simple Test");
+		template.setVersion("2.0");
+		template.addField(new DocumentField("Field for Id").withFieldMapping(FieldMapping.TAXPAYER_ID).withFieldType(FieldType.CHARACTER));
+		template.addField(new DocumentField("Field for Name").withFieldType(FieldType.CHARACTER));
+		template.addField(new DocumentField("Field for Year").withFieldMapping(FieldMapping.TAX_YEAR).withFieldType(FieldType.INTEGER));
+		template.addField(new DocumentField("Field for Product Code").withFieldType(FieldType.CHARACTER).withRequired(Boolean.TRUE));
+		template.addField(new DocumentField("Field for Product Name").withFieldType(FieldType.CHARACTER).withRequired(Boolean.TRUE));
+		template.addField(new DocumentField("Field for Unity Price").withFieldType(FieldType.DECIMAL).withRequired(Boolean.TRUE));
+		
+		DocumentInput inputSpec = new DocumentInput();
+		inputSpec.setFormat(DocumentFormat.XLS);
+		inputSpec.setInputName("Simple Test Excel");
+		template.addInput(inputSpec);
+		
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Field for Id")
+				.withCellName("E4"));
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Field for Name")
+				.withCellName("E3"));
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Field for Year")
+				.withCellName("E5"));
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Field for Product Code")
+				.withCellName("C8:C13"));
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Field for Product Name")
+				.withCellName("D8:D13"));
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Field for Unity Price")
+				.withCellName("E8:E13"));
+
+		try (ExcelParser parser = new ExcelParser();) {
+			
+			parser.setPath(sampleFile.getFile().toPath());
+			parser.setDocumentInputSpec(inputSpec);
+			parser.start();
+			
+			try (DataIterator iterator = parser.iterator();) {
+				
+				ValidationContext context = new ValidationContext();
+				context.setDocumentTemplate(template);
+				context.setDocumentUploaded(new DocumentUploaded());
+
+				assertTrue(iterator.hasNext(), "Should find the first record");
+				Map<String,Object> record = iterator.next();
+				assertEquals("Gustavo", toString(record.get("Field for Name")));
+				assertEquals("1234", toString(record.get("Field for Id")));
+				assertEquals("2021", toString(record.get("Field for Year")));
+				assertEquals("1000", toString(record.get("Field for Product Code")));
+				assertEquals("IPhone", toString(record.get("Field for Product Name")));
+				assertEquals("1000", toString(record.get("Field for Unity Price")));
+				context.addParsedContent(record);
+
+				assertTrue(iterator.hasNext(), "Should find the second record");
+				record = iterator.next();
+				assertEquals("Gustavo", toString(record.get("Field for Name")));
+				assertEquals("1234", toString(record.get("Field for Id")));
+				assertEquals("2021", toString(record.get("Field for Year")));
+				assertEquals("2000", toString(record.get("Field for Product Code")));
+				assertEquals("IPad", toString(record.get("Field for Product Name")));
+				assertEquals("800", toString(record.get("Field for Unity Price")));
+				context.addParsedContent(record);
+
+				assertTrue(iterator.hasNext(), "Should find the third record");
+				record = iterator.next();
+				assertEquals("Gustavo", toString(record.get("Field for Name")));
+				assertEquals("1234", toString(record.get("Field for Id")));
+				assertEquals("2021", toString(record.get("Field for Year")));
+				assertEquals("3000", toString(record.get("Field for Product Code")));
+				assertEquals("Charger", toString(record.get("Field for Product Name")));
+				assertEquals("50", toString(record.get("Field for Unity Price")));
+				context.addParsedContent(record);
+
+				assertFalse(iterator.hasNext(), "Should not find any more records!");
+				
+				Validations validations = new Validations(context, /*domainTableRepository*/null);
+				
+				validations.addTaxPayerInformation();
+				assertEquals("1234", context.getDocumentUploaded().getTaxPayerId(), "The taxpayer Id does not correspond to what is expected");
+				assertEquals(2021, context.getDocumentUploaded().getTaxYear(), "The tax year does not correspond to what is expected");
+				assertNull(context.getDocumentUploaded().getTaxMonth(), "There should not be indication of month");
+				assertEquals(2021, context.getDocumentUploaded().getTaxPeriodNumber(), "The period number does not correspond to what is expected");
+				
+				validations.checkForFieldDataTypes();
+				validations.checkForRequiredFields();
+				
+				assertFalse(context.hasAlerts(), "There should be no alerts");
+			}
+			
+		}		
+		
+	}
+
 	public static String toString(Object value) {
 		if (value instanceof Number) {
 			return String.valueOf(((Number)value).longValue());

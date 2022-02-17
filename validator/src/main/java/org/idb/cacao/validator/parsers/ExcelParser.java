@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -43,6 +45,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.AreaReference;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentInput;
@@ -231,6 +234,35 @@ public class ExcelParser implements FileParser {
 				}
 				else {
 					dataSerie.sheets = sheetsByName;
+				}
+			}
+			else {
+				// If the provided name does not correspond to a named cell, let's try to find out if it corresponds to
+				// a cell range
+				CellRangeAddress cellRange;
+				try {
+					cellRange = CellRangeAddress.valueOf(fieldMapping.getCellName());
+				}
+				catch (Throwable ex) {
+					cellRange = null;
+				}
+				if (cellRange!=null) {
+					List<CellReference> cellReferences = new LinkedList<>();
+					cellRange.forEach(cellAddress->{
+						cellReferences.add(new CellReference(cellAddress.getRow(),cellAddress.getColumn()));
+					});
+					dataSerie.cellReferences = cellReferences.toArray(new CellReference[0]);
+					if (isSameSheet(dataSerie.cellReferences)) {
+						String sheetName = dataSerie.cellReferences[0].getSheetName();
+						if (sheetName!=null) {
+							sheet = sheetsByName.get(sheetName);
+							if (sheet!=null)
+								dataSerie.sheet = sheet;
+						}
+					}
+					else {
+						dataSerie.sheets = sheetsByName;
+					}
 				}
 			}
 			
