@@ -10,6 +10,7 @@
 	href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
+<script src="/js/d3.v7.min.js"></script>
 <script type="text/javascript" src="/js/xlsx.full.min.js"></script>
 <script src="/js/vega.min.js"></script>
 <script src="/js/vega-lite.min.js"></script>
@@ -93,6 +94,16 @@
 		ALERT</div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		let leftSymbol = /*[[#{currency.symbol.prefix}]]*/ "";
+		let rightSymbol = /*[[#{currency.symbol.suffix}]]*/ ""; 
+	
+		vegaEmbed.vega.formatLocale({
+			"decimal": /*[[#{decimal.char}]]*/ '.',
+	      	"thousands": /*[[#{decimal.grouping.separator}]]*/ ',',
+	      	"grouping": [3],
+	      	"currency": [leftSymbol, rightSymbol]
+		});
 	
 		$('.ui.accordion')
 		  .accordion()

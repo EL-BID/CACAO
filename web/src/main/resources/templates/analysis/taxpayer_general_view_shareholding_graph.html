@@ -52,7 +52,7 @@
 			      encode: {
 					enter: {          
 						tooltip: {
-							signal: '{ [[#{shareholding.id}]]: datum.shareholderId, [[#{share.class}]]: datum.shareClass, [[#{share.type}]]: datum.shareType, [[#{share.amount}]]: datum.shareAmountAsString, [[#{share.percentage}]]: datum.sharePercentageAsString, [[#{share.quantity}]]: datum.shareQuantityAsString}',
+							signal: '{ [[#{shareholding.id}]]: datum.shareholderId, [[#{share.class}]]: datum.shareClass, [[#{share.type}]]: datum.shareType, [[#{share.amount}]]: format(datum.shareAmount,"$,.2f"), [[#{share.percentage}]]: format(datum.sharePercentage,",.2%"), [[#{share.quantity}]]: format(datum.shareQuantity,"$,.0f")}',
 			            }
 			        },
 			        update: {

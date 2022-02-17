@@ -114,7 +114,17 @@
 	
 		//Define number format
 		decimalChar = /*[[#{decimal.char}]]*/ ',';
-		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
+		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';	
+	
+		let leftSymbol = /*[[#{currency.symbol.prefix}]]*/ "";
+		let rightSymbol = /*[[#{currency.symbol.suffix}]]*/ ""; 
+	
+		vegaEmbed.vega.formatLocale({
+			"decimal": decimalChar,
+	      	"thousands": decimalGroupSeparator,
+	      	"grouping": [3],
+	      	"currency": [leftSymbol, rightSymbol]
+		});
 		
 		//Define error message var
 		errorQualifierValuesNotFound = /*[[#{qualifier.values.missing}]]*/ '';
@@ -256,56 +266,78 @@
 			else {
 				let yourVlSpec = {
 					$schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-		    	        description: 'A box plot chart with statements data',    	        
-		    	        "width": width,
-		    	        //"width": "container",
-		    	        "height": data.items.length * 50,
-		    	        "data": { "values": data.items },
-		    	        "config": {"mark": {"tooltip": true}},
-		    	        "mark": {"type": "rule"},
-		    	        "encoding": {
-		    	          "y": {"field": "statementName", "type": "nominal", "title": /*[[#{account.statement}]]*/ "Statement",
-		    	        	    "sort": {"field": "statementOrder"},
-		    	                "axis": {"title": null, "labelFontSize": 10, "labelFontWeight": "bold", "labelLimit": 100}}
-		    	        },
-		    	        "layer": [
-		    	          {
-		    	            "mark": {"type": "rule"},
-		    	            "encoding": {
-		    	              "x": {
-		    	                "field": "min",
-		    	                "type": "quantitative",          
-		    	                "scale": {
-		    	                  "zero": false,
-		    	                  "domain": [data.scaleMin, data.scaleMax]
-		    	                },
-		    	                "title": "Min",
-		    	                "axis": {"title": null}
-		    	              },
-		    	              "x2": {"field": "max", "title": "Max"}
-		    	            }
-		    	          },
-		    	          {
-		    	            "mark": {"type": "bar", "size": 18},
-		    	            "encoding": {
-		    	              "x": {"field": "q1", "type": "quantitative", "title": "Q1"},
-		    	              "x2": {"field": "q3", "title": "Q3"},
-		    	              "color": {"field": "statementName", "type": "nominal", "legend": null, "title": /*[[#{account.statement}]]*/ "Statement"}
-		    	            }
-		    	          },
-		    	          {
-		    	            "mark": {"type": "tick", "color": "white", "size": 18},
-		    	            "encoding": {"x": {"field": "median", "type": "quantitative", "title": "Median"}}
-		    	          },
-		    	          {
-		    	            "transform": [{"flatten": ["normalizedOutliers"]}],
-		    	            "mark": {"type": "point", "style": "boxplot-outliers"},
-		    	            "encoding": {
-		    	              "x": {"field": "normalizedOutliers.value", "type": "quantitative", "title": /*[[#{taxpayers.analysis.general.outliers}]]*/ "Outliers"}, 
-		    	              		"tooltip":{"field": "normalizedOutliers.taxpayerName"}}
-		    	          }
-		    	        ]
-		   	        };	      
+	    	        description: 'A box plot chart with statements data',    	        
+	    	        width: width,	    	        
+	    	        height: data.items.length * 50,
+	    	        data: { values: data.items },
+	    	        //config: {mark: {"tooltip": true}},
+	    	        mark: {type: "rule"},
+	    	        encoding: {
+						y: {
+							field: "statementName", 
+	    	        	  	type: "nominal", 
+	    	        	  	title: /*[[#{account.statement}]]*/ "Statement",
+	    	        	  	sort: {field: "statementOrder"},
+	    	              	axis: {title: null, labelFontSize: 10, labelFontWeight: "bold", labelLimit: 100}}
+	    	        },
+	    	        layer: [{
+						mark: {type: "rule", strokeWidth: 4, color: "#9e7911" },
+	    	            encoding: {
+							x: { field: "min", type: "quantitative", formatType: "number", format: ",.2f",
+	    	                		scale: {zero: false, domain: [data.scaleMin, data.scaleMax] },
+	    	                	title: /*[[#{minimum}]]*/ "Min",
+	    	                	axis: {"title": null}
+	    	              	},
+	    	              	x2: {field: "max", title: /*[[#{maximum}]]*/ "Max", formatType: "number", format: ",.2f"},
+	    	              	tooltip: [
+	    	              		{field: "statementName", title: /*[[#{account.statement}]]*/ "Statement"},
+	    	                    {field: "minPercentage", type: "quantitative", formatType: "number", format: ",.2%", title: /*[[#{minimum}]]*/ "Min"},
+	    	                    {field: "maxPercentage", type: "quantitative", formatType: "number", format: ",.2%", title: /*[[#{maximum}]]*/ "Max"},
+	    	                    {field: "sum", type: "quantitative", formatType: "number", format: "$,.2f", title: /*[[#{account.finalBalance}]]*/ "Balance"},
+							]
+	    	            }
+					},
+					{
+						mark: {type: "bar", size: 18},
+	    	            encoding: {
+							x: {field: "q1", type: "quantitative", title: /*[[#{q1}]]*/ "Q1", formatType: "number", format: ",.2f"},
+	    	              	x2: {field: "q3", title: /*[[#{q3}]]*/ "Q3", formatType: "number", format: ",.2f"},
+	    	              	color: {field: "statementName", type: "nominal", legend: null, title: /*[[#{account.statement}]]*/ "Statement"},
+	    	              	tooltip: [
+	    	              		{field: "statementName", title: /*[[#{account.statement}]]*/ "Statement"},
+	    	                    {field: "q1Percentage", type: "quantitative", formatType: "number", format: ",.2%", title: /*[[#{q1}]]*/ "Min"},
+	    	                    {field: "q3Percentage", type: "quantitative", formatType: "number", format: ",.2%", title: /*[[#{q3}]]*/ "Max"},
+	    	                    {field: "sum", type: "quantitative", formatType: "number", format: "$,.2f", title: /*[[#{account.finalBalance}]]*/ "Balance"},
+							]
+						}
+					},
+					{
+						mark: {type: "tick", "color": "white", "size": 18, thickness: 2},
+	    	            encoding: {
+	    	            	x: {field: "median", type: "quantitative", title: /*[[#{median}]]*/ "Median"},
+	    	            	tooltip: [
+	    	              		{field: "statementName", title: /*[[#{account.statement}]]*/ "Statement"},
+	    	                    {field: "medianPercentage", type: "quantitative", formatType: "number", format: ",.2%", title: /*[[#{median}]]*/ "Median"},
+	    	                    {field: "sum", type: "quantitative", formatType: "number", format: "$,.2f", title: /*[[#{account.finalBalance}]]*/ "Balance"}
+							]
+	    	            }
+					},
+					{
+						transform: [{flatten: ["normalizedOutliers"]}],
+						mark: {
+							type: "point", style: "boxplot-outliers"},
+	    	            	encoding: {
+	    	            		x: {
+	    	            			field: "normalizedOutliers.value", 
+	    	            					type: "quantitative", 
+	    	            					title: /*[[#{taxpayers.analysis.general.outliers}]]*/ "Outliers", 
+	    	            					formatType: "number", 
+	    	            					format: "$,.2f"}, 
+	    	              		tooltip:{ field : "normalizedOutliers.taxpayerName"}
+	    	            	}
+	    	          }
+	    	        ]
+	   	        };	      
 				vegaEmbed('#vis', yourVlSpec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
 				$("#vis").show()
 			}

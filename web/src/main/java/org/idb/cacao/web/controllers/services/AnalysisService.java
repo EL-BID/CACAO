@@ -528,6 +528,7 @@ public class AnalysisService {
 				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
 						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
 								.field(translate("statement_name") + ".keyword")
+								.subAggregation(AggregationBuilders.sum("sum").field("amount"))
 								.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
 								.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
 								.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation")
@@ -610,9 +611,12 @@ public class AnalysisService {
 					analysisItem.setStatementOrder(statementNumber);
 					analysisItem.setStatementName(statementName);
 
+					Sum sum = statementNameBucket.getAggregations().get("sum");
 					Avg average = statementNameBucket.getAggregations().get("average");
 					MedianAbsoluteDeviation deviation = statementNameBucket.getAggregations().get("deviation");
 
+					double sumValue = sum == null ? 0d
+							: Precision.round(sum.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					double averegaValue = average == null ? 0d
 							: Precision.round(average.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
 					double deviationValue = deviation == null ? 0d
@@ -635,8 +639,9 @@ public class AnalysisService {
 
 						if (!Double.isNaN(analysisItem.getQ1()) && !Double.isNaN(analysisItem.getQ3())
 								&& analysisItem.getQ1() != 0 && analysisItem.getQ3() != 0) {
+							analysisItem.setSum(sumValue);
 							analysisItem.setAverage(averegaValue);
-							analysisItem.setDeviation(deviationValue);
+							analysisItem.setDeviation(deviationValue);							
 							items.add(analysisItem);
 						}
 
@@ -655,6 +660,14 @@ public class AnalysisService {
 			data.setItems(items);
 			updateScale(data);
 			data.setTotalTaxpayers(FormatUtils.quantityFormat.format(taxpayerIds.size()));
+			
+			//Change values to percentage
+//			data.getItems().forEach(item->{
+//				item.setQ1(item.getQ1()/100);
+//				item.setQ3(item.getQ3()/100);
+//				item.setMedian(item.getMedian()/100);
+//				item.setValue(item.getValue()/100);
+//			});
 
 			return data;
 
@@ -712,9 +725,6 @@ public class AnalysisService {
 			}
 
 		}
-
-		// data.getOutliers().sort(null);
-		// data.getItems().sort(null);
 	}
 
 	/**
@@ -1435,7 +1445,7 @@ public class AnalysisService {
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");
 			Sum equityResult = agg.get("equityMethodResult");
-			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue(), equityResult.getValue());
+			return new Shareholding(values, amount.getValue(), percentage.getValue()/100, quantity.getValue(), equityResult.getValue());
 		};
 
 		// Update shareholding information for this taxpayer
@@ -1510,7 +1520,7 @@ public class AnalysisService {
 			Sum amount = agg.get("shareAmount");
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");			
-			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue(), 0d);
+			return new Shareholding(values, amount.getValue(), percentage.getValue()/100, quantity.getValue(), 0d);
 		};
 
 		// Update shareholding information for this taxpayer
@@ -1589,8 +1599,7 @@ public class AnalysisService {
 			instance.put("year", values[0]);
 			instance.put("statementOrder", values[1]);
 			instance.put("statementName", values[2]);
-			instance.put("value", amount.getValue());
-			instance.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));			
+			instance.put("value", amount.getValue());						
 			return instance;
 		};
 
@@ -1649,9 +1658,7 @@ public class AnalysisService {
 		List<Map<String, Object>> instances = new LinkedList<>();
 
 		sresp.getHits().forEach(hit -> {
-			Map<String,Object> map = hit.getSourceAsMap();
-			Double value = (Double)map.getOrDefault("final_balance",0d);
-			map.put("finalBalanceAsString", FormatUtils.numberFormat.format(value));
+			Map<String,Object> map = hit.getSourceAsMap();						
 			removeUnecessaryFields(map);
 			instances.add(map);
 		});
@@ -1784,7 +1791,6 @@ public class AnalysisService {
 			instanceValues.put("account_code", values[1]);
 			instanceValues.put("account_name", accountName);
 			instanceValues.put("value", amount.getValue());
-			instanceValues.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));
 			instanceValues.put("title", values[0] + ": " + accountName);
 			instance.put("values", instanceValues);
 			
@@ -1803,8 +1809,7 @@ public class AnalysisService {
 		for ( String key : yearValues.keySet() ) {
 			for ( Map<String, Object> map : instances ) {
 				if ( key.equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", yearValues.get(key));
-					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
+					map.putIfAbsent("yearValue", yearValues.get(key));					
 				}
 			}
 		}		
@@ -1885,8 +1890,7 @@ public class AnalysisService {
 			Map<String, Object> instanceValues = new HashMap<>();
 			instanceValues.put("customer_id", values[1]);
 			instanceValues.put("customer_name", customerName);			
-			instanceValues.put("value", amount.getValue());			
-			instanceValues.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));
+			instanceValues.put("value", amount.getValue());
 			instanceValues.put("title", values[0] + ": " + customerName);
 			instance.put("values", instanceValues);
 			
@@ -1906,7 +1910,6 @@ public class AnalysisService {
 			for ( Map<String, Object> map : instances ) {
 				if ( key.equals(map.get("year").toString()) ) {
 					map.putIfAbsent("yearValue", yearValues.get(key));
-					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
 				}
 			}
 		}
@@ -2004,7 +2007,6 @@ public class AnalysisService {
 			instanceValues.put("supplier_id", values[1]);
 			instanceValues.put("supplier_name", supplierName);			
 			instanceValues.put("value", amount.getValue());
-			instanceValues.put("valueAsString", FormatUtils.numberFormat.format(amount.getValue()));
 			instanceValues.put("title", values[0] + ": " + supplierName);
 			instance.put("values", instanceValues);
 			
@@ -2024,7 +2026,6 @@ public class AnalysisService {
 			for ( Map<String, Object> map : instances ) {
 				if ( key.equals(map.get("year").toString()) ) {
 					map.putIfAbsent("yearValue", yearValues.get(key));
-					map.put("yearValueAsString", FormatUtils.numberFormat.format(yearValues.get(key)));
 				}
 			}
 		}		

@@ -72,7 +72,7 @@
 					hover: {
 						fill: {value: "orange"},
 						tooltip: {
-							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{supplier.name}]]: datum.values.supplier_name, [[#{supplier.value}]]: datum.values.valueAsString}',
+							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: format(datum.yearValue,"$,.2f"), [[#{supplier.name}]]: datum.values.supplier_name, [[#{supplier.value}]]: format(datum.values.value,"$,.2f")}',
 				        }
 					}
 				}

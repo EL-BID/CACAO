@@ -37,6 +37,8 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 	
 	private double median;
 	
+	private double sum;
+	
 	private double average;
 	
 	private double deviation;
@@ -66,9 +68,17 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 	public double getQ1() {
 		return q1;
 	}
+	
+	public double getQ1Percentage() {
+		return q1/100;
+	}
 
 	public void setQ1(double q1) {
 		this.q1 = q1;
+	}
+	
+	public double getQ3Percentage() {
+		return q3/100;
 	}
 
 	public double getQ3() {
@@ -87,13 +97,25 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 		return Precision.round((q3 + (1.5d * getIIQ()) ), 2, BigDecimal.ROUND_HALF_DOWN);
 	}
 	
+	public double getMaxPercentage() {
+		return getMax() / 100;
+	}	
+	
 	public double getMin() {
 		return Precision.round((q1 - (1.5d * getIIQ()) ), 2, BigDecimal.ROUND_HALF_DOWN);
 	}
 	
+	public double getMinPercentage() {
+		return getMin() / 100;
+	}	
+	
 	public double getMedian() {
 		return median;
 	}
+	
+	public double getMedianPercentage() {
+		return getMedian() / 100;
+	}	
 
 	public void setMedian(double median) {
 		this.median = median;
@@ -128,6 +150,14 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 		this.normalizedOutliers = normalizedOutliers;
 	}
 	
+	public double getSum() {
+		return sum;
+	}
+
+	public void setSum(double sum) {
+		this.sum = sum;
+	}
+
 	public double getAverage() {
 		return average;
 	}

@@ -1,4 +1,4 @@
- <!DOCTYPE HTML>
+<!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
 	<div class="ui large modal one column unbounded centered aligned grid" id="modal_analytics_accounts_graph" th:fragment="analytics_accounts_graph">
@@ -12,7 +12,7 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		function showAnalyticsAccountsGraph(width,height) {
-		
+			
 		 	let spec = ({
 				$schema: "https://vega.github.io/schema/vega/v5.json",
 			  	"width": width,
@@ -44,7 +44,7 @@
 			      range: { scheme: "category20" }
 			    }
 			  ],
-
+			  
 			  marks: [
 			    {type: "rect",
 			     from: {data: "analyticsAccounts"},
@@ -72,9 +72,10 @@
 					hover: {
 						fill: {value: "orange"},
 						tooltip: {
-							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: datum.yearValueAsString, [[#{account.name}]]: datum.values.account_name, [[#{account.finalBalance}]]: datum.values.valueAsString}',
+							signal: '{ [[#{tax.year}]]: datum.year, [[#{year.value}]]: format(datum.yearValue,"$,.2f"), [[#{account.name}]]: datum.values.account_name, [[#{account.finalBalance}]]: format(datum.values.value,"$,.2f")}'
 				        }
-					}
+					},
+					tooltip: {field: "value"}			
 				}
 			    },
 			    {type: "text",
@@ -91,13 +92,13 @@
 		          update: {
 		            x: {signal: "0.5 * (datum.x0 + datum.x1)"},
 		            y: {signal: "0.5 * (datum.y0 + datum.y1)"}
-		          }
+		          }		          
 		        }
 		      }
 			  ]
 			})			
 				
-			vegaEmbed('#visAnalyticsAccounts', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+			vegaEmbed('#visAnalyticsAccounts', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } } );
 			$("#visAnalyticsAccounts").show()				
 			
 		}

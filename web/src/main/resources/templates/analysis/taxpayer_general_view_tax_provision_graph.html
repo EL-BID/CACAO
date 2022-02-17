@@ -14,28 +14,53 @@
 		function showTaxProvisionGraph(width,height) {
 			
 		 	let spec = ({
-				$schema: "https://vega.github.io/schema/vega-lite/v5.json",
+				$schema: "https://vega.github.io/schema/vega/v5.json",
 			 	width: width,
 			 	height: height,			  	
 			 	padding: 1,
 			 	center: true,
-			 	data: {
+			 	data: [{
 			   		name: "tax_provision",
 			     	values: taxProvisionData,
-			     	format: { type: "json" }				     				      
-				},					
-			  	mark: "bar",
-			  	encoding: {
-			    	x: {field: "year", title: /*[[#{tax.year}]]*/''},
-			    	y: {field: "final_balance", type: "quantitative", title: /*[[#{account.finalBalance}]]*/''},
-			        tooltip: {field: "finalBalanceAsString"}			    	
-			  	}
+			     	format: { type: "json" },
+			        transform: [{type:"collect", sort: {order: "ascending", field: "year" }}]
+				}],
+				scales: [
+					{name: "xscale", type: "band", domain: {data: "tax_provision", field: "year"},
+						range: "width", padding: 0.05, round: true },
+				    {name: "yscale", domain: {data: "tax_provision", field: "final_balance"},
+						nice: true, range: "height"}
+				],
+				axes: [
+					{orient: "bottom", scale: "xscale" },
+					{orient: "left", scale: "yscale" }
+				],				
+				marks: [
+					{type: "rect", from: {data: "tax_provision"},
+						encode: { 
+							enter: {
+								x: {scale: "xscale", field: "year"},
+					          	width: {scale: "xscale", band: 1},
+					          	y: {scale: "yscale", field: "final_balance"},
+					          	y2: {scale: "yscale", value: 0}
+					        },
+					        update: { fill: {value: "steelblue"} },
+					        hover: { fill: {value: "orange"},
+					        	tooltip: {
+									signal: '{ [[#{account.finalBalance}]]: format(datum.final_balance,"$,.2f")}',
+						        }
+					       	}
+						}
+					},
+				]
+    
 			})			
 				
 			vegaEmbed('#visTaxProvision', spec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
 			$("#visTaxProvision").show()				
 			
-		}
+			
+		}		
 		
 	</script>
 </html>

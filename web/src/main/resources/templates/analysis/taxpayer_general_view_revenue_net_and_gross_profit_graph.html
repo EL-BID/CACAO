@@ -21,6 +21,9 @@
 	
 		function showRevenueNetAndGrossProfitGraph(width,height) {
 			
+			alert(width);
+			alert(height);			
+			
 			let revenueData = [];
 			let grossProfitData = [];
 			
@@ -36,7 +39,7 @@
 					revenueData.push(calculatedData[i]);
 				else
 					grossProfitData.push(calculatedData[i]);
-			}
+			}			
 		
 		 	let specRevenue = ({
 				$schema: "https://vega.github.io/schema/vega-lite/v5.json",
@@ -55,7 +58,9 @@
 			    	y: {field: "value", type: "quantitative", title: /*[[#{value}]]*/''},
 			    	xOffset: {field: "type"},
 			    	color: {field: "type", "title": null, "legend": {"offset": 10, "orient": "bottom"}},
-			    	tooltip: {field: "valueAsString"}
+			    	tooltip: [      
+						{field: "value", type: "quantitative", title: /*[[#{value}]]*/'', formatType: "number", format:"$,.2f"}
+					]	
 			  	}
 			})
 			
@@ -76,7 +81,9 @@
 			    	y: {field: "value", type: "quantitative", title: /*[[#{value}]]*/''},
 			    	xOffset: {field: "type"},
 			    	color: {field: "type", "title": null, "legend": {"offset": 10, "orient": "bottom"}},
-			    	tooltip: {field: "valueAsString"}
+			    	tooltip: [      
+						{field: "value", type: "quantitative", title: /*[[#{value}]]*/'', formatType: "number", format:"$,.2f"}
+					]			    	
 			  	}
 			})
 				
