@@ -137,12 +137,15 @@ let table = new Tabulator('#table', {
 		[/]
 	]
 })
+
+[# sec:authorize="hasRole('ROLE_TAXPAYER_READ_ALL')"]
 table.on('rowClick', function(e, row) {
     if( e.target.classList.contains('edit') || e.target.classList.contains('trash')) {
         return
     }
     window.location.replace([[@{/taxpayers/}]] + row.getIndex());
 })
+[/]
 
 let showHeaderFilter = true
 let toggleFilter = function() {

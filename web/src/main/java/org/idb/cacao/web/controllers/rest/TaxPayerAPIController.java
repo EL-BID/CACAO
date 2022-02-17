@@ -19,8 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -50,10 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -99,11 +94,8 @@ public class TaxPayerAPIController {
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 	
-	@Autowired
-	private Environment env;
-
 	@Secured({"ROLE_TAXPAYER_READ"})
-	@JsonView(Views.Authority.class)
+	@JsonView(Views.Declarant.class)
 	@GetMapping(value="/taxpayers", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing taxpayers using pagination")
 	public PaginationData<Taxpayer> getUsersWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
@@ -130,26 +122,6 @@ public class TaxPayerAPIController {
 			docs = Page.empty();
 		}		
 		PaginationData<Taxpayer> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
-	}
-	public PaginationData<Taxpayer> getTaxpayers(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("q") Optional<String> filters_as_json) {
-		int currentPage = page.orElse(1);
-		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
-		Optional<AdvancedSearch> filters = SearchUtils.fromJSON(filters_as_json);
-		Page<Taxpayer> taxpayers;
-		if (filters.isPresent() && !filters.get().isEmpty()) {
-			try {
-				taxpayers = SearchUtils.doSearch(filters.get().wiredTo(messageSource), Taxpayer.class, elasticsearchClient, 
-						page, size, Optional.of("taxPayerId"), Optional.of(SortOrder.ASC));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		} else {
-			taxpayers = searchPage(() -> taxpayerRepository
-					.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by("taxPayerId").ascending())));
-		}
-		PaginationData<Taxpayer> result = new PaginationData<>(taxpayers.getTotalPages(), taxpayers.getContent());
 		return result;
 	}
 	

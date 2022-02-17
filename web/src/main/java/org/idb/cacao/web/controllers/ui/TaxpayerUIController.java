@@ -72,7 +72,7 @@ public class TaxpayerUIController {
         return "taxpayers/update-taxpayer";
     }
 
-	@Secured({"ROLE_TAXPAYER_READ"})
+	@Secured({"ROLE_TAXPAYER_READ_ALL"})
 	@GetMapping("/taxpayers/{id}")
     public String showTaxpayerDetails(@PathVariable("id") String id, Model model) {
 		Taxpayer taxpayer = taxPayerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid taxpayer Id:" + id));

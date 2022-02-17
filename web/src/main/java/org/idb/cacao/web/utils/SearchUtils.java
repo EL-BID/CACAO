@@ -182,7 +182,8 @@ public class SearchUtils {
 			final Optional<Integer> page,
 			final Optional<Integer> size,
 			final Optional<String> sortBy,
-			final Optional<SortOrder> sortOrder) throws IOException {	
+			final Optional<SortOrder> sortOrder,
+			final String... includeFields) throws IOException {
 		
 		if (indexName==null || indexName.trim().length()==0)
 			return Page.empty();
@@ -199,7 +200,9 @@ public class SearchUtils {
     	
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
     			.query(query); 
-    	
+    	if(includeFields!=null && includeFields.length>0) {
+    		searchSourceBuilder.fetchSource(includeFields, null);
+    	}
     	if (page.isPresent() && size.isPresent()) {
 	        int  offset = (page.get()-1) * size.get();
 	        searchSourceBuilder.from(offset);
@@ -209,7 +212,6 @@ public class SearchUtils {
     	if (sortBy.isPresent()) {
     		searchSourceBuilder.sort(sortBy.get(), sortOrder.orElse(SortOrder.ASC));
     	}
-        
     	searchRequest.source(searchSourceBuilder);
     	SearchResponse sresp = null;    	
 		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
