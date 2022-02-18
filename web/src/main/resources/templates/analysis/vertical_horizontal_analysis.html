@@ -276,6 +276,8 @@
 		    	return "";
 		    return value;
 		}
+		
+		//$('#finalDate').calendar('get date'))
 	  
 		let table = new Tabulator('#table', {
 			index: 'id',
@@ -290,7 +292,7 @@
 				console.log(params)
 				p = new URLSearchParams()
 				p.set('taxpayerId', document.getElementById("taxpayer").value)
-				p.set('finalDate', $('#finalDate').calendar('get date'))
+				p.set('finalDate', luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate()) 
 				p.set('zeroBalance', $('#zeroBalance').is(":checked"))
 				p.set('comparisonPeriods', $('#period').val())
 				p.set('analysisType', $('#analysisType').val())

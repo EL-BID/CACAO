@@ -81,6 +81,12 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service methods to get values for analysis over taxpayers informations 
+ * 
+ * @author Rivelino Patrício
+ *
+ */
 @Service
 public class AnalysisService {
 
@@ -428,7 +434,7 @@ public class AnalysisService {
 	 *                          included
 	 * @param additionalPeriods A list os additional periods to search balance
 	 *                          values
-	 * @return
+	 * @return	A {@link List} of {@link Map} of accounts with it's attributes 
 	 */
 	public List<Map<String, Object>> getMapOfAccounts(String taxpayerId, YearMonth period, boolean fetchZeroBalance,
 			List<YearMonth> additionalPeriods) {
@@ -501,7 +507,11 @@ public class AnalysisService {
 	 * 
 	 * @param taxpayerIds A {@link List} of taxpayers to tilter for
 	 * @param sourceData  An indication of source data (index) to use
-	 * @param year        A year to filter for *
+	 * 		Valid values for sourceData are:
+	 * 		1 - SOURCE_JOURNAL
+	 * 		2 - SOURCE_DECLARED_INCOME_STATEMENT
+	 * @param year        A year to filter for 
+	 * 
 	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
 	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int sourceData, int year) {
@@ -553,7 +563,13 @@ public class AnalysisService {
 	 * @param qualifier      A name of qualifier to search values
 	 * @param qualifierValue A value for qualifier
 	 * @param sourceData     An indication of source values (index) to use
+	 * 		Valid values for sourceData are:
+	 * 		1 - SOURCE_JOURNAL
+	 * 		2 - SOURCE_DECLARED_INCOME_STATEMENT
+	 * 		3 - SOURCE_BOOTH_INCOME_STATEMENT
+	 * 		4 - SOURCE_SHAREHOLDERS 
 	 * @param year           A year of values to search
+	 * 
 	 * @return A {@link AnalysisData} with all data about all taxpayers for
 	 *         specified parameters
 	 */
@@ -980,6 +996,7 @@ public class AnalysisService {
 	 * Search and return values for a specified qualifier
 	 * 
 	 * @param qualifier Qualifier to search
+	 * 
 	 * @return A {@link List} of values for specified qualifier
 	 */
 	@Cacheable("qualifierValues")
@@ -1038,6 +1055,12 @@ public class AnalysisService {
 	 * @param sourceData An indication of source data (index) to use If sourceData
 	 *                   isn't #SOURCE_JOURNAL or #SOURCE_DECLARED_INCOME_STATEMENT,
 	 *                   search for booth to return.
+	 *                   
+	 *		Valid values for sourceData param
+	 *		1 - SOURCE_JOURNAL
+	 *		2 - SOURCE_DECLARED_INCOME_STATEMENT
+	 *		3 - SOURCE_BOOTH_INCOME_STATEMENT (1 and 2 options)
+	 *		4 - SOURCE_SHAREHOLDERS
 	 * 
 	 * @return A list of years present in Accounting Statement Income indexes
 	 */
@@ -1345,6 +1368,15 @@ public class AnalysisService {
 	 * @param taxpayerId A taxpayer to search data for
 	 * @param year       A specific year to search
 	 * @param searchType A specific search to do
+	 * 		Valid values for searchType:
+	 * 		1 - SEARCH_SHAREHOLDINGS
+	 * 		2 - SEARCH_SHAREHOLDERS
+	 * 		3 - REVENUE_NET_AND_GROSS_PROFIT_DECLARED
+	 * 		4 - REVENUE_NET_AND_GROSS_PROFIT_COMPUTED
+	 * 		5 - TAX_PROVISION
+	 * 		6 - ANALYTICS_ACCOUNTS
+	 * 		7 - CUSTOMERS
+	 * 		8 - SUPPLIERS
 	 * 
 	 * @return Data about a specified taxpayer for a specific year according with
 	 *         specified search type.

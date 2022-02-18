@@ -33,7 +33,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
-import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.services.AnalysisService;
 import org.idb.cacao.web.dto.AggregatedAccountingFlow;
 import org.idb.cacao.web.dto.AnalysisData;
@@ -55,14 +54,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controller class for all endpoints related to 'analysis' from tax payers
+ * Controller class for all endpoints related to 'analysis' from taxpayers
  * 
  * @author Rivelino Patrício
  *
  */
+@Api(value = "REST API for analysis over taxpayers information")
 @RestController
 @RequestMapping("/api")
 @Tag(name="analysis-api-controller", description="Controller class for all endpoints related to 'TaxPayer' analysis interacting by a REST interface.")
@@ -80,10 +83,21 @@ public class AnalysisAPIController {
 	@Autowired
 	private MessageSource messageSource;
 	
+	@ApiOperation(value = "Get values of vertical and horizontal analysis ", response = List.class, tags = "vertical_horizontal_analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/vertical_horizontal_analysis"})
-	public ResponseEntity<Object> getVerticalHorizontalAnalysis(@RequestParam("taxpayerId") String taxpayerId,
-			@RequestParam("finalDate") String finalDate, @RequestParam("zeroBalance") String zeroBalance, 
+	public ResponseEntity<Object> getVerticalHorizontalAnalysis(
+			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@RequestParam("taxpayerId") String taxpayerId,
+			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate, 
+			@ApiParam(name = "zeroBalance", allowEmptyValue = false, allowMultiple = false, example = "true", required = true, type = "Boolean")
+			@RequestParam("zeroBalance") String zeroBalance, 
+			@ApiParam(name = "comparisonPeriods", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
+				allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
+						"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
+						"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
+						"31=One year after, 32=Two year after, 33=Three year after, 34=Four year after, 35=Five year after")
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -91,12 +105,12 @@ public class AnalysisAPIController {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( finalDate == null || finalDate.length() < 15 ) {
+		if ( finalDate == null /*|| finalDate.length() < 15*/ ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'finalDate'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 
-		YearMonth period = ParserUtils.parseDayMonthDayYear(finalDate);
+		YearMonth period = YearMonth.from(finalDate); //ParserUtils.parseDayMonthDayYear(finalDate);
 		
 		boolean fetchZeroBalance = ( zeroBalance == null ? false : "true".equalsIgnoreCase(zeroBalance) );
 		
@@ -118,8 +132,11 @@ public class AnalysisAPIController {
 	/**
 	 * Given a month and information about comparison periods, creates and returns a {@link List}
 	 * of {@link YearMonth} 	 
+	 * 
 	 * @param basePeriod	The base period
-	 * @param comparisonPeriods	The compatison periods information
+	 * @param comparisonPeriods	The comparison periods information
+	 * 		Parameter comparisonPeriods can assume a value as described in {@link AnalysisAPIController#getVerticalHorizontalAnalysis(String, String, String, int)} method
+	 * 
 	 * @return	A {@link List} of {@link YearMonth}
 	 */
 	private List<YearMonth> getAdditionalPeriods(YearMonth basePeriod, int comparisonPeriods) {
@@ -159,7 +176,7 @@ public class AnalysisAPIController {
 			
 		}
 		
-		else if( comparisonPeriods > 20 && comparisonPeriods < 30 ) { //Months after
+		else if( comparisonPeriods > 20 && comparisonPeriods < 30 ) { //Years after
 			
 			int numMonths = 1;
 			switch (comparisonPeriods) {
@@ -193,21 +210,30 @@ public class AnalysisAPIController {
 		return periods;
 	}
 	
+	@ApiOperation(value = "Get vertical and horizontal additional columns to show in table data ", response = List.class, tags = "vertical_horizontal_view_columns")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/vertical_horizontal_view_columns"})
-	public ResponseEntity<Object> getAnalysisViewColumns(@RequestParam("finalDate") String finalDate, 
-			@RequestParam("comparisonPeriods") int comparisonPeriods, 
+	public ResponseEntity<Object> getAnalysisViewColumns(
+			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate,
+			@ApiParam(name = "comparisonPeriods", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
+					allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
+					"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
+					"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
+					"31=One year after, 32=Two year after, 33=Three year after, 34=Four year after, 35=Five year after")
+			@RequestParam("comparisonPeriods") int comparisonPeriods,
+			@ApiParam(name = "analysisType", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
+						allowableValues = "1=VERTICAL, 2=HORIZONTAL, 3=BOTH")
 			@RequestParam("analysisType") int analysisType ) {
 		
-		if ( finalDate == null || finalDate.length() < 15 ) {
+		if ( finalDate == null /*|| finalDate.length() < 15*/ ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'finalDate'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 
-		YearMonth period = ParserUtils.parseDayMonthDayYear(finalDate);
+		YearMonth period = YearMonth.from(finalDate); ///ParserUtils.parseDayMonthDayYear(finalDate);
 
 		List<YearMonth> allPeriods = getAdditionalPeriods(period, comparisonPeriods);
-		//allPeriods.sort(null);						
 		
 		String horizontal = " " + messageSource.getMessage("horizontal", null, LocaleContextHolder.getLocale()) + "%";
 		String vertical = " " + messageSource.getMessage("vertical", null, LocaleContextHolder.getLocale()) + "%";
@@ -250,11 +276,19 @@ public class AnalysisAPIController {
     	
 	}
 
+	@ApiOperation(value = "Get general analysis data for a specified qualifier and period", response = AnalysisData.class, tags = "general_analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/general_analysis"})
-	public ResponseEntity<Object> getGeneralAnalysis(@RequestParam("qualifier") String qualifier,
+	public ResponseEntity<Object> getGeneralAnalysis(
+			@ApiParam(name = "qualifier", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
+				allowableValues = "qualifier1, qualifier2, qualifier3, qualifier4, qualifier5")
+			@RequestParam("qualifier") String qualifier,
+			@ApiParam(name = "qualifierValue", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String")
 			@RequestParam("qualifierValue") String qualifierValue,
+			@ApiParam(name = "sourceData", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
+					allowableValues = "1 - SOURCE_JOURNAL, 2 - SOURCE_DECLARED_INCOME_STATEMENT,  3 - SOURCE_BOOTH_INCOME_STATEMENT, 4 - SOURCE_SHAREHOLDERS") 
 			@RequestParam("sourceData") int sourceData,
+			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year) {
 		
 		if ( qualifier == null || qualifier.isEmpty() ) {
@@ -289,9 +323,13 @@ public class AnalysisAPIController {
     	return ResponseEntity.ok().body(analysisData);    	
 	}
 	
+	@ApiOperation(value = "Get qualifiers values for a specified qualifier", response = List.class, tags = "qualifiers")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/qualifiers"})
-	public ResponseEntity<Object> getQualifierValues(@RequestParam("qualifier") String qualifier) {
+	public ResponseEntity<Object> getQualifierValues(
+			@ApiParam(name = "qualifier", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
+					allowableValues = "qualifier1, qualifier2, qualifier3, qualifier4, qualifier5")			
+			@RequestParam("qualifier") String qualifier) {
 		
 		if ( qualifier == null || qualifier.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'qualifier'");
@@ -311,9 +349,13 @@ public class AnalysisAPIController {
 		
 	}
 	
+	@ApiOperation(value = "Get years with available data", response = List.class, tags = "years")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/years"})
-	public ResponseEntity<Object> getYears(@RequestParam("sourceData") int sourceData) {
+	public ResponseEntity<Object> getYears(
+			@ApiParam(name = "sourceData", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
+						allowableValues = "1 - SOURCE_JOURNAL, 2 - SOURCE_DECLARED_INCOME_STATEMENT,  3 - SOURCE_BOOTH_INCOME_STATEMENT, 4 - SOURCE_SHAREHOLDERS")
+			@RequestParam("sourceData") int sourceData) {
 		
 		if ( sourceData == 0 ) {
 			log.log(Level.WARNING, "Missing parameter 'sourceData'");
@@ -333,10 +375,15 @@ public class AnalysisAPIController {
 		
 	}	
 	
+	@ApiOperation(value = "Get accountin flows data", response = List.class, tags = "accounting_flows")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/accounting_flows"})
-	public ResponseEntity<Object> getAccountingFlows(@RequestParam("taxpayerId") String taxpayerId,
-			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate, 
+	public ResponseEntity<Object> getAccountingFlows(
+			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@RequestParam("taxpayerId") String taxpayerId,
+			@ApiParam(name = "startDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
+			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -359,9 +406,13 @@ public class AnalysisAPIController {
 		
 	}
 	
+	@ApiOperation(value = "Get statement income analysis data", response = List.class, tags = "statement_income_analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/statement_income_analysis"})
-	public ResponseEntity<Object> getStatementIncomeAnalysis(@RequestParam("taxpayerId") String taxpayerId,
+	public ResponseEntity<Object> getStatementIncomeAnalysis(
+			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@RequestParam("taxpayerId") String taxpayerId,
+			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -387,11 +438,18 @@ public class AnalysisAPIController {
     	return ResponseEntity.ok().body(statements);    	
 	}
 	
+	@ApiOperation(value = "Get taxpayer view analysis data, according with searchType parameter value", response = List.class, tags = "taxpayer_general_view")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/taxpayer_general_view"})
 	public ResponseEntity<Object> getTaxpayerGeneralView(
+			@ApiParam(name = "searchType", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "String", 
+					allowableValues = "1 - SHAREHOLDINGS, 2 - SHAREHOLDERS, 3 - REVENUE_NET_AND_GROSS_PROFIT_DECLARED, " + 
+						"4 - REVENUE_NET_AND_GROSS_PROFIT_COMPUTED, 5 - TAX_PROVISION, 6 - ANALYTICS_ACCOUNTS, " + 
+						"7 - CUSTOMERS, 8 - SUPPLIERS")
 			@RequestParam("searchType") int searchType,
+			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
+			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -423,10 +481,13 @@ public class AnalysisAPIController {
     	return ResponseEntity.ok().body(result);    	
 	}
 	
+	@ApiOperation(value = "Get customers vs suppliers values for reconciliation analysis", response = List.class, tags = "customers_vs_suppliers_analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/customers_vs_suppliers_analysis"})
-	public ResponseEntity<Object> getCustomersVsSuppliersView(			
+	public ResponseEntity<Object> getCustomersVsSuppliersView(		
+			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
+			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
