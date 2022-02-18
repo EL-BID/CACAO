@@ -88,8 +88,8 @@ $('#copyTaxpayer').click( function() {
 
 //Define number format
 d3.formatDefaultLocale({
-	decimal: /*[[#{decimal.char}]]*/ ',',
-	thousands: /*[[#{decimal.grouping.separator}]]*/ '.',
+	decimal: decimalChar,
+	thousands: decimalGroupSeparator,
 	"grouping": [3],
 	"currency": ["$ ", ""]
 })

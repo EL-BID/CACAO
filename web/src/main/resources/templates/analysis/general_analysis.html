@@ -112,13 +112,6 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		//Define number format
-		decimalChar = /*[[#{decimal.char}]]*/ ',';
-		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';	
-	
-		let leftSymbol = /*[[#{currency.symbol.prefix}]]*/ "";
-		let rightSymbol = /*[[#{currency.symbol.suffix}]]*/ ""; 
-	
 		vegaEmbed.vega.formatLocale({
 			"decimal": decimalChar,
 	      	"thousands": decimalGroupSeparator,
@@ -403,7 +396,7 @@
 							{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxpayerId", hozAlign:"left", headerSort:false, visible:false },
 							{title: /*[[#{taxpayer.name}]]*/ "Taxpayer Name", field:"taxpayerName", hozAlign:"left", headerSort:false},
 							{title: /*[[#{account.outlier.value}]]*/ "Value", field:"value", formatter: "money", 
-								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"%", symbolAfter:true, precision:"2"}, 
+								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 								hozAlign:"right", headerSort:false, headerHozAlign:"right"}
 						],
 					},

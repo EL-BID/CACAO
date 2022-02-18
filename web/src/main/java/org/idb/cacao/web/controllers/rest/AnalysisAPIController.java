@@ -242,16 +242,20 @@ public class AnalysisAPIController {
 		
 		String decimalChar = messageSource.getMessage("decimal.char", null, LocaleContextHolder.getLocale());
 		String decimalGroupSeparator = messageSource.getMessage("decimal.grouping.separator", null, LocaleContextHolder.getLocale());
+		String leftSymbol = messageSource.getMessage("currency.symbol.prefix", null, LocaleContextHolder.getLocale());
+		String rightSymbol = messageSource.getMessage("currency.symbol.suffix", null, LocaleContextHolder.getLocale());
+		String currencySymbol = leftSymbol + rightSymbol;
+		String symbolAfter = ( null == leftSymbol || leftSymbol.isEmpty() ) ? "true" : "false";
 		String monthFormat = messageSource.getMessage("month.format", null, LocaleContextHolder.getLocale());
 		DateTimeFormatter simpleFormat = DateTimeFormatter.ofPattern(monthFormat);
 		
 		List<String[]> columns = new LinkedList<>();
-		int i = 0;
+		int i = 0;		 
 		for ( YearMonth p : allPeriods ) {		
 			
 			String title = StringUtils.capitalize(simpleFormat.format(p));			
 			String field = "B" + i;
-			String[] data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "$", "true", "0" };
+			String[] data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, currencySymbol, symbolAfter, "0" };
 			columns.add(data);
 			
 			if ( analysisType == VERTICAL || analysisType == BOTH ) { //Vertical OR both

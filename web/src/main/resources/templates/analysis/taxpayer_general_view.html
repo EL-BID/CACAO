@@ -95,12 +95,9 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
-		let leftSymbol = /*[[#{currency.symbol.prefix}]]*/ "";
-		let rightSymbol = /*[[#{currency.symbol.suffix}]]*/ ""; 
-	
 		vegaEmbed.vega.formatLocale({
-			"decimal": /*[[#{decimal.char}]]*/ '.',
-	      	"thousands": /*[[#{decimal.grouping.separator}]]*/ ',',
+			"decimal": decimalChar,
+	      	"thousands": decimalGroupSeparator,
 	      	"grouping": [3],
 	      	"currency": [leftSymbol, rightSymbol]
 		});
@@ -108,10 +105,6 @@
 		$('.ui.accordion')
 		  .accordion()
 		;
-		
-		//Define number format
-		decimalChar = /*[[#{decimal.char}]]*/ ',';
-		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
 		
 		//Define error message var
 		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
@@ -237,7 +230,7 @@
 			else if ( searchType == 6 ) 
 				fileName = /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
 			else if ( searchType == 7 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.major.clients}]]*/ '';
+				fileName = /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
 			else if ( searchType == 8 ) 
 				fileName = /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
 			else if ( searchType == 9 ) 
@@ -266,7 +259,7 @@
 			else if ( searchType == 6 ) 
 				return /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
 			else if ( searchType == 7 ) 
-				return /*[[#{taxpayers.analysis.general.view.major.clients}]]*/ '';
+				return /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
 			else if ( searchType == 8 ) 
 				return /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
 			else if ( searchType == 9 ) 

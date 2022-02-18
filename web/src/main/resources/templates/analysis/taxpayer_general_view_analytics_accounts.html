@@ -90,7 +90,7 @@
 						{title: /*[[#{account.name}]]*/ "Account Name", field:"values.account_name", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
 						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"values.value", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
 							headerHozAlign:"right", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}},
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}},
 				],
 			    initialSort:[
 			    	{column:"year", dir:"desc"}

@@ -79,10 +79,6 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
-		//Define number format
-		let decimalChar = /*[[#{decimal.char}]]*/ ',';
-		let decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
-		
 		//Define error message var
 		let errorYearsNotFound = /*[[#{years.missing}]]*/ '';
 		let errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
@@ -256,13 +252,13 @@
 					{title: /*[[#{customer.id}]]*/ "Customer Id", field:"customerId", hozAlign:"left", headerSort:false, visible:false},
 					{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customerName", hozAlign:"left", headerSort:false},
 					{title: /*[[#{customer.value}]]*/ "Declared Value", field:"customerValue", headerSort:false, formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
 					{title: /*[[#{supplier.value}]]*/ "Calculated Value", field:"supplierValue", headerSort:false, formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
 					{title: /*[[#{customer.supplier.difference}]]*/ "Difference", field:"difference", formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
 				]
 			});

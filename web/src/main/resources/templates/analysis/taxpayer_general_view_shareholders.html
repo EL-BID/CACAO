@@ -81,7 +81,7 @@
 						{title: /*[[#{share.class}]]*/ "Share Class", field:"shareClass", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
 						{title: /*[[#{share.type}]]*/ "Share Type", field:"shareType", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
 						{title: /*[[#{share.amount}]]*/ "Share Amout", field:"shareAmount", headerSort:true, formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 							hozAlign:"right", headerSort:true, headerHozAlign:"right"},
 						{title: /*[[#{share.percentage}]]*/ "Share %", field:"sharePercentage", headerSort:false, formatter: "money", 
 								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"%", symbolAfter:true, precision:"2"}, 

@@ -259,7 +259,7 @@
 		
 		function updateColumns() {
 			$.get('/api/analysis/vertical_horizontal_view_columns', 
-					{ finalDate: $('#finalDate').calendar('get date'), 
+					{ finalDate: luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate(), 
 			    	  comparisonPeriods: $('#period').val(),
 			    	  analysisType: $('#analysisType').val() } ,  // data to submit
 			    function (data, status, xhr) {

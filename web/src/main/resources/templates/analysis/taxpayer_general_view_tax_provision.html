@@ -80,7 +80,7 @@
 						{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
 						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"final_balance", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
 							headerHozAlign:"right", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}},
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}},
 				],
 			    initialSort:[			    	
 			        {column:"year", dir:"desc"}, //sort by this first

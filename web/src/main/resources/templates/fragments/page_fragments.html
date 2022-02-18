@@ -39,6 +39,17 @@
 <script src="/js/semantic.min.js"></script>
 <th:block th:if="${more_scripts}">
 	<th:block th:replace="${more_scripts}" />
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+		//Define currency symbol
+		var leftSymbol = /*[[#{currency.symbol.prefix}]]*/ "";
+		var rightSymbol = /*[[#{currency.symbol.suffix}]]*/ "";
+		var symbolAfter = (leftSymbol.length == 0);
+		var currencySymbol = leftSymbol + rightSymbol;
+		
+		//Define number format
+		var decimalChar = /*[[#{decimal.char}]]*/ ',';
+		var decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
+	</script>
 </th:block>
 <script th:nonce="${cspNonce}">
  		$(document).ready(function() {
@@ -462,15 +473,15 @@ svg .unselected {
 				</div>
 				<div class="three wide column">
 					<a class="ui inverted header tiny" th:href="@{/terms}">
-						<p th:text="#{legal.terms}">Terms of use</p>
+						<span th:text="#{legal.terms}">Terms of use</span>
 					</a>
 					<br>
 					<a class="ui inverted header tiny" th:href="@{/privacy}">
-						<p th:text="#{legal.policy}">Privacy policy</p>
+						<span th:text="#{legal.policy}">Privacy policy</span>
 					</a>
 					<br>
 					<a class="ui inverted header tiny" th:href="@{/license}">
-						<p>License</p>
+						<span>License</span>
 					</a>
 				</div>
 				<!--/*-->

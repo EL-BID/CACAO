@@ -79,10 +79,6 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
-		//Define number format
-		decimalChar = /*[[#{decimal.char}]]*/ ',';
-		decimalGroupSeparator = /*[[#{decimal.grouping.separator}]]*/ '.';
-		
 		//Define error message var
 		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
 		errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
@@ -214,13 +210,13 @@
 			columns:[ //Define Table Columns
 					{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false},
 					{title: /*[[#{taxpayers.analysis.statement.income.declared}]]*/ "Declared Value", field:"declaredValue", headerSort:false, formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
 					{title: /*[[#{taxpayers.analysis.statement.income.calculated}]]*/ "Calculated Value", field:"calculatedValue", headerSort:false, formatter: "money", 
-							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
 					{title: /*[[#{taxpayers.analysis.statement.income.difference}]]*/ "Difference", field:"difference", formatter: "money", 
-						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"$", symbolAfter:true, precision:"2"}, 
+						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
 			]
 		});
