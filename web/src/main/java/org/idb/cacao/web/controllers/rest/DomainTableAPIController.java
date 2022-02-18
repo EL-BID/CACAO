@@ -11,8 +11,10 @@ import java.util.logging.Logger;
 import javax.validation.Valid;
 
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.Views;
+import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.DomainTableService;
@@ -85,12 +87,14 @@ public class DomainTableAPIController {
 			@ApiParam(required=false,defaultValue="10") @RequestParam("limit") Optional<Integer> limit) {
 		List<String> result;
 		try {
+			TermQueryBuilder filter = new TermQueryBuilder("active", true);
 			result = SearchUtils.doSearchTopDistinctWithFilter(
 					elasticsearchClient, 
 					DomainTable.class, 
 					"name.keyword",
 					"name",
-					term.orElse(""));
+					term.orElse(""),
+					filter);
 		} catch(IOException e) {
 			result = new ArrayList<>();
 		}
@@ -170,7 +174,35 @@ public class DomainTableAPIController {
         
         return ResponseEntity.ok().body(table);
     }
-    
+	
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
+    @GetMapping(value="/domaintable/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Activate an existing domain table", response=DomainTable.class)
+    public ResponseEntity<Object> activateDomainTable(@PathVariable("id") String id) {
+        
+		Optional<DomainTable> existing = domainTableRepository.findById(id);
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
+		DomainTable table = existing.get();
+		table.setActive(true);
+        domainTableRepository.saveWithTimestamp(table);
+        return ResponseEntity.ok().body(table);
+    }
+
+	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
+    @GetMapping(value="/domaintable/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Deactivate an existing domain table", response=DomainTable.class)
+    public ResponseEntity<Object> deactivateDomainTable(@PathVariable("id") String id) {
+        
+		Optional<DomainTable> existing = domainTableRepository.findById(id);
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
+		DomainTable table = existing.get();
+		table.setActive(false);
+		domainTableRepository.saveWithTimestamp(table);
+        return ResponseEntity.ok().body(table);
+    }
+
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @PostMapping(value="/domaintable", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Adds a new domain table",response=DomainTable.class)

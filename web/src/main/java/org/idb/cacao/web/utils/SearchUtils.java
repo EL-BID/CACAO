@@ -280,19 +280,23 @@ public class SearchUtils {
 			final Class<?> entity,
 			final String distinctField,
 			final String searchField,
-			String searchText) throws IOException {
+			String searchText,
+			QueryBuilder filter) throws IOException {
 		Document doc = entity.getAnnotation(Document.class);
 		final String indexName = doc.indexName();
 		final TermsAggregationBuilder aggregation = AggregationBuilders.terms("top_items")
 	            .field(distinctField);
 		final SearchSourceBuilder builder = new SearchSourceBuilder().aggregation(aggregation);
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		if(searchText!=null && !searchText.isEmpty()) {
-			BoolQueryBuilder query = QueryBuilders.boolQuery();
 			query.should(new MatchQueryBuilder(searchField, searchText));
 			query.should(new MatchPhrasePrefixQueryBuilder(searchField, searchText));
 			
-			builder.query(query);
 		}
+		if (filter!=null) {
+			query.must(filter);
+		}
+		builder.query(query);
 		SearchRequest searchRequest = new SearchRequest(indexName).source(builder);
 		final SearchResponse response = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 

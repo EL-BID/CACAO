@@ -57,7 +57,7 @@ public class DomainTableUIController {
 	@GetMapping("/domaintables")
 	@Transactional
 	public String getDomainTables(Model model) {
-		return "domain/domain-tables";
+		return "domain/domain_tables";
 	}
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
@@ -68,7 +68,7 @@ public class DomainTableUIController {
 				.map(l -> new NameId(l.name(), messageSource.getMessage(l.toString(), null, LocaleContextHolder.getLocale())))
 				.collect(Collectors.toList()));
 
-		return "domain/add-domain-tables";
+		return "domain/add_domain_tables";
 	}
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
@@ -80,7 +80,7 @@ public class DomainTableUIController {
 		model.addAttribute("languages", domainTableService.getProvidedLanguages().stream()
 				.map(l -> new NameId(l.name(), messageSource.getMessage(l.toString(), null, LocaleContextHolder.getLocale())))
 				.collect(Collectors.toList()));
-		return "domain/update-domain-table";
+		return "domain/update_domain_table";
 	}
 
 	@GetMapping("/domaintables/{id}")
@@ -91,7 +91,7 @@ public class DomainTableUIController {
 		model.addAttribute("languages", domainTableService.getProvidedLanguages().stream()
 				.map(l -> new NameId(l.name(), messageSource.getMessage(l.toString(), null, LocaleContextHolder.getLocale())))
 				.collect(Collectors.toList()));
-		return "domain/update-domain-table";
+		return "domain/show_domain_table";
 	}
 
 }

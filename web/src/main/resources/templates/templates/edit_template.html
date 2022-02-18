@@ -262,6 +262,8 @@ let setDomainTableVersions = function(tableName, tableVersion) {
                   values.push({ name: item, value:item })
                 })
                 $('#select_domain_version').dropdown('change values', values)
+                $('#select_domain_table').dropdown('set value', tableName, tableName, null, true)
+                $('#select_domain_version').dropdown('set value', tableVersion, tableVersion, null, true)
                 $('#select_domain_version').dropdown('set text', tableVersion)
             },
             "json"
@@ -271,10 +273,10 @@ let setDomainTableVersions = function(tableName, tableVersion) {
 		$('#select_domain_version').dropdown('change values', [])
 	}
 } 
-  $('#select_domain_version').dropdown({
-     clearable: true
-  })
-  $('#select_domain_table').dropdown({
+$('#select_domain_version').dropdown({
+   clearable: true
+})
+$('#select_domain_table').dropdown({
      apiSettings: {
         url: '/api/domaintable_search?term={query}',
         method: 'GET',
@@ -282,6 +284,12 @@ let setDomainTableVersions = function(tableName, tableVersion) {
         cache: false,
         onResponse: function(items) {
             let r = { success: true, results: [] }
+            /*
+            let current = $('#select_domain_table').dropdown("get value")
+            if(!items.includes(current)) {
+            	r.results.push({ name: current, value: current })
+            }
+            */
             $.each(JSON.parse(items), function(index, item) {
                 r.results.push({ name: item, value:item })
             })

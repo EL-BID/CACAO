@@ -95,7 +95,12 @@ domain_table.entries = domain_table.entries.map( (entry, i) => {
 })
 var next_id = domain_table.entries.length
 $('#cancel').click(function(){
-    window.location.replace([[@{/domaintables}]]) 
+  [# th:if="${table.id==null}"]
+     window.location.replace([[@{/domaintables}]])
+  [/]
+  [# th:if="${table.id!=null}"]
+     window.location.replace([[@{/domaintables/{id}(id=${table.id})}]])
+  [/]   
 })
 var add_entry = function(event, fields) {
 	event.preventDefault()
@@ -120,7 +125,7 @@ var processForm = function(event, fields) {
 		success: function(result) {
 			$('#modal_successful').modal('show')
 			setTimeout(function(){
-				window.location = [[@{/domaintables}]]
+				window.location = [[@{/domaintables}]] + "/" + result.id
 			}, 2000);
 		},
 		error: function(e) {

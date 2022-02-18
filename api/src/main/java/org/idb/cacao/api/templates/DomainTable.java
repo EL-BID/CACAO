@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.api.templates;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Nested;
@@ -182,6 +183,12 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 	@Field(type=Nested)
 	private List<DomainEntry> entries;
 	
+	/**
+	 * Indicates this document template is available for sending documents.
+	 */
+	@Field(type=Boolean)
+	private Boolean active;
+	
 	public DomainTable() { }
 	
 	public DomainTable(String name, String version) {
@@ -228,6 +235,7 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 			String messagePropertyRef = getValue.apply(element);			
 			domain.addBuiltInEntry(key, messagePropertyRef);
 		}
+		domain.setActive(true);
 		return domain;
 	}
 
@@ -293,6 +301,14 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 	 */
 	public String getVersion() {
 		return version;
+	}
+
+	public Boolean getActive() {
+		return active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
 	}
 
 	/**
