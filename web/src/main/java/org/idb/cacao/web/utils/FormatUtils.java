@@ -25,11 +25,31 @@ import java.util.Locale;
 
 import org.springframework.context.i18n.LocaleContextHolder;
 
+/**
+ * Some static formatters for numbers
+ * 
+ * @author Rivelino Patrício
+ * 
+ * @since 11/02/2022
+ * 
+ */
 public class FormatUtils {
 
 	private static Locale locale = LocaleContextHolder.getLocale();
+	
+	/**
+	 * General purpose formatter for numbers with 2 fraction digits
+	 */
 	public static NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
+	
+	/**
+	 * General purpose formatter for numbers with no fraction digits
+	 */
 	public static NumberFormat quantityFormat = NumberFormat.getNumberInstance(locale);
+	
+	/**
+	 * General purpose formatter for numbers that represents a percentage value
+	 */
 	public static NumberFormat percentageFormat = NumberFormat.getPercentInstance(locale);
 	
 	static { 
