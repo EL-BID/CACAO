@@ -39,6 +39,8 @@ public interface DomainTableRepository extends ElasticsearchRepository<DomainTab
 	public List<DomainTable> findByName(String name);
 
 	public List<DomainTable> findByNameIgnoreCase(String name);
+	
+	public List<DomainTable> findByNameIgnoreCaseAndActiveTrue(String name);
 
 	@Query("{\"bool\":{\"must\":[{\"match\": {\"name.keyword\": {\"query\": \"?0\"}}},"
 			+ "{\"match\": {\"version.keyword\": {\"query\": \"?1\"}}}]}}")

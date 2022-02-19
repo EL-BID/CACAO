@@ -1,0 +1,156 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+<script src="/js/tabulator.min.js"></script>
+<script src="/js/luxon.min.js"><</script>
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+      <div class="ui breadcrumb">
+        <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+        <div class="divider"> / </div>
+        <a class="section" th:text="#{domain.tables.title}" th:href="@{/domaintables}">Domain Tables</a>
+        <div class="divider"> / </div>
+        <div class="active section" th:text="${table.name}"></div>
+      </div>
+  
+		<h2 class="ui header">
+			<i class="table icon"></i>
+			<span class="content" th:text="#{domain.tables.title}">Domain Table</span>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+				<form id="form" class="ui form" action="#" th:object="${table}" method="post" th:action="@{/api/domaintable}">
+                    <input type="hidden" name="id" th:value="${table.id}">
+					<div class="fields">
+                      <div class="seven wide field">
+                        <label th:text="#{domain.table.name}" style="margin-bottom: 0px; text-transform: uppercase;">Domain Table Name</label>
+                        <input type="text" th:value="${table.name}" class="form-control" id="name" name="name" placeholder="Name" th:placeholder="#{domain.table.name}" readonly>
+                      </div>
+                      <div class="two wide field">
+                          <label th:text="#{domain.table.version}" style="margin-bottom: 0px; text-transform: uppercase;">Domain Table Version</label>
+                          <input type="text" th:value="${table.version}" class="form-control" id="version" name="version" placeholder="Version" th:placeholder="#{domain.table.version}" readonly>
+                      </div>
+                      <div class="seven wide field">
+                          <label th:text="#{domain.table.group}" style="margin-bottom: 0px; text-transform: uppercase;">Domain Table Group</label>
+                          <input type="text" th:value="${table.group}" class="form-control" id="group" name="group" placeholder="Group" th:placeholder="#{domain.table.group}" readonly>
+                      </div>
+                    </div>
+					<div class="row">
+						<input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editDomainTable">
+                      <input th:if="${table.active==true}" type="button" class="ui red button" th:value="#{domain.table.deactivate}" value="Deactivate" id="deactivateDomainTable">
+                      <input th:if="${table.active!=true}" type="button" class="ui green button" th:value="#{domain.table.activate}" value="Activate" id="activateDomainTable">
+					</div>
+				</form>
+			</div>
+		</div>
+        <h4 class="ui centered dividing header" th:text="#{domain.entries.title}">Domain Entries</h4>
+        <div id="table" class="ui table"></div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+var domain_table = [[${table}]]
+domain_table.entries = domain_table.entries.map( (entry, i) => {
+    entry.id = i
+    return entry
+})
+
+let activateDomainTable = function(value) {
+    var dlg = $('#modal_confirm')
+    var msg = value ? [[#{domain.table.activate.confirm}]] : [[#{domain.table.deactivate.confirm}]] 
+    dlg.find('.description').html(msg)
+    dlg.modal({
+        closable:false,
+        onApprove: function() { 
+          if(value)
+              url = [[@{/api/domaintable/{id}/activate(id=${table.id})}]]
+          else
+              url = [[@{/api/domaintable/{id}/deactivate(id=${table.id})}]]
+          $.get( url )
+          .done( function() {
+              $('#modal_successful').modal('show')
+              setTimeout(()=> window.location.replace([[@{/domaintables/{id}(id=${table.id})}]]), 2000)
+          })
+        .fail( function(e) {
+          var msg = e.responseText.replace(/\n/g, "<br />");
+            $('#modal_failed').find('.description').html(msg)
+            $('#modal_failed').modal('show')
+            console.log("ERROR : "+ msg);
+         })
+       }
+    })
+    dlg.modal('show');
+}
+
+$('#activateDomainTable').click(() => activateDomainTable(true))
+$('#deactivateDomainTable').click(() => activateDomainTable(false))
+
+$('#editDomainTable').click(function(e){
+    document.location.replace([[@{/domaintables/{id}/edit(id=${table.id})}]])
+})
+
+var languageLookup = {
+    [# th:each="l : ${languages}"]
+    [[${l.name}]] : [[${l.id}]],
+    [/]
+}
+var table = new Tabulator('#table', {
+    index: 'id',
+    layout: "fitColumns", //fit columns to width of table (optional)
+    pagination: true,
+    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
+	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+    locale:'xx',
+    langs:{
+        "xx":{
+            "pagination":{
+                "first":/*[[#{pagination.first.button}]]*/ "First",
+                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+                "last":/*[[#{pagination.last.button}]]*/ "Last",
+                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+                "next":/*[[#{pagination.next.button}]]*/ "Next",
+                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+                "all":/*[[#{pagination.all}]]*/ "All",
+                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+            }
+        }
+    },
+    columns:[ //Define Table Columns
+        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200", headerFilter: true},
+        {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
+        	formatterParams: languageLookup, headerFilter: 'select', headerFilterParams: { values: languageLookup }}, 
+        {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, headerFilter: true },
+    ],
+    data: domain_table.entries
+})
+
+let showHeaderFilter = true
+let toggleFilter = function() {
+    showHeaderFilter = ! showHeaderFilter
+    if(!showHeaderFilter) {
+        table.clearHeaderFilter()
+    }
+    $('.tabulator-header-filter').toggle(showHeaderFilter)
+    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+}
+
+table.on("tableBuilt", function(){
+    $('#filter').click( toggleFilter )
+    toggleFilter()
+})
+</script>
+</body>
+</html>

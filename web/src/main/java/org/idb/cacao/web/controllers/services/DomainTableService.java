@@ -271,7 +271,7 @@ public class DomainTableService {
 	 */
 	public Set<String> getDomainTablesVersions(String name) {
 		try {
-			return domainTableRepository.findByNameIgnoreCase(name).stream().map(DomainTable::getVersion).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+			return domainTableRepository.findByNameIgnoreCaseAndActiveTrue(name).stream().map(DomainTable::getVersion).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 		}
 		catch (Throwable ex) {
 			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))

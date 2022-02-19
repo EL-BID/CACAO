@@ -119,7 +119,8 @@ let processForm = function(event, fields) {
 
 let activateTemplate = function(value) {
 	var dlg = $('#modal_confirm')
-    dlg.find('.description').html([[#{template.activate.confirm}]])
+	var msg = value ? [[#{template.activate.confirm}]] : [[#{template.deactivate.confirm}]]
+    dlg.find('.description').html()
     dlg.modal({
         closable:false,
         onApprove: function() { 
