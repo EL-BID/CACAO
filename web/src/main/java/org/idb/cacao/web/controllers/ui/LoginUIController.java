@@ -98,8 +98,7 @@ public class LoginUIController {
 		
 		model.addAttribute("menu", getHomeMenuItens());
 		
-		// TODO: should present the first page for taxpayers and tax administrators
-		//String first_page_child_frame = "/bulletin_board";
+		// Present the first page for taxpayers and tax administrators
 		String first_page_child_frame = "/cards";
 
 		model.addAttribute("first_page_child_frame", first_page_child_frame);
