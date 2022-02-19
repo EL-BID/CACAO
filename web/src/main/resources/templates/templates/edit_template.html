@@ -394,6 +394,7 @@ let mappingLookup = {
   [# th:each="i : ${fieldMappings}"] 
   [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
   [/]
+  null: ""
 }
 
 let table = new Tabulator('#table', {
