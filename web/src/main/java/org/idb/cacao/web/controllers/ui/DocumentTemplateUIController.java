@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.collections4.IterableUtils;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
@@ -61,7 +62,7 @@ public class DocumentTemplateUIController {
 	@GetMapping("/templates")
 	public String getTemplates(Model model) {
 		try {
-			model.addAttribute("templates", documentTemplateRepository.findAll(Sort.by("name.keyword","version.keyword").ascending()));
+			model.addAttribute("templates", IterableUtils.toList(documentTemplateRepository.findAll(Sort.by("name.keyword","version.keyword").ascending())));
 		}
 		catch (Throwable ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex))
