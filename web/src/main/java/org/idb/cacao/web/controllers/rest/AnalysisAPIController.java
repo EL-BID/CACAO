@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -235,11 +236,12 @@ public class AnalysisAPIController {
 
 		List<YearMonth> allPeriods = getAdditionalPeriods(period, comparisonPeriods);
 		
-		String horizontal = " " + messageSource.getMessage("horizontal", null, LocaleContextHolder.getLocale()) + "%";
-		String vertical = " " + messageSource.getMessage("vertical", null, LocaleContextHolder.getLocale()) + "%";
+		String horizontal = " " + messageSource.getMessage("horizontal", null, LocaleContextHolder.getLocale());
+		String vertical = " " + messageSource.getMessage("vertical", null, LocaleContextHolder.getLocale());
 		
 		allPeriods.add(0,period);
 		
+		String titleValue = messageSource.getMessage("account.finalBalance", null, LocaleContextHolder.getLocale());
 		String decimalChar = messageSource.getMessage("decimal.char", null, LocaleContextHolder.getLocale());
 		String decimalGroupSeparator = messageSource.getMessage("decimal.grouping.separator", null, LocaleContextHolder.getLocale());
 		String leftSymbol = messageSource.getMessage("currency.symbol.prefix", null, LocaleContextHolder.getLocale());
@@ -247,36 +249,77 @@ public class AnalysisAPIController {
 		String currencySymbol = leftSymbol + rightSymbol;
 		String symbolAfter = ( null == leftSymbol || leftSymbol.isEmpty() ) ? "true" : "false";
 		String monthFormat = messageSource.getMessage("month.format", null, LocaleContextHolder.getLocale());
-		DateTimeFormatter simpleFormat = DateTimeFormatter.ofPattern(monthFormat);
-		
-		List<String[]> columns = new LinkedList<>();
+		DateTimeFormatter simpleFormat = DateTimeFormatter.ofPattern(monthFormat);	
+
+		List<Map<String,Object>> allColumns = new LinkedList<>();
 		int i = 0;		 
-		for ( YearMonth p : allPeriods ) {		
+		
+		Map<String,Object> formatCurrency = new HashMap<>();
+		formatCurrency.put("decimal", decimalChar);
+		formatCurrency.put("thousand", decimalGroupSeparator);
+		formatCurrency.put("symbol", currencySymbol);
+		formatCurrency.put("symbolAfter", symbolAfter);
+		formatCurrency.put("precision", "2");
+		
+		Map<String,Object> formatPercentage = new HashMap<>();
+		formatPercentage.put("decimal", decimalChar);
+		formatPercentage.put("thousand", decimalGroupSeparator);
+		formatPercentage.put("symbol", "%");
+		formatPercentage.put("symbolAfter", true);
+		formatPercentage.put("precision", "2");
+		
+		for ( YearMonth p : allPeriods ) {
 			
-			String title = StringUtils.capitalize(simpleFormat.format(p));			
+			Map<String,Object> group = new HashMap<>();
+			allColumns.add(group);
+			String title = StringUtils.capitalize(simpleFormat.format(p));
+			group.put("title", title);
+			group.put("headerHozAlign", "center");
+			
+			List<Map<String,Object>> columns = new LinkedList<>();
+			group.put("columns",columns);
+			
 			String field = "B" + i;
-			String[] data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, currencySymbol, symbolAfter, "0" };
-			columns.add(data);
+			
+			Map<String,Object> column = new HashMap<>();
+			column.put("formatterParams", formatCurrency);
+			column.put("title", titleValue);
+			column.put("field", field);
+			column.put("hozAlign", "right");
+			column.put("headerSort", false);
+			column.put("headerHozAlign", "center");
+			column.put("formatter", "money");			
+			columns.add(column);
 			
 			if ( analysisType == VERTICAL || analysisType == BOTH ) { //Vertical OR both
-				title += vertical;
-				field = "V" + i;
-				data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "%", "true", "2" };
-				columns.add(data);	
+				column = new HashMap<>();
+				column.put("formatterParams", formatPercentage);
+				column.put("title", vertical);
+				column.put("field", "V" + i);
+				column.put("hozAlign", "right");
+				column.put("headerSort", false);
+				column.put("headerHozAlign", "center");
+				column.put("formatter", "money");
+				columns.add(column);
 			}
 			
 			if ( i > 0 && ( analysisType == HORIZONTAL || analysisType == BOTH ) ) { //Horizontal OR both
-				title += horizontal;
-				field = "H" + i;
-				data = new String[] { title, field, "right", "false", "money", decimalChar, decimalGroupSeparator, "%", "true", "2" };
-				columns.add(data);	
+				column = new HashMap<>();
+				column.put("formatterParams", formatPercentage);
+				column.put("title", horizontal);
+				column.put("field", "H" + i);
+				column.put("hozAlign", "right");
+				column.put("headerSort", false);
+				column.put("headerHozAlign", "center");
+				column.put("formatter", "money");
+				columns.add(column);	
 			}			
 			
 			i++;
 
 		}
 		
-    	return ResponseEntity.ok().body(columns);    	
+    	return ResponseEntity.ok().body(allColumns);    	
     	
 	}
 

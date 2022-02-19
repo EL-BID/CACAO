@@ -6,12 +6,26 @@
 <!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="stylesheet" type="text/css" class="ui"
-	href="/css/tabulator_semantic-ui.min.css">
+<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
 <script type="text/javascript" src="/js/xlsx.full.min.js"></script>
 </head>
+<style>
+
+#table{
+    background-color:#ccc;
+    border: 1px solid #333;
+    border-radius: 2px;    
+}
+
+#table .tabulator-header .tabulator-col,
+#table .tabulator-header .tabulator-col-row-handle {
+    border: 1px solid #333;
+    border-radius: 2px;   
+}
+
+</style>
 <body>
 	<!-- Fix to avoid overlap from the Menu -->
 	<div>
@@ -221,51 +235,32 @@
 				onSuccess: (function(event,fields){
 					event.preventDefault();					
 					updateColumns();					
-					table.replaceData()
-						.then(function(){
-							$("#showtable").show()	
-						})					
+									
 	          	})
 	        });
 	    });
 		
-		//Remove all value columns 		
-		function removePreviousColumns() {
-			var cols = table.getColumns();
-			for ( i = 5; i < cols.length; i++ ) {
-				cols[i].delete();
-			}			
-		}
-		
 		//Add value columns according with selected parameters
-		function updateVisibleColumns() {
-			
-			for (let i = 0; i < columnsFormat.length; ++i) {
-				
-				let data = columnsFormat[i];
-				console.log(data);
-				table.addColumn({title: data[0], field: data[1], hozAlign: data[2], headerSort: data[3] == "false" ? false : true, 
-						formatter: data[4], 
-						formatterParams: { 
-							decimal: data[5], thousand: data[6], symbol: data[7], symbolAfter: 
-								data[8] == "false" ? false : true, precision: data[9]} 
-						}, 
-						false, data[1]);			    
-			}			
-			
-		}	
-		
-		var columnsFormat = {};		
+		function addColumn(column) {
+			table.addColumn(column);
+		}
 		
 		function updateColumns() {
 			$.get('/api/analysis/vertical_horizontal_view_columns', 
 					{ finalDate: luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate(), 
 			    	  comparisonPeriods: $('#period').val(),
 			    	  analysisType: $('#analysisType').val() } ,  // data to submit
-			    function (data, status, xhr) {
-			    	columnsFormat = data;
-			        removePreviousColumns();
-					updateVisibleColumns();			        
+			    function (data, status, xhr) {			    	
+					var cols = table.getColumns();
+			  		for ( i = 5; i < cols.length; i++ ) {
+			  			cols[i].delete();
+			  		}
+			        //console.log(data);
+			        data.forEach(addColumn);
+			        table.replaceData()
+						.then(function(){
+							$("#showtable").show()	
+						})	
 			    }
 			);	
 		}
@@ -277,8 +272,6 @@
 		    return value;
 		}
 		
-		//$('#finalDate').calendar('get date'))
-	  
 		let table = new Tabulator('#table', {
 			index: 'id',
 			layout: "fitData", //fit columns to width of table (optional)
@@ -287,18 +280,22 @@
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
 			ajaxURL: /*[[@{/api/analysis/vertical_horizontal_analysis}]]*/ "/api/analysis/vertical_horizontal_analysis", //set url for ajax request
-			ajaxURLGenerator: function(url, config, params ){
-				console.log(config)
-				console.log(params)
+			ajaxURLGenerator: function(url, config, params ){				
 				p = new URLSearchParams()
 				p.set('taxpayerId', document.getElementById("taxpayer").value)
 				p.set('finalDate', luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate()) 
 				p.set('zeroBalance', $('#zeroBalance').is(":checked"))
 				p.set('comparisonPeriods', $('#period').val())
 				p.set('analysisType', $('#analysisType').val())
-				console.log(url + '?' + p.toString())		
+				console.log(url + '?' + p.toString())
 				return url + '?' + p.toString()
 			},
+			ajaxRequesting:function(url, params){
+				taxpayer = document.getElementById("taxpayer").value;
+				if ( !taxpayer || taxpayer.length == 0 )
+					return false;
+				return true;
+		    },
 			ajaxContentType: "json",
 			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
 			locale:'xx',
@@ -333,6 +330,7 @@
 			        row.getElement().style.backgroundColor = /*[[${@environment.getProperty('table.color.level.3')}]]*/ "#FFFDDE"; //apply css change to row element
 			    }
 			},	
+			columnHeaderVertAlign: "middle",
 			columns:[ //Define Table Columns
 				{title: /*[[#{account.level}]]*/ "Level", field:"level", hozAlign:"center", headerSort:false},
 				//{title: /*[[#{account.categoryCode}]]*/ "Category", field:"categoryCode", hozAlign:"center", headerSort:false },

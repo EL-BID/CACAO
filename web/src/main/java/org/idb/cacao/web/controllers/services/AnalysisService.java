@@ -458,7 +458,7 @@ public class AnalysisService {
 		}
 
 		int i = 1;
-		// For each adittional period
+		// For each additional period
 		for (YearMonth p : additionalPeriods) {
 
 			// Get balance for period
@@ -484,8 +484,8 @@ public class AnalysisService {
 
 				accountData.put(prefix, account.getBalance()); // Balance for period
 				accountData.put(prefixVerticalAnalysis, account.getPercentage()); // Vertical analysis for period
-				double balanceBasePeriod = accountData.get("B0") == null ? 0 : (double) accountData.get("B0");
-				double percentage = balanceBasePeriod == 0d ? 0 : (account.getBalance() * 100 / balanceBasePeriod);
+				double balanceBasePeriod = accountData.get("B0") == null ? 0 : Precision.round((double) accountData.get("B0"), 2, BigDecimal.ROUND_HALF_UP);
+				double percentage = ( balanceBasePeriod == 0d ) ? 0 : (account.getBalance() * 100 / balanceBasePeriod);
 				accountData.put(prefixHorizontalAnalysis, percentage); // Horizontal analysis for period
 
 			}
