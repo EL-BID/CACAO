@@ -79,7 +79,7 @@ table = new Tabulator('#table', {
 			headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
 		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
 			formatter:"tickCross", formatterParams: { crossElement:false}, width:40},
-		{title: '<i class="upload icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
+		{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
             formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
 	]
 })
