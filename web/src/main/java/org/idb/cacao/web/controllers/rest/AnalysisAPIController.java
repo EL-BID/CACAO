@@ -252,7 +252,52 @@ public class AnalysisAPIController {
 		DateTimeFormatter simpleFormat = DateTimeFormatter.ofPattern(monthFormat);	
 
 		List<Map<String,Object>> allColumns = new LinkedList<>();
-		int i = 0;		 
+		int i = 0;
+		
+		Map<String,Object> column = new HashMap<>();		
+//		column.put("title", messageSource.getMessage("account.level", null, LocaleContextHolder.getLocale()));
+//		column.put("field", "level");
+//		column.put("hozAlign", "center");
+//		column.put("headerSort", false);
+//		allColumns.add(column);
+//		
+//		String nullConvert = "function(value, data, type, component){\n" +
+//								"if ( value == null )\n" +
+//								"return '';\n'"+
+//								"return value;\n"+ 
+//								"}";
+//		
+//		column = new HashMap<>();		
+//		column.put("title", messageSource.getMessage("account.category", null, LocaleContextHolder.getLocale()));
+//		column.put("field", "category");
+//		column.put("hozAlign", "left");
+//		column.put("headerSort", false);
+//		column.put("accessorDownload", nullConvert);		
+//		allColumns.add(column);
+//		
+//		column = new HashMap<>();		
+//		column.put("title", messageSource.getMessage("account.subcategory", null, LocaleContextHolder.getLocale()));
+//		column.put("field", "subcategory");
+//		column.put("hozAlign", "left");
+//		column.put("headerSort", false);
+//		column.put("accessorDownload", nullConvert);		
+//		allColumns.add(column);
+//		
+//		column = new HashMap<>();		
+//		column.put("title", messageSource.getMessage("account.code", null, LocaleContextHolder.getLocale()));
+//		column.put("field", "code");
+//		column.put("hozAlign", "left");
+//		column.put("headerSort", false);
+//		column.put("accessorDownload", nullConvert);		
+//		allColumns.add(column);		
+//		
+//		column = new HashMap<>();		
+//		column.put("title", messageSource.getMessage("account.name", null, LocaleContextHolder.getLocale()));
+//		column.put("field", "name");
+//		column.put("hozAlign", "left");
+//		column.put("headerSort", false);
+//		column.put("accessorDownload", nullConvert);		
+//		allColumns.add(column);			
 		
 		Map<String,Object> formatCurrency = new HashMap<>();
 		formatCurrency.put("decimal", decimalChar);
@@ -281,7 +326,7 @@ public class AnalysisAPIController {
 			
 			String field = "B" + i;
 			
-			Map<String,Object> column = new HashMap<>();
+			column = new HashMap<>();
 			column.put("formatterParams", formatCurrency);
 			column.put("title", titleValue);
 			column.put("field", field);
