@@ -224,6 +224,9 @@ let onDeleteError = function(e) {
 }
 
 let deleteRow = function(e, cell) {
+    if( !e.target.classList.contains('trash')) {
+        return
+    }
     var dlg = $('#modal_confirm')
 	dlg.find('.description').html([[#{interpersonal.delete.confirm}]])
 	dlg.modal({
@@ -235,11 +238,6 @@ let deleteRow = function(e, cell) {
 	dlg.modal('show');
 }
 
-let editIcon = function(cell, formatterParams) {
-	if(cell.getRow().getData().removed)
-		return ""
-	return "<i class='edit icon'></i>"
-}
 let trashIcon = function(cell, formatterParams) {
     if(cell.getRow().getData().removed)
        return ""
@@ -305,12 +303,6 @@ let table = new Tabulator('#table', {
 		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
 		[/]
 	]
-})
-table.on('rowClick', function(e, row) {
-    if( e.target.classList.contains('trash')) {
-        return
-    }
-    window.location.replace([[@{/interpersonals/}]] + row.getIndex());
 })
 
 let showHeaderFilter = true
