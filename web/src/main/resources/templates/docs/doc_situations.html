@@ -63,7 +63,7 @@
 	    persistenceID:"doc_situation_history_persistence",
 	    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 		columns:[ //Define Table Columns
-			{title: /*{{#taxpayer.id}}} */ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
+			{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxPayerId", headerFilter:this.headerFilter},
 			{title: /*[[#{doc.timestamp}]]*/ "Upload date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
 			{title: /*[[#{doc.situation.history.timestamp}]]*/ "Situation date/time", field:"changedTime", formatter: dateFormatter, headerFilter:this.headerFilter},
 			{title: /*[[#{doc.situation.history.situation}]]*/ "Situation", field: "situation", headerFilter:this.headerFilter},

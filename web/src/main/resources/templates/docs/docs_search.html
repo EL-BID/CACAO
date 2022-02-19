@@ -241,7 +241,6 @@ let table = new Tabulator('#table', {
 			headerFilter:minMaxFilterEditor},
 		{title: /*[[#{doc.situation}]]*/ "Situation", field:"situation", minWidth: 120,
 			headerFilter: 'select', headerFilterParams: { values: situationLookup }},
-		//{title: /*{{#doc.id}}} */ "Document Id", field:"id", headerFilter:this.headerFilter},
 		{formatter:situationsIcon, width:50, cellClick: showSituationHistory, tooltip : /*[[#{doc.situation.history}]]*/, headerSort:false},
 		{formatter:errorsIcon, width:50, cellClick: showErrorMessages, tooltip : /*[[#{doc.error.message}]]*/, headerSort:false},
 		{formatter:downloadIcon, width:50, cellClick: downloadFile, tooltip : /*[[#{doc.download}]]*/, headerSort:false}
