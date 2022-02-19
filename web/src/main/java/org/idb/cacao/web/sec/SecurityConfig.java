@@ -162,7 +162,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .permitAll()
 
             // Page with REST endpoints
-            .antMatchers("/swagger-ui/**").hasAnyRole("SYSADMIN","SUPPORT")
+            .antMatchers("/swagger-ui/**").hasAnyRole("SYSADMIN","SUPPORT","CONFIG_API_TOKEN")
             
             // ALL OTHERS URL's NEED AUTHENTICATION
             .anyRequest().authenticated()
