@@ -27,6 +27,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.ResponseEntity;
 
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -43,18 +44,34 @@ import springfox.documentation.spring.web.plugins.Docket;
  */
 @Configuration
 public class SwaggerConfig {
+	
+	public static final String DECLARANT_GROUP = "Declarant";
+	public static final String TAX_ADMIN_GROUP = "Tax Administration";
 
     @Autowired
     private MessageSource messages;
 
     @Bean
-    public Docket api() {
+    public Docket apiForDeclarants() {
         return new Docket(DocumentationType.SWAGGER_2)
+          .groupName(DECLARANT_GROUP)
           .select()
           .apis(RequestHandlerSelectors.basePackage("org.idb.cacao.web.controllers.rest"))
           .paths(PathSelectors.ant("/api/**"))
           .build()
-          .genericModelSubstitutes(Optional.class)
+          .genericModelSubstitutes(Optional.class, ResponseEntity.class)
+          .apiInfo(apiInfo());
+    }
+
+    @Bean
+    public Docket apiForTaxAuthority() {
+        return new Docket(DocumentationType.SWAGGER_2)
+          .groupName(TAX_ADMIN_GROUP)
+          .select()
+          .apis(RequestHandlerSelectors.basePackage("org.idb.cacao.web.controllers.rest"))
+          .paths(PathSelectors.ant("/api/**"))
+          .build()
+          .genericModelSubstitutes(Optional.class, ResponseEntity.class)
           .apiInfo(apiInfo());
     }
 
