@@ -110,10 +110,10 @@ let table = new Tabulator('#table', {
         }
     },
 	columns:[ //Define Table Columns
-		{title: /*[[#{sync.commits.endPoint}}*/ "End-point", field:"endPoint", hozAlign:"left"},
-		{title: /*[[#{sync.commits.lastTimeRun}}*/ "Last time run", field:"lastTimeRun", formatter: dateFormatter },
-		{title: /*[[#{sync.commits.lastTimeStart}}*/ "Last time start", field:"lastTimeStart", formatter: dateFormatter },
-		{title: /*[[#{sync.commits.lastTimeEnd}}*/ "Last time end", field:"lastTimeEnd", formatter: dateFormatter },
+		{title: /*[[#{sync.commits.endPoint}]]*/ "End-point", field:"endPoint", hozAlign:"left"},
+		{title: /*[[#{sync.commits.lastTimeRun}]]*/ "Last time run", field:"lastTimeRun", formatter: dateFormatter },
+		{title: /*[[#{sync.commits.lastTimeStart}]]*/ "Last time start", field:"lastTimeStart", formatter: dateFormatter },
+		{title: /*[[#{sync.commits.lastTimeEnd}]]*/ "Last time end", field:"lastTimeEnd", formatter: dateFormatter },
 		[# sec:authorize="hasRole('ROLE_SYNC_OPS')"]
 		{formatter:searchIcon, width:45, cellClick: detailsRow, headerSort:false}
 		[/]

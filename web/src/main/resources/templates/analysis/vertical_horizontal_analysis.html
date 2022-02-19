@@ -181,6 +181,7 @@
 				table.clearFilter();
 				table.getColumn('code').show();
 				table.getColumn('name').show();
+				table.getColumn('subcategory').show();
 			}
 			else {
 				table.setFilter([
@@ -188,6 +189,12 @@
 				]);
 				table.getColumn('code').hide();
 				table.getColumn('name').hide();
+				if ( level == 2 ) {
+					table.getColumn('subcategory').show();		
+				}
+				else {
+					table.getColumn('subcategory').hide();
+				}
 			}
 			table.redraw();   
 	     });
