@@ -103,7 +103,7 @@ public class SystemUIController {
 	/**
 	 * Returns information about the system and its components.
 	 */
-	@GetMapping("/sys_info")
+	@GetMapping("/sys-info")
 	public String getSystemInformation(Model model) {
 		
 		List<MenuItem> itens = new LinkedList<>();

@@ -21,7 +21,6 @@ package org.idb.cacao.web.controllers.rest;
 
 import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,7 +48,6 @@ import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -100,9 +98,6 @@ public class InterpersonalAPIController {
 	
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
-	
-	@Autowired
-	private Environment env;
 	
 	@Secured({"ROLE_INTERPERSONAL_READ_ALL"})
 	@JsonView(Views.Authority.class)
@@ -210,15 +205,15 @@ public class InterpersonalAPIController {
 	
 	private GenericCounts addOrCreateInterpersonals(Interpersonal[] interpersonal_relationships, User user) {
 		
-        LongAdder count_created = new LongAdder();
-        LongAdder count_updated = new LongAdder();
-        LongAdder count_errors = new LongAdder();
+        LongAdder countCreated = new LongAdder();
+        LongAdder countUpdated = new LongAdder();
+        LongAdder countErrors = new LongAdder();
         
         ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_BULK_LOAD_PARALELISM);
         
         for (Interpersonal interpersonal:interpersonal_relationships) {
         	if (interpersonal==null) {
-        		count_errors.increment();
+        		countErrors.increment();
         		continue;
         	}
         	executor.submit(()->{
@@ -244,9 +239,9 @@ public class InterpersonalAPIController {
 	                }
 	                catch (Exception ex) {
 	                	log.log(Level.SEVERE,"Create interpersonal relationship failed", ex);
-	                	count_errors.increment();
+	                	countErrors.increment();
 	                }
-	                count_created.increment();
+	                countCreated.increment();
 	            }
         	});
         }
@@ -260,7 +255,7 @@ public class InterpersonalAPIController {
         	log.log(Level.WARNING,"Interrupted bulk load", e);
 		}
 		
-        return new GenericCounts().withCreated(count_created.longValue()).withUpdated(count_updated.longValue()).withErrors(count_errors.longValue());
+        return new GenericCounts().withCreated(countCreated.longValue()).withUpdated(countUpdated.longValue()).withErrors(countErrors.longValue());
 	}
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})

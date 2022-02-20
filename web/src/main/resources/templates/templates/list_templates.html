@@ -78,9 +78,9 @@ table = new Tabulator('#table', {
 		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150,
 			headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
 		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
-			formatter:"tickCross", formatterParams: { crossElement:false}, width:40},
+			formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.required}]]*/ "Required"},
 		{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
-            formatter:"tickCross", formatterParams: { crossElement:false}, width:40}
+            formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"}
 	]
 })
 table.on('rowClick', function(e, row) {

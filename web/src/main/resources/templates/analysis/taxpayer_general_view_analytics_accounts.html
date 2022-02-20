@@ -34,7 +34,7 @@
 				paginationMode: "local", //enable local pagination
 				paginationSize: 5,
 				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-				ajaxURL: /*[[@{/api/analysis/taxpayer_general_view}]]*/ "/api/analysis/taxpayer_general_view", //set url for ajax request
+				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
 					console.log(config)
 					console.log(params)

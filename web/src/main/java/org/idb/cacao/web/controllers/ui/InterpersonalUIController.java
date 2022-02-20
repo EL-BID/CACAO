@@ -20,7 +20,7 @@
 package org.idb.cacao.web.controllers.ui;
 
 import java.util.Optional;
-import java.util.logging.Logger;
+
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.web.controllers.services.FieldsConventionsService;
 import org.idb.cacao.web.dto.MenuItem;
@@ -34,7 +34,6 @@ import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.env.Environment;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,13 +51,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class InterpersonalUIController {
 
-	private static final Logger log = Logger.getLogger(InterpersonalUIController.class.getName());
-
     @Autowired
     private MessageSource messages;
 
-	@Autowired
-	private Environment env;
 
 	@Autowired
 	private InterpersonalRepository interpersonalRepository;

@@ -176,7 +176,7 @@
 			paginationMode: "local", //enable local pagination
 			paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 			paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-			ajaxURL: /*[[@{/api/analysis/statement_income_analysis}]]*/ "/api/analysis/statement_income_analysis", //set url for ajax request
+			ajaxURL: /*[[@{/api/analysis/statement-income-analysis}]]*/ "/api/analysis/statement-income-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)
@@ -228,7 +228,8 @@
 		});
 		
 		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.statement.income}]]*/ null;
+			let fileName = $('#taxpayer').val() + "_";
+			fileName = fileName + /*[[#{taxpayers.analysis.statement.income}]]*/ null;
 			return  fileName + ".xlsx";
 		}
 		

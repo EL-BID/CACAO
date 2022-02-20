@@ -132,8 +132,8 @@ let table = new Tabulator('#table', {
 		{title: /*[[#{taxpayer.id}]]*/ "Taxpayer ID", field:"taxPayerId", minWidth: 100, headerFilter: true},
 		{title: /*[[#{taxpayer.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
 		[# sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')"]
-		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
-		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
+		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false, tooltip:/*[[#{edit}]]*/ "Edit"},
+		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false, tooltip:/*[[#{delete}]]*/ "Delete"}
 		[/]
 	]
 })

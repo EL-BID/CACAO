@@ -103,7 +103,7 @@ function onFormChange() {
     if (!taxpayer || !startDate || !finalDate)
     	return
     var p = new URLSearchParams()
-    $.get([[@{/api/analysis/accounting_flows}]], 
+    $.get([[@{/api/analysis/accounting-flows}]], 
             { taxpayerId: taxpayer,
               startDate: luxon.DateTime.fromJSDate($('#rangestart').calendar('get date')).toISODate(),
               finalDate: luxon.DateTime.fromJSDate($('#rangeend').calendar('get date')).endOf('month').toISODate() },  // data to submit

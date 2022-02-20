@@ -17,7 +17,7 @@
       <div class="ui breadcrumb">
         <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
         <div class="divider"> / </div>
-        <a class="section" th:text="#{docs.history}" th:href="@{/docs_search}">All Uploads</a>
+        <a class="section" th:text="#{docs.history}" th:href="@{/docs-search}">All Uploads</a>
         <div class="divider"> / </div>
         <div class="active section" th:text="#{doc.error.messages}">Doc Errors</div>
       </div>
@@ -28,7 +28,7 @@
 		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/docs_search}" class="ui primary button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
+				<a th:href="@{/docs-search}" class="ui primary button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
 			</div>
 		</div>
 	</div>

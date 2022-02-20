@@ -219,7 +219,7 @@
 		
 		function updateData() {
 
-			$.get('/api/analysis/general_analysis', 
+			$.get('/api/analysis/general-analysis', 
 					{ qualifier: $('#qualifiers').val(),
 						qualifierValue: $('#qualifierValues').val(),
 						sourceData: $('#sourceData').val(),
@@ -411,7 +411,7 @@
 		}
 		
 		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.general}]]*/ null;
+			let fileName = /*[[#{taxpayers.analysis.general}]]*/ null;
 			fileName = fileName + "-" + /*[[#{taxpayers.analysis.general.outliers}]]*/ null;
 			return  fileName + ".xlsx";
 		}

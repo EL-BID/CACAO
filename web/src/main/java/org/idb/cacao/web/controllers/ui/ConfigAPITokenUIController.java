@@ -47,7 +47,7 @@ public class ConfigAPITokenUIController {
 	 * Return UI for API token configuration
 	 */
 	@Secured({"ROLE_CONFIG_API_TOKEN"})
-	@GetMapping("/config_token_api")
+	@GetMapping("/config-token-api")
     public String showConfigTokenAPI(Model model) {
     	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -56,7 +56,7 @@ public class ConfigAPITokenUIController {
     	if (user==null)
     		throw new UserNotFoundException();
 		model.addAttribute("user", user);
-		return "config/token/config_token_api";
+		return "config/token/config-token-api";
 	}
 
 

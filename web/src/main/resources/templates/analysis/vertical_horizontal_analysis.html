@@ -261,7 +261,7 @@
 		//let columdDefinitions = [];
 		
 		function updateColumns() {
-			$.get('/api/analysis/vertical_horizontal_view_columns', 
+			$.get('/api/analysis/vertical-horizontal-view-columns', 
 					{ finalDate: luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate(), 
 			    	  comparisonPeriods: $('#period').val(),
 			    	  analysisType: $('#analysisType').val() } ,  // data to submit
@@ -298,7 +298,7 @@
 				paginationMode: "local", //enable local pagination
 				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-				ajaxURL: /*[[@{/api/analysis/vertical_horizontal_analysis}]]*/ "/api/analysis/vertical_horizontal_analysis", //set url for ajax request
+				ajaxURL: /*[[@{/api/analysis/vertical-horizontal-analysis}]]*/ "/api/analysis/vertical-horizontal-analysis", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){				
 					p = new URLSearchParams()
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
@@ -372,7 +372,8 @@
 		}
 	
 		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.vertical.and.horizontal}]]*/ null;
+			let fileName = $('#taxpayer').val() + "_";
+			fileName = fileName + /*[[#{taxpayers.analysis.vertical.and.horizontal}]]*/ null;
 			return  fileName + ".xlsx";
 		}
 

@@ -290,7 +290,7 @@ public class DocumentStoreAPIController {
 	 * Endpoint for uploading many documents to be parsed in one ZIP file
 	 */
 	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
-	@PostMapping(value = "/docs_zip", produces = MediaType.APPLICATION_JSON_VALUE)
+	@PostMapping(value = "/docs-zip", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading many documents to be parsed in one ZIP file")
 	public ResponseEntity<Map<String, String>> handleFileUploadZIP(@RequestParam("filezip") MultipartFile filezip,
 			@RequestParam("template") String template, RedirectAttributes redirectAttributes,
@@ -554,7 +554,7 @@ public class DocumentStoreAPIController {
 	 */
 	@JsonView(Views.Declarant.class)
 	@Secured({"ROLE_TAX_DECLARATION_READ"})
-	@GetMapping(value = "/docs_search", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value = "/docs-search", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Method used for listing documents uploaded using pagination")
 	public PaginationData<DocumentUploaded> getDocsWithPagination(Model model,
 			@RequestParam("page") Optional<Integer> page, @RequestParam("size") Optional<Integer> size,
@@ -621,7 +621,7 @@ public class DocumentStoreAPIController {
 	 * days: Number of past days (overrides 'from' and 'to' parameters)
 	 */
 	@Secured({ "ROLE_TAX_DECLARATION_READ_ALL" })
-	@GetMapping(value = "/docs_uploads", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value = "/docs-uploads", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return document uploads records via API", response = DocumentUploaded[].class)
 	public ResponseEntity<Object> getDocsUploads(
 			@ApiParam(value = "Date/time for first upload", required = false) @RequestParam("fromDate") Optional<String> fromDate,

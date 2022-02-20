@@ -43,7 +43,7 @@ public class AnalysisUIController {
 	static final Logger log = Logger.getLogger(AnalysisUIController.class.getName());
 
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/vertical_horizontal_analysis"})
+	@GetMapping(value= {"/vertical-horizontal-analysis"})
 	public String getVerticalHorizontalAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -57,7 +57,7 @@ public class AnalysisUIController {
 	}	
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/general_analysis"})
+	@GetMapping(value= {"/general-analysis"})
 	public String getGeneralAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -71,7 +71,7 @@ public class AnalysisUIController {
 	}		
 
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/accounting_flows"})
+	@GetMapping(value= {"/accounting-flows"})
 	public String getAccountingFlows(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -84,7 +84,7 @@ public class AnalysisUIController {
         return "analysis/accounting_flows";
 	}
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/statement_income_analysis"})
+	@GetMapping(value= {"/statement-income-analysis"})
 	public String getStatementIncomeAnalysis(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -98,7 +98,7 @@ public class AnalysisUIController {
 	}
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/taxpayer_general_view"})
+	@GetMapping(value= {"/taxpayer-general-view"})
 	public String getTaxpayerGeneralView(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -112,7 +112,7 @@ public class AnalysisUIController {
 	}
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/customers_vs_suppliers_analysis"})
+	@GetMapping(value= {"/customers-vs-suppliers-analysis"})
 	public String getClientsVsSuppliersView(Model model) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();

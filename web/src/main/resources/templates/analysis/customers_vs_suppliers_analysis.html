@@ -183,7 +183,7 @@
 				paginationMode: "local", //enable local pagination
 				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-				ajaxURL: /*[[@{/api/analysis/customers_vs_suppliers_analysis}]]*/ "/api/analysis/customers_vs_suppliers_analysis", //set url for ajax request
+				ajaxURL: /*[[@{/api/analysis/customers-vs-suppliers-analysis}]]*/ "/api/analysis/customers-vs-suppliers-analysis", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
 					console.log(config)
 					console.log(params)
@@ -265,13 +265,25 @@
 			
 			table.on("tableBuilt", function(){
 				document.getElementById('exportXLS').addEventListener("click", function(){
-					table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/''});				    
+					table.download("xlsx", getFileName() , {sheetName: getSheetName()});				    
 				});
 			});
 		}
 		
+		function getSheetName() {
+			
+			let sheetName = /*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/'';
+
+			if (sheetName.length > 31)
+				sheetName = sheetName.substring(0,30);
+		
+			return sheetName;			
+			
+		}
+		
 		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/ null;
+			let fileName = $('#taxpayer').val() + "_";
+			fileName = fileName + /*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/ null;
 			return  fileName + ".xlsx";
 		}
 		

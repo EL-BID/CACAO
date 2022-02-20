@@ -65,7 +65,7 @@ public class AdminUIController {
 	 * Returns user interface for administrative operations
 	 */
 	@Secured({"ROLE_ADMIN_OPS"})
-	@GetMapping("/admin_shell")
+	@GetMapping("/admin-shell")
 	public String getAdminShell() {
 		
 		return "admin/admin-shell";

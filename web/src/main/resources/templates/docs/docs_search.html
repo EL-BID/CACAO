@@ -34,16 +34,16 @@
           <div class="header">Choose a date range</div>
           <div class="content">
             <span class="ui calendar" id="rangestart">
-              <div class="ui input left icon" style="position:auto">
+              <span class="ui input left icon" style="position:auto">
                 <i class="calendar icon"></i>
                 <input type="text" placeholder="Start">
-                </div>
+                </span>
             </span>
             <span class="ui calendar" id="rangeend">
-              <div class="ui input left icon" style="position:auto">
+              <span class="ui input left icon" style="position:auto">
                 <i class="calendar icon"></i>
                 <input type="text" placeholder="End">
-                </div>
+                </span>
             </span>
           </div>
           <div class="actions">
@@ -182,8 +182,7 @@ let table = new Tabulator('#table', {
 	index: 'id',
 	layout: "fitDataFill", //fit columns to width of table (optional)
     pagination: true,
-	paginationMode: "remote", //enable remote pagination
-	ajaxURL: /*[[@{/api/docs_search}]]*/ "/api/docs_seach", //set url for ajax request
+	paginationMode: "remote", //enable remote pagination	
 	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
 	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
 	ajaxContentType: "json",
@@ -191,6 +190,7 @@ let table = new Tabulator('#table', {
 	sortMode: "remote",
 	headerFilterLiveFilterDelay:700,
 	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+	ajaxURL: /*[[@{/api/docs-search}]]*/ "/api/docs-seach", //set url for ajax request
     ajaxURLGenerator: function(url, config, params ){
 		p= new URLSearchParams()
 		console.log(params)

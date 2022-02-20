@@ -71,7 +71,7 @@ public class ConfigAPITokenAPIController {
 	 * Return the user's API token
 	 */
 	@Secured({"ROLE_CONFIG_API_TOKEN"})
-	@GetMapping(value = "/token_api", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value = "/token-api", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiIgnore
     public ResponseEntity<Map<String,String>> getTokenAPI(Model model) {
     	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -92,7 +92,7 @@ public class ConfigAPITokenAPIController {
 	 */
 	@Secured({"ROLE_CONFIG_API_TOKEN"})
 	@Transactional
-	@DeleteMapping(value = "/token_api")
+	@DeleteMapping(value = "/token-api")
 	@ApiIgnore
 	@ResponseBody
     public GenericResponse deleteTokenAPI(Model model) {
@@ -114,7 +114,7 @@ public class ConfigAPITokenAPIController {
 	 */
 	@Secured({"ROLE_CONFIG_API_TOKEN"})
 	@Transactional
-	@PutMapping(value = "/token_api", produces = MediaType.APPLICATION_JSON_VALUE)
+	@PutMapping(value = "/token-api", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiIgnore
     public ResponseEntity<Map<String,String>> createTokenAPI(Model model) {
     	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
