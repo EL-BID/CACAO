@@ -19,10 +19,17 @@
  *******************************************************************************/
 package org.idb.cacao.web.conf;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import org.idb.cacao.web.controllers.services.PrivilegeService;
+import org.idb.cacao.web.entities.SystemPrivilege;
+import org.idb.cacao.web.entities.UserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.access.annotation.Secured;
@@ -50,6 +57,11 @@ public class SwaggerRolesBindingConfig implements OperationBuilderPlugin {
     private static final Logger LOG = Logger.getLogger(SwaggerRolesBindingConfig.class.getName());
 
     private final DescriptionResolver descriptions;
+    
+    @Autowired
+    private PrivilegeService privilegeService;
+    
+    private Set<String> declarantPrivileges;
 
     @Autowired
     public SwaggerRolesBindingConfig(DescriptionResolver descriptions) {
@@ -65,7 +77,16 @@ public class SwaggerRolesBindingConfig implements OperationBuilderPlugin {
             Optional<Secured> securedAnnotation = context.findAnnotation(Secured.class);
             sb.append("<b>Roles</b>: ");
             if (securedAnnotation.isPresent()) {
+            	
+            	if (SwaggerConfig.DECLARANT_GROUP.equalsIgnoreCase(context.getDocumentationContext().getGroupName())) {
+            		if (!hasDeclarantPrivilege(securedAnnotation.get().value())) {
+            			context.operationBuilder().hidden(true);
+            			return;
+            		}
+            	}
+            	
                 sb.append("<em>" + String.join(", ",securedAnnotation.get().value()) + "</em>");
+                
             } else {
                 sb.append("<em>&nbsp;</em>");
             }
@@ -87,5 +108,15 @@ public class SwaggerRolesBindingConfig implements OperationBuilderPlugin {
     @Override
     public boolean supports(DocumentationType delimiter) {
         return SwaggerPluginSupport.pluginDoesApply(delimiter);
+    }
+    
+    private boolean hasDeclarantPrivilege(String[] roles) {
+    	if (roles==null || roles.length==0)
+    		return true;
+    	if (declarantPrivileges==null) {
+    		declarantPrivileges = privilegeService.getPrivileges(UserProfile.DECLARANT).stream().map(SystemPrivilege::getRole)
+    				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+    	}
+    	return Arrays.stream(roles).anyMatch(declarantPrivileges::contains);
     }
 }

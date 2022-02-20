@@ -122,6 +122,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .csrf().disable()
         .addFilterBefore(apiAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)      
         .addFilterBefore(new CSPNonceFilter(), HeaderWriterFilter.class)
+        .addFilterAfter(new SwaggerUIAuthenticationFilter(), HeaderWriterFilter.class)
         .headers()
         	.frameOptions().sameOrigin()
         	.referrerPolicy(ReferrerPolicy.SAME_ORIGIN).and() // includes a 'Referrer-Policy: same-origin' header for increased security measure
@@ -162,7 +163,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .permitAll()
 
             // Page with REST endpoints
-            .antMatchers("/swagger-ui/**").hasAnyRole("SYSADMIN","SUPPORT")
+            .antMatchers("/swagger-ui/**").hasAnyRole("SYSADMIN","SUPPORT","CONFIG_API_TOKEN")
             
             // ALL OTHERS URL's NEED AUTHENTICATION
             .anyRequest().authenticated()

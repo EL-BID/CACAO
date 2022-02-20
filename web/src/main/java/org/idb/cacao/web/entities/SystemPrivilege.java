@@ -36,26 +36,6 @@ public enum SystemPrivilege {
 	ADMIN_OPS,
 	
 	/**
-	 * Privilege for reading or listing any type of communications
-	 */
-	COMMUNICATION_READ,
-	
-	/**
-	 * Privilege for uploading or deleting generic files used for communications
-	 */
-	COMMUNICATION_UPLOAD,
-
-	/**
-	 * Privilege for changing any type of communications (except private communications)
-	 */
-	COMMUNICATION_WRITE,
-
-	/**
-	 * Privilege for changing private communications
-	 */
-	COMMUNICATION_WRITE_PRIVATE,
-
-	/**
 	 * Privilege for creating and making use of an individual API TOKEN
 	 */
 	CONFIG_API_TOKEN,

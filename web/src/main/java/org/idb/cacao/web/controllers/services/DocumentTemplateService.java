@@ -40,11 +40,15 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 
 /**
  * Service methods for template operations and queries
@@ -57,6 +61,9 @@ public class DocumentTemplateService {
 
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
+
+	@Autowired
+	private MessageSource messageSource;
 
     /**
      * Search document templates matching their names or ID's or tax names (may be any of these).
@@ -359,6 +366,37 @@ public class DocumentTemplateService {
 				if (!exceeding_maps.isEmpty()) {
 					// Some fields are exceeding in DocumentInput ...
 					exceeding_maps.stream().forEach(input::removeField);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Performs additional validation over templates
+	 */
+	public void validateTemplate(DocumentTemplate template, BindingResult result) {
+		if (template==null || result==null)
+			return;
+		if (template.getFields()!=null && !template.getFields().isEmpty()) {
+			// Check for duplicate fields
+			Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+			for (DocumentField field: template.getFields()) {
+				if (field.getFieldName()==null || field.getFieldName().trim().length()==0) {
+					String fieldName = messageSource.getMessage("field.name", null, LocaleContextHolder.getLocale());
+					String errorMessage = messageSource.getMessage("error.field.empty", new Object[] {fieldName}, LocaleContextHolder.getLocale());
+					result.addError(new ObjectError(
+						fieldName,
+						errorMessage));
+				}
+				else if (names.contains(field.getFieldName())) {
+					String fieldName = messageSource.getMessage("field.name", null, LocaleContextHolder.getLocale());
+					String errorMessage = messageSource.getMessage("error.unique.name", new Object[] {field.getFieldName()}, LocaleContextHolder.getLocale());
+					result.addError(new ObjectError(
+						fieldName,
+						errorMessage));					
+				}
+				else {
+					names.add(field.getFieldName());
 				}
 			}
 		}

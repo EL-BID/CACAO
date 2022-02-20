@@ -74,6 +74,10 @@
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />
     	</Logger>
+    	<Logger name="io.swagger.models.parameters.AbstractSerializableParameter" level="ERROR"  additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender" />
+    	</Logger>
         <Root level="warn">
             <AppenderRef ref="ConsoleAppender" />
             <AppenderRef ref="FileAppender" />

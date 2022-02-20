@@ -91,6 +91,9 @@ public class DocumentTemplateAPIController {
     @PostMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add a new document template",response=DocumentTemplate.class)
     public ResponseEntity<Object> addTemplate(@Valid @RequestBody DocumentTemplate template, BindingResult result) {
+		
+		templateService.validateTemplate(template, result);
+		
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
@@ -122,6 +125,9 @@ public class DocumentTemplateAPIController {
     @PutMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Updates an existing document template", response=DocumentTemplate.class)
     public ResponseEntity<Object> updateTemplate(@PathVariable("id") String id, @Valid @RequestBody DocumentTemplate template, BindingResult result) {
+		
+		templateService.validateTemplate(template, result);
+		
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
@@ -269,6 +275,5 @@ public class DocumentTemplateAPIController {
 		PaginationData<DocumentTemplate> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
 		return result;
 	}
-	
 	
 }
