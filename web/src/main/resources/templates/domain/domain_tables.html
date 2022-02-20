@@ -37,82 +37,68 @@
 <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
 <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
    
+<div th:replace="fragments/tabulator_commons"></div>   
+   
 <script th:nonce="${cspNonce}" th:inline="javascript">
-var rowFormatter = function(row){
-    if(!row.getData().active){
-        row.getElement().style.backgroundColor = "#F0F0F0";
-    }
-}
-
-this.table = new Tabulator('#table', {
-    index: 'id',
-    layout: "fitData",
-    pagination: true,
-    paginationMode: "remote", //enable remote pagination
-    ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request
-    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-    ajaxContentType: "json",
-    filterMode:"remote",
-    sortMode: "remote",
-    headerFilterLiveFilterDelay:700,
-    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-    ajaxURLGenerator: function(url, config, params ){
-        console.log(config)
-        console.log(params)
-        p= new URLSearchParams()
-        p.set('page', params.page)
-        p.set('size', params.size)
-        p.set('filter', JSON.stringify(params.filter))
-        if(params.sort.length>0) {
-            p.set('sortby', params.sort[0].field)
-            p.set('sortorder', params.sort[0].dir)
-        }
-        return url + '?' + p.toString()
-    },
-    rowFormatter: rowFormatter,
-    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-    locale:'xx',
-    langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },
-    columns:[ //Define Table Columns
-        {title: /*{{#domain.table.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
-        {title: /*{{#domain.table.version}]]*/ "Version", field:"version", hozAlign:"left", minWidth: 100, headerFilter: true },
-        {title: /*{{#domain.table.group}]]*/ "Group", field:"group", minWidth: 140, headerFilter: true},
-    ]
-})
-table.on('rowClick', function(e, row) {
-    window.location.replace([[@{/domaintables/}]] + row.getIndex());
-})
-let showHeaderFilter = true
-let toggleFilter = function() {
-    showHeaderFilter = ! showHeaderFilter
-    if(!showHeaderFilter) {
-        table.clearHeaderFilter()
-    }
-    $('.tabulator-header-filter').toggle(showHeaderFilter)
-    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-}
-
-table.on("tableBuilt", function(){
-    $('#filter').click( toggleFilter )
-    toggleFilter()
-})
+	var rowFormatter = function(row){
+	    if(!row.getData().active){
+	        row.getElement().style.backgroundColor = "#F0F0F0";
+	    }
+	}
+	
+	this.table = new Tabulator('#table', {
+	    index: 'id',
+	    layout: "fitData",
+	    pagination: true,
+	    paginationMode: "remote", //enable remote pagination
+	    ajaxURL: /*[[@{/api/domaintables}]]*/ "/api/domaintables", //set url for ajax request
+	    paginationSize: tabulatorPaginationSize,
+		paginationSizeSelector: tabulatorPaginationSizeSelector,				
+		langs: tabulatorLanguageSpecs,
+	    ajaxContentType: "json",
+	    filterMode:"remote",
+	    sortMode: "remote",
+	    headerFilterLiveFilterDelay:700,
+	    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+	    ajaxURLGenerator: function(url, config, params ){
+	        console.log(config)
+	        console.log(params)
+	        p= new URLSearchParams()
+	        p.set('page', params.page)
+	        p.set('size', params.size)
+	        p.set('filter', JSON.stringify(params.filter))
+	        if(params.sort.length>0) {
+	            p.set('sortby', params.sort[0].field)
+	            p.set('sortorder', params.sort[0].dir)
+	        }
+	        return url + '?' + p.toString()
+	    },
+	    rowFormatter: rowFormatter,
+	    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+	    locale:'xx',
+	    columns:[ //Define Table Columns
+	        {title: /*{{#domain.table.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
+	        {title: /*{{#domain.table.version}]]*/ "Version", field:"version", hozAlign:"left", minWidth: 100, headerFilter: true },
+	        {title: /*{{#domain.table.group}]]*/ "Group", field:"group", minWidth: 140, headerFilter: true},
+	    ]
+	})
+	table.on('rowClick', function(e, row) {
+	    window.location.replace([[@{/domaintables/}]] + row.getIndex());
+	})
+	let showHeaderFilter = true
+	let toggleFilter = function() {
+	    showHeaderFilter = ! showHeaderFilter
+	    if(!showHeaderFilter) {
+	        table.clearHeaderFilter()
+	    }
+	    $('.tabulator-header-filter').toggle(showHeaderFilter)
+	    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+	}
+	
+	table.on("tableBuilt", function(){
+	    $('#filter').click( toggleFilter )
+	    toggleFilter()
+	})
 </script>
 </body>
 </html>

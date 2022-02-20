@@ -12,7 +12,7 @@
 			</div>
 		</div>
 	</div>	
-
+	
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		// Keeps data for graph use
@@ -33,7 +33,8 @@
 			    pagination: false,
 				paginationMode: "local", //enable local pagination
 				paginationSize: 5,
-				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+				paginationSizeSelector: tabulatorPaginationSizeSelector,				
+				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
 					console.log(config)
@@ -58,23 +59,6 @@
 				footerElement: "<button id='exportXLSAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
 								"<button id='showGraphShareholders' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
-				langs:{
-			        "xx":{
-			            "pagination":{
-			                "first":/*[[#{pagination.first.button}]]*/ "First",
-			                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-			                "last":/*[[#{pagination.last.button}]]*/ "Last",
-			                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-			                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-			                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-			                "next":/*[[#{pagination.next.button}]]*/ "Next",
-			                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-			                "all":/*[[#{pagination.all}]]*/ "All",
-			                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-			                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-			            }
-			        }
-			    },	
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 			    groupBy:"year",
 			    groupHeader:function(value, count, data, group){

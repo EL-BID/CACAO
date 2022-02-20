@@ -92,7 +92,9 @@
 		SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
 		ALERT</div>
-
+		
+	<div th:replace="fragments/tabulator_commons"></div>
+	
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		vegaEmbed.vega.formatLocale({
@@ -200,13 +202,6 @@
 	          	})
 	        });
 		}
-		
-		//Custom accessor
-		function nullConvert(value, data, type, component){
-		    if ( value == null )
-		    	return "";
-		    return value;
-		}		
 
 		function getFileName(searchType) {
 			

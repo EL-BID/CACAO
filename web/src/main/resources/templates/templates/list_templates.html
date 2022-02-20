@@ -30,81 +30,67 @@
 			</div>
 		</div>
 	</div>
+	
+	<div th:replace="fragments/tabulator_commons"></div>
  
-<script th:nonce="${cspNonce}" th:inline="javascript">
-var rowFormatter = function(row){
-      if(!row.getData().active){
-          row.getElement().style.backgroundColor = "#F0F0F0";
-      }
-  }
-
-var tableData = /*[[${templates}]]*/ null;
-let periodicityLookup = {
-    [# th:each="i :  ${T(org.idb.cacao.api.Periodicity).values()}"] 
-    [# th:text="${i.name()}"/]: [# th:text="#{${i}}"/], 
-    [/]
-}
-table = new Tabulator('#table', {
-	index: 'id',
-	layout: "fitData", //fit columns to width of table (optional)
-    pagination: true,
-    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-    locale:'xx',
-    langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },
-    rowFormatter: rowFormatter,
-	data: tableData,
-	columns:[ //Define Table Columns
-		{title: /*[[#{template.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
-		{title: /*[[#{template.group}]]*/ "Group", field:"group", minWidth: 100, headerFilter: true},
-		{title: /*[[#{template.version}]]*/ "Version", field:"version", minWidth: 100, headerFilter: true},
-		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150,
-			headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
-		{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
-			formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.required}]]*/ "Required"},
-		{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
-            formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"}
-	]
-})
-table.on('rowClick', function(e, row) {
-	if( e.target.classList.contains('edit')) {
-		return
-	}
-	window.location.replace([[@{/templates/}]] + row.getIndex());
-})
-
-let showHeaderFilter = true
-let toggleFilter = function() {
-    showHeaderFilter = ! showHeaderFilter
-    if(!showHeaderFilter) {
-        table.clearHeaderFilter()
-    }
-    $('.tabulator-header-filter').toggle(showHeaderFilter)
-    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-}
-
-table.on("tableBuilt", function(){
-    $('#filter').click( toggleFilter )
-    toggleFilter()
-})
-</script>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+		var rowFormatter = function(row){
+		      if(!row.getData().active){
+		          row.getElement().style.backgroundColor = "#F0F0F0";
+		      }
+		  }
+		
+		var tableData = /*[[${templates}]]*/ null;
+		let periodicityLookup = {
+		    [# th:each="i :  ${T(org.idb.cacao.api.Periodicity).values()}"] 
+		    [# th:text="${i.name()}"/]: [# th:text="#{${i}}"/], 
+		    [/]
+		}
+		table = new Tabulator('#table', {
+			index: 'id',
+			layout: "fitData", //fit columns to width of table (optional)
+		    pagination: true,
+		    paginationSize: tabulatorPaginationSize,
+			paginationSizeSelector: tabulatorPaginationSizeSelector,				
+			langs: tabulatorLanguageSpecs,
+		    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		    locale:'xx',
+		    rowFormatter: rowFormatter,
+			data: tableData,
+			columns:[ //Define Table Columns
+				{title: /*[[#{template.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
+				{title: /*[[#{template.group}]]*/ "Group", field:"group", minWidth: 100, headerFilter: true},
+				{title: /*[[#{template.version}]]*/ "Version", field:"version", minWidth: 100, headerFilter: true},
+				{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150,
+					headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
+				{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
+					formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.required}]]*/ "Required"},
+				{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
+		            formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"}
+			]
+		})
+		table.on('rowClick', function(e, row) {
+			if( e.target.classList.contains('edit')) {
+				return
+			}
+			window.location.replace([[@{/templates/}]] + row.getIndex());
+		})
+		
+		let showHeaderFilter = true
+		let toggleFilter = function() {
+		    showHeaderFilter = ! showHeaderFilter
+		    if(!showHeaderFilter) {
+		        table.clearHeaderFilter()
+		    }
+		    $('.tabulator-header-filter').toggle(showHeaderFilter)
+		    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+		}
+		
+		table.on("tableBuilt", function(){
+		    $('#filter').click( toggleFilter )
+		    toggleFilter()
+		})
+	</script>
 </body>
 </html>
     

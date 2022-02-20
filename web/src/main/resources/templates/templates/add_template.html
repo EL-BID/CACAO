@@ -67,109 +67,96 @@
      </div>
 	
   </div>
-<script th:nonce="${cspNonce}" th:inline="javascript">
-$('ui.checkbox').checkbox()
-$('#template').click(function(event) {
-	$('#chooseArchetype').hide()
-	$('#chooseTemplate').show()
-	createTable()
-})
-$('#archetype').click(function(event) {
-	if(table!=null) {
-	   table.destroy()
-	   table=null
-	}
-    $('#chooseTemplate').hide()
-    $('#chooseArchetype').show()
-})
-let applyFilter = () => table.setFilter("name", "like", "*" + $('#filter').val() + "*")
-$('#search').click(applyFilter)
-$('#filter').keypress(function(event) {
-	if(event.keyCode == 13) {
-        console.log(event)
-		event.preventDefault()
-		applyFilter()
-	}
-})
+  
+  <div th:replace="fragments/tabulator_commons"></div>
 
-let table = null
-
-let createTable = function() {
-  table = new Tabulator('#table', {
-	index: 'id',
-	layout: "fitColumns", //fit columns to width of table (optional)
-	selectable: 1,
-	pagination: true,
-	paginationMode: "remote", //enable remote pagination
-	ajaxURL: /*[[@{/api/templates}]]*/ "/api/templates", //set url for ajax request
-	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-	ajaxContentType: "json",
-	filterMode:"remote",
-	sortMode: "remote",
-	responsiveLayout: true,
-	ajaxURLGenerator: function(url, config, params ){
-		p= new URLSearchParams()
-		p.set('page', params.page)
-		p.set('size', params.size)
-		p.set('filter', JSON.stringify(params.filter))
-		if(params.sort.length>0) {
-			p.set('sortby', params.sort[0].field)
-			p.set('sortorder', params.sort[0].dir)
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+		$('ui.checkbox').checkbox()
+		$('#template').click(function(event) {
+			$('#chooseArchetype').hide()
+			$('#chooseTemplate').show()
+			createTable()
+		})
+		$('#archetype').click(function(event) {
+			if(table!=null) {
+			   table.destroy()
+			   table=null
+			}
+		    $('#chooseTemplate').hide()
+		    $('#chooseArchetype').show()
+		})
+		let applyFilter = () => table.setFilter("name", "like", "*" + $('#filter').val() + "*")
+		$('#search').click(applyFilter)
+		$('#filter').keypress(function(event) {
+			if(event.keyCode == 13) {
+		        console.log(event)
+				event.preventDefault()
+				applyFilter()
+			}
+		})
+		
+		let table = null
+		
+		let createTable = function() {
+		  table = new Tabulator('#table', {
+			index: 'id',
+			layout: "fitColumns", //fit columns to width of table (optional)
+			selectable: 1,
+			pagination: true,
+			paginationMode: "remote", //enable remote pagination
+			ajaxURL: /*[[@{/api/templates}]]*/ "/api/templates", //set url for ajax request
+			paginationSize: tabulatorPaginationSize,
+			paginationSizeSelector: tabulatorPaginationSizeSelector,				
+			langs: tabulatorLanguageSpecs,
+			ajaxContentType: "json",
+			filterMode:"remote",
+			sortMode: "remote",
+			responsiveLayout: true,
+			ajaxURLGenerator: function(url, config, params ){
+				p= new URLSearchParams()
+				p.set('page', params.page)
+				p.set('size', params.size)
+				p.set('filter', JSON.stringify(params.filter))
+				if(params.sort.length>0) {
+					p.set('sortby', params.sort[0].field)
+					p.set('sortorder', params.sort[0].dir)
+				}
+				
+				return url + '?' + p.toString()
+			},
+			footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		    locale:'xx',
+			columns:[ //Define Table Columns
+				{title: /*[[#{template.name}]]*/ "Name", field:"name"},
+				{title: /*[[#{template.group}]]*/ "Group", field:"group"},
+				{title: /*[[#{template.version}]]*/ "Version", field:"version"},
+				{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity"},
+				{title: /*{{#{template.required}]]*/ "Required", field:"required", 
+				formatter:"tickCross",  
+				formatterParams: { crossElement:false} }
+			]
+		  })
+		  table.on('rowClick', function(e, row) {
+			p= new URLSearchParams()
+			p.set('type', 'template')
+		    p.set('id', row.getIndex())
+			window.location.replace([[@{/templates/new}]] + "?" + p.toString())
+		  })
+		}
+		let showHeaderFilter = true
+		let toggleFilter = function() {
+		    showHeaderFilter = ! showHeaderFilter
+		    if(!showHeaderFilter) {
+		        table.clearHeaderFilter()
+		    }
+		    $('.tabulator-header-filter').toggle(showHeaderFilter)
+		    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
 		}
 		
-		return url + '?' + p.toString()
-	},
-	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-    locale:'xx',
-    langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },
-	columns:[ //Define Table Columns
-		{title: /*[[#{template.name}]]*/ "Name", field:"name"},
-		{title: /*[[#{template.group}]]*/ "Group", field:"group"},
-		{title: /*[[#{template.version}]]*/ "Version", field:"version"},
-		{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity"},
-		{title: /*{{#{template.required}]]*/ "Required", field:"required", 
-		formatter:"tickCross",  
-		formatterParams: { crossElement:false} }
-	]
-  })
-  table.on('rowClick', function(e, row) {
-	p= new URLSearchParams()
-	p.set('type', 'template')
-    p.set('id', row.getIndex())
-	window.location.replace([[@{/templates/new}]] + "?" + p.toString())
-  })
-}
-let showHeaderFilter = true
-let toggleFilter = function() {
-    showHeaderFilter = ! showHeaderFilter
-    if(!showHeaderFilter) {
-        table.clearHeaderFilter()
-    }
-    $('.tabulator-header-filter').toggle(showHeaderFilter)
-    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-}
-
-table.on("tableBuilt", function(){
-    $('#filter').click( toggleFilter )
-    toggleFilter()
-})
-</script>
+		table.on("tableBuilt", function(){
+		    $('#filter').click( toggleFilter )
+		    toggleFilter()
+		})
+	</script>
 </body>
 </html>

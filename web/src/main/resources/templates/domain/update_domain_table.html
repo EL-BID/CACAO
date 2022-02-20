@@ -87,181 +87,166 @@
 	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<div th:replace="fragments/tabulator_commons"></div>
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-var domain_table = [[${table}]]
-domain_table.entries = domain_table.entries.map( (entry, i) => {
-    entry.id = i
-    return entry
-})
-var next_id = domain_table.entries.length
-$('#cancel').click(function(){
-  [# th:if="${table.id==null}"]
-     window.location.replace([[@{/domaintables}]])
-  [/]
-  [# th:if="${table.id!=null}"]
-     window.location.replace([[@{/domaintables/{id}(id=${table.id})}]])
-  [/]   
-})
-var add_entry = function(event, fields) {
-	event.preventDefault()
-	var entry = {key: fields.key, language: fields.language, description: fields.description, locked: false, id: next_id++ }
-	table.addRow(entry, false)
-    table.redraw(true)
-    event.target.reset()
-}
-var processForm = function(event, fields) {
-	event.preventDefault()
-	form_obj = $('#form').serializeArray()
-    domain_table = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), domain_table)
-    domain_table.entries = table.getData()
-    console.log(domain_table)
-	$.ajax({
-	    url: [[@{/api/domaintable/{id}(id=${table.id})}]],
-	    type: 'PUT',
-	    dataType: 'json',
-	    contentType: 'application/json',
-	    data: JSON.stringify(domain_table),
-	    cache: false,    
-		success: function(result) {
-			$('#modal_successful').modal('show')
-			setTimeout(function(){
-				window.location = [[@{/domaintables}]] + "/" + result.id
-			}, 2000);
-		},
-		error: function(e) {
-			var msg = e.responseText.replace(/\n/g, "<br />");
-			$('#modal_failed').find('.description').html(msg)
-			$('#modal_failed').modal('show')
-			console.log("ERROR : "+msg);
+		var domain_table = [[${table}]]
+		domain_table.entries = domain_table.entries.map( (entry, i) => {
+		    entry.id = i
+		    return entry
+		})
+		var next_id = domain_table.entries.length
+		$('#cancel').click(function(){
+		  [# th:if="${table.id==null}"]
+		     window.location.replace([[@{/domaintables}]])
+		  [/]
+		  [# th:if="${table.id!=null}"]
+		     window.location.replace([[@{/domaintables/{id}(id=${table.id})}]])
+		  [/]   
+		})
+		var add_entry = function(event, fields) {
+			event.preventDefault()
+			var entry = {key: fields.key, language: fields.language, description: fields.description, locked: false, id: next_id++ }
+			table.addRow(entry, false)
+		    table.redraw(true)
+		    event.target.reset()
 		}
-	});			 
-}
-var deleteIcon = function(cell, formatterParams) { 
-	if(!cell.getRow().getData().locked)
-		return '<i class="trash icon" tooltip=[[#{delete}]]></i>'
-};  
-var deleteEntry = function(e, cell) {
-	if( !e.target.classList.contains('trash')) {
-        return
-    }
-    var dlg = $('#modal_confirm')
-    dlg.find('.description').html([[#{domain.entry.delete.confirm}]])
-    dlg.modal({
-      closable:false,
-      onApprove: function() { 
-    	  cell.getRow().delete()
-    	  table.redraw(true)
-      }
-    })
-    dlg.modal('show');
-}
-
-var languageLookup = {
-    [# th:each="l : ${languages}"]
-    [[${l.name}]] : [[${l.id}]],
-    [/]
-}
-var table = new Tabulator('#table', {
-    index: 'id',
-    layout: "fitColumns", //fit columns to width of table (optional)
-    responsiveLayout: "collapse",
-    pagination: true,
-    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-    locale:'xx',
-    langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },
-    columns:[ //Define Table Columns
-        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200", headerFilter: true},
-        {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
-        	formatterParams: languageLookup, headerFilter: 'select', headerFilterParams: { values: languageLookup }}, 
-        {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true, headerFilter: true },
-        {formatter:deleteIcon, width:50, cellClick: deleteEntry, headerSort: false }
-    ],
-    data: domain_table.entries
-})
-
-$(document)
-.ready(function() {
-  $('#form')
-    .form({
-      fields: {
-        name: {
-            identifier  : 'name',
-            rules: [
-              {
-                type   : 'empty',
-                prompt : "Name is missing!"
-              }
-            ]
-          },
-        version: {
-          identifier  : 'version',
-          rules: [
-            {
-              type   : 'empty',
-              prompt : "Version is missing!"
-            }
-          ]
-        }
-      },
-      onSuccess: (processForm)
-    })
-  $('#form_add')
-  .form({
-	  fields: {
-		 key : {
-			  identifier: 'key',
-			  rules: [
-				  { type: "empty", prompt: "Key is empty"}
-			  ]
-		  },
-		  language : {
-              identifier: 'language',
-              rules: [
-                  { type: "empty", prompt: "Language is empty"}
-              ]
-          },
-         description : {
-              identifier: 'description',
-              rules: [
-                  { type: "empty", prompt: "Description is empty"}
-              ]
-          },
-	  },
-	  onSuccess: add_entry
-  })
-})
-let showHeaderFilter = true
-let toggleFilter = function() {
-    showHeaderFilter = ! showHeaderFilter
-    if(!showHeaderFilter) {
-        table.clearHeaderFilter()
-    }
-    $('.tabulator-header-filter').toggle(showHeaderFilter)
-    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-}
-
-table.on("tableBuilt", function(){
-    $('#filter').click( toggleFilter )
-    toggleFilter()
-})
-</script>
+		var processForm = function(event, fields) {
+			event.preventDefault()
+			form_obj = $('#form').serializeArray()
+		    domain_table = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), domain_table)
+		    domain_table.entries = table.getData()
+		    console.log(domain_table)
+			$.ajax({
+			    url: [[@{/api/domaintable/{id}(id=${table.id})}]],
+			    type: 'PUT',
+			    dataType: 'json',
+			    contentType: 'application/json',
+			    data: JSON.stringify(domain_table),
+			    cache: false,    
+				success: function(result) {
+					$('#modal_successful').modal('show')
+					setTimeout(function(){
+						window.location = [[@{/domaintables}]] + "/" + result.id
+					}, 2000);
+				},
+				error: function(e) {
+					var msg = e.responseText.replace(/\n/g, "<br />");
+					$('#modal_failed').find('.description').html(msg)
+					$('#modal_failed').modal('show')
+					console.log("ERROR : "+msg);
+				}
+			});			 
+		}
+		var deleteIcon = function(cell, formatterParams) { 
+			if(!cell.getRow().getData().locked)
+				return '<i class="trash icon" tooltip=[[#{delete}]]></i>'
+		};  
+		var deleteEntry = function(e, cell) {
+			if( !e.target.classList.contains('trash')) {
+		        return
+		    }
+		    var dlg = $('#modal_confirm')
+		    dlg.find('.description').html([[#{domain.entry.delete.confirm}]])
+		    dlg.modal({
+		      closable:false,
+		      onApprove: function() { 
+		    	  cell.getRow().delete()
+		    	  table.redraw(true)
+		      }
+		    })
+		    dlg.modal('show');
+		}
+		
+		var languageLookup = {
+		    [# th:each="l : ${languages}"]
+		    [[${l.name}]] : [[${l.id}]],
+		    [/]
+		}
+		var table = new Tabulator('#table', {
+		    index: 'id',
+		    layout: "fitColumns", //fit columns to width of table (optional)
+		    responsiveLayout: "collapse",
+		    pagination: true,
+		    paginationSize: tabulatorPaginationSize,
+			paginationSizeSelector: tabulatorPaginationSizeSelector,				
+			langs: tabulatorLanguageSpecs,
+			footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		    locale:'xx',
+		    columns:[ //Define Table Columns
+		        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200", headerFilter: true},
+		        {title: /*[[#{domain.entry.language}]]*/ "Language", field:"language", width: "150", formatter: "lookup", 
+		        	formatterParams: languageLookup, headerFilter: 'select', headerFilterParams: { values: languageLookup }}, 
+		        {title: /*[[#{domain.entry.description}]]*/ "Description", field:"description", responsive: 3, editor: true, headerFilter: true },
+		        {formatter:deleteIcon, width:50, cellClick: deleteEntry, headerSort: false }
+		    ],
+		    data: domain_table.entries
+		})
+		
+		$(document)
+		.ready(function() {
+		  $('#form')
+		    .form({
+		      fields: {
+		        name: {
+		            identifier  : 'name',
+		            rules: [
+		              {
+		                type   : 'empty',
+		                prompt : "Name is missing!"
+		              }
+		            ]
+		          },
+		        version: {
+		          identifier  : 'version',
+		          rules: [
+		            {
+		              type   : 'empty',
+		              prompt : "Version is missing!"
+		            }
+		          ]
+		        }
+		      },
+		      onSuccess: (processForm)
+		    })
+		  $('#form_add')
+		  .form({
+			  fields: {
+				 key : {
+					  identifier: 'key',
+					  rules: [
+						  { type: "empty", prompt: "Key is empty"}
+					  ]
+				  },
+				  language : {
+		              identifier: 'language',
+		              rules: [
+		                  { type: "empty", prompt: "Language is empty"}
+		              ]
+		          },
+		         description : {
+		              identifier: 'description',
+		              rules: [
+		                  { type: "empty", prompt: "Description is empty"}
+		              ]
+		          },
+			  },
+			  onSuccess: add_entry
+		  })
+		})
+		let showHeaderFilter = true
+		let toggleFilter = function() {
+		    showHeaderFilter = ! showHeaderFilter
+		    if(!showHeaderFilter) {
+		        table.clearHeaderFilter()
+		    }
+		    $('.tabulator-header-filter').toggle(showHeaderFilter)
+		    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+		}
+		
+		table.on("tableBuilt", function(){
+		    $('#filter').click( toggleFilter )
+		    toggleFilter()
+		})
+	</script>
 </body>
 </html>
