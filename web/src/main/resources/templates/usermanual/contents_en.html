@@ -621,6 +621,55 @@ The following table shows a small example of a list of Field from a Chart of Acc
 </div>
 </div>
 
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">CACAO's API</span>
+</div>
+<div class="content markdown">
+## What are API and why CACAO have them?
+
+An **application programming interface** (API) is a connection between computers or between computer programs. It is a type of software interface, offering a service to other pieces of software. In contrast to a user interface, which connects a computer to a person, an **API** connects computers or pieces of software to each other. It is not intended to be used directly by a person (the end user) other than a computer programmer who is incorporating it into software.
+
+CACAO expose different API in order to allow taxpayers' information systems to connect directly to CACAO, and execute all actions, such as file uploading, automatically. CACAO's API also allows other information systems from the Tax Administration to interact and share information between them without human intervention. 
+
+> **Attention!**
+> All CACAO's API adhere to the same Role Based Access Control that the user interface implements. **Not all API are available to all roles.**
+> If you don't have access to a API that you need, please make contact with the Tax Administration.
+
+## Configuring an Access Token
+
+**Before** using any of the CACAO's API, you must create a **access token**. This token will replace the user/password information in order to login on CACAO and access the desired functionality. 
+
+To create an access token, elect the `CACAO Configurations` option located at the sidebar menu. Then select the `Token API Configuration`. An interface for managing your access token will be displayed, with the following options:
+
+* **View generated token** shows you the token that you have already created (if any)
+* **Generate a new token** creates a new token or replaces the previous one
+* The **Delete token** options deletes your token from CACAO
+
+Please, **keep this token information a secret**. Do not share or publish this information.
+
+> **Attention!**
+> If you believe your token has been disclosed or compromised, you must access the `Token API Configuration` option and delete it.
+> All actions authenticated by the token is of the sole responsibility of its owner. The Tax Administration **do not** have access to the tokens.
+
+## Available API
+
+To list all available API, select the `CACAO Configurations` option located at the sidebar menu. Then select `CACAO API Documentation`. A _Swagger_ interface will be shown.
+
+For each API available, _Swagger_ shows the description of the API, its parameters and responses.
+
+> **Attention!**
+> You **must append** your authentication token to the API parameters in order to access them outside the Swagger environment. For instance, suppose your authentication token is **12345678-abcd-efgh-ijkl-123456789012** and that CACAO is hosted at **wwwcacao.host**. 
+> A command line to access the API that lists all available document templates would be like: 
+>
+> `curl -X GET "https://wwwcacao.host/api/template" -H "accept: application/json" -H "Authorization: api-key 12345678-abcd-efgh-ijkl-123456789012"`
+>
+> where **"Authorization: api-key cbc1d881-b8bc-4e2d-b236-c168b01fc692"** is the parameter that must be included in the header of the API call.
+
+</div>
+</div>
+
 <!-- <div>
 <div class="title">
 <i class="dropdown icon"></i>

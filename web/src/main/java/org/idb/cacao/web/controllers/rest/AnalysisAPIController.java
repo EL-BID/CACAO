@@ -55,7 +55,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -66,7 +65,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * @author Rivelino Patrício
  *
  */
-@Api(value = "REST API for analysis over taxpayers information")
 @RestController
 @RequestMapping("/api")
 @Tag(name="analysis-api-controller", description="Controller class for all endpoints related to 'TaxPayer' analysis interacting by a REST interface.")
@@ -84,21 +82,21 @@ public class AnalysisAPIController {
 	@Autowired
 	private MessageSource messageSource;
 	
-	@ApiOperation(value = "Get values of vertical and horizontal analysis ", response = List.class, tags = "vertical_horizontal_analysis")
+	@ApiOperation(value = "Get values of vertical and horizontal analysis ", response = List.class, tags = "vertical-horizontal-analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/vertical_horizontal_analysis"})
+	@GetMapping(value= {"/analysis/vertical-horizontal-analysis"})
 	public ResponseEntity<Object> getVerticalHorizontalAnalysis(
-			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			//@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			//@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate, 
-			@ApiParam(name = "zeroBalance", allowEmptyValue = false, allowMultiple = false, example = "true", required = true, type = "Boolean")
+			//@ApiParam(name = "zeroBalance", allowEmptyValue = false, allowMultiple = false, example = "true", required = true, type = "Boolean")
 			@RequestParam("zeroBalance") String zeroBalance, 
-			@ApiParam(name = "comparisonPeriods", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
-				allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
-						"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
-						"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
-						"31=One year after, 32=Two year after, 33=Three year after, 34=Four year after, 35=Five year after")
+			//@ApiParam(name = "comparisonPeriods", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
+			//	allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
+			//			"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
+			//			"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
+			//			"31=One year after, 32=Two year after, 33=Three year after, 34=Four year after, 35=Five year after")
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -211,9 +209,9 @@ public class AnalysisAPIController {
 		return periods;
 	}
 	
-	@ApiOperation(value = "Get vertical and horizontal additional columns to show in table data ", response = List.class, tags = "vertical_horizontal_view_columns")
+	@ApiOperation(value = "Get vertical and horizontal additional columns to show in table data ", response = List.class, tags = "vertical-horizontal-view-columns")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/vertical_horizontal_view_columns"})
+	@GetMapping(value= {"/analysis/vertical-horizontal-view-columns"})
 	public ResponseEntity<Object> getAnalysisViewColumns(
 			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate,
@@ -368,9 +366,9 @@ public class AnalysisAPIController {
     	
 	}
 
-	@ApiOperation(value = "Get general analysis data for a specified qualifier and period", response = AnalysisData.class, tags = "general_analysis")
+	@ApiOperation(value = "Get general analysis data for a specified qualifier and period", response = AnalysisData.class, tags = "general-analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/general_analysis"})
+	@GetMapping(value= {"/analysis/general-analysis"})
 	public ResponseEntity<Object> getGeneralAnalysis(
 			@ApiParam(name = "qualifier", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
 				allowableValues = "qualifier1, qualifier2, qualifier3, qualifier4, qualifier5")
@@ -467,9 +465,9 @@ public class AnalysisAPIController {
 		
 	}	
 	
-	@ApiOperation(value = "Get accountin flows data", response = List.class, tags = "accounting_flows")
+	@ApiOperation(value = "Get accountin flows data", response = List.class, tags = "accounting-flows")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/accounting_flows"})
+	@GetMapping(value= {"/analysis/accounting-flows"})
 	public ResponseEntity<Object> getAccountingFlows(
 			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
@@ -498,9 +496,9 @@ public class AnalysisAPIController {
 		
 	}
 	
-	@ApiOperation(value = "Get statement income analysis data", response = List.class, tags = "statement_income_analysis")
+	@ApiOperation(value = "Get statement income analysis data", response = List.class, tags = "statement-income-analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/statement_income_analysis"})
+	@GetMapping(value= {"/analysis/statement-income-analysis"})
 	public ResponseEntity<Object> getStatementIncomeAnalysis(
 			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
@@ -530,9 +528,9 @@ public class AnalysisAPIController {
     	return ResponseEntity.ok().body(statements);    	
 	}
 	
-	@ApiOperation(value = "Get taxpayer view analysis data, according with searchType parameter value", response = List.class, tags = "taxpayer_general_view")
+	@ApiOperation(value = "Get taxpayer view analysis data, according with searchType parameter value", response = List.class, tags = "taxpayer-general-view")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/taxpayer_general_view"})
+	@GetMapping(value= {"/analysis/taxpayer-general-view"})
 	public ResponseEntity<Object> getTaxpayerGeneralView(
 			@ApiParam(name = "searchType", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "String", 
 					allowableValues = "1 - SHAREHOLDINGS, 2 - SHAREHOLDERS, 3 - REVENUE_NET_AND_GROSS_PROFIT_DECLARED, " + 
@@ -573,9 +571,9 @@ public class AnalysisAPIController {
     	return ResponseEntity.ok().body(result);    	
 	}
 	
-	@ApiOperation(value = "Get customers vs suppliers values for reconciliation analysis", response = List.class, tags = "customers_vs_suppliers_analysis")
+	@ApiOperation(value = "Get customers vs suppliers values for reconciliation analysis", response = List.class, tags = "customers-vs-suppliers-analysis")
 	@Secured({"ROLE_TAX_REPORT_READ"})
-	@GetMapping(value= {"/analysis/customers_vs_suppliers_analysis"})
+	@GetMapping(value= {"/analysis/customers-vs-suppliers-analysis"})
 	public ResponseEntity<Object> getCustomersVsSuppliersView(		
 			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,

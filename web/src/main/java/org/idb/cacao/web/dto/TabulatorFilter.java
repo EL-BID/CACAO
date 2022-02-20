@@ -52,7 +52,7 @@ public class TabulatorFilter {
 	}
 	public String getProperty(String name) {
 		if (value!=null && value instanceof Map) {
-			return (String) ((Map)value).get(name);
+			return (String) ((Map<?,?>)value).get(name);
 		}
 		return null;
 	}

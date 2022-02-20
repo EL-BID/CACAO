@@ -1,0 +1,36 @@
+ <!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	
+		tabulatorPaginationSize = /*[[${@environment.getProperty('default.page.size')}]]*/ 15;
+	
+		tabulatorPaginationSizeSelector = [5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000];
+	
+		tabulatorLanguageSpecs = {
+    	    "xx":{
+            	"pagination":{
+	                "first":/*[[#{pagination.first.button}]]*/ "First",
+	                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
+	                "last":/*[[#{pagination.last.button}]]*/ "Last",
+	                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
+	                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
+	                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
+	                "next":/*[[#{pagination.next.button}]]*/ "Next",
+	                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
+	                "all":/*[[#{pagination.all}]]*/ "All",
+	                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
+	                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
+	            }
+	        }
+    	};
+		
+		//Custom accessor
+		function nullConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    return value;
+		}		
+		
+	</script>
+</html>

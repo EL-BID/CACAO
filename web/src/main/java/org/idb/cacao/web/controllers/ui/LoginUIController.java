@@ -142,7 +142,7 @@ public class LoginUIController {
 		}
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ)) {
 			menu.add(new MenuItem(messages.getMessage("docs.history", null, LocaleContextHolder.getLocale()), 
-					"/docs_search", "upload"));
+					"/docs-search", "upload"));
 		}
 		if (hasPrivilege(roles, SystemPrivilege.USER_READ)) {
 			menu.add(new MenuItem(messages.getMessage("users.title", null, LocaleContextHolder.getLocale()),
@@ -157,17 +157,17 @@ public class LoginUIController {
 		menu.add(submenu);
 		if (hasPrivilege(roles, SystemPrivilege.TAX_REPORT_READ)) {
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.vertical.and.horizontal", null, LocaleContextHolder.getLocale()),
-					"/vertical_horizontal_analysis", "stream"));
+					"/vertical-horizontal-analysis", "stream"));
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.general", null, LocaleContextHolder.getLocale()),
-					"/general_analysis", "sliders horizontal"));
+					"/general-analysis", "sliders horizontal"));
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.statement.income", null, LocaleContextHolder.getLocale()),
-					"/statement_income_analysis", "search dollar"));
+					"/statement-income-analysis", "search dollar"));
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.general.view", null, LocaleContextHolder.getLocale()),
-					"/taxpayer_general_view", "street view"));
+					"/taxpayer-general-view", "street view"));
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.customers.versus.suppliers", null, LocaleContextHolder.getLocale()),
-					"/customers_vs_suppliers_analysis", "balance scale right"));			
+					"/customers-vs-suppliers-analysis", "balance scale right"));			
 			submenu.withChild(new MenuItem(messages.getMessage("taxpayers.analysis.flows", null, LocaleContextHolder.getLocale()),
-					"/accounting_flows", "retweet"));			
+					"/accounting-flows", "retweet"));			
 		}		
 
 		if (hasPrivilege(roles, SystemPrivilege.INTERPERSONAL_READ_ALL)) {
@@ -189,19 +189,19 @@ public class LoginUIController {
 		menu.add(submenu);
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_SYSTEM_MAIL)) {
 			submenu.withChild(new MenuItem(messages.getMessage("config.email", null, LocaleContextHolder.getLocale()),
-					"/config_email"));
+					"/config-email"));
 		}
 
 		if (hasPrivilege(roles, SystemPrivilege.SYNC_OPS)) {
 			submenu.withChild(new MenuItem(messages.getMessage("config.sync", null, LocaleContextHolder.getLocale()),
-					"/config_sync"));
+					"/config-sync"));
 			submenu.withChild(
 					new MenuItem(messages.getMessage("sync", null, LocaleContextHolder.getLocale()), "/sync/current"));
 		}
 
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			submenu.withChild(new MenuItem(messages.getMessage("sysinfo", null, LocaleContextHolder.getLocale()),
-					"/sys_info",  "info circle"));
+					"/sys-info",  "info circle"));
 		}
 		
 		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ_ALL)) {
@@ -216,7 +216,7 @@ public class LoginUIController {
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_API_TOKEN)) {
 			submenu.withChild(
 					new MenuItem(messages.getMessage("config.token.api", null, LocaleContextHolder.getLocale()),
-							"/config_token_api"));
+							"/config-token-api"));
 		}
 
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_API_TOKEN)) {
@@ -226,7 +226,7 @@ public class LoginUIController {
 
 		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			menu.add(
-				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin_shell",  "cogs"));
+				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin-shell",  "cogs"));
 		}
 
 		return menu;

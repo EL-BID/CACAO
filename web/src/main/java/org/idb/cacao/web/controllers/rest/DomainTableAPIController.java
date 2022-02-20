@@ -14,7 +14,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.Views;
-import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.DomainTableService;
@@ -27,6 +26,7 @@ import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -45,8 +45,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
-
-import org.springframework.data.domain.Page;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -80,7 +78,7 @@ public class DomainTableAPIController {
 	 * in 'template' object). Limited to 10 results per request, unless the 'limit' parameter is provided as well.
 	 */
 	@JsonView(Views.Selection.class)
-	@GetMapping("/domaintable_search")
+	@GetMapping("/domaintable-search")
 	@ApiOperation(value="Method used for returning domain table that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> searchDomainTables(
 			@ApiParam(required=false) @RequestParam("term") Optional<String> term,

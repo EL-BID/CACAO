@@ -92,7 +92,9 @@
 		SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
 		ALERT</div>
-
+		
+	<div th:replace="fragments/tabulator_commons"></div>
+	
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		vegaEmbed.vega.formatLocale({
@@ -200,76 +202,75 @@
 	          	})
 	        });
 		}
-		
-		//Custom accessor
-		function nullConvert(value, data, type, component){
-		    if ( value == null )
-		    	return "";
-		    return value;
-		}		
 
 		function getFileName(searchType) {
 			
-			let fileName = 'untitled';
+			let fileName = $('#taxpayer').val() + "_";
+
 			if ( searchType == 1 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ '';
 			else if ( searchType == 2 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.shareholders}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholders}]]*/ '';
 			else if ( searchType == 3 ) {
-				fileName = /*[[#{taxpayers.analysis.general.view.revenue}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.revenue}]]*/ '';
 				fileName += "_";
 				fileName += /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ '';
 			}
 			else if ( searchType == 4 ) {
-				fileName = /*[[#{taxpayers.analysis.general.view.revenue}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.revenue}]]*/ '';
 				fileName += "_";
 				fileName += /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ '';
 			}
 			else if ( searchType == 5 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';
 			else if ( searchType == 6 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
 			else if ( searchType == 7 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
 			else if ( searchType == 8 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
 			else if ( searchType == 9 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.equity.interests.results}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.equity.interests.results}]]*/ '';
 			else if ( searchType == 10 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.goodwill.incorporation.companies}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.goodwill.incorporation.companies}]]*/ '';
 			else if ( searchType == 11 ) 
-				fileName = /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';
-		
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';
+			
 			return fileName + ".xlsx";
 			
 		}
 		
 		function getSheetName(searchType) {
 			
+			let sheetName = "Sheet 1";
+			
 			if ( searchType == 1 ) 
-				return /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ '';
 			else if ( searchType == 2 ) 
-				return /*[[#{taxpayers.analysis.general.view.shareholders}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.shareholders}]]*/ '';
 			else if ( searchType == 3 ) 
-				return /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ '';
 			else if ( searchType == 4 ) 
-				return /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ '';
 			else if ( searchType == 5 ) 
-				return /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';
 			else if ( searchType == 6 ) 
-				return /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
 			else if ( searchType == 7 ) 
-				return /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
 			else if ( searchType == 8 ) 
-				return /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
 			else if ( searchType == 9 ) 
-				return /*[[#{taxpayers.analysis.general.view.equity.interests.results}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.equity.interests.results}]]*/ '';
 			else if ( searchType == 10 ) 
-				return /*[[#{taxpayers.analysis.general.view.goodwill.incorporation.companies}]]*/ '';
+				sheetName = /*[[#{taxpayers.analysis.general.view.goodwill.incorporation.companies}]]*/ '';
 			else if ( searchType == 11 ) 
-				return /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';			
+				sheetName = /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';
+			
+			if (sheetName.length > 31)
+				sheetName = sheetName.substring(0,30);
 		
-			return "Sheet 1";
+			return sheetName;
 			
 		}
 		

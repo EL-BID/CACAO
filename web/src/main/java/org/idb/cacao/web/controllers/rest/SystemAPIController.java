@@ -52,7 +52,7 @@ public class SystemAPIController {
 	/**
 	 * Collects information about the 'web' component
 	 */
-    @GetMapping(value="/sys_info", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value="/sys-info", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Collects information about this component",response=ComponentSystemInformation.class)	
 	public ResponseEntity<ComponentSystemInformation> collectInfoForComponent() {
 		

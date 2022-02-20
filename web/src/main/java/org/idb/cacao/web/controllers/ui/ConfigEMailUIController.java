@@ -58,7 +58,7 @@ public class ConfigEMailUIController {
 	private JavaMailSender mailSender;
 
 	@Secured("ROLE_CONFIG_SYSTEM_MAIL")
-	@GetMapping("/config_email")
+	@GetMapping("/config-email")
     public String showConfigEMail(Model model) {
 		ConfigEMail config = configEMailService.getActiveConfig();
 		if (config==null)
@@ -70,7 +70,7 @@ public class ConfigEMailUIController {
 	}
 
 	@Secured("ROLE_CONFIG_SYSTEM_MAIL")
-    @PutMapping("/config_email")
+    @PutMapping("/config-email")
     @ResponseBody
     public GenericResponse updateEMail(@Valid @RequestBody ConfigEMail config, BindingResult result) {
     	

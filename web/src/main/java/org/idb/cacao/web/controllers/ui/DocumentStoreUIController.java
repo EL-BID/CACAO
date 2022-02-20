@@ -62,7 +62,7 @@ public class DocumentStoreUIController {
 	}
 
 	@Secured({"ROLE_TAX_DECLARATION_READ"})
-	@GetMapping("/docs_search")
+	@GetMapping("/docs-search")
 	public String searchDocs(Model model) {
 		//model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
 		return "docs/docs_search";

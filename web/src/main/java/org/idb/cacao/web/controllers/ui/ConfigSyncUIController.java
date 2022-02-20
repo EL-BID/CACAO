@@ -54,7 +54,7 @@ public class ConfigSyncUIController {
 	SyncAPIService syncAPIService;
 
 	@Secured("ROLE_SYNC_OPS")
-	@GetMapping("/config_sync")
+	@GetMapping("/config-sync")
     public String showConfigSync(Model model) {
 		ConfigSync config = configSyncService.getActiveConfig();
 		if (config==null)
@@ -66,7 +66,7 @@ public class ConfigSyncUIController {
 	}
 
 	@Secured("ROLE_SYNC_OPS")
-    @PutMapping("/config_sync")
+    @PutMapping("/config-sync")
     @ResponseBody
     public GenericResponse updateSync(@Valid @RequestBody ConfigSync config, BindingResult result) {
     	

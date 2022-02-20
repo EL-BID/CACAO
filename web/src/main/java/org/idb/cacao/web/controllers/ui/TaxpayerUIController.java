@@ -19,13 +19,9 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.ui;
 
-import java.util.logging.Logger;
-
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.core.env.Environment;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -40,14 +36,6 @@ import org.springframework.web.bind.annotation.PathVariable;
  */
 @Controller
 public class TaxpayerUIController {
-
-	private static final Logger log = Logger.getLogger(TaxpayerUIController.class.getName());
-
-    @Autowired
-    private MessageSource messages;
-
-	@Autowired
-	private Environment env;
 
 	@Autowired
 	private TaxpayerRepository taxPayerRepository;

@@ -54,7 +54,7 @@ $('#view_btn').click(function(){
 	}
 	else {
 		 $.ajax({
-			    url: [[@{/api/token_api}]],
+			    url: [[@{/api/token-api}]],
 			    type: 'GET',
 			    dataType: 'json',
 			    contentType: 'application/json',
@@ -85,7 +85,7 @@ $('#generate_btn').click(function(){
 		  closable:false,
 		  onApprove: function(){			  
 			 $.ajax({
-				    url: [[@{/api/token_api}]],
+				    url: [[@{/api/token-api}]],
 				    type: 'PUT',
 				    dataType: 'json',
 				    contentType: 'application/json',
@@ -116,7 +116,7 @@ $('#delete_btn').click(function(){
 		  closable:false,
 		  onApprove: function(){			  
 			 $.ajax({
-				    url: [[@{/api/token_api}]],
+				    url: [[@{/api/token-api}]],
 				    type: 'DELETE',
 				    dataType: 'json',
 				    contentType: 'application/json',

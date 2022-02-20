@@ -163,3 +163,7 @@ da classe da entidade à qual se refere o repositório):
 
 29 - Todos os índices gerados no ElasticSearch destinados a armazenar entidades do projeto
 deve começar com 'cacao_' (ex: 'cacao_user').
+
+30 - Todas as URL dos endpoints devem separar as palavras usando hífen, como no exemplo abaixo:
+
+	Exemplo: /api/listar-usuarios-ativos

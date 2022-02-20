@@ -69,138 +69,124 @@
 		<div class="ui deny button" th:text="#{sync.choose.start.from.last}">From last</div>
 	</div>
 </div>
+
+<div th:replace="fragments/tabulator_commons"></div>
 	
 <script th:nonce="${cspNonce}" th:inline="javascript">
-let dateFormatter = function(cell, formatterParams, onRendered) {
-	var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
-	if(newDate.isValid) {
-		return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
-	}
-	return cell.getValue()
-}
-	
-let table = new Tabulator('#table', {
-	index: 'id',
-	layout: "fitData", //fit columns to width of table (optional)
-    pagination: true,
-	paginationMode: "remote", //enable remote pagination
-	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-	sortMode: "remote",
-	headerFilterLiveFilterDelay:700,
-	ajaxContentType: "json",
-	ajaxURL: /*[[@{/api/sync/history(endpoint=${param.endpoint})}]]*/ "/api/sync/history", //set url for ajax request
-	ajaxURLGenerator: function(url, config, params ){
-		p= new URLSearchParams()
-		p.set('page', params.page)
-		p.set('size', params.size)
-		p.set('filter', JSON.stringify(params.filter))
-		if(params.sort.length>0) {
-			p.set('sortby', params.sort[0].field)
-			p.set('sortorder', params.sort[0].dir)
+	let dateFormatter = function(cell, formatterParams, onRendered) {
+		var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
+		if(newDate.isValid) {
+			return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
 		}
-		return url + '&' + p.toString()
-	},
-	locale:'xx',
-	langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },    
-	columns:[ //Define Table Columns
-		{title: /*[[#{sync.commits.lastTimeRun}]]*/ "Last time run", field:"timeRun", formatter: dateFormatter },
-		{title: /*[[#{sync.commits.lastTimeStart}]]*/ "Last time start", field:"timeStart", formatter: dateFormatter },
-		{title: /*[[#{sync.commits.lastTimeEnd}]]*/ "Last time end", field:"timeEnd", formatter: dateFormatter },
-		{title: /*[[#{sync.commits.master}]]*/ "Server address", field:"master", hozAlign:"left" },
-		{title: /*[[#{sync.commits.countObjects}]]*/ "Count", field:"countObjects" },
-		{title: /*[[#{sync.commits.successful}]]*/ "Successful?", field:"successful", formatter:"tickCross", headerSort:false }
-	]
-})
-</script>
-<script th:nonce="${cspNonce}" th:inline="javascript">
-$('.btn_sync_now').click(function(){
-	  var dlg = $('#modal_confirm')
-	  dlg.find('.description').html([[#{sync.now.confirm.endpoint(${param.endpoint})}]])
-	  dlg.modal({
-		  closable:false,
-		  onApprove: function(){
-			  /*[# th:if="${previous_sync}"]*/
-			  var dlg2 = $('#modal_choose_sync_start')
-			  dlg2.modal({
-				  clossable:false,
-				  onApprove: function() {
-					  // user wants to SYNC from start
-					  requestSync(/*fromStart*/true);
-				  },
-				  onDeny: function() {
-					// user wants to SYNC from last
-					  requestSync(/*fromStart*/false);
-				  }
-			  })
-			  dlg2.modal('show');
-			  /*[/]*/
-			  /*[# th:unless="${previous_sync}"]*/
-			  requestSync(/*fromStart*/true);
-			  /*[/]*/
-		  }
-	  })
-	  dlg.modal('show');
-  });
-function requestSync(fromStart) {
-	 $.ajax({
-		    url: [[@{/api/sync/now}]],
-		    type: 'POST',
-		    dataType: 'json',
-		    contentType: 'application/json',
-		    data: JSON.stringify({'fromStart':fromStart, 'endpoints':[[${param.endpoint}]]}),
-		    cache: false,    
-			success: function(result) {
-				var msg = result.message
-				if ("OK"==msg) {
-					$('#modal_successful').find('.description').html([[#{sync.started}]])
-					$('#modal_successful').modal('show')
-					$('.warn_sync_running').show()
-					doPoll();
-				}
-				else {
+		return cell.getValue()
+	}
+		
+	let table = new Tabulator('#table', {
+		index: 'id',
+		layout: "fitData", //fit columns to width of table (optional)
+	    pagination: true,
+		paginationMode: "remote", //enable remote pagination
+		paginationSize: tabulatorPaginationSize,
+		paginationSizeSelector: tabulatorPaginationSizeSelector,				
+		langs: tabulatorLanguageSpecs,
+		sortMode: "remote",
+		headerFilterLiveFilterDelay:700,
+		ajaxContentType: "json",
+		ajaxURL: /*[[@{/api/sync/history(endpoint=${param.endpoint})}]]*/ "/api/sync/history", //set url for ajax request
+		ajaxURLGenerator: function(url, config, params ){
+			p= new URLSearchParams()
+			p.set('page', params.page)
+			p.set('size', params.size)
+			p.set('filter', JSON.stringify(params.filter))
+			if(params.sort.length>0) {
+				p.set('sortby', params.sort[0].field)
+				p.set('sortorder', params.sort[0].dir)
+			}
+			return url + '&' + p.toString()
+		},
+		locale:'xx',
+		columns:[ //Define Table Columns
+			{title: /*[[#{sync.commits.lastTimeRun}]]*/ "Last time run", field:"timeRun", formatter: dateFormatter },
+			{title: /*[[#{sync.commits.lastTimeStart}]]*/ "Last time start", field:"timeStart", formatter: dateFormatter },
+			{title: /*[[#{sync.commits.lastTimeEnd}]]*/ "Last time end", field:"timeEnd", formatter: dateFormatter },
+			{title: /*[[#{sync.commits.master}]]*/ "Server address", field:"master", hozAlign:"left" },
+			{title: /*[[#{sync.commits.countObjects}]]*/ "Count", field:"countObjects" },
+			{title: /*[[#{sync.commits.successful}]]*/ "Successful?", field:"successful", formatter:"tickCross", headerSort:false }
+		]
+	})
+	</script>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+	$('.btn_sync_now').click(function(){
+		  var dlg = $('#modal_confirm')
+		  dlg.find('.description').html([[#{sync.now.confirm.endpoint(${param.endpoint})}]])
+		  dlg.modal({
+			  closable:false,
+			  onApprove: function(){
+				  /*[# th:if="${previous_sync}"]*/
+				  var dlg2 = $('#modal_choose_sync_start')
+				  dlg2.modal({
+					  clossable:false,
+					  onApprove: function() {
+						  // user wants to SYNC from start
+						  requestSync(/*fromStart*/true);
+					  },
+					  onDeny: function() {
+						// user wants to SYNC from last
+						  requestSync(/*fromStart*/false);
+					  }
+				  })
+				  dlg2.modal('show');
+				  /*[/]*/
+				  /*[# th:unless="${previous_sync}"]*/
+				  requestSync(/*fromStart*/true);
+				  /*[/]*/
+			  }
+		  })
+		  dlg.modal('show');
+	  });
+	function requestSync(fromStart) {
+		 $.ajax({
+			    url: [[@{/api/sync/now}]],
+			    type: 'POST',
+			    dataType: 'json',
+			    contentType: 'application/json',
+			    data: JSON.stringify({'fromStart':fromStart, 'endpoints':[[${param.endpoint}]]}),
+			    cache: false,    
+				success: function(result) {
+					var msg = result.message
+					if ("OK"==msg) {
+						$('#modal_successful').find('.description').html([[#{sync.started}]])
+						$('#modal_successful').modal('show')
+						$('.warn_sync_running').show()
+						doPoll();
+					}
+					else {
+						$('#modal_failed').find('.description').html(msg)
+						$('#modal_failed').modal('show')
+						console.log("ERROR : "+ msg);							
+					}
+				},
+				error: function(e) {
+					var msg = e.responseText.replace(/\n/g, "<br />");
 					$('#modal_failed').find('.description').html(msg)
 					$('#modal_failed').modal('show')
-					console.log("ERROR : "+ msg);							
+					console.log("ERROR : "+ msg);
 				}
-			},
-			error: function(e) {
-				var msg = e.responseText.replace(/\n/g, "<br />");
-				$('#modal_failed').find('.description').html(msg)
-				$('#modal_failed').modal('show')
-				console.log("ERROR : "+ msg);
-			}
-		});			 			  	
-}
-function doPoll(){
-    $.get([[@{/api/sync/running}]], function(data) {
-    	if ('RUNNING'==data) {
-    		setTimeout(doPoll,1000);
-    	}
-    	else if ('STOPPED'==data) {
-    		window.location.replace([[@{/sync/history(stopped=true,endpoint=${param.endpoint})}]])
-    	}
-    	else {
-    		$('.warn_sync_running').hide()
-    	}
-    });
-}
+			});			 			  	
+	}
+	function doPoll(){
+	    $.get([[@{/api/sync/running}]], function(data) {
+	    	if ('RUNNING'==data) {
+	    		setTimeout(doPoll,1000);
+	    	}
+	    	else if ('STOPPED'==data) {
+	    		window.location.replace([[@{/sync/history(stopped=true,endpoint=${param.endpoint})}]])
+	    	}
+	    	else {
+	    		$('.warn_sync_running').hide()
+	    	}
+	    });
+	}
 </script>
 </body>
 </html>

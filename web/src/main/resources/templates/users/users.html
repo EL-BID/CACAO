@@ -34,139 +34,125 @@
  
 <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
 <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
-<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
+<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+
+<div th:replace="fragments/tabulator_commons"></div>     
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
-[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
-let editRow = function(e, cell) {
-  window.location.replace([[@{/users/}]] +  cell.getRow().getIndex() + "/edit");
-}
-
-let sendDelete = function(userId) {
-	$.ajax({
-	    url: [[@{/api/user/}]] + userId,
-	    type: 'DELETE',
-	    dataType: 'json',
-	    contentType: 'application/json',
-	    cache: false,  
-	    success: onDeleteSuccess,
-	    error: onDeleteError
-	})
-}
-
-let onDeleteSuccess = function(result) {
-	$('#modal_successful').modal('show')
-	setTimeout(function(){
-		window.location.replace([[@{/users}]])
-	}, 2000);
-}
-		
-let onDeleteError = function(e) {
-	var msg = e.responseText.replace(/\n/g, "<br />");
-	$('#modal_failed').find('.description').html(msg)
-	$('#modal_failed').modal('show')
-	console.log("ERROR : "+ msg);
-}
-
-let deleteRow = function(e, cell) {
-    var dlg = $('#modal_confirm')
-	dlg.find('.description').html([[#{user.delete.confirm}]])
-	dlg.modal({
-	    closable:false,
-	    onApprove: function() { 
-		  sendDelete(cell.getRow().getIndex()) 
+	[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
+	let editRow = function(e, cell) {
+	  window.location.replace([[@{/users/}]] +  cell.getRow().getIndex() + "/edit");
+	};
+	
+	let sendDelete = function(userId) {
+		$.ajax({
+		    url: [[@{/api/user/}]] + userId,
+		    type: 'DELETE',
+		    dataType: 'json',
+		    contentType: 'application/json',
+		    cache: false,  
+		    success: onDeleteSuccess,
+		    error: onDeleteError
+		})
+	};
+	
+	let onDeleteSuccess = function(result) {
+		$('#modal_successful').modal('show')
+		setTimeout(function(){
+			window.location.replace([[@{/users}]])
+		}, 2000);
+	};
+			
+	let onDeleteError = function(e) {
+		var msg = e.responseText.replace(/\n/g, "<br />");
+		$('#modal_failed').find('.description').html(msg)
+		$('#modal_failed').modal('show')
+		console.log("ERROR : "+ msg);
+	}
+	
+	let deleteRow = function(e, cell) {
+	    var dlg = $('#modal_confirm')
+		dlg.find('.description').html([[#{user.delete.confirm}]])
+		dlg.modal({
+		    closable:false,
+		    onApprove: function() { 
+			  sendDelete(cell.getRow().getIndex()) 
+		    }
+	    })
+		dlg.modal('show');
+	};
+	
+	let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
+	let trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+	[/]
+	
+	let profileLookup = {
+	  [# th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"] 
+	  [# th:text="${i.name()}"/]: [# th:text="#{${i}}"/], 
+	  [/]
+	};
+	
+	let table = new Tabulator('#table', {
+		index: 'id',
+		layout: "fitData", //fit columns to width of table (optional)
+	    pagination: true,
+		paginationMode: "remote", //enable remote pagination
+		paginationSize: tabulatorPaginationSize,
+		paginationSizeSelector: tabulatorPaginationSizeSelector,				
+		langs: tabulatorLanguageSpecs,
+	    filterMode:"remote",
+	    sortMode: "remote",
+	    headerFilterLiveFilterDelay:700,
+	    ajaxContentType: "json",
+		ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
+	    ajaxURLGenerator: function(url, config, params ){
+	        console.log(config)
+	        console.log(params)
+	        p= new URLSearchParams()
+	        p.set('page', params.page)
+	        p.set('size', params.size)
+	        p.set('filter', JSON.stringify(params.filter))
+	        if(params.sort.length>0) {
+	            p.set('sortby', params.sort[0].field)
+	            p.set('sortorder', params.sort[0].dir)
+	        }
+	        return url + '?' + p.toString()
+	    },
+		footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		locale:'xx',
+		columns:[ //Define Table Columns
+			{title: /*[[#{user.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
+			{title: /*[[#{user.login}]]*/ "Login", field:"login", hozAlign:"left", minWidth: 140, headerFilter: true },
+			{title: /*[[#{user.profile}]]*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup, 
+			      minWidth: 100, headerSort:false, headerFilter: 'select', headerFilterParams: { values: profileLookup } },
+			{title: /*[[#{taxpayer.id}]]*/ "Taxpayer ID", field:"taxpayerId", minWidth: 100, headerFilter: true},
+			[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
+			{formatter:editIcon, width:45, cellClick: editRow, headerSort:false, tooltip:/*[[#{edit}]]*/ "Edit"},
+			{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false, tooltip:/*[[#{delete}]]*/ "Delete"}
+			[/]
+		]
+	});
+	table.on('rowClick', function(e, row) {
+	    if( e.target.classList.contains('edit') || e.target.classList.contains('trash')) {
+	        return
 	    }
-    })
-	dlg.modal('show');
-}
-
-let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
-let trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
-[/]
-
-let profileLookup = {
-  [# th:each="i :  ${T(org.idb.cacao.web.entities.UserProfile).values()}"] 
-  [# th:text="${i.name()}"/]: [# th:text="#{${i}}"/], 
-  [/]
-}
-
-let table = new Tabulator('#table', {
-	index: 'id',
-	layout: "fitData", //fit columns to width of table (optional)
-    pagination: true,
-	paginationMode: "remote", //enable remote pagination
-	paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-	paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-    filterMode:"remote",
-    sortMode: "remote",
-    headerFilterLiveFilterDelay:700,
-    ajaxContentType: "json",
-	ajaxURL: /*[[@{/api/users}]]*/ "/api/users", //set url for ajax request
-    ajaxURLGenerator: function(url, config, params ){
-        console.log(config)
-        console.log(params)
-        p= new URLSearchParams()
-        p.set('page', params.page)
-        p.set('size', params.size)
-        p.set('filter', JSON.stringify(params.filter))
-        if(params.sort.length>0) {
-            p.set('sortby', params.sort[0].field)
-            p.set('sortorder', params.sort[0].dir)
-        }
-        return url + '?' + p.toString()
-    },
-	footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-	locale:'xx',
-	langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },
-	columns:[ //Define Table Columns
-		{title: /*[[#{user.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
-		{title: /*[[#{user.login}]]*/ "Login", field:"login", hozAlign:"left", minWidth: 140, headerFilter: true },
-		{title: /*[[#{user.profile}]]*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup, 
-		      minWidth: 100, headerSort:false, headerFilter: 'select', headerFilterParams: { values: profileLookup } },
-		{title: /*[[#{taxpayer.id}]]*/ "Taxpayer ID", field:"taxpayerId", minWidth: 100, headerFilter: true},
-		[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
-		{formatter:editIcon, width:45, cellClick: editRow, headerSort:false},
-		{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
-		[/]
-	]
-})
-table.on('rowClick', function(e, row) {
-    if( e.target.classList.contains('edit') || e.target.classList.contains('trash')) {
-        return
-    }
-    //window.location.replace([[@{/users/}]] + row.getIndex());
-})
-
-let showHeaderFilter = true
-let toggleFilter = function() {
-    showHeaderFilter = ! showHeaderFilter
-    if(!showHeaderFilter) {
-        table.clearHeaderFilter()
-    }
-    $('.tabulator-header-filter').toggle(showHeaderFilter)
-    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-}
-
-table.on("tableBuilt", function(){
-    $('#filter').click( toggleFilter )
-    toggleFilter()
-})
+	    //window.location.replace([[@{/users/}]] + row.getIndex());
+	});
+	
+	let showHeaderFilter = true;
+	let toggleFilter = function() {
+	    showHeaderFilter = ! showHeaderFilter
+	    if(!showHeaderFilter) {
+	        table.clearHeaderFilter()
+	    }
+	    $('.tabulator-header-filter').toggle(showHeaderFilter)
+	    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+	};
+	
+	table.on("tableBuilt", function(){
+	    $('#filter').click( toggleFilter )
+	    toggleFilter()
+	});
 
 </script>
 </body>

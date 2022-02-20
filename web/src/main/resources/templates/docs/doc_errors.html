@@ -17,7 +17,7 @@
       <div class="ui breadcrumb">
         <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
         <div class="divider"> / </div>
-        <a class="section" th:text="#{docs.history}" th:href="@{/docs_search}">All Uploads</a>
+        <a class="section" th:text="#{docs.history}" th:href="@{/docs-search}">All Uploads</a>
         <div class="divider"> / </div>
         <div class="active section" th:text="#{doc.error.messages}">Doc Errors</div>
       </div>
@@ -28,94 +28,80 @@
 		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/docs_search}" class="ui primary button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
+				<a th:href="@{/docs-search}" class="ui primary button"><i class="arrow left icon"></i><span th:text="#{docs.history}">All Documents</span></a>
 			</div>
 		</div>
 	</div>
- 
-<script th:nonce="${cspNonce}" th:inline="javascript">
-	dateFormatter = function(cell, formatterParams, onRendered) {
-		var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
-		if(newDate.isValid) {
-			return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
-		}
-		return cell.getValue()
-	}
-
-	let documentId = /*[[${documentId}]]*/ null;
 	
-	let table = new Tabulator('#table', {
-		index: "id",
-		layout:"fitDataFill",		
-	    pagination: true,
-		paginationMode: "remote", //enable remote pagination
-		paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-		paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],		    
-		ajaxURL: /*[[@{/api/doc/errors}]]*/ "/api/doc/errors", //set url for ajax request
-		ajaxURLGenerator: function(url, config, params ){
-			console.log(config)
-			console.log(params)
-			p = new URLSearchParams()
-			p.set('page', params.page)
-			p.set('size', params.size)
-			p.set('filter', JSON.stringify(params.filter))
-			if(params.sort.length>0) {
-				p.set('sortby', params.sort[0].field)
-				p.set('sortorder', params.sort[0].dir)
-			}				
-			p.set('documentId', documentId)
-			console.log(url + '?' + p.toString())
-			return url + '?' + p.toString()
-		},
-		ajaxContentType: "json",			
-		filterMode:"remote",
-		sortMode: "remote",
-		headerFilterLiveFilterDelay:700,			
-		persistentLayout:true,
-	    persistenceID:"doc_error_messages_persistence",
-	    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
-	    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-	    locale:'xx',
-	    langs:{
-	        "xx":{
-	            "pagination":{
-	                "first":/*[[#{pagination.first.button}]]*/ "First",
-	                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-	                "last":/*[[#{pagination.last.button}]]*/ "Last",
-	                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-	                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-	                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-	                "next":/*[[#{pagination.next.button}]]*/ "Next",
-	                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-	                "all":/*[[#{pagination.all}]]*/ "All",
-	                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-	                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-	            }
-	        }
-	    },
-		columns:[ //Define Table Columns
-			{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId", headerFilter: true},
-			{title: /*[[#{tax.period}]] */ "Tax Period", field:"templateName", headerFilter: true},
-			{title: /*[[#{doc.timestamp}]] */ "Transmission Time", field:"timestamp", formatter: dateFormatter, headerFilter: true},
-			{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter: true},				
-			{title: /*[[#{doc.error.message}]]*/ "Error Message", field:"errorMessage", headerFilter: true},								
-		]
-	})
-	let showHeaderFilter = true
-	let toggleFilter = function() {
-	    showHeaderFilter = ! showHeaderFilter
-	    if(!showHeaderFilter) {
-	        table.clearHeaderFilter()
-	    }
-	    $('.tabulator-header-filter').toggle(showHeaderFilter)
-	    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-	}
-
-	table.on("tableBuilt", function(){
-	    $('#filter').click( toggleFilter )
-	    toggleFilter()
-	})	
-</script>
+	<div th:replace="fragments/tabulator_commons"></div>
+ 
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+		dateFormatter = function(cell, formatterParams, onRendered) {
+			var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
+			if(newDate.isValid) {
+				return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
+			}
+			return cell.getValue()
+		}
+	
+		let documentId = /*[[${documentId}]]*/ null;
+		
+		let table = new Tabulator('#table', {
+			index: "id",
+			layout:"fitDataFill",		
+		    pagination: true,
+			paginationMode: "remote", //enable remote pagination
+			paginationSize: tabulatorPaginationSize,
+			paginationSizeSelector: tabulatorPaginationSizeSelector,				
+			langs: tabulatorLanguageSpecs,
+			ajaxURL: /*[[@{/api/doc/errors}]]*/ "/api/doc/errors", //set url for ajax request
+			ajaxURLGenerator: function(url, config, params ){
+				console.log(config)
+				console.log(params)
+				p = new URLSearchParams()
+				p.set('page', params.page)
+				p.set('size', params.size)
+				p.set('filter', JSON.stringify(params.filter))
+				if(params.sort.length>0) {
+					p.set('sortby', params.sort[0].field)
+					p.set('sortorder', params.sort[0].dir)
+				}				
+				p.set('documentId', documentId)
+				console.log(url + '?' + p.toString())
+				return url + '?' + p.toString()
+			},
+			ajaxContentType: "json",			
+			filterMode:"remote",
+			sortMode: "remote",
+			headerFilterLiveFilterDelay:700,			
+			persistentLayout:true,
+		    persistenceID:"doc_error_messages_persistence",
+		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+		    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		    locale:'xx',
+			columns:[ //Define Table Columns
+				{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId", headerFilter: true},
+				{title: /*[[#{tax.period}]] */ "Tax Period", field:"templateName", headerFilter: true},
+				{title: /*[[#{doc.timestamp}]] */ "Transmission Time", field:"timestamp", formatter: dateFormatter, headerFilter: true},
+				{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter: true},				
+				{title: /*[[#{doc.error.message}]]*/ "Error Message", field:"errorMessage", headerFilter: true},								
+			]
+		})
+		let showHeaderFilter = true
+		let toggleFilter = function() {
+		    showHeaderFilter = ! showHeaderFilter
+		    if(!showHeaderFilter) {
+		        table.clearHeaderFilter()
+		    }
+		    $('.tabulator-header-filter').toggle(showHeaderFilter)
+		    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+		}
+	
+		table.on("tableBuilt", function(){
+		    $('#filter').click( toggleFilter )
+		    toggleFilter()
+		})	
+	</script>
 </body>
 </html>
     

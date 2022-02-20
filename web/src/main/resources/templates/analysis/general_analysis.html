@@ -110,6 +110,8 @@
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
 		ALERT</div>
 
+	<div th:replace="fragments/tabulator_commons"></div>
+
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
 		vegaEmbed.vega.formatLocale({
@@ -219,7 +221,7 @@
 		
 		function updateData() {
 
-			$.get('/api/analysis/general_analysis', 
+			$.get('/api/analysis/general-analysis', 
 					{ qualifier: $('#qualifiers').val(),
 						qualifierValue: $('#qualifierValues').val(),
 						sourceData: $('#sourceData').val(),
@@ -358,28 +360,12 @@
 				layout: "fitColumns", //fit columns to width of table (optional)
 			    pagination: true,
 				paginationMode: "local", //enable local pagination
-				paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-				paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
+				paginationSize: tabulatorPaginationSize,
+				paginationSizeSelector: tabulatorPaginationSizeSelector,				
+				langs: tabulatorLanguageSpecs,
 				data: values,
 				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
 				locale:'xx',
-				langs:{
-			        "xx":{
-			            "pagination":{
-			                "first":/*[[#{pagination.first.button}]]*/ "First",
-			                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-			                "last":/*[[#{pagination.last.button}]]*/ "Last",
-			                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-			                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-			                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-			                "next":/*[[#{pagination.next.button}]]*/ "Next",
-			                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-			                "all":/*[[#{pagination.all}]]*/ "All",
-			                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-			                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-			            }
-			        }
-			    },	
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 			    groupBy:"statementName",
 			    groupHeader:function(value, count, data, group){
@@ -411,7 +397,7 @@
 		}
 		
 		function getFileName() {
-			var fileName =/*[[#{taxpayers.analysis.general}]]*/ null;
+			let fileName = /*[[#{taxpayers.analysis.general}]]*/ null;
 			fileName = fileName + "-" + /*[[#{taxpayers.analysis.general.outliers}]]*/ null;
 			return  fileName + ".xlsx";
 		}

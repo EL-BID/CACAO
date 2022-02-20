@@ -110,140 +110,127 @@
 		SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE
 		ALERT</div>
+		
+	<div th:replace="fragments/tabulator_commons"></div>
+		
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-let fields = [[${template.fields}]] || []
-
-let processForm = function(event, fields) {
-  event.preventDefault()
-}           
-
-let activateTemplate = function(value) {
-	var dlg = $('#modal_confirm')
-	var msg = value ? [[#{template.activate.confirm}]] : [[#{template.deactivate.confirm}]]
-    dlg.find('.description').html()
-    dlg.modal({
-        closable:false,
-        onApprove: function() { 
-          if(value)
-        	  url = [[@{/api/template/{id}/activate(id=${template.id})}]]
-          else
-              url = [[@{/api/template/{id}/deactivate(id=${template.id})}]]
-          $.get( url )
-          .done( function() {
-        	  $('#modal_successful').modal('show')
-              setTimeout(()=> window.location.replace([[@{/templates/{id}(id=${template.id})}]]), 2000)
-          })
-        .fail( function(e) {
-      	  var msg = e.responseText.replace(/\n/g, "<br />");
-            $('#modal_failed').find('.description').html(msg)
-            $('#modal_failed').modal('show')
-            console.log("ERROR : "+ msg);
-         })
-       }
-    })
-    dlg.modal('show');
-}
-
-$('#activateTemplate').click(() => activateTemplate(true))
-$('#deactivateTemplate').click(() => activateTemplate(false))
-
-$('#editTemplate').click(function(e){
-	document.location.replace([[@{/templates/{id}/edit(id=${template.id})}]])
-})
-
-let typeLookup = { 
-  [# th:each="i : ${fieldTypes}"] 
-  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
-  [/]
-}
-
-let mappingLookup = {
-  [# th:each="i : ${fieldMappings}"] 
-  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
-  [/]
-}
-
-let table = new Tabulator('#table', {
-    index: 'id',
-    layout: "fitDataFill", //fit columns to width of table (optional)
-    //placeholder: "Empty",
-        pagination: true,
-    paginationSize: /*[[${@environment.getProperty('default.page.size')}]]*/ 15,
-    paginationSizeSelector:[5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000],
-    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
-    locale:'xx',
-    langs:{
-        "xx":{
-            "pagination":{
-                "first":/*[[#{pagination.first.button}]]*/ "First",
-                "first_title":/*[[#{pagination.first.tooltip}]]*/ "First Page",
-                "last":/*[[#{pagination.last.button}]]*/ "Last",
-                "last_title":/*[[#{pagination.last.tooltip}]]*/ "Last Page",
-                "prev":/*[[#{pagination.prev.button}]]*/ "Prev",
-                "prev_title":/*[[#{pagination.prev.tooltip}]]*/ "Prev Page",
-                "next":/*[[#{pagination.next.button}]]*/ "Next",
-                "next_title":/*[[#{pagination.next.tooltip}]]*/ "Next Page",
-                "all":/*[[#{pagination.all}]]*/ "All",
-                "page_size":/*[[#{pagination.page.size}]]*/ "Page Size",
-                "page_title":/*[[#{pagination.page.tooltip}]]*/ "Show Page"
-            }
-        }
-    },
-    columns:[ //Define Table Columns
-        {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0, headerFilter: true},
-        {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3,
-        	headerFilter: 'select', headerFilterParams: { values: typeLookup}},
-        {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3,
-        		headerFilter: 'select', headerFilterParams: { values: mappingLookup}},
-        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
-        {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5},
-        {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5 },
-        {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6, headerFilter: true}
-    ],
-    data: fields
-})
-
-$('#newInput').dropdown({
-    onChange(value, text) {
-        window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+value)
-    }
-})
-
-let table_inputs = new Tabulator('#table_inputs', {
-    index: 'id',
-    layout: "fitDataFill", //fit columns to width of table (optional)
-    columns:[ //Define Table Columns
-        {title: /*[[#{doc.input.name}]]*/ "Name", field:"inputName", minWidth:200},
-        {title: /*[[#{doc.input.format}]]*/ "Format", field:"format", minWidth:100}
-    ],
-    data: [ [# th:each="i : ${template.inputs}"]
-      { id: [# th:text="${i.id}"/], inputName: [# th:text="${i.inputName}"/], format: [# th:text="${i.format.name()}"/] },
-      [/] ]    	
-})
-
-table_inputs.on('rowClick', function(e, row) {
-	window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + row.getData().format)
-})
-
-$('#tab .item').tab()
-[# th:if="${showInputs}"]
-$('#tab .item').tab('change tab', 'tab-inputs');
-[/]
-
-let showHeaderFilter = true
-let toggleFilter = function() {
-    showHeaderFilter = ! showHeaderFilter
-    if(!showHeaderFilter) {
-        table.clearHeaderFilter()
-    }
-    $('.tabulator-header-filter').toggle(showHeaderFilter)
-    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
-}
-
-table.on("tableBuilt", function(){
-    $('#filter').click( toggleFilter )
-    toggleFilter()
-})
-</script>
+		let fields = [[${template.fields}]] || []
+		
+		let processForm = function(event, fields) {
+		  event.preventDefault()
+		}           
+		
+		let activateTemplate = function(value) {
+			var dlg = $('#modal_confirm')
+			var msg = value ? [[#{template.activate.confirm}]] : [[#{template.deactivate.confirm}]]
+		    dlg.find('.description').html()
+		    dlg.modal({
+		        closable:false,
+		        onApprove: function() { 
+		          if(value)
+		        	  url = [[@{/api/template/{id}/activate(id=${template.id})}]]
+		          else
+		              url = [[@{/api/template/{id}/deactivate(id=${template.id})}]]
+		          $.get( url )
+		          .done( function() {
+		        	  $('#modal_successful').modal('show')
+		              setTimeout(()=> window.location.replace([[@{/templates/{id}(id=${template.id})}]]), 2000)
+		          })
+		        .fail( function(e) {
+		      	  var msg = e.responseText.replace(/\n/g, "<br />");
+		            $('#modal_failed').find('.description').html(msg)
+		            $('#modal_failed').modal('show')
+		            console.log("ERROR : "+ msg);
+		         })
+		       }
+		    })
+		    dlg.modal('show');
+		}
+		
+		$('#activateTemplate').click(() => activateTemplate(true))
+		$('#deactivateTemplate').click(() => activateTemplate(false))
+		
+		$('#editTemplate').click(function(e){
+			document.location.replace([[@{/templates/{id}/edit(id=${template.id})}]])
+		})
+		
+		let typeLookup = { 
+		  [# th:each="i : ${fieldTypes}"] 
+		  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+		  [/]
+		}
+		
+		let mappingLookup = {
+		  [# th:each="i : ${fieldMappings}"] 
+		  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+		  [/]
+		}
+		
+		let table = new Tabulator('#table', {
+		    index: 'id',
+		    layout: "fitDataFill", //fit columns to width of table (optional)
+		    //placeholder: "Empty",
+		        pagination: true,
+		        paginationSize: tabulatorPaginationSize,
+				paginationSizeSelector: tabulatorPaginationSizeSelector,				
+				langs: tabulatorLanguageSpecs,
+		    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		    locale:'xx',
+		    columns:[ //Define Table Columns
+		        {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0, headerFilter: true},
+		        {title: /*[[#{field.type}]]*/ "Type", field:"fieldType", minWidth: 100, formatter: "lookup", formatterParams: typeLookup, responsive: 3,
+		        	headerFilter: 'select', headerFilterParams: { values: typeLookup}},
+		        {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3,
+		        		headerFilter: 'select', headerFilterParams: { values: mappingLookup}},
+		        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
+		        {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5},
+		        {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5 },
+		        {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6, headerFilter: true}
+		    ],
+		    data: fields
+		})
+		
+		$('#newInput').dropdown({
+		    onChange(value, text) {
+		        window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+value)
+		    }
+		})
+		
+		let table_inputs = new Tabulator('#table_inputs', {
+		    index: 'id',
+		    layout: "fitDataFill", //fit columns to width of table (optional)
+		    columns:[ //Define Table Columns
+		        {title: /*[[#{doc.input.name}]]*/ "Name", field:"inputName", minWidth:200},
+		        {title: /*[[#{doc.input.format}]]*/ "Format", field:"format", minWidth:100}
+		    ],
+		    data: [ [# th:each="i : ${template.inputs}"]
+		      { id: [# th:text="${i.id}"/], inputName: [# th:text="${i.inputName}"/], format: [# th:text="${i.format.name()}"/] },
+		      [/] ]    	
+		})
+		
+		table_inputs.on('rowClick', function(e, row) {
+			window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + row.getData().format)
+		})
+		
+		$('#tab .item').tab()
+		[# th:if="${showInputs}"]
+		$('#tab .item').tab('change tab', 'tab-inputs');
+		[/]
+		
+		let showHeaderFilter = true
+		let toggleFilter = function() {
+		    showHeaderFilter = ! showHeaderFilter
+		    if(!showHeaderFilter) {
+		        table.clearHeaderFilter()
+		    }
+		    $('.tabulator-header-filter').toggle(showHeaderFilter)
+		    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
+		}
+		
+		table.on("tableBuilt", function(){
+		    $('#filter').click( toggleFilter )
+		    toggleFilter()
+		})
+	</script>
 </body>
 </html>

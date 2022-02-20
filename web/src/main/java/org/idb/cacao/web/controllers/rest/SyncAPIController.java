@@ -228,11 +228,13 @@ public class SyncAPIController {
 	 * Should return files received in this time interval<BR>
 	 */
 	@Secured({"ROLE_SYNC_OPS"})
-	@GetMapping(value = "/sync/original_files", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+	@GetMapping(value = "/sync/original-files", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	@ApiOperation("Downloads recent original files for synchronization purpose with other CACAO Server.")
 	public ResponseEntity<StreamingResponseBody> getOriginalFiles(
-			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
-			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
+			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") 
+			@RequestParam("start") Long start,
+			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) 
+			@RequestParam("end") Optional<Long> opt_end,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		
