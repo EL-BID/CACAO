@@ -615,5 +615,54 @@ La siguiente tabla muestra un pequeño ejemplo de una lista de Campos de un Plan
 </div>
 </div>
 
+<div>
+<div class="title">
+<i class="dropdown icon"></i>
+<span class="ui header">API de CACAO</span>
+</div>
+<div class="content markdown">
+## ¿Qué son las API y por qué las tiene CACAO?
+
+Una **interfaz de programación de aplicaciones** (API) es una conexión entre computadoras o entre programas de computadora. Es un tipo de interfaz de software que ofrece un servicio a otras piezas de software. A diferencia de una interfaz de usuario, que conecta una computadora a una persona, una **API** conecta computadoras o piezas de software entre sí. No está destinado a ser utilizado directamente por una persona (el usuario final) que no sea un programador de computadoras que lo incorpore al software.
+
+CACAO expone diferentes API para permitir que los sistemas de información de los contribuyentes se conecten directamente a CACAO y ejecuten todas las acciones, como la carga de archivos, automáticamente. La API de CACAO también permite que otros sistemas de información de la Administración Tributaria interactúen y compartan información entre ellos sin intervención humana.
+
+> **¡Atención!**
+> Todas las API de CACAO se adhieren al mismo Control de Acceso Basado en Perfiles que implementa la interfaz de usuario. **No todas las API están disponibles para todos los perfiles.**
+> Si no tiene acceso a una API que necesita, póngase en contacto con la Administración Tributaria.
+
+## Configuración de un token de acceso
+
+**Antes** de usar cualquiera de las API de CACAO, debe crear un **token de acceso**. Este token reemplazará la información de usuario/contraseña para iniciar sesión en CACAO y acceder a la funcionalidad deseada.
+
+Para crear un token de acceso, seleccione la opción `Configuraciones de CACAO` ubicada en el menú de la barra lateral. A continuación, seleccione `Configuración de la API de tokens`. Se desplegará una interfaz para administrar su token de acceso, con las siguientes opciones:
+
+* **Ver token generado** le muestra el token que ya ha creado (si existe)
+* **Generar un nuevo token** crea un nuevo token o reemplaza el anterior
+* La opción **Borrar el token** elimina su token de CACAO
+
+Por favor, **mantenga la información de este token en secreto**. No comparta ni publique esta información.
+
+> **¡Atención!**
+> Si cree que su token ha sido divulgado o comprometido, debe acceder a la opción `Configuración de la API de tokens` y eliminarlo.
+> Todas las acciones autenticadas por el token son de exclusiva responsabilidad de su propietario. La Administración Tributaria **no** tiene acceso a los tokens.
+
+## API disponibles
+
+Para enumerar todas las API disponibles, seleccione la opción `Configuraciones CACAO` ubicada en el menú de la barra lateral. A continuación, seleccione `Documentación de la API de CACAO`. Se mostrará una interfaz _Swagger_.
+
+Para cada API disponible, _Swagger_ muestra la descripción de la API, sus parámetros y respuestas.
+
+> **¡Atención!**
+> **Debe agregar** su token de autenticación a los parámetros de la API para poder acceder a ellos fuera del entorno de Swagger. Por ejemplo, suponga que su token de autenticación es **12345678-abcd-efgh-ijkl-123456789012** y que CACAO está alojado en **wwwcacao.host**.
+> Una línea de comando para acceder a la API que enumera todas las plantillas de documentos disponibles sería como:
+>
+> `curl -X GET "https://wwwcacao.host/api/template" -H "aceptar: aplicación/json" -H "Autorización: api-key 12345678-abcd-efgh-ijkl-123456789012"`
+>
+> donde **"Autorización: api-key cbc1d881-b8bc-4e2d-b236-c168b01fc692"** es el parámetro que debe incluirse en el _header_ de la llamada API.
+
+</div>
+</div>
+
 </div>
 </body>
