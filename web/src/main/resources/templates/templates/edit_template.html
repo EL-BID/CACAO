@@ -196,6 +196,8 @@
 		}
 		let fields = template.fields || []
 		let field = {}
+		let updatingField = false
+		
 		$('#cancel').click(function(){
 			[# th:if="${template.id==null}"]
 			   window.location.replace([[@{/templates}]])
@@ -256,6 +258,7 @@
 		}            
 		
 		let setDomainTableVersions = function(tableName, tableVersion) {
+			if(updatingField) return
 			if(tableName!=null) {
 		      $.get( [[@{/api/domaintable/versions}]],
 		            { name: tableName },
@@ -266,6 +269,7 @@
 		                })
 		                $('#select_domain_version').dropdown('change values', values)
 		                $('#select_domain_table').dropdown('set value', tableName, tableName, null, true)
+		                $('#select_domain_table').dropdown('set text', tableName)
 		                $('#select_domain_version').dropdown('set value', tableVersion, tableVersion, null, true)
 		                $('#select_domain_version').dropdown('set text', tableVersion)
 		            },
@@ -438,10 +442,13 @@
 		table.on('rowClick', function(e, row) {
 		    field = Object.assign(row.getData(), {})
 		    $('#form_edit_field').form('clear')
-		    setDomainTableVersions(field.domainTableName, field.domainTableVersion)
-		    $('#form_edit_field').form('set values', field)
-		    $('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
+		    updatingField = true
+		    $('#form_edit_field').form('set values', field )
+		    updatingField = false
+		    	
 		    showConditionalFields(field.fieldType)
+		    setDomainTableVersions(field.domainTableName, field.domainTableVersion)
+		    //$('#fieldDomainTableNameText').text(field.domainTableName).removeClass('default')
 		    $('#deleteField').toggle(!field.locked)
 		    showEditField()
 		})
