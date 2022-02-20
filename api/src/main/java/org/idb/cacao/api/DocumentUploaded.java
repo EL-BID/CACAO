@@ -72,6 +72,16 @@ public class DocumentUploaded implements Serializable, Cloneable {
 
 	@JsonView(Views.Declarant.class)
 	@MultiField(
+			mainField = @Field(type=Text, fielddata=true),
+			otherFields = {
+				@InnerField(suffix = "keyword", type=Keyword)
+			}
+		)
+	@AFieldDescriptor(externalName = "doc.user.login")
+	private String userLogin;
+
+	@JsonView(Views.Declarant.class)
+	@MultiField(
 		mainField = @Field(type=Text, fielddata=true),
 		otherFields = {
 			@InnerField(suffix = "keyword", type=Keyword)
@@ -215,6 +225,14 @@ public class DocumentUploaded implements Serializable, Cloneable {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public String getUserLogin() {
+		return userLogin;
+	}
+
+	public void setUserLogin(String userLogin) {
+		this.userLogin = userLogin;
 	}
 
 	public String getTaxPayerId() {
