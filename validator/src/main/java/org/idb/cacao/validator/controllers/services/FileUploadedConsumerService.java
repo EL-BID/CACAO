@@ -221,7 +221,18 @@ public class FileUploadedConsumerService {
 			// TODO: more setup ???
 
 			// Let's start parsing the file contents
-			parser.start();
+			try {
+				parser.start();
+			}
+			catch (Throwable ex) {
+				setSituation(doc, DocumentSituation.INVALID);
+				validations.addLogError("{doc.error.parse}");
+				saveValidationMessages(validationContext);
+				log.log(Level.SEVERE, "Exception while parsing record for file " + documentId, ex);				
+				throw new ValidationException(
+						"An error ocurred while attempting to read data in file " + doc.getFilename() + ".", ex);				
+			}
+			
 			DataIterator iterator = null;
 
 			// If the template defines any field to be used as criteria of 'file uniqueness', we should

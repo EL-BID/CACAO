@@ -142,6 +142,11 @@
 		    p.set('id', row.getIndex())
 			window.location.replace([[@{/templates/new}]] + "?" + p.toString())
 		  })
+          table.on("tableBuilt", function(){
+              $('#filter').click( toggleFilter )
+              toggleFilter()
+          })
+
 		}
 		let showHeaderFilter = true
 		let toggleFilter = function() {
@@ -153,10 +158,6 @@
 		    $('.tabulator-col').height(showHeaderFilter ? 64 : 43)
 		}
 		
-		table.on("tableBuilt", function(){
-		    $('#filter').click( toggleFilter )
-		    toggleFilter()
-		})
 	</script>
 </body>
 </html>

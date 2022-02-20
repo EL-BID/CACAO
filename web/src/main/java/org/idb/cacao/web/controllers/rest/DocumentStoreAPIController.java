@@ -467,6 +467,7 @@ public class DocumentStoreAPIController {
 				regUpload.setUser(String.valueOf(auth.getName()));
 			}
 			if (user != null) {
+				regUpload.setUserLogin(user.getLogin());
 				regUpload.setTaxPayerId(user.getTaxpayerId());
 			}
 			DocumentUploaded savedInfo = documentsUploadedRepository.saveWithTimestamp(regUpload);
@@ -569,6 +570,12 @@ public class DocumentStoreAPIController {
 
 		boolean readAll = canReadAll(auth);
 		
+		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
+		Optional<SortOrder> direction = Optional
+				.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
+
+		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+
 		final Set<String> filterTaxpayersIds;
 		if (!readAll) {
 			// Only SYSADMIN users may see every documents. Other users are restricted to
@@ -582,18 +589,28 @@ public class DocumentStoreAPIController {
 			}
 			
 			if ( filterTaxpayersIds == null || filterTaxpayersIds.isEmpty()) {
-				return new PaginationData<DocumentUploaded>(1, Collections.emptyList());
+				Page<DocumentUploaded> docs;
+				try {
+					docs = SearchUtils.doSearch(
+						filters.orElse(new AdvancedSearch()).clone().withFilter(
+							new AdvancedSearch.QueryFilterOr(Arrays.asList(
+								new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds),
+								new AdvancedSearch.QueryFilterTerm("userLogin.keyword", user.getLogin())
+								), messageSource) ),
+						DocumentUploaded.class, elasticsearchClient, page, size, sortField, direction);
+				} catch (Exception ex) {
+					log.log(Level.SEVERE, "Error while searching for all documents", ex);
+					docs = Page.empty();
+				}
+				PaginationData<DocumentUploaded> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
+				return result;
 			}
 		}
 		else {
 			filterTaxpayersIds = null;
 		}
 
-		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<DocumentUploaded> docs;
-		Optional<String> sortField = Optional.of(sortBy.orElse("timestamp"));
-		Optional<SortOrder> direction = Optional
-				.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			if (readAll)
 				docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentUploaded.class,
@@ -603,7 +620,7 @@ public class DocumentStoreAPIController {
 						filters.orElse(new AdvancedSearch()).clone().withFilter(
 								new AdvancedSearch.QueryFilterOr(Arrays.asList(
 									new AdvancedSearch.QueryFilterList("taxPayerId.keyword", filterTaxpayersIds),
-									new AdvancedSearch.QueryFilterTerm("user.keyword", user.getName())
+									new AdvancedSearch.QueryFilterTerm("userLogin.keyword", user.getLogin())
 									), messageSource) ),
 						DocumentUploaded.class, elasticsearchClient, page, size, sortField, direction);
 		} catch (Exception ex) {

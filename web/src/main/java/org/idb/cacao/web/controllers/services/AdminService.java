@@ -111,6 +111,7 @@ import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.rest.AdminAPIController;
 import org.idb.cacao.web.controllers.ui.AdminUIController;
 import org.idb.cacao.web.dto.FileUploadedEvent;
+import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
@@ -209,6 +210,9 @@ public class AdminService {
 	
 	@Autowired
 	private SyncCommitHistoryRepository syncCommitHistoryRepository;
+	
+	@Autowired
+	private UserService userService;
 
 	@Autowired
 	private MessageSource messages;
@@ -947,6 +951,8 @@ public class AdminService {
 		// Let's use this for generating SEED per document
 		Random genSeed = new Random(seed);
 		
+		User userLogged = (auth==null) ? null : userService.getUser(auth);
+		
 		DocumentInput input_format = inputFormats.stream().filter(i->DocumentFormat.XLS.equals(i.getFormat())).findFirst().orElse(null);
 		if (input_format!=null) {
 			DocumentFormat format = input_format.getFormat();
@@ -1082,6 +1088,9 @@ public class AdminService {
 					regUpload.setSituation(DocumentSituation.RECEIVED);
 					if (auth != null) {
 						regUpload.setUser(String.valueOf(auth.getName()));
+					}
+					if (userLogged != null) {
+						regUpload.setUserLogin(userLogged.getLogin());
 					}
 					DocumentUploaded savedInfo = documentUploadedRepository.saveWithTimestamp(regUpload);
 	

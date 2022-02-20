@@ -248,6 +248,10 @@ public class ExcelParser implements FileParser {
 				}
 				if (cellRange!=null) {
 					List<CellReference> cellReferences = new LinkedList<>();
+					if (cellRange.getFirstRow()<0)
+						cellRange.setFirstRow(0);
+					if (cellRange.getLastRow()<0)
+						cellRange.setLastRow(sheet.getLastRowNum());
 					cellRange.forEach(cellAddress->{
 						cellReferences.add(new CellReference(cellAddress.getRow(),cellAddress.getColumn()));
 					});

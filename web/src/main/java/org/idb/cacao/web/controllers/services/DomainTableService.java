@@ -204,6 +204,8 @@ public class DomainTableService {
 			return;
 		
 		// If the table does not exists yet, or if we should overwrite, creates according to the domain table specification
+		
+		builtInDomainTable.setActive(true);
 
 		if (overwrite && matchingDomainTable.isPresent()) {
 			domainTableRepository.delete(matchingDomainTable.get());
