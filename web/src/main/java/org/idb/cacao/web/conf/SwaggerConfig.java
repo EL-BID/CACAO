@@ -50,13 +50,16 @@ public class SwaggerConfig {
 
     @Autowired
     private MessageSource messages;
+    
+    @Autowired
+    private SwaggerRolesBindingConfig swaggerRolesBindingConfig;
 
     @Bean
     public Docket apiForDeclarants() {
         return new Docket(DocumentationType.SWAGGER_2)
           .groupName(DECLARANT_GROUP)
           .select()
-          .apis(RequestHandlerSelectors.basePackage("org.idb.cacao.web.controllers.rest"))
+          .apis(RequestHandlerSelectors.basePackage("org.idb.cacao.web.controllers.rest").and(swaggerRolesBindingConfig.withDeclarantPrivilege()))
           .paths(PathSelectors.ant("/api/**"))
           .build()
           .genericModelSubstitutes(Optional.class, ResponseEntity.class)

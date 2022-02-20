@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import io.swagger.annotations.ApiOperation;
+import springfox.documentation.RequestHandler;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.OperationBuilderPlugin;
 import springfox.documentation.spi.service.contexts.OperationContext;
@@ -108,6 +110,23 @@ public class SwaggerRolesBindingConfig implements OperationBuilderPlugin {
     @Override
     public boolean supports(DocumentationType delimiter) {
         return SwaggerPluginSupport.pluginDoesApply(delimiter);
+    }
+    
+    /**
+     * Returns a RequestHandler predicate selector for filtering out all API methods not accessible
+     * by Declarant profile
+     */
+    public Predicate<RequestHandler> withDeclarantPrivilege() {
+    	return new Predicate<RequestHandler>() {
+
+			@Override
+			public boolean test(RequestHandler t) {
+				Optional<Secured> securedAnnotation = t.findAnnotation(Secured.class);
+				return !securedAnnotation.isPresent()
+						|| hasDeclarantPrivilege(securedAnnotation.get().value());
+			}
+    		
+    	};
     }
     
     private boolean hasDeclarantPrivilege(String[] roles) {
