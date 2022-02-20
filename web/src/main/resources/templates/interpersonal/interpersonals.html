@@ -283,7 +283,8 @@
 			{title: /*[[#{interpersonal.person2}]]*/ "Referred Person", field:"personId2" , headerFilter: true},
 			{title: /*[[#{interpersonal.relationship.type}]]*/ "Relationship Type", field:"relationshipType",
 			   formatter:"lookup", formatterParams: typeLookup, headerFilter: 'select', headerFilterParams: { values: typeLookup }},
-			{title: /*[[#{interpersonal.removed}]]*/ "Removed", field:"removed" },
+			{title: '<i class="trash alternate outline icon"></i>', titleFormatter:'html', field:"removed", headerFilter: true,  headerFilter: "tickCross", headerFilterParams:{"tristate":true},
+                   formatter:"tickCross", formatterParams: { crossElement:false}, width:40},
 			[# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
 			{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false, tooltip:/*[[#{delete}]]*/ "Delete"}
 			[/]

@@ -187,7 +187,7 @@ public class DomainTable implements Serializable, Cloneable, Comparable<DomainTa
 	 * Indicates this document template is available for sending documents.
 	 */
 	@Field(type=Boolean)
-	private Boolean active;
+	private Boolean active = true;
 	
 	public DomainTable() { }
 	

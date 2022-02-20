@@ -63,9 +63,9 @@
 				{title: /*[[#{template.version}]]*/ "Version", field:"version", minWidth: 100, headerFilter: true},
 				{title: /*[[#{template.periodicity}]]*/ "Periodicity", field:"periodicity", formatter:"lookup", formatterParams: periodicityLookup, minWidth:150,
 					headerFilter: 'select', headerFilterParams: { values: periodicityLookup }},
-				{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  
+				{title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "Required", field:"required",  headerFilter: "tickCross", headerFilterParams:{"tristate":true},
 					formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.required}]]*/ "Required"},
-				{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",  
+				{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",   headerFilter: "tickCross", headerFilterParams:{"tristate":true},
 		            formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"}
 			]
 		})

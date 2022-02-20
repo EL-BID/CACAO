@@ -120,9 +120,7 @@ public class SearchUtils {
 			TabulatorFilter[] filters = mapper.readValue(as_json.get(), TabulatorFilter[].class);
 			AdvancedSearch search = new AdvancedSearch();
 			Arrays.stream(filters)
-			  .forEach(filter -> search.addFilter( filter.isString() ? 
-					  new AdvancedSearch.QueryFilterTerm(filter.getField(), filter.getStringValue() + "*") :
-					  new AdvancedSearch.QueryFilterDate(filter.getField(), filter.getProperty("start"), filter.getProperty("end"))));
+			  .forEach(filter -> search.addFilter( filter.getQueryFilter()));
 			return Optional.of(search);
 		} catch (JsonProcessingException e) {
 			return Optional.empty();

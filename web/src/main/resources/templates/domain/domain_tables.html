@@ -80,6 +80,8 @@
 	        {title: /*{{#domain.table.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
 	        {title: /*{{#domain.table.version}]]*/ "Version", field:"version", hozAlign:"left", minWidth: 100, headerFilter: true },
 	        {title: /*{{#domain.table.group}]]*/ "Group", field:"group", minWidth: 140, headerFilter: true},
+	        {title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{active}]]*/ "Active", field:"active",   headerFilter: "tickCross", headerFilterParams:{"tristate":true},
+                formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{active.active}]]*/ "Active"}
 	    ]
 	})
 	table.on('rowClick', function(e, row) {

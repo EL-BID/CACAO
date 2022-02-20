@@ -21,6 +21,10 @@ package org.idb.cacao.web.dto;
 
 import java.util.Map;
 
+import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.controllers.AdvancedSearch.QueryFilter;
+import org.idb.cacao.web.controllers.AdvancedSearch.QueryFilterTerm;
+
 public class TabulatorFilter {
 
 	private String field;
@@ -55,6 +59,14 @@ public class TabulatorFilter {
 			return (String) ((Map<?,?>)value).get(name);
 		}
 		return null;
+	}
+	
+	public QueryFilter getQueryFilter() {
+		if (value instanceof Boolean)
+			return new AdvancedSearch.QueryFilterBoolean(field, getStringValue());
+		if (value instanceof Map)
+		    return new AdvancedSearch.QueryFilterDate(field, getProperty("start"), getProperty("end"));
+		return new AdvancedSearch.QueryFilterTerm(field, getStringValue() + "*");
 	}
 	
 }

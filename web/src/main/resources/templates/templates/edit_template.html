@@ -422,9 +422,12 @@
 		        	headerFilter: 'select', headerFilterParams: { values: typeLookup }},
 		        {title: /*[[#{field.mapping}]]*/ "Mapping", field:"fieldMapping", minWidth: 100, formatter: "lookup", formatterParams: mappingLookup, responsive: 3,
 		        	headerFilter: 'select', headerFilterParams: { values: mappingLookup }},
-		        {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5},
-		        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5},
-		        {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5 },
+		        {title: '<i class="asterisk icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.required}]]*/ "R", field: "required", titleFormatter:"html", formatter: "tickCross", tooltip: "Required" , width: 20, headerSort: false, responsive: 5,
+		        	headerFilter: "tickCross", headerFilterParams:{"tristate":true}},
+		        {title: '<i class="address card outline icon"></i>', titleFormatter: "html",  tooltip: /*[[#{field.personal.data}]]*/ "PD", field: "personalData", formatter: "tickCross", tooltip: "Personal Data", width: 20, headerSort: false, responsive: 5,
+		        	headerFilter: "tickCross", headerFilterParams:{"tristate":true}},
+		        {title: '<i class="thumbtack icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.file.uniqueness}]]*/"FU", field: "fileUniqueness", formatter: "tickCross", tooltip: "File Uniqueness",  width: 20, headerSort: false, responsive: 5,
+		        	headerFilter: "tickCross", headerFilterParams:{"tristate":true}},
 		        {title: /*[[#{field.description}]]*/ "Description", field:"description", headerSort: false, minWidth: 200, responsive:6, headerFilter: true }
 		    ],
 		    data: fields
