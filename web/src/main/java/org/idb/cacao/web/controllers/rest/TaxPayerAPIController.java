@@ -80,7 +80,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  */
 @RestController
 @RequestMapping("/api")
-@Tag(name="taxpayer-api-controller", description="Controller class for all endpoints related to 'TaxPayer' object interacting by a REST interface.")
+@Tag(name="tax-payer-api-controller", description="Controller class for all endpoints related to 'TaxPayer' object interacting by a REST interface.")
 public class TaxPayerAPIController {
 
 	private static final Logger log = Logger.getLogger(TaxPayerAPIController.class.getName());
