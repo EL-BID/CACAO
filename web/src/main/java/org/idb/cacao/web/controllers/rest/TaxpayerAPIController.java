@@ -81,9 +81,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api")
 @Tag(name="taxpayer-api-controller", description="Controller class for all endpoints related to 'TaxPayer' object interacting by a REST interface.")
-public class TaxPayerAPIController {
+public class TaxpayerAPIController {
 
-	private static final Logger log = Logger.getLogger(TaxPayerAPIController.class.getName());
+	private static final Logger log = Logger.getLogger(TaxpayerAPIController.class.getName());
 
 	@Autowired
 	private MessageSource messageSource;
@@ -110,7 +110,7 @@ public class TaxPayerAPIController {
 
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<Taxpayer> docs;
-		Optional<String> sortField = Optional.of(sortBy.orElse("taxPayerId"));
+		Optional<String> sortField = Optional.of(sortBy.orElse("taxpayerId"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), Taxpayer.class, elasticsearchClient, page, size, 
@@ -134,7 +134,7 @@ public class TaxPayerAPIController {
 	public SearchResult<NameId> autocompleteTaxpayer(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<NameId> result;
 		try {
-			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, "taxPayerId", "name", term.orElse(""), 10)
+			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, "taxpayerId", "name", term.orElse(""), 10)
 			    .stream()
 			    .map(t -> new NameId(t.get("name").toString(), t.get("taxPayerId").toString()))
 			    .collect(Collectors.toList());
