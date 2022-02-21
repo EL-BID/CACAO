@@ -71,8 +71,7 @@
       		var form_el = $('#uploadform')
       		var dimmer_el = $('#dimmer')
 	  		var templateAndVersion = $('.ui.dropdown').dropdown('get value').split("=")	
-      		var upload_url = '/api/doc?templateName='+encodeURIComponent(templateAndVersion[0])+'&templateVersion='+encodeURIComponent(templateAndVersion[1])
-	  		alert(upload_url)
+      		var upload_url = '/api/doc?templateName='+encodeURIComponent(templateAndVersion[0])+'&templateVersion='+encodeURIComponent(templateAndVersion[1])	  		
       		var filename = file_el.val().split('\\').pop();      
       		uploadFile(file_el, form_el, dimmer_el, upload_url, filename);
   		});
