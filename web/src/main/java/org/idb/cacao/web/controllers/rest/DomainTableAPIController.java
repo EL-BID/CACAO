@@ -1,3 +1,22 @@
+/*******************************************************************************
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ * and associated documentation files (the "Software"), to deal in the Software without 
+ * restriction, including without limitation the rights to use, copy, modify, merge, publish, 
+ * distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the 
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or 
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN 
+ * AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This software uses third-party components, distributed accordingly to their own licenses.
+ *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
 import java.io.IOException;
@@ -81,8 +100,10 @@ public class DomainTableAPIController {
 	@GetMapping("/domaintable-search")
 	@ApiOperation(value="Method used for returning domain table that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> searchDomainTables(
-			@ApiParam(required=false) @RequestParam("term") Optional<String> term,
-			@ApiParam(required=false,defaultValue="10") @RequestParam("limit") Optional<Integer> limit) {
+			@ApiParam(required=false) 
+			@RequestParam("term") Optional<String> term,
+			@ApiParam(required=false,defaultValue="10") 
+			@RequestParam("limit") Optional<Integer> limit) {
 		List<String> result;
 		try {
 			TermQueryBuilder filter = new TermQueryBuilder("active", true);
@@ -105,16 +126,25 @@ public class DomainTableAPIController {
 	@GetMapping("/domaintable/versions")
 	@ApiOperation(value="Method used for returning domain table that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<Set<String>> getDomainTableVersons(
-			@ApiParam(required=true) @RequestParam("name") String name) {
+			@ApiParam(required=true) 
+			@RequestParam("name") String name) {
 		Set<String> result=domainTableService.getDomainTablesVersions(name);
 		return ResponseEntity.ok().body(result);
 	}
 
 	@GetMapping("/domaintables")
 	@ApiOperation(value="Method used for listing domain tables using pagination")
-	public PaginationData<DomainTable> getDomainTableWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
-			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+	public PaginationData<DomainTable> getDomainTableWithPagination(Model model, 
+			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortorder") Optional<String> sortOrder) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
     		throw new UserNotFoundException();

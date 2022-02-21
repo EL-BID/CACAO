@@ -190,8 +190,13 @@ public class DocumentStoreAPIController {
 	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@PostMapping(value = "/doc", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading a document to be parsed")
-	public ResponseEntity<Map<String, String>> handleFileUpload(@RequestParam("fileinput") MultipartFile fileinput,
-			@RequestParam("template") String templateAndVersion, RedirectAttributes redirectAttributes,
+	public ResponseEntity<Map<String, String>> handleFileUpload(
+			@RequestParam("fileinput") MultipartFile fileinput,
+			@ApiParam(name = "Template name for file being uploaded", allowEmptyValue = false, allowMultiple = false, example = "Chart of Accunts", required = true, type = "String")
+			@RequestParam("templateName") String templateName, 
+			@ApiParam(name = "Template version for file being uploaded", allowEmptyValue = false, allowMultiple = false, example = "1.0", required = true, type = "String")
+			@RequestParam("templateVersion") String templateVersion,
+			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
 
 		log.log(Level.FINE,
@@ -210,33 +215,14 @@ public class DocumentStoreAPIController {
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
 
-		if (templateAndVersion == null || templateAndVersion.isEmpty()) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
-					messageSource.getMessage("upload.failed.missing.template", null, LocaleContextHolder.getLocale())));
-		}
-
-		String templateName = null, templateVersion = null;
-
-		String[] parts = templateAndVersion.split("=");
-
-		if (parts == null || parts.length == 0) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
-					messageSource.getMessage("upload.failed.missing.template", null, LocaleContextHolder.getLocale())));
-		}
-
-		templateName = parts[0] == null ? null : parts[0].trim();
-
 		if (templateName == null || templateName.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
 					messageSource.getMessage("upload.failed.missing.template", null, LocaleContextHolder.getLocale())));
 		}
-
-		if (parts.length > 1)
-			templateVersion = parts[1] == null ? null : parts[1].trim();
-
+		
 		if (templateVersion == null || templateVersion.isEmpty()) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", messageSource
-					.getMessage("upload.failed.missing.template.version", null, LocaleContextHolder.getLocale())));
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
+					messageSource.getMessage("upload.failed.missing.template.version", null, LocaleContextHolder.getLocale())));
 		}
 
 		List<DocumentTemplate> templateVersions = templateRepository.findByName(templateName);
@@ -292,8 +278,11 @@ public class DocumentStoreAPIController {
 	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@PostMapping(value = "/docs-zip", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading many documents to be parsed in one ZIP file")
-	public ResponseEntity<Map<String, String>> handleFileUploadZIP(@RequestParam("filezip") MultipartFile filezip,
-			@RequestParam("template") String template, RedirectAttributes redirectAttributes,
+	public ResponseEntity<Map<String, String>> handleFileUploadZIP(
+			@RequestParam("filezip") MultipartFile filezip,
+			@ApiParam(name = "Template name for file being uploaded", allowEmptyValue = false, allowMultiple = false, example = "Chart of Accunts", required = true, type = "String")
+			@RequestParam("templateName") String templateName, 
+			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
 
 		log.log(Level.FINE,
@@ -312,18 +301,17 @@ public class DocumentStoreAPIController {
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
 
-		if (template == null || template.isEmpty()) {
+		if (templateName == null || templateName.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
-		List<DocumentTemplate> templateVersions = templateRepository.findByName(template);
+		List<DocumentTemplate> templateVersions = templateRepository.findByName(templateName);
 		if (templateVersions == null || templateVersions.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
 					messageSource.getMessage("unknown.template", null, LocaleContextHolder.getLocale())));
 		}
 		if (templateVersions.size() > 1) {
-			// if we have more than one possible choice, let's give higher priority to most
-			// recent ones
+			// if we have more than one possible choice, let's give higher priority to most recent ones
 			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR)
 					.collect(Collectors.toList());
 		}
@@ -338,7 +326,7 @@ public class DocumentStoreAPIController {
 
 			while ((ze = zipStream.getNextEntry()) != null) {
 
-				Map<String, String> result = uploadFile(ze.getName(), zipStream, /* closeInputStream */false, template,
+				Map<String, String> result = uploadFile(ze.getName(), zipStream, /* closeInputStream */false, templateName,
 						/* template version */ null, remoteIpAddr, user);
 				results.add(result);
 			}
@@ -362,8 +350,10 @@ public class DocumentStoreAPIController {
 	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@PostMapping(value = "/docs", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation("Endpoint for uploading many separate document to be parsed")
-	public ResponseEntity<Map<String, String>> handleFilesUpload(@RequestParam("files") MultipartFile[] files,
-			@RequestParam("template") String template, RedirectAttributes redirectAttributes,
+	public ResponseEntity<Map<String, String>> handleFilesUpload(
+			@RequestParam("files") MultipartFile[] files,
+			@ApiParam(name = "Template name for file being uploaded", allowEmptyValue = false, allowMultiple = false, example = "Chart of Accunts", required = true, type = "String")
+			@RequestParam("templateName") String templateName, RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
 
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -387,11 +377,11 @@ public class DocumentStoreAPIController {
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
 
-		if (template == null || template.isEmpty()) {
+		if (templateName == null || templateName.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
 					messageSource.getMessage("upload.failed.empty.file", null, LocaleContextHolder.getLocale())));
 		}
-		List<DocumentTemplate> templateVersions = templateRepository.findByName(template);
+		List<DocumentTemplate> templateVersions = templateRepository.findByName(templateName);
 		if (templateVersions == null || templateVersions.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
 					messageSource.getMessage("unknown.template", null, LocaleContextHolder.getLocale())));
@@ -412,7 +402,7 @@ public class DocumentStoreAPIController {
 
 			try (InputStream inputStream = fileinput.getInputStream()) {
 				Map<String, String> result = uploadFile(fileinput.getOriginalFilename(), inputStream,
-						/* closeInputStream */true, template, /* template version */ null, remoteIpAddr, user);
+						/* closeInputStream */true, templateName, /* template version */ null, remoteIpAddr, user);
 				results.add(result);
 			} catch (GeneralException ex) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -558,8 +548,15 @@ public class DocumentStoreAPIController {
 	@GetMapping(value = "/docs-search", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Method used for listing documents uploaded using pagination")
 	public PaginationData<DocumentUploaded> getDocsWithPagination(Model model,
-			@RequestParam("page") Optional<Integer> page, @RequestParam("size") Optional<Integer> size,
-			@RequestParam("filter") Optional<String> filter, @RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("sortorder") Optional<String> sortOrder) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null)
@@ -641,9 +638,12 @@ public class DocumentStoreAPIController {
 	@GetMapping(value = "/docs-uploads", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return document uploads records via API", response = DocumentUploaded[].class)
 	public ResponseEntity<Object> getDocsUploads(
-			@ApiParam(value = "Date/time for first upload", required = false) @RequestParam("fromDate") Optional<String> fromDate,
-			@ApiParam(value = "Date/time for last upload", required = false) @RequestParam("toDate") Optional<String> toDate,
-			@ApiParam(value = "Number of past days (overrides 'from' and 'to' parameters)", required = false) @RequestParam("days") Optional<String> days) {
+			@ApiParam(value = "Date/time for first upload", required = false) 
+			@RequestParam("fromDate") Optional<String> fromDate,
+			@ApiParam(value = "Date/time for last upload", required = false) 
+			@RequestParam("toDate") Optional<String> toDate,
+			@ApiParam(value = "Number of past days (overrides 'from' and 'to' parameters)", required = false) 
+			@RequestParam("days") Optional<String> days) {
 
 		SearchRequest searchRequest = new SearchRequest("docs_uploaded");
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
@@ -703,10 +703,14 @@ public class DocumentStoreAPIController {
 	@GetMapping(value = "/docs/{templateName}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return documents (their parsed contents) via API for a given template. The template may be identified by the internal numerical ID, "
 			+ "or by its name (in this case, replace all spaces and symbols with underlines).")
-	public ResponseEntity<Object> getDocs(@PathVariable("templateName") String templateName,
-			@ApiParam(value = "Date/time for first day/time of document receipt", required = false) @RequestParam("fromDate") Optional<String> fromDate,
-			@ApiParam(value = "Date/time for last day/time of document receipt", required = false) @RequestParam("toDate") Optional<String> toDate,
-			@ApiParam(value = "Number of past days (overrides 'from' and 'to' parameters)", required = false) @RequestParam("days") Optional<String> days) {
+	public ResponseEntity<Object> getDocs(
+			@PathVariable("templateName") String templateName,
+			@ApiParam(value = "Date/time for first day/time of document receipt", required = false) 
+			@RequestParam("fromDate") Optional<String> fromDate,
+			@ApiParam(value = "Date/time for last day/time of document receipt", required = false) 
+			@RequestParam("toDate") Optional<String> toDate,
+			@ApiParam(value = "Number of past days (overrides 'from' and 'to' parameters)", required = false) 
+			@RequestParam("days") Optional<String> days) {
 
 		// Parse the 'templateName' informed at request path
 		if (templateName == null || templateName.trim().length() == 0) {
@@ -797,7 +801,9 @@ public class DocumentStoreAPIController {
 	@Secured({ "ROLE_TAX_DECLARATION_READ" })
 	@GetMapping(value = "/doc/situations", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return situation history via API for a given document. The document may be identified by the internal numerical ID.")
-	public ResponseEntity<Object> getDocSituations(@RequestParam("documentId") String documentId) {
+	public ResponseEntity<Object> getDocSituations(
+			@ApiParam(name = "Document ID of document to retrive", allowEmptyValue = false, allowMultiple = false, required = true, type = "String")
+			@RequestParam("documentId") String documentId) {
 
 		// Parse the 'templateName' informed at request path
 		if (documentId == null || documentId.trim().length() == 0) {
@@ -853,9 +859,17 @@ public class DocumentStoreAPIController {
 	@GetMapping(value = "/doc/errors", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Return validation error messages via API for a given document. The document may be identified by the internal numerical ID.")
 	public PaginationData<DocumentValidationErrorMessage> getDocErrorMessages(
-			@RequestParam("documentId") String documentId, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter,
-			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+			@ApiParam(name = "Document ID of document to retrive", allowEmptyValue = false, allowMultiple = false, required = true, type = "String")
+			@RequestParam("documentId") String documentId, 
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortorder") Optional<String> sortOrder) {
 
 		if (documentId == null || documentId.trim().length() == 0) {
 			throw new MissingParameter("documentId");
@@ -925,7 +939,9 @@ public class DocumentStoreAPIController {
 	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping(value = "/doc/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	@ApiOperation(value = "Return the document. The document may be identified by the internal numerical ID.")
-	public ResponseEntity<Resource> downloadDocument(@RequestParam("documentId") String documentId) {
+	public ResponseEntity<Resource> downloadDocument(
+			@ApiParam(name = "Document ID of document to retrive", allowEmptyValue = false, allowMultiple = false, required = true, type = "String")
+			@RequestParam("documentId") String documentId) {
 
 		// Parse the 'templateName' informed at request path
 		if (documentId == null || documentId.trim().length() == 0) {

@@ -86,17 +86,17 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/vertical-horizontal-analysis"})
 	public ResponseEntity<Object> getVerticalHorizontalAnalysis(
-			//@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
-			@RequestParam("taxpayerId") String taxpayerId,
-			//@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@RequestParam("taxpayerId") String taxpayerId,			
+			@ApiParam(name = "Final data of month to be analyzed", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate, 
-			//@ApiParam(name = "zeroBalance", allowEmptyValue = false, allowMultiple = false, example = "true", required = true, type = "Boolean")
+			@ApiParam(name = "Indicates if accounts with ZERO balance will be included", allowEmptyValue = false, allowMultiple = false, example = "true", required = true, type = "Boolean")
 			@RequestParam("zeroBalance") String zeroBalance, 
-			//@ApiParam(name = "comparisonPeriods", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
-			//	allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
-			//			"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
-			//			"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
-			//			"31=One year after, 32=Two year after, 33=Three year after, 34=Four year after, 35=Five year after")
+			@ApiParam(name = "Periods to compare with base period", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
+				allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
+						"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
+						"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
+						"31=One year after, 32=Two year after, 33=Three year after, 34=Four year after, 35=Five year after")
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -213,9 +213,9 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/vertical-horizontal-view-columns"})
 	public ResponseEntity<Object> getAnalysisViewColumns(
-			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "Final data of month to be analyzed", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate,
-			@ApiParam(name = "comparisonPeriods", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
+			@ApiParam(name = "Periods to compare with base period", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "Integer", 
 					allowableValues = "1=One month before, 2=Three months before, 3=Six months before, 4=Twelve months before, " +
 					"11=One year before, 12=Two year before, 13=Three year before, 14=Four year before, 15=Five year before, " +
 					"21=One month after, 22=Three months after, 32=Six months after, 24=Twelve months after, " +
@@ -370,15 +370,15 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/general-analysis"})
 	public ResponseEntity<Object> getGeneralAnalysis(
-			@ApiParam(name = "qualifier", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
+			@ApiParam(name = "Indicates a qualifier to use value", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
 				allowableValues = "qualifier1, qualifier2, qualifier3, qualifier4, qualifier5")
 			@RequestParam("qualifier") String qualifier,
-			@ApiParam(name = "qualifierValue", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String")
+			@ApiParam(name = "A value to use in comparison", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String")
 			@RequestParam("qualifierValue") String qualifierValue,
-			@ApiParam(name = "sourceData", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
+			@ApiParam(name = "Indicates an index to search values", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
 					allowableValues = "1 - SOURCE_JOURNAL, 2 - SOURCE_DECLARED_INCOME_STATEMENT,  3 - SOURCE_BOOTH_INCOME_STATEMENT, 4 - SOURCE_SHAREHOLDERS") 
 			@RequestParam("sourceData") int sourceData,
-			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
+			@ApiParam(name = "Year to use in analysis", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year) {
 		
 		if ( qualifier == null || qualifier.isEmpty() ) {
@@ -417,7 +417,7 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/qualifiers"})
 	public ResponseEntity<Object> getQualifierValues(
-			@ApiParam(name = "qualifier", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
+			@ApiParam(name = "Indicates a qualifier to retrieve values", allowEmptyValue = false, allowMultiple = false, example = "qualifier1", required = true, type = "String", 
 					allowableValues = "qualifier1, qualifier2, qualifier3, qualifier4, qualifier5")			
 			@RequestParam("qualifier") String qualifier) {
 		
@@ -443,7 +443,7 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/years"})
 	public ResponseEntity<Object> getYears(
-			@ApiParam(name = "sourceData", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
+			@ApiParam(name = "Indicates an index to search values", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
 						allowableValues = "1 - SOURCE_JOURNAL, 2 - SOURCE_DECLARED_INCOME_STATEMENT,  3 - SOURCE_BOOTH_INCOME_STATEMENT, 4 - SOURCE_SHAREHOLDERS")
 			@RequestParam("sourceData") int sourceData) {
 		
@@ -469,11 +469,11 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/accounting-flows"})
 	public ResponseEntity<Object> getAccountingFlows(
-			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "startDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "A start date to get values", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
-			@ApiParam(name = "finalDate", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "An end data to get values", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -500,9 +500,9 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/statement-income-analysis"})
 	public ResponseEntity<Object> getStatementIncomeAnalysis(
-			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
+			@ApiParam(name = "Year to seach data", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -532,14 +532,14 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/taxpayer-general-view"})
 	public ResponseEntity<Object> getTaxpayerGeneralView(
-			@ApiParam(name = "searchType", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "String", 
+			@ApiParam(name = "Type of search", allowEmptyValue = false, allowMultiple = false, example = "1", required = true, type = "String", 
 					allowableValues = "1 - SHAREHOLDINGS, 2 - SHAREHOLDERS, 3 - REVENUE_NET_AND_GROSS_PROFIT_DECLARED, " + 
 						"4 - REVENUE_NET_AND_GROSS_PROFIT_COMPUTED, 5 - TAX_PROVISION, 6 - ANALYTICS_ACCOUNTS, " + 
 						"7 - CUSTOMERS, 8 - SUPPLIERS")
 			@RequestParam("searchType") int searchType,
-			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
+			@ApiParam(name = "Year to seach data", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -575,9 +575,9 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/customers-vs-suppliers-analysis"})
 	public ResponseEntity<Object> getCustomersVsSuppliersView(		
-			@ApiParam(name = "taxpayerId", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "year", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
+			@ApiParam(name = "Year to seach data", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {

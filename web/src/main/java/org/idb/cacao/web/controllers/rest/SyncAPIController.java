@@ -1704,11 +1704,17 @@ public class SyncAPIController {
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value="/sync/history", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing history of synchronization operations using pagination")
-	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, @RequestParam("endpoint") Optional<String> endpoint,
-			@RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, 
+	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, 
+			@RequestParam("endpoint") Optional<String> endpoint,
+			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("sortorder") Optional<String> sortOrder) {
 		int currentPage = page.orElse(1);
 		int pageSize = ControllerUtils.getPageSizeForUser(size, env);
@@ -1740,10 +1746,16 @@ public class SyncAPIController {
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value="/sync/milestone", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing current stats of synchronizable resources using pagination")
-	public PaginationData<SyncCommitMilestone> getSyncMilestone(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, 
+	public PaginationData<SyncCommitMilestone> getSyncMilestone(Model model, 
+			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
 			@RequestParam("sortorder") Optional<String> sortOrder) {
 		int currentPage = page.orElse(1);
 		int pageSize = ControllerUtils.getPageSizeForUser(size, env);

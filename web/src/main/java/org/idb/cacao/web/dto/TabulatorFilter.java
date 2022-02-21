@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.AdvancedSearch.QueryFilter;
-import org.idb.cacao.web.controllers.AdvancedSearch.QueryFilterTerm;
 
 public class TabulatorFilter {
 

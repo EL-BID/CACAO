@@ -1,3 +1,22 @@
+/*******************************************************************************
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ * and associated documentation files (the "Software"), to deal in the Software without 
+ * restriction, including without limitation the rights to use, copy, modify, merge, publish, 
+ * distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the 
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or 
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN 
+ * AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This software uses third-party components, distributed accordingly to their own licenses.
+ *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
 import java.util.LinkedList;
@@ -47,6 +66,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -79,7 +99,9 @@ public class DocumentTemplateAPIController {
 
     @GetMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Returns the template configuration given its internal identification",response=DocumentTemplate.class)
-	public ResponseEntity<Object> getTemplate(@PathVariable("id") String id) {
+	public ResponseEntity<Object> getTemplate(
+			@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+			@PathVariable("id") String id) {
 		Optional<DocumentTemplate> match = templateRepository.findById(id);
 		if (!match.isPresent())
         	return ResponseEntity.notFound().build();
@@ -150,7 +172,9 @@ public class DocumentTemplateAPIController {
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping(value="/template/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Activate an existing document template", response=DocumentTemplate.class)
-    public ResponseEntity<Object> activateTemplate(@PathVariable("id") String id) {
+    public ResponseEntity<Object> activateTemplate(
+    		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
         
 		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
 		if (!existing_template.isPresent())
@@ -164,7 +188,9 @@ public class DocumentTemplateAPIController {
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping(value="/template/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deactivate an existing document template", response=DocumentTemplate.class)
-    public ResponseEntity<Object> deactivateTemplate(@PathVariable("id") String id) {
+    public ResponseEntity<Object> deactivateTemplate(
+    		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
         
 		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
 		if (!existing_template.isPresent())
@@ -178,7 +204,9 @@ public class DocumentTemplateAPIController {
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @DeleteMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Deletes an existing document template", response=DocumentTemplate.class)
-    public ResponseEntity<Object> deleteTemplate(@PathVariable("id") String id) {
+    public ResponseEntity<Object> deleteTemplate(
+    		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
         try {
         	templateRepository.deleteById(id);
         } catch(Exception e) {
@@ -249,9 +277,17 @@ public class DocumentTemplateAPIController {
 	 */
 	@GetMapping(value="/templates", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing existing templates")
-	public PaginationData<DocumentTemplate> getTemplatesWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
-			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+	public PaginationData<DocumentTemplate> getTemplatesWithPagination(Model model, 
+			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortorder") Optional<String> sortOrder) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
     		throw new UserNotFoundException();

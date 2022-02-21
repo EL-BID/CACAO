@@ -50,6 +50,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import springfox.documentation.annotations.ApiIgnore;
 
@@ -81,7 +82,10 @@ public class AdminAPIController {
 	@Secured({"ROLE_ADMIN_OPS"})
     @PostMapping(value="/op", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Post a command regarding one of the administrative operations",response=String.class)
-    public ResponseEntity<Object> postShellCommand(@Valid @RequestBody String command, BindingResult result,
+    public ResponseEntity<Object> postShellCommand(
+    		@ApiParam(name = "command", allowEmptyValue = false, allowMultiple = false, example = "delete -a", required = true, type = "String")
+    		@Valid @RequestBody String command, 
+    		BindingResult result,
 			HttpServletRequest request) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);

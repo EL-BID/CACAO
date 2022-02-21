@@ -55,82 +55,86 @@
 	<div th:replace="fragments/modals_upload :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT ABOUT UPLOADS</div>
 	<div th:replace="fragments/modals_upload :: failed">MODAL DIALOG FOR FAILURE ALERT ABOUT UPLOADS</div>
 	<script th:nonce="${cspNonce}" th:inline="javascript" type="module">
-$('.menu .item').tab();
 
-$('.upload_tabs').hide()
-  $('.ui.dropdown').dropdown({
-	action: 'activate',
-	onChange: function(value, text, $selectedItem) {
-		$('.upload_tabs').show()		
-	}  
-  } );
+		$('.menu .item').tab();
 
-$('#fileinput').change(function(){
-      var file_el = $( this )
-      var form_el = $('#uploadform')
-      var dimmer_el = $('#dimmer')
-      var upload_url = '/api/doc?template='+encodeURIComponent($('.ui.dropdown').dropdown('get value'))
-      var filename = file_el.val().split('\\').pop();      
-      uploadFile(file_el, form_el, dimmer_el, upload_url, filename);
-  });
+		$('.upload_tabs').hide()
+  			$('.ui.dropdown').dropdown({
+				action: 'activate',
+				onChange: function(value, text, $selectedItem) {
+					$('.upload_tabs').show()		
+				}  
+  			});
 
-function uploadFile(file_el, form_el, dimmer_el, upload_url, filename) {  
-  var msg = [[#{docs.confirm.upload}]]+' '+filename+'?';
-  var dlg = $('#modal_confirm_upload')
-  dlg.find('.description').html(msg)
-  dlg.modal({
-      closable:false,
-      onDeny: function(){
-          form_el.trigger('reset');
-      },
-      onApprove: function(){		 
-         $.ajax({
-            url: upload_url,
-            type: 'POST',
-            enctype: 'multipart/form-data',
-            processData: false,
-            contentType: false,
-            data: new FormData(form_el[0]),
-            cache: false,    
-            success: function(result) {
-                if ("ok"==result["result"]) {
-                    dimmer_el.dimmer('hide');
-                    $('#modal_successful_upload').modal('show')
-                }
-                else {
-                    dimmer_el.dimmer('hide');
-                    $('#modal_failed_upload').find('.description').html([[#{docs.main.upload.failed}]])
-                    $('#modal_failed_upload').modal('show')
-                }
-                form_el.trigger('reset');
-            },
-            error: function(e) {
-                var msg;
-                try {
-                    msg = JSON.parse(e.responseText);
-                    if (msg.error)
-                        msg = msg.error;
-                } catch (e) {
-                    msg = e.responseText;
-                }                   
-                dimmer_el.dimmer('hide');
-                $('#modal_failed_upload').find('.description').html(msg)
-                $('#modal_failed_upload').modal('show')
-                console.log("ERROR : "+ msg);
-                form_el.trigger('reset');
-            },
-            xhr: function() {
-                var xhr = new window.XMLHttpRequest();
-                // Upload progress
-                xhr.upload.addEventListener("progress", function(evt){
-                    dimmer_el.dimmer('show');
-                },false);
-                return xhr;
-            }
-        });          
-      }
+		$('#fileinput').change(function(){
+      		var file_el = $( this )
+      		var form_el = $('#uploadform')
+      		var dimmer_el = $('#dimmer')
+	  		var templateAndVersion = $('.ui.dropdown').dropdown('get value').split("=")	
+      		var upload_url = '/api/doc?templateName='+encodeURIComponent(templateAndVersion[0])+'&templateVersion='+encodeURIComponent(templateAndVersion[1])
+	  		alert(upload_url)
+      		var filename = file_el.val().split('\\').pop();      
+      		uploadFile(file_el, form_el, dimmer_el, upload_url, filename);
+  		});
+
+		function uploadFile(file_el, form_el, dimmer_el, upload_url, filename) {  
+  			
+			var msg = [[#{docs.confirm.upload}]]+' '+filename+'?';
+  			var dlg = $('#modal_confirm_upload')
+			dlg.find('.description').html(msg)
+  			dlg.modal({
+      			closable:false,
+      			onDeny: function(){
+          			form_el.trigger('reset');
+      			},
+      			onApprove: function(){		 
+         			$.ajax({
+            			url: upload_url,
+            			type: 'POST',
+            			enctype: 'multipart/form-data',
+            			processData: false,
+            			contentType: false,
+            			data: new FormData(form_el[0]),
+            			cache: false,    
+            		success: function(result) {
+                		if ("ok"==result["result"]) {
+                    		dimmer_el.dimmer('hide');
+                    		$('#modal_successful_upload').modal('show')
+                		}
+                		else {
+                    		dimmer_el.dimmer('hide');
+                    		$('#modal_failed_upload').find('.description').html([[#{docs.main.upload.failed}]])
+                    		$('#modal_failed_upload').modal('show')
+                		}
+                		form_el.trigger('reset');
+            		},
+            	error: function(e) {
+                	var msg;
+                	try {
+                    	msg = JSON.parse(e.responseText);
+                    	if (msg.error)
+                        	msg = msg.error;
+                		} catch (e) {
+                    		msg = e.responseText;
+                		}                   
+                	dimmer_el.dimmer('hide');
+                	$('#modal_failed_upload').find('.description').html(msg)
+                	$('#modal_failed_upload').modal('show')
+                	console.log("ERROR : "+ msg);
+                	form_el.trigger('reset');
+            	},
+            	xhr: function() {
+                	var xhr = new window.XMLHttpRequest();
+                	// Upload progress
+                	xhr.upload.addEventListener("progress", function(evt){
+                    	dimmer_el.dimmer('show');
+                	},false);
+                	return xhr;
+            	}
+        	});          
+      	}
     })
-  dlg.modal('show');
+  	dlg.modal('show');
 }
 </script>
 </body>

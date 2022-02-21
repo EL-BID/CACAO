@@ -676,14 +676,6 @@ public class AnalysisService {
 			data.setItems(items);
 			updateScale(data);
 			data.setTotalTaxpayers(FormatUtils.quantityFormat.format(taxpayerIds.size()));
-			
-			//Change values to percentage
-//			data.getItems().forEach(item->{
-//				item.setQ1(item.getQ1()/100);
-//				item.setQ3(item.getQ3()/100);
-//				item.setMedian(item.getMedian()/100);
-//				item.setValue(item.getValue()/100);
-//			});
 
 			return data;
 
@@ -1506,11 +1498,8 @@ public class AnalysisService {
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
 
-		// Script in 'painless' language for identifying confirmations and returning the
-		// confirmed payment value
-		// We return '0' in case this property not being defined, so that we can have
-		// aggregation of 'zeroes' over
-		// slips with no corresponding confirmations.
+		// Script in 'painless' language for identifying if there is a field called
+		//share_class.keyword
 		org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
 				"if (doc['share_class.keyword'].size()==0) return '';"
 						+ "else return doc['share_class.keyword'].value; ");
@@ -1700,6 +1689,9 @@ public class AnalysisService {
 
 	}
 	
+	/**
+	 * Fields to remove from document before returning it
+	 */
 	static String[] fieldsToRemove = {
 	        "taxperiod_number",
 	        "template_version",

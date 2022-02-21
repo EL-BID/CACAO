@@ -98,9 +98,17 @@ public class TaxpayerAPIController {
 	@JsonView(Views.Declarant.class)
 	@GetMapping(value="/taxpayers", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing taxpayers using pagination")
-	public PaginationData<Taxpayer> getUsersWithPagination(Model model, @RequestParam("page") Optional<Integer> page,
-			@RequestParam("size") Optional<Integer> size, @RequestParam("filter") Optional<String> filter, 
-			@RequestParam("sortby") Optional<String> sortBy, @RequestParam("sortorder") Optional<String> sortOrder) {
+	public PaginationData<Taxpayer> getUsersWithPagination(Model model, 
+			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("page") Optional<Integer> page, 
+			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
+			@RequestParam("size") Optional<Integer> size,
+			@ApiParam(name = "Fields and values to filer data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("filter") Optional<String> filter, 
+			@ApiParam(name = "Field name to sort data", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortby") Optional<String> sortBy,
+			@ApiParam(name = "Order to sort. Can be asc or desc", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("sortorder") Optional<String> sortOrder) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
     		throw new UserNotFoundException();
@@ -200,8 +208,6 @@ public class TaxpayerAPIController {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
-        
-//        Optional<Taxpayer> taxpayer_in_database = taxpayerRepository.findById(id);
         
         log.log(Level.INFO, "Changing taxpayer #"+id+" "+taxpayer.getName()+" "+taxpayer.getTaxPayerId());
 
