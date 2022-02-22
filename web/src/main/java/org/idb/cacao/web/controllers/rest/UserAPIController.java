@@ -284,6 +284,39 @@ public class UserAPIController {
         return ResponseEntity.ok().body(user);
     }
 
+	@Secured({"ROLE_USER_WRITE"})
+    @GetMapping(value="/user/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Activate an existing user", response=User.class)
+    public ResponseEntity<Object> activate(
+    		@ApiParam(name = "User ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
+        
+		Optional<User> existing = userRepository.findById(id);
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
+		User user = existing.get();
+		user.setActive(true);
+        userRepository.saveWithTimestamp(user);
+        return ResponseEntity.ok().body(user);
+    }
+
+	@Secured({"ROLE_USER_WRITE"})
+    @GetMapping(value="/user/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Deactivate an existing user", response=User.class)
+    public ResponseEntity<Object> deactivate(
+    		@ApiParam(name = "User ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
+        
+		Optional<User> existing= userRepository.findById(id);
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
+		User user= existing.get();
+		user.setActive(false);
+        userRepository.saveWithTimestamp(user);
+        return ResponseEntity.ok().body(user);
+    }
+
+	
 	public static boolean hasChanged(UserProfile profile1, UserProfile profile2) {
 		if (profile1==profile2)
 			return false;

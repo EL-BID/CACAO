@@ -106,4 +106,20 @@ public class UserUIController {
 		return "users/update-user";
 	}
 
+	@Secured({ "ROLE_USER_WRITE" })
+	@GetMapping("/users/{id}")
+	public String showUser(@PathVariable("id") String id, Model model) {
+		User user = userRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
+		model.addAttribute("user", user);
+		if(user.getTaxpayerId()!=null) {
+			Optional<Taxpayer> name = taxpayerRepository.findByTaxPayerId(user.getTaxpayerId());
+			if (name.isPresent()) {
+				model.addAttribute("taxpayerName", name.get());
+			}
+		}
+		
+		return "users/show-user";
+	}
+
 }
