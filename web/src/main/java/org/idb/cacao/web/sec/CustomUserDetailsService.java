@@ -58,7 +58,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 		
 		userService.assertInitialSetup();
 		
-		User user = userRepository.findByLoginIgnoreCase(name);
+		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(name);
         if (user == null || user.getLogin()==null) {
             throw new UsernameNotFoundException("No user found with username: " + name);
         }

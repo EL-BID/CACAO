@@ -83,7 +83,9 @@
 	};
 	
 	let editIcon = function(cell, formatterParams){ return "<i class='edit icon'></i>"};
-	let trashIcon = function(cell, formatterParams){ return "<i class='trash icon'></i>"};
+	let trashIcon = function(cell, formatterParams){ 
+		if(cell.getRow().getData().active)
+			  return '<i class="trash icon" tooltip:/*[[#{delete}]]></i>'};
 	[/]
 	
 	let profileLookup = {
@@ -92,6 +94,11 @@
 	  [/]
 	};
 	
+    let rowFormatter = function(row){
+      if(!row.getData().active){
+          row.getElement().style.backgroundColor = "#F0F0F0";
+      }
+    }
 	let table = new Tabulator('#table', {
 		index: 'id',
 		layout: "fitData", //fit columns to width of table (optional)
@@ -100,6 +107,7 @@
 		paginationSize: tabulatorPaginationSize,
 		paginationSizeSelector: tabulatorPaginationSizeSelector,				
 		langs: tabulatorLanguageSpecs,
+		rowFormatter: rowFormatter,
 	    filterMode:"remote",
 	    sortMode: "remote",
 	    headerFilterLiveFilterDelay:700,
@@ -126,9 +134,11 @@
 			{title: /*[[#{user.profile}]]*/ "Profile", field:"profile", formatter:"lookup", formatterParams: profileLookup, 
 			      minWidth: 100, headerSort:false, headerFilter: 'select', headerFilterParams: { values: profileLookup } },
 			{title: /*[[#{taxpayer.id}]]*/ "Taxpayer ID", field:"taxpayerId", minWidth: 100, headerFilter: true},
+			{title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",   headerFilter: "tickCross", headerFilterParams:{"tristate":true},
+                formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"},
 			[# sec:authorize="hasRole('ROLE_USER_WRITE')"]
 			{formatter:editIcon, width:45, cellClick: editRow, headerSort:false, tooltip:/*[[#{edit}]]*/ "Edit"},
-			{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false, tooltip:/*[[#{delete}]]*/ "Delete"}
+			{formatter:trashIcon, width:45, cellClick: deleteRow, headerSort:false}
 			[/]
 		]
 	});

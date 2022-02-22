@@ -160,16 +160,17 @@ public class UserService {
 			}
 			
 			// If no user has any profile, configure the built-in first user as SYSADMIN
-			else if (userRepository.countByProfileIsNotNull()==0) {
+			else if (userRepository.countByProfileIsNotNullAndActiveIsTrue()==0) {
 
 				String login = env.getProperty("first.master.user.login");
 				if (login!=null && login.trim().length()>0) {
 
-					User first_sysadmin_user = userRepository.findByLogin(login);
+					User first_sysadmin_user = userRepository.findByLoginIgnoreCase(login);
 					if (first_sysadmin_user!=null) {
 
 						log.log(Level.WARNING, "Configuring SYSADMIN profile for user: "+login);
 						first_sysadmin_user.setProfile(UserProfile.SYSADMIN);
+						first_sysadmin_user.setActive(true);
 						userRepository.saveWithTimestamp(first_sysadmin_user);
 
 					}
@@ -259,7 +260,7 @@ public class UserService {
 		if (user==null 
 				&& (auth.getPrincipal() instanceof org.springframework.security.core.userdetails.User)) {
 			String username = ((org.springframework.security.core.userdetails.User)auth.getPrincipal()).getUsername();
-			user = userRepository.findByLogin(username);
+			user = userRepository.findByLoginAndActiveIsTrue(username);
 		}
 		if (user==null)
 			return null;

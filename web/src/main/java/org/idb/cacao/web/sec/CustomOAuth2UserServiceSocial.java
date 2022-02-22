@@ -84,7 +84,7 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 			throw new UsernameNotFoundException("No email provided for user: " + full_name);
 		}
 		
-		User user = userRepository.findByLoginIgnoreCase(email);
+		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(email);
 		
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "OAUTH-LOGIN: fullname:"+full_name
