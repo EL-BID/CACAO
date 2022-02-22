@@ -300,13 +300,11 @@ public class UserService {
 			return false; // Unidentified users can't send documents on behalf of others
 		// Locates all relationships between user and subject
 		Page<Interpersonal> relationships = searchPage(()->interpersonalRepository
-				.findByPersonId1AndPersonId2(user.getTaxpayerId(), 
+				.findByActiveIsTrueAndPersonId1AndPersonId2(user.getTaxpayerId(), 
 						subject, PageRequest.of(0, 10, Sort.by("timestamp").descending())));
 		if (!relationships.hasContent())
 			return false;
 		for (Interpersonal rel:relationships) {
-			if (rel.isRemoved())
-				continue; // this relationship has been revoked
 			switch (rel.getRelationshipType()) {
 			case LEGAL_REPRESENTATIVE:
 			case DIRECTOR:
@@ -336,13 +334,11 @@ public class UserService {
 		
 		// Locates all relationships between user and subject
 		Page<Interpersonal> relationships = searchPage(()->interpersonalRepository
-				.findByPersonId1AndRelationshipType(user.getTaxpayerId(), 
+				.findByActiveIsTrueAndPersonId1AndRelationshipType(user.getTaxpayerId(), 
 						RelationshipType.MANAGER.name(), PageRequest.of(0, MAX_TAXPAYERS_PER_TAXMANAGER, Sort.by("timestamp").descending())));
 
 		if (relationships.hasContent()) {
 			for (Interpersonal rel:relationships) {
-				if (rel.isRemoved())
-					continue; // this relationship has been revoked
 				txids.add(rel.getPersonId2());
 			}
 		}
@@ -394,15 +390,13 @@ public class UserService {
 		
 		// Locates all relationships between user and other taxpayers
 		Page<Interpersonal> relationships = searchPage(()->interpersonalRepository
-				.findByRemovedIsFalseAndPersonId1AndRelationshipTypeIsIn(user.getTaxpayerId(), 
+				.findByActiveIsTrueAndPersonId1AndRelationshipTypeIsIn(user.getTaxpayerId(), 
 						Arrays.asList(RelationshipType.relationshipsForDeclarants).stream().map(RelationshipType::name).collect(Collectors.toList()), 
 						PageRequest.of(0, 10_000)));
 		if (!relationships.hasContent())
 			return taxpayersIds;
 		
 		for (Interpersonal rel:relationships) {
-			if (rel.isRemoved())
-				continue; // this relationship has been revoked
 			if (rel.getPersonId2()!=null && rel.getPersonId2().trim().length()>0)
 				taxpayersIds.add(rel.getPersonId2());
 		}
