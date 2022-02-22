@@ -567,6 +567,8 @@ La **Plantilla de documento** contiene la siguiente información:
 * La **Versión** de la plantilla, utilizada para mantener un registro histórico de las modificaciones de la plantilla
 * La **Periodicidad** con que la información debe ser enviada por los Contribuyentes a la Administración Tributaria
 * Una identificación de **grupo** para consolidar diferentes plantillas con respecto a un objetivo común
+* Si la plantilla está **Activa**, significa que es posible cargar archivos con esta plantilla
+* Si la plantilla es **Requerida**, significa que para que CACAO evalúe correctamente los datos contables, se debe enviar un archivo con esta plantilla 
 * Una lista de **Campos**. Para cada campo de la plantilla, se debe informar:
 	* Nombre del campo**
 	* El **tipo** de la información del campo
@@ -611,6 +613,37 @@ La siguiente tabla muestra un pequeño ejemplo de una lista de Campos de un Plan
 |Identificación|Carácter|Identificación del Contribuyente|Sí|Sí|Sí|Número de Identificación del Contribuyente|
 |Año|Entero|Año fiscal|No|Sí|Sí|Año fiscal de este informe financiero|
 |Dirección|Carácter|Cualquier Campo|No|No|No|Dirección de trabajo del contribuyente|
+
+## Entradas de documentos
+
+Cada plantilla de documento debe tener al menos una **entrada de documento** para poder enviarse a CACAO. Una entrada de documento muestra a CACAO cómo encontrar los campos de una plantilla de documento dentro de un formato de archivo específico.
+
+CACAO puede leer los siguientes formatos de archivo, que se pueden utilizar como entradas de documentos:
+
+* **CSV** - Valores separados por comas
+* **XLS** - Hojas de cálculo de Excel
+* **JSON** - Notación de objetos de JavaScript
+* **PDF** - formularios PDF
+* **DOC** - Microsoft Word
+
+> _**CONTINUARÁ**_
+
+## Arquetipo
+
+Para facilitar la creación de Plantillas de documentos, CACAO tiene algunas plantillas de documentos **Arquetipos**. Esos arquetipos son plantillas de documentos precargados, para un conjunto común de documentos contables, cada uno con un conjunto completo de campos.
+
+Los arquetipos de CACAO son:
+
+* Catálogo de cuentas
+* Libro mayor
+* Estado de resultados
+* Saldo de apertura
+* Participación
+* Genérico
+
+Para usar los arquetipos para iniciar la creación de una plantilla de documento, seleccione la opción `Plantillas de documento` ubicada en el menú de la barra lateral. A continuación, seleccione la opción `Gestionar plantillas` en la parte inferior izquierda de la lista Plantillas de documentos y, por último, seleccione la tarjeta `Arquetipo`.
+
+Después de seleccionar el arquetipo deseado, CACAO mostrará la interfaz **Editar plantilla de documento**. Desde este punto, es posible personalizar aún más la plantilla de documento.
 
 </div>
 </div>

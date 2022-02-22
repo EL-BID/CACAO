@@ -571,6 +571,8 @@ A **Document Template** contains the following information:
 * The **Version** of the template, used to keep a historical log of the template modifications
 * The **Periodicity** that the information must be sent by the Taxpayers to the Tax Administration
 * A **group** identification to consolidate different templates regarding a common goal
+* If the template is **Active**, meaning that its possible to upload files with this template
+* It the template is **Required**, meaning that for CACAO to properly assess the accounting data, a file with this template must be submitted 
 * A list of **Fields**. For each field of the template, it must be informed:
 	* Field **Name**
  	* The **type** of the information of the field
@@ -608,7 +610,7 @@ The **mapping** of a field matches its information with one of the specific info
 * Tax Code
 * Tax 
 
-The following table shows a small example of a list of Field from a Chart of Accounts:
+The following table shows a small example of a Field list from a Chart of Accounts:
 
 |Name|Type|Mapping|Personal Data|Required|Unique|Description|
 |-|-|-|-|-|-|-|
@@ -616,7 +618,37 @@ The following table shows a small example of a list of Field from a Chart of Acc
 |Year|Integer|Tax Year|No|Yes|Yes|Fiscal year of this financial reporting|
 |Address|Character|Any Field|No|No|No|Taxpayer work address|
 
+## Document Inputs
 
+Each Document Template must have at least one **Document Input** in order to be submitted to CACAO. A Document input shows CACAO how to find the fields of a Document Template within a specific file format.
+
+CACAO can read the following file formats, that can be used as Document Inputs:
+
+* **CSV** - Comma separated values
+* **XLS** - Excel spreadsheets
+* **JSON** - JavaScript Object Notation
+* **PDF** - PDF forms
+* **DOC** - Microsoft Word
+
+> _**TO BE CONTINUED**_
+
+## Archetype
+
+In order to facilitate the creation of Document Templates, CACAO ships some document template **Archetypes**. Those Archetype are pre-filled document templates, for a common set of accounting documents, each with a complete set of fields.
+
+CACAO's archetypes are:
+
+* Chart of Accounts
+* General Ledger
+* Income Statement
+* Opening Balance
+* Shareholding
+* Generic
+
+To use the Archetypes to kickstart a Document Template creation, select the `Document Templates` option located at the sidebar menu. Then select the `Manage Templates` option on the lower left of the Document Templates list, and finally select the `Archetype` card.
+
+After selecting the desired archetype, CACAO will show the **Edit Document Template** interface. From this point, its possible to further customize the Document Template.
+  
 
 </div>
 </div>
@@ -641,7 +673,7 @@ CACAO expose different API in order to allow taxpayers' information systems to c
 
 **Before** using any of the CACAO's API, you must create a **access token**. This token will replace the user/password information in order to login on CACAO and access the desired functionality. 
 
-To create an access token, elect the `CACAO Configurations` option located at the sidebar menu. Then select the `Token API Configuration`. An interface for managing your access token will be displayed, with the following options:
+To create an access token, select the `CACAO Configurations` option located at the sidebar menu. Then select the `Token API Configuration`. An interface for managing your access token will be displayed, with the following options:
 
 * **View generated token** shows you the token that you have already created (if any)
 * **Generate a new token** creates a new token or replaces the previous one
