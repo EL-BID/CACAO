@@ -70,11 +70,54 @@
                           <input type="text" th:field="*{qualifier5}" class="form-control" id="qualifier5" th:placeholder="#{taxpayer.qualifier.5}" readonly>
                       </div>
                     </div>
+                    <div class="row">
+                      <input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editTaxpayer" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')"> 
+                      <input th:if="${taxpayer.active==true}" type="button" class="ui red button" th:value="#{deactivate}" value="Deactivate" id="deactivate" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')">
+                      <input th:if="${taxpayer.active!=true}" type="button" class="ui green button" th:value="#{activate}" value="Activate" id="activate" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')">
+                    </div>
                 </form>
             </div>
         </div>
     </div>
+    <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+    <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+    <div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+    
 <script th:nonce="${cspNonce}" th:inline="javascript">
+let activate = function(value) {
+    var dlg = $('#modal_confirm')
+    var msg = value ? [[#{taxpayer.activate.confirm}]] : [[#{taxpayer.deactivate.confirm}]]
+    dlg.find('.description').html(msg)
+    dlg.modal({
+        closable:false,
+        onApprove: function() { 
+          if(value)
+              url = [[@{/api/taxpayer/{id}/activate(id=${taxpayer.id})}]]
+          else
+              url = [[@{/api/taxpayer/{id}/deactivate(id=${taxpayer.id})}]]
+          $.get( url )
+          .done( function() {
+              $('#modal_successful').modal('show')
+              setTimeout(()=> window.location.replace([[@{/taxpayers/{id}(id=${taxpayer.id})}]]), 2000)
+          })
+        .fail( function(e) {
+          var msg = e.responseText.replace(/\n/g, "<br />");
+            $('#modal_failed').find('.description').html(msg)
+            $('#modal_failed').modal('show')
+            console.log("ERROR : "+ msg);
+         })
+       }
+    })
+    dlg.modal('show');
+}
+
+$('#activate').click(() => activate(true))
+$('#deactivate').click(() => activate(false))
+
+$('#editTaxpayer').click(function(e){
+    document.location.replace([[@{/taxpayers/{id}/edit(id=${taxpayer.id})}]])
+})
+
 </script>
 </body>
 </html>

@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.api;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
@@ -149,6 +150,10 @@ public class Taxpayer implements Serializable, Cloneable {
 	)
 	@JsonView(Views.Authority.class)
 	private String qualifier5;
+	
+	@Field(type=Boolean)
+	@JsonView(Views.Public.class)
+	private boolean active=true;
 	
 	public String getId() {
 		return id;
@@ -304,6 +309,14 @@ public class Taxpayer implements Serializable, Cloneable {
 	@Override
 	public String toString() {
 		return name;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 	
 }
