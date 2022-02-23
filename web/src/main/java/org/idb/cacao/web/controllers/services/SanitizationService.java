@@ -394,13 +394,21 @@ public class SanitizationService {
 					Thread.sleep(10_000);
 					Thread.yield();
 					
-					resizeResponse = elasticsearchClient.indices().clone(clone_request, options);
-					if (!resizeResponse.isAcknowledged()) {
+					boolean ack1 = false, ack2 = false;
+					try {
+						resizeResponse = elasticsearchClient.indices().clone(clone_request, options);
+						ack1 = resizeResponse.isAcknowledged();
+						ack2 = resizeResponse.isShardsAcknowledged();
+					}
+					catch (Throwable ex) {
+						log.log(Level.SEVERE, "Error while cloning index "+indexName+" as "+cloned_indexName, ex);
+					}
+					if (!ack1) {
 						ESUtils.changeBooleanIndexSetting(elasticsearchClient, indexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
 						throw new RuntimeException("Could not change mapping of index '"+indexName+"'. Failed to acknownledge CLONE to "+cloned_indexName);
 					}
 					
-					if (!resizeResponse.isShardsAcknowledged()) {
+					if (!ack2) {
 						ESUtils.changeBooleanIndexSetting(elasticsearchClient, indexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
 						throw new RuntimeException("Could not change mapping of index '"+indexName+"'. Failed to acknownledge CLONE to "+cloned_indexName);
 					}
