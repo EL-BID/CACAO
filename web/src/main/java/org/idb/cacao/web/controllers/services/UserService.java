@@ -405,6 +405,46 @@ public class UserService {
 	}
 	
 	/**
+	 * Depending on the authenticated user, may or may not get a collection of taxpayers' IDs for
+	 * using in additional filters for other search, in order to keep the scope constrained to what the
+	 * user can access. Returns NULL if the scope should not be restricted.<BR>
+	 * This method consider either 'tax manager' or 'taxpayer' user profiles.
+	 */
+	@Transactional(readOnly=true)
+	public Set<String> getFilteredTaxpayersForUserAsAnyRelationship(Authentication auth) {
+    	Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
+    	boolean readAll = roles.stream().anyMatch(a-> a.getAuthority().equals("TAX_DECLARATION_READ_ALL"));
+    	final Set<String> filter_taxpayers_ids = new TreeSet<>();
+    	if (!readAll) {
+        	User user = getUser(auth);
+        	if (user==null)
+        		return Collections.emptySet();
+    		String user_taxpayer_id = userRepository.findById(user.getId()).map(User::getTaxpayerId).orElse(null);
+    		if (user_taxpayer_id==null || user_taxpayer_id.trim().length()==0)
+    			throw new MissingParameter(messages.getMessage("user.missing.taxpayerid", null, LocaleContextHolder.getLocale()));
+    		
+    		filter_taxpayers_ids.add(user_taxpayer_id);
+    		
+    		// Locates all relationships between user and other taxpayers
+    		Page<Interpersonal> relationships = searchPage(()->interpersonalRepository
+    				.findByActiveIsTrueAndPersonId1(user.getTaxpayerId(), 
+    						PageRequest.of(0, 10_000)));
+    		if (!relationships.hasContent())
+    			return filter_taxpayers_ids;
+    		
+    		for (Interpersonal rel:relationships) {
+    			if (rel.getPersonId2()!=null && rel.getPersonId2().trim().length()>0)
+    				filter_taxpayers_ids.add(rel.getPersonId2());
+    		}
+    		return filter_taxpayers_ids;
+
+    	}
+    	else {
+    		return null; // we don't need this for SYSADMIN requests
+    	}
+	}
+
+	/**
 	 * Returns indication that the user has any Kibana Access (read or write)
 	 */
 	public boolean hasKibanaAccess(User user) {

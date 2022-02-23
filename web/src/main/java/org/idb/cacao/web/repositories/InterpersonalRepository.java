@@ -46,7 +46,9 @@ public interface InterpersonalRepository extends ElasticsearchRepository<Interpe
 	Page<Interpersonal> findByPersonId1(String personId1, Pageable pageable);
 
 	Page<Interpersonal> findByPersonId2(String personId2, Pageable pageable);
-	
+
+	Page<Interpersonal> findByActiveIsTrueAndPersonId1(String personId1, Pageable pageable);
+
 	Page<Interpersonal> findByActiveIsTrueAndPersonId1AndPersonId2(String personId1, String personId2, Pageable pageable);
 
 	Page<Interpersonal> findByPersonId1OrPersonId2(String personId1, String personId2, Pageable pageable);

@@ -401,7 +401,21 @@ public class SanitizationService {
 						ack2 = resizeResponse.isShardsAcknowledged();
 					}
 					catch (Throwable ex) {
-						log.log(Level.SEVERE, "Error while cloning index "+indexName+" as "+cloned_indexName, ex);
+						if (ErrorUtils.isErrorIndexReadOnly(ex)) {
+							// Try again (change READ ONLY status)
+							ESUtils.changeBooleanIndexSetting(elasticsearchClient, cloned_indexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
+							try {
+								resizeResponse = elasticsearchClient.indices().clone(clone_request, options);
+								ack1 = resizeResponse.isAcknowledged();
+								ack2 = resizeResponse.isShardsAcknowledged();
+							}
+							catch (Throwable ex2) {
+								log.log(Level.SEVERE, "Error while cloning index "+indexName+" as "+cloned_indexName, ex2);
+							}
+						}
+						else {
+							log.log(Level.SEVERE, "Error while cloning index "+indexName+" as "+cloned_indexName, ex);
+						}
 					}
 					if (!ack1) {
 						ESUtils.changeBooleanIndexSetting(elasticsearchClient, indexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);

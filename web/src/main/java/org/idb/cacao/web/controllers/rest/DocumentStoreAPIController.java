@@ -832,7 +832,7 @@ public class DocumentStoreAPIController {
 			// Only SYSADMIN users may see every documents. Other users are restricted to
 			// their relationships
 			final Set<String> filterTaxpayersIds;
-			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsAnyRelationship(auth);
 			
 			if ( filterTaxpayersIds != null ) {
 				
@@ -897,7 +897,7 @@ public class DocumentStoreAPIController {
 			// Only SYSADMIN users may see every documents. Other users are restricted to
 			// their relationships
 			final Set<String> filterTaxpayersIds;
-			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
+			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsAnyRelationship(auth);
 			
 			if ( filterTaxpayersIds != null ) {
 				
