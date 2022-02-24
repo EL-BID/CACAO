@@ -549,8 +549,11 @@ public class ElasticsearchMockClient {
 				@Override
 				public boolean test(Map<?, ?> doc) {
 					for (Object field : fields) {
-						String value = (String) doc.get(treatFieldName(field));
-						if (value != null && value.equalsIgnoreCase(query)) {
+						Object value = doc.get(treatFieldName(field));
+						String s_value = (value instanceof String) ? (String)value 
+								: (value==null) ? null 
+								: value.toString();
+						if (s_value != null && s_value.equalsIgnoreCase(query)) {
 							return true;
 						}
 					}
