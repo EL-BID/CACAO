@@ -428,8 +428,8 @@ public class DocumentStoreAPIController {
 			final boolean closeInputStream, final String template, final String templateVersion,
 			final String remoteIpAddr, final User user) throws IOException, GeneralException {
 		File tempFile1 = null;
-		List<Runnable> rollbackProcedures = new LinkedList<>(); // hold rollback procedures only to be used in case of
-																// error
+		// Hold rollback procedures only to be used in case of error
+		List<Runnable> rollbackProcedures = new LinkedList<>(); 
 		try {
 
 			log.log(Level.INFO, "User " + user.getLogin() + " uploading file " + originalFilename + " for template "
@@ -472,12 +472,10 @@ public class DocumentStoreAPIController {
 			DocumentSituationHistory savedSituation = documentsSituationHistoryRepository
 					.saveWithTimestamp(situationHistory);
 
-			rollbackProcedures.add(() -> documentsUploadedRepository.delete(savedInfo)); // in case of error delete the
-																							// DocumentUploaded
-			rollbackProcedures.add(() -> documentsSituationHistoryRepository.delete(savedSituation)); // in case of
-																										// error delete
-																										// the
-																										// DocumentUploaded
+			// in case of error delete the DocumentUploaded
+			rollbackProcedures.add(() -> documentsUploadedRepository.delete(savedInfo)); 
+			// in case of error delete the DocumentUploaded
+			rollbackProcedures.add(() -> documentsSituationHistoryRepository.delete(savedSituation)); 
 			Map<String, String> result = new HashMap<>();
 			result.put("result", "ok");
 			result.put("file_id", fileId);

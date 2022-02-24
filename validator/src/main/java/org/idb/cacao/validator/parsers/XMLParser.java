@@ -92,8 +92,6 @@ public class XMLParser implements FileParser {
 		this.documentInputSpec = inputSpec;
 	}
 
-
-	@SuppressWarnings("unchecked")
 	@Override
 	public void start() {
 		if ( path == null || !path.toFile().exists() ) {
