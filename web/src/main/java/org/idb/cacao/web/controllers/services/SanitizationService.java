@@ -401,9 +401,21 @@ public class SanitizationService {
 						ack2 = resizeResponse.isShardsAcknowledged();
 					}
 					catch (Throwable ex) {
+						
 						if (ErrorUtils.isErrorIndexReadOnly(ex)) {
-							// Try again (change READ ONLY status)
-							ESUtils.changeBooleanIndexSetting(elasticsearchClient, cloned_indexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
+							
+							// Try again (change READ ONLY status and deletes temporary index if it already exists)
+							try {
+								ESUtils.changeBooleanIndexSetting(elasticsearchClient, cloned_indexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
+								DeleteIndexRequest delete_request = new DeleteIndexRequest(cloned_indexName);
+								elasticsearchClient.indices().delete(delete_request, options);
+							}
+							catch (Throwable ex2) {
+								if (!ErrorUtils.isErrorNoIndexFound(ex2)) {
+									log.log(Level.WARNING, "Error while deleting temporary index"+cloned_indexName, ex2);
+								}
+							}
+
 							try {
 								resizeResponse = elasticsearchClient.indices().clone(clone_request, options);
 								ack1 = resizeResponse.isAcknowledged();
