@@ -44,7 +44,7 @@ public class CustomAuthenticationProvider extends DaoAuthenticationProvider {
         if (auth==null || auth.getName()==null || auth.getName().trim().length()==0) {
         	throw new BadCredentialsException("Missing login for user trying to authenticate");
         }
-        final User user = userRepository.findByLoginIgnoreCase(auth.getName());
+        final User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(auth.getName());
         if (user == null) {
             throw new BadCredentialsException("Invalid username or password");
         }

@@ -228,7 +228,49 @@ public class TaxpayerAPIController {
         
         log.log(Level.INFO, "Deleting taxpayer #"+id+" "+taxpayer.getName()+" "+taxpayer.getTaxPayerId());
         
-        taxpayerRepository.delete(taxpayer);
+        //taxpayerRepository.delete(taxpayer);
+        try {
+        	taxpayer.setActive(false);
+        	taxpayerRepository.saveWithTimestamp(taxpayer);
+        }
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Delete taxpayer failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        }
+
         return ResponseEntity.ok().body(taxpayer);
     }
+	
+	@Secured({"ROLE_TAXPAYER_WRITE"})
+    @GetMapping(value="/taxpayer/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Activate an existing taxpayer", response=Taxpayer.class)
+    public ResponseEntity<Object> activate(
+    		@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
+        
+		Optional<Taxpayer> existing = taxpayerRepository.findById(id);
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
+		Taxpayer taxpayer = existing.get();
+		taxpayer.setActive(true);
+        taxpayerRepository.saveWithTimestamp(taxpayer);
+        return ResponseEntity.ok().body(taxpayer);
+    }
+
+	@Secured({"ROLE_TAXPAYER_WRITE"})
+    @GetMapping(value="/taxpayer/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Deactivate an existing taxpayer", response=Taxpayer.class)
+    public ResponseEntity<Object> deactivate(
+    		@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
+    		@PathVariable("id") String id) {
+        
+		Optional<Taxpayer> existing= taxpayerRepository.findById(id);
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
+		Taxpayer taxpayer= existing.get();
+		taxpayer.setActive(false);
+        taxpayerRepository.saveWithTimestamp(taxpayer);
+        return ResponseEntity.ok().body(taxpayer);
+    }
+
 }

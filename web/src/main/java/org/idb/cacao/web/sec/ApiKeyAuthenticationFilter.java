@@ -77,6 +77,12 @@ public class ApiKeyAuthenticationFilter implements Filter {
                         httpResponse.getWriter().write("Use of API Token is prohibited for your user profile");                    
                         return;                		
                 	}
+                	else if (!matching_user.get().isActive()) {
+                        HttpServletResponse httpResponse = (HttpServletResponse) response;
+                        httpResponse.setStatus(HttpStatus.SC_UNAUTHORIZED); // 401
+                        httpResponse.getWriter().write("User account has been disabled");                    
+                        return;                		                		
+                	}
                 	else {
 	                    ApiKeyAuthenticationToken apiToken = new ApiKeyAuthenticationToken(matching_user.get(), privilegeService.getGrantedAuthorities(matching_user.get().getProfile()));
 	                    SecurityContextHolder.getContext().setAuthentication(apiToken);

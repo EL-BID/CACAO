@@ -69,7 +69,8 @@ public class UsersTaxpayersService {
 		
 		SearchRequest searchRequest = new SearchRequest("cacao_user");
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.must(new TermQueryBuilder("name.keyword", userName).caseInsensitive(true));
+		query = query.must(new TermQueryBuilder("name.keyword", userName).caseInsensitive(true))
+				.must(new TermQueryBuilder("active", true));
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
 		searchSourceBuilder.size(1);
 		searchRequest.source(searchSourceBuilder);
@@ -105,7 +106,7 @@ public class UsersTaxpayersService {
 		query = QueryBuilders.boolQuery();
 		query = query.must(new TermQueryBuilder("personId1", user_taxpayerId));
 		query = query.must(new TermQueryBuilder("personId2", taxpayerId));
-		query = query.mustNot(new TermQueryBuilder("removed", true));
+		query = query.must(new TermQueryBuilder("active", true));
 		searchSourceBuilder = new SearchSourceBuilder().query(query);
 		searchSourceBuilder.size(0); // we don't need to receive the hits
 		searchRequest.source(searchSourceBuilder);

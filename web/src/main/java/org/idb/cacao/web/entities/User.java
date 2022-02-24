@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.entities;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Date;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
@@ -176,6 +177,10 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	@Transient
 	@JsonIgnore
 	private Integer pageSize;
+	
+	@Field(type=Boolean)
+	@JsonView(Views.Public.class)
+	private boolean active=true;
 	
 	/**
 	 * {@link #id}
@@ -383,5 +388,12 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	public void setConfirmPassword(String confirmPassword) {
 		this.confirmPassword = confirmPassword;
 	}
-	
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
 }

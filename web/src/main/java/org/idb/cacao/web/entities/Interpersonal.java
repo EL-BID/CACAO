@@ -83,7 +83,7 @@ public class Interpersonal implements Serializable, Cloneable {
 	
 	@Field(type=Boolean)
 	@JsonView(Views.Authority.class)
-	private boolean removed;
+	private boolean active=true;
 	
 	@Field(type=Date, store = true, pattern = "uuuu-MM-dd'T'HH:mm:ss.SSSZZ")
 	private OffsetDateTime removedTimestamp;
@@ -140,12 +140,12 @@ public class Interpersonal implements Serializable, Cloneable {
 		this.removedTimestamp = removedTimestamp;
 	}
 
-	public boolean isRemoved() {
-		return removed;
+	public boolean isActive() {
+		return active;
 	}
 
-	public void setRemoved(boolean removed) {
-		this.removed = removed;
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
 	public String getUser() {

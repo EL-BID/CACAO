@@ -68,6 +68,11 @@ public class ErrorUtils {
 	 * Error of type 'Unique index or primary key violation'. E.g.: attempt to create two users with the same login
 	 */
 	public static final Pattern pUniqueConstraintViolation = Pattern.compile("Unique index or primary key violation",Pattern.CASE_INSENSITIVE);
+	
+	/**
+	 * Error of type 'FORBIDDEN/5/index read-only'
+	 */
+	public static final Pattern pReadOnly = Pattern.compile("index read-only",Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * Error of type '404 Not Found'
@@ -133,6 +138,26 @@ public class ErrorUtils {
 	 */
 	public static boolean isErrorNoIndexFound(Throwable ex) {
 		return CommonErrors.isErrorNoIndexFound(ex);
+	}
+
+	/**
+	 * Returns TRUE if the error is something like 'FORBIDDEN/5/index read-only ...'
+	 */
+	public static boolean isErrorIndexReadOnly(Throwable ex) {
+		if (ex!=null && ex.getMessage()!=null && pReadOnly.matcher(ex.getMessage()).find())
+			return true;
+		if (ex!=null && ex.getCause()!=null && ex.getCause()!=ex)
+			return isErrorIndexReadOnly(ex.getCause());
+		if (ex instanceof ElasticsearchStatusException) {
+			Throwable[] suppressed = ((ElasticsearchStatusException)ex).getSuppressed();
+			if (suppressed!=null && suppressed.length>0) {
+				for (Throwable sup:suppressed) {
+					if (isErrorIndexReadOnly(sup))
+						return true;
+				}
+			}
+		}
+		return false;		
 	}
 
 	/**

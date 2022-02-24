@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <a class="section" th:text="#{users.title}" th:href="@{/users}">Users</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{user.title}">User</div>
+        </div>
+  
+		<h2 class="ui header">
+			<i class="user icon"></i>
+			<span class="content" th:text="#{user.title}">User</span>
+		</h2>
+		<div class="ui container">
+			<div class="ui orange segment">
+                <form class="ui form" action="#" name="form" id="form" th:action="@{/api/user}" th:object="${user}" method="post">
+                    <div class="fields">
+                      <div class="eight wide field">
+                        <label th:text="#{user.name}" style="margin-bottom: 0px; text-transform: uppercase;">User Name</label> 
+                        <input type="text" th:field="*{name}" class="form-control" id="name" placeholder="Name" th:placeholder="#{user.name}" readonly>
+                      </div>
+                      <div class="eight wide field">
+                        <label th:text="#{user.login}" style="margin-bottom: 0px; text-transform: uppercase;">Login</label> 
+                        <input type="text" th:field="*{login}" class="form-control" id="login" placeholder="Login" th:placeholder="#{user.login}" readonly>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label th:text="#{user.profile}" style="margin-bottom: 0px; text-transform: uppercase;">Profile</label>
+                      <input type="text" th:value="#{${user.profile}}" class="form-control" readonly>
+                    </div>
+                    <div class="field" id="showTaxpayer" th:style="${user.profile.name().equals('DECLARANT') ? 'display:block' : 'display: none'}">
+                      <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label>
+                      <input type="text" th:value="|${user.taxpayerId} - ${taxpayerName}|" class="form-control" readonly> 
+                    </div>
+                    <div class="row">
+                      <input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editUser" sec:authorize="hasRole('ROLE_USER_WRITE')"> 
+                      <input th:if="${user.active==true}" type="button" class="ui red button" th:value="#{deactivate}" value="Deactivate" id="deactivate" sec:authorize="hasRole('ROLE_USER_WRITE')">
+                      <input th:if="${user.active!=true}" type="button" class="ui green button" th:value="#{activate}" value="Activate" id="activate" sec:authorize="hasRole('ROLE_USER_WRITE')">
+                    </div>
+                </form>
+ 			</div>
+		</div>
+		</div>
+	</div>
+	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<script th:nonce="${cspNonce}" th:inline="javascript">
+    let activate = function(value) {
+        var dlg = $('#modal_confirm')
+        var msg = value ? [[#{user.activate.confirm}]] : [[#{user.deactivate.confirm}]]
+        dlg.find('.description').html(msg)
+        dlg.modal({
+            closable:false,
+            onApprove: function() { 
+              if(value)
+                  url = [[@{/api/user/{id}/activate(id=${user.id})}]]
+              else
+                  url = [[@{/api/user/{id}/deactivate(id=${user.id})}]]
+              $.get( url )
+              .done( function() {
+                  $('#modal_successful').modal('show')
+                  setTimeout(()=> window.location.replace([[@{/users/{id}(id=${user.id})}]]), 2000)
+              })
+            .fail( function(e) {
+              var msg = e.responseText.replace(/\n/g, "<br />");
+                $('#modal_failed').find('.description').html(msg)
+                $('#modal_failed').modal('show')
+                console.log("ERROR : "+ msg);
+             })
+           }
+        })
+        dlg.modal('show');
+    }
+    
+    $('#activate').click(() => activate(true))
+    $('#deactivate').click(() => activate(false))
+    
+    $('#editUser').click(function(e){
+        document.location.replace([[@{/users/{id}/edit(id=${user.id})}]])
+    })
+
+</script>
+</body>
+</html>

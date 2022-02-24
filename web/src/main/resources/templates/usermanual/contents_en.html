@@ -36,7 +36,7 @@ All functionalities of the CACAO system can be accessed through the sidebar menu
 
 After logging in to CACAO, or selecting the `Home` option in the sidebar menu, a card interface will be presented with shortcuts to CACAO's most commonly used features. 
 
-## Role Based Access Control
+## Role-Based Access Control
 
 The CACAO system implements a Role Base Access Control. **Not all functions are available to all roles**.
 
@@ -92,8 +92,8 @@ A table with all the documents uploaded will be presented. This table shows:
 	
 > **Attention!**
 > CACAO applies **two** sequential processes: 
-> * _File validation_, when CACAO validate each file against the document template.
-> * _Data extraction, transformation and loading (ETL)_, when CACAO reads the data from the validated files, performs various calculations and transformations and stores the results on its own database.  
+> * _File validation_, when CACAO validates each file against the document template.
+> * _Data extraction, transformation, and loading (ETL)_, when CACAO reads the data from the validated files, performs various calculations and transformations, and stores the results on its own database.  
 > 
 > For more information on documents templates, please refer to the `Managing Document Templates` entry of this user manual. 
 	
@@ -136,7 +136,7 @@ To create a new user, select the `New User` button on the bottom left of the use
 > Although it is possible to manually create a user, its advisable to always use `Sign in with Google`, `Sign in with Microsoft` or `Sign in with Facebook`, which automatically creates the CACAO user.
 
 
-A interface for inserting the users information is displayed. After fulfilling all required information, select the `Add user` button.
+An interface for inserting the users´ information is displayed. After fulfilling all required information, select the `Add user` button.
 
 ## Editing user information
 
@@ -177,7 +177,7 @@ There are also 2 functions available  for each Taxpayers:
 
 To create a new user, select the `New Taxpayer` button on the bottom left of the Taxpayer´s table.
 
-A interface for inserting the Taxpayer information is displayed. After fulfilling all required information, select the `Add Taxpayer` button.
+An interface for inserting the Taxpayer information is displayed. After fulfilling all required information, select the `Add Taxpayer` button.
 
 ## Editing Taxpayer information
 
@@ -202,7 +202,7 @@ To delete a Taxpayer from CACAO, select the `trash` icon next to the desired Tax
 <div class="content markdown">
 ## What's the purpose of a Vertical and Horizontal Analysis?
 
-The vertical and horizontal analysis allows the visualization of the state of single taxpayer. The data source for these analysis is the journal uploaded by the Taxpayer.
+The vertical and horizontal analysis allows the visualization of the state of a single taxpayer. The data source for these analyses is the journal uploaded by the Taxpayer.
 
 The **vertical analysis** presents the financial statement for the period so that level 1 of the statement (Category) equals 100%, and then the percentage that each element of item 2 (subcategory) represents of this 100% is presented, and so on.
 
@@ -224,7 +224,7 @@ For instance:
 |2|Asset|Cash and Cash Equivalents|1000|450|45%|
 |2|Asset|Inventory|500|600|120%|
 
-It is also possible to perform **both analysis** simultaneously. In this situation, after the information for the first period, there will be the vertical comparison column. After the information for the second period, there will be the horizontal comparison.
+It is also possible to perform **both analyses** simultaneously. In this situation, after the information for the first period, there will be the vertical comparison column. After the information for the second period, there will be the horizontal comparison.
 
 |Level|Category|SubCategory|First Period|Vertical Comparison|Second Period|Horizontal Comparison|
 |-|-|-|-|-|-|-|
@@ -246,7 +246,7 @@ The next step is to choose the analysis type. It's possible to choose from:
 
 The third step is to select the **base period**. The base period is the first period in all comparisons.
 
-In the fourth step it must be select the periodicity of the analysis. This selection controls the periods that will be compared to the base period.
+In the fourth step, it must be select the periodicity of the analysis. This selection controls the periods that will be compared to the base period.
 
 The last step is to select the levels of the chart of accounts that will be displayed:
 
@@ -571,6 +571,8 @@ A **Document Template** contains the following information:
 * The **Version** of the template, used to keep a historical log of the template modifications
 * The **Periodicity** that the information must be sent by the Taxpayers to the Tax Administration
 * A **group** identification to consolidate different templates regarding a common goal
+* If the template is **Active**, meaning that its possible to upload files with this template
+* It the template is **Required**, meaning that for CACAO to properly assess the accounting data, a file with this template must be submitted 
 * A list of **Fields**. For each field of the template, it must be informed:
 	* Field **Name**
  	* The **type** of the information of the field
@@ -608,7 +610,7 @@ The **mapping** of a field matches its information with one of the specific info
 * Tax Code
 * Tax 
 
-The following table shows a small example of a list of Field from a Chart of Accounts:
+The following table shows a small example of a Field list from a Chart of Accounts:
 
 |Name|Type|Mapping|Personal Data|Required|Unique|Description|
 |-|-|-|-|-|-|-|
@@ -616,7 +618,55 @@ The following table shows a small example of a list of Field from a Chart of Acc
 |Year|Integer|Tax Year|No|Yes|Yes|Fiscal year of this financial reporting|
 |Address|Character|Any Field|No|No|No|Taxpayer work address|
 
+## Document Inputs
 
+Each Document Template must have at least one **Document Input** in order to be submitted to CACAO. A Document input shows CACAO how to find the fields of a Document Template within a specific file format.
+
+CACAO can read the following file formats, that can be used as Document Inputs:
+
+* **CSV** - Comma separated values
+* **XML** - Extensible Markup Language
+* **XLS** - Excel spreadsheets
+* **JSON** - JavaScript Object Notation
+* **PDF** - PDF forms
+* **DOC** - Microsoft Word
+
+Each input type has its own characteristics. CACAO tries its best to match the content of the files with the fields defined by the Document Template.
+
+The match may take place in multiple ways. CACAO has a sequence of trials and only if none of them succeeds, it returns a validation error. 
+
+The following list shows the different (and sequential) trials:
+
+- **First Trial**: using regular expressions, tries to extract values from the file name (ex: the file name contains the taxpayer id and tax year)
+- **Second Trial**: extract the values from the row index (row position)
+- **Third Trial**: extract the values from the column index (column position)
+- **Fourth Trial**: using regular expressions, tries to match the name of the columns from the files with the Document Template fields
+
+Not every trial is suited for all the file formats. For example, the **Third Trial** trial is not suitable for **JSON** and **XML** types, since one cannot determine column positions as we would in a **CSV** file.
+
+One must remember this is the order of trials. For instance, if the file name does not match the regular expressions defined in the **First Trial** trial, the **Second Trial** trial will be executed.
+
+This sequence is field-wise, it reinitializes for each Document Template's fields attempt of matching. For instance, if the taxpayer id was extracted from the column index (**Third Trial**), for the tax year the sequence begins from the **First Trial**, trying to extract from the file name.
+
+> _**TO BE CONTINUED**_
+
+## Archetype
+
+In order to facilitate the creation of Document Templates, CACAO ships some document template **Archetypes**. Those Archetype are pre-filled document templates, for a common set of accounting documents, each with a complete set of fields.
+
+CACAO's archetypes are:
+
+* Chart of Accounts
+* General Ledger
+* Income Statement
+* Opening Balance
+* Shareholding
+* Generic
+
+To use the Archetypes to kickstart a Document Template creation, select the `Document Templates` option located at the sidebar menu. Then select the `Manage Templates` option on the lower left of the Document Templates list, and finally select the `Archetype` card.
+
+After selecting the desired archetype, CACAO will show the **Edit Document Template** interface. From this point, its possible to further customize the Document Template.
+  
 
 </div>
 </div>
@@ -641,7 +691,7 @@ CACAO expose different API in order to allow taxpayers' information systems to c
 
 **Before** using any of the CACAO's API, you must create a **access token**. This token will replace the user/password information in order to login on CACAO and access the desired functionality. 
 
-To create an access token, elect the `CACAO Configurations` option located at the sidebar menu. Then select the `Token API Configuration`. An interface for managing your access token will be displayed, with the following options:
+To create an access token, select the `CACAO Configurations` option located at the sidebar menu. Then select the `Token API Configuration`. An interface for managing your access token will be displayed, with the following options:
 
 * **View generated token** shows you the token that you have already created (if any)
 * **Generate a new token** creates a new token or replaces the previous one

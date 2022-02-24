@@ -91,9 +91,14 @@ public enum SystemPrivilege {
 	TAX_DOMAIN_TABLE_WRITE,
 	
 	/**
-	 * Privilege for reading or listing taxpayers registry
+	 * Privilege for reading or listing taxpayers name and taxpayerId
 	 */
 	TAXPAYER_READ,
+
+	/**
+	 * Privilege for reading or listing all taxpayers registry informations
+	 */
+	TAXPAYER_READ_ALL,
 
 	/**
 	 * Privilege for changing taxpayers registry

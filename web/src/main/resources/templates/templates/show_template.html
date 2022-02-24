@@ -123,7 +123,7 @@
 		let activateTemplate = function(value) {
 			var dlg = $('#modal_confirm')
 			var msg = value ? [[#{template.activate.confirm}]] : [[#{template.deactivate.confirm}]]
-		    dlg.find('.description').html()
+		    dlg.find('.description').html(msg)
 		    dlg.modal({
 		        closable:false,
 		        onApprove: function() { 

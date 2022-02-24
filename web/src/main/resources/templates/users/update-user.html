@@ -83,7 +83,7 @@
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-$('#cancel').click( () => window.location.replace( [[@{/users}]] ))
+$('#cancel').click( () => window.location.replace( [[@{/users/{id}(id=${user.id})}]] ))
 $('#selectProfile').dropdown({
     onChange: function(value, text) {
         $('#showTaxpayer').toggle(value=='DECLARANT')

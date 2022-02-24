@@ -19,8 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
-import static org.idb.cacao.web.utils.ControllerUtils.searchPage;
-
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,8 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -104,7 +100,7 @@ public class InterpersonalAPIController {
 	@JsonView(Views.Authority.class)
 	@GetMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing interpersonal relationships using pagination")
-	public PaginationData<Interpersonal> getUsersWithPagination(Model model, 
+	public PaginationData<Interpersonal> getRelationshipsWithPagination(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -122,12 +118,13 @@ public class InterpersonalAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
 
-		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
+		AdvancedSearch filters = SearchUtils.fromTabulatorJSON(filter).orElse(new AdvancedSearch());
+		filters.addFilter(new AdvancedSearch.QueryFilterBoolean("active", "true"));
 		Page<Interpersonal> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("personId1"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
-			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), Interpersonal.class, elasticsearchClient, page, size, 
+			docs = SearchUtils.doSearch(filters, Interpersonal.class, elasticsearchClient, page, size, 
 					sortField, direction);
 
 		}
@@ -154,14 +151,11 @@ public class InterpersonalAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
 
-        Page<Interpersonal> existentRelationships =
-        searchPage(()->interpersonalRepository.findByPersonId1AndRelationshipTypeAndPersonId2(interpersonal.getPersonId1(), interpersonal.getRelationshipType().name(), interpersonal.getPersonId2(), 
-        		PageRequest.of(0, 10, Sort.by("timestamp").descending())));
+        Optional<Interpersonal> existentRelationship =
+            interpersonalRepository.findByActiveIsTrueAndPersonId1AndRelationshipTypeAndPersonId2(interpersonal.getPersonId1(), interpersonal.getRelationshipType().name(), interpersonal.getPersonId2());
         
-        Interpersonal existentActiveRelationship = existentRelationships.stream().filter(rel->!rel.isRemoved()).findAny().orElse(null);
-        
-        if (existentActiveRelationship!=null) {
-            return ResponseEntity.badRequest().body(messageSource.getMessage("rel.error.already.exists", null, LocaleContextHolder.getLocale()));
+        if (existentRelationship.isPresent()) {
+            return ResponseEntity.badRequest().body(messageSource.getMessage("interpersonal.error.already.exists", null, LocaleContextHolder.getLocale()));
         }
         
         log.log(Level.INFO, "Creating new interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
@@ -227,13 +221,10 @@ public class InterpersonalAPIController {
         	}
         	executor.submit(()->{
         		
-                Page<Interpersonal> existentRelationships =
-                        searchPage(()->interpersonalRepository.findByPersonId1AndRelationshipTypeAndPersonId2(interpersonal.getPersonId1(), interpersonal.getRelationshipType().name(), interpersonal.getPersonId2(), 
-                        		PageRequest.of(0, 10, Sort.by("timestamp").descending())));
-                        
-                Interpersonal existentActiveRelationship = existentRelationships.stream().filter(rel->!rel.isRemoved()).findAny().orElse(null);
+                Optional<Interpersonal> existent =
+                    interpersonalRepository.findByActiveIsTrueAndPersonId1AndRelationshipTypeAndPersonId2(interpersonal.getPersonId1(), interpersonal.getRelationshipType().name(), interpersonal.getPersonId2()); 
 
-	            if (existentActiveRelationship!=null) {
+	            if (existent!=null) {
 	            	// If this relationship already exists, there is nothing to update
 	            }
 	            else {
@@ -277,7 +268,7 @@ public class InterpersonalAPIController {
         
         log.log(Level.INFO, "Deleting interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
 
-        interpersonal.setRemoved(true);
+        interpersonal.setActive(false);
         interpersonal.setRemovedTimestamp(DateTimeUtils.now());
         interpersonalRepository.saveWithTimestamp(interpersonal);
         

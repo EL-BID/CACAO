@@ -20,6 +20,7 @@
 package org.idb.cacao.web.repositories;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
@@ -45,21 +46,25 @@ public interface InterpersonalRepository extends ElasticsearchRepository<Interpe
 	Page<Interpersonal> findByPersonId1(String personId1, Pageable pageable);
 
 	Page<Interpersonal> findByPersonId2(String personId2, Pageable pageable);
-	
-	Page<Interpersonal> findByPersonId1AndPersonId2(String personId1, String personId2, Pageable pageable);
+
+	Page<Interpersonal> findByActiveIsTrueAndPersonId1(String personId1, Pageable pageable);
+
+	Page<Interpersonal> findByActiveIsTrueAndPersonId1AndPersonId2(String personId1, String personId2, Pageable pageable);
 
 	Page<Interpersonal> findByPersonId1OrPersonId2(String personId1, String personId2, Pageable pageable);
 
-	Page<Interpersonal> findByPersonId1AndRelationshipType(String personId1, String relationshipType, Pageable pageable);
+	Page<Interpersonal> findByActiveIsTrueAndPersonId1AndRelationshipType(String personId1, String relationshipType, Pageable pageable);
 
 	@Query("{\"bool\":{\"must\":[{\"bool\":{\"should\":[{\"term\":{\"personId1\":\"?0\"}},{\"term\":{\"personId2\":\"?1\"}}]}},{\"term\":{\"relationshipType\":\"?2\"}}]}}")
 	Page<Interpersonal> findByPersonId1OrPersonId2AndRelationshipType(String personId1, String personId2, String relationshipType, Pageable pageable);
 
-	Page<Interpersonal> findByRemovedIsFalseAndPersonId1AndRelationshipTypeIsIn(String personId1, Collection<String> relationshipType, Pageable pageable);
+	Page<Interpersonal> findByActiveIsTrueAndPersonId1AndRelationshipTypeIsIn(String personId1, Collection<String> relationshipType, Pageable pageable);
 
 	Page<Interpersonal> findByPersonId2AndRelationshipType(String personId2, String relationshipType, Pageable pageable);
 
-	Page<Interpersonal> findByPersonId1AndRelationshipTypeAndPersonId2(String personId1, String relationshipType, String personId2, Pageable pageable);
+	Page<Interpersonal> findByActiveIsTrueAndPersonId1AndRelationshipTypeAndPersonId2(String personId1, String relationshipType, String personId2, boolean active, Pageable pageable);
+	
+	Optional<Interpersonal> findByActiveIsTrueAndPersonId1AndRelationshipTypeAndPersonId2(String personId1, String relationshipType, String personId2);
 	
 	default public <S extends Interpersonal> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());

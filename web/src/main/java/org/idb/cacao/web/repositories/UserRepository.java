@@ -55,12 +55,17 @@ public interface UserRepository extends ElasticsearchRepository<User, String> {
 	/**
 	 * Find a user given the login (email). There should be only one.
 	 */
-	public User findByLogin(String login);
+	public User findByLoginAndActiveIsTrue(String login);
 	
 	/**
 	 * Find a user given the login (email) ignoring case sensitivity. There should be only one.
 	 */
 	public User findByLoginIgnoreCase(String login);
+	
+	/**
+	 * Find an active user given the login (email) ignoring case sensitivity. There should be only one.
+	 */
+	public User findByLoginIgnoreCaseAndActiveIsTrue(String login);
 
 	/**
 	 * Find all users, allowing pagination over the results
@@ -70,8 +75,8 @@ public interface UserRepository extends ElasticsearchRepository<User, String> {
 	/**
 	 * Count the number of User records that has some UserProfile defined
 	 */
-	@CountQuery("{ \"exists\": { \"field\": \"profile\" } }")
-	public long countByProfileIsNotNull();
+	@CountQuery("{ \"bool\": { \"filter\": [{ \"exists\": { \"field\": \"profile\" }}, { \"term\": {\"active\": true }}] }}")
+	public long countByProfileIsNotNullAndActiveIsTrue();
 	
 	/**
 	 * Save the record in database, updating the internal 'timestamp' field in order

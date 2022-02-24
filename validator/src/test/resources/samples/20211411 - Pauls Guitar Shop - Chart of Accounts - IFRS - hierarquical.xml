@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<root>
+  <ChartOfAccounts>
+    <TaxPayerId>123456</TaxPayerId>
+    <TaxYear>2021</TaxYear>
+    <Account>
+	    <AccountCode>1.1.1</AccountCode>
+	    <AccountCategory>1</AccountCategory>
+	    <AccountSubcategory>1.10</AccountSubcategory>
+	    <AccountName>Cash</AccountName>
+	    <AccountDescription>Cash and Cash Equivalents</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>1.2.1</AccountCode>
+	    <AccountCategory>1</AccountCategory>
+	    <AccountSubcategory>1.9</AccountSubcategory>
+	    <AccountName>Accounts Receivable</AccountName>
+	    <AccountDescription>Accounts, Notes And Loans Receivable</AccountDescription>
+	</Account>
+    
+    <Account>
+	    <AccountCode>1.3.1</AccountCode>
+	    <AccountCategory>1</AccountCategory>
+	    <AccountSubcategory>1.7</AccountSubcategory>
+	    <AccountName>Inventory</AccountName>
+	    <AccountDescription>Merchandise in Inventory</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>2.1.1</AccountCode>
+	    <AccountCategory>3</AccountCategory>
+	    <AccountSubcategory>3.1</AccountSubcategory>
+	    <AccountName>Accounts Payable</AccountName>
+	    <AccountDescription>Accounts and Trade Payables</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>2.3.2</AccountCode>
+	    <AccountCategory>3</AccountCategory>
+	    <AccountSubcategory>3.4</AccountSubcategory>
+	    <AccountName>Loans</AccountName>
+	    <AccountDescription>Loans Payable</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>3.5.2</AccountCode>
+	    <AccountCategory>2</AccountCategory>
+	    <AccountSubcategory>2.1</AccountSubcategory>
+	    <AccountName>Stock</AccountName>
+	    <AccountDescription>Subscribed Stock Receivables</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>4.1.1</AccountCode>
+	    <AccountCategory>4</AccountCategory>
+	    <AccountSubcategory>4.1</AccountSubcategory>
+	    <AccountName>Revenue Goods</AccountName>
+	    <AccountDescription>Revenue from selling Goods</AccountDescription>
+	</Account>
+
+
+    <Account>
+	    <AccountCode>4.1.2</AccountCode>
+	    <AccountCategory>4</AccountCategory>
+	    <AccountSubcategory>4.1</AccountSubcategory>
+	    <AccountName>Revenue Services</AccountName>
+	    <AccountDescription>Revenue from Services</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>5.1.2</AccountCode>
+	    <AccountCategory>5</AccountCategory>
+	    <AccountSubcategory>5.2.2</AccountSubcategory>
+	    <AccountName>Employee</AccountName>
+	    <AccountDescription>Employee Benefits</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>5.1.3</AccountCode>
+	    <AccountCategory>5</AccountCategory>
+	    <AccountSubcategory>5.1</AccountSubcategory>
+	    <AccountName>Services</AccountName>
+	    <AccountDescription>Expenses for Services</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>5.1.4</AccountCode>
+	    <AccountCategory>5</AccountCategory>
+	    <AccountSubcategory>5.1</AccountSubcategory>
+	    <AccountName>Rent</AccountName>
+	    <AccountDescription>Rent, Depreciation, Amortization And Depletion</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>5.2.1</AccountCode>
+	    <AccountCategory>5</AccountCategory>
+	    <AccountSubcategory>5.2.1</AccountSubcategory>
+	    <AccountName>Sales Expenses</AccountName>
+	    <AccountDescription>Cost Of Sales</AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>5.2.2</AccountCode>
+	    <AccountCategory>5</AccountCategory>
+	    <AccountSubcategory>5.2.2</AccountSubcategory>
+	    <AccountName>Adminitrative Expenses</AccountName>
+	    <AccountDescription>Selling, General And Administrative </AccountDescription>
+	</Account>
+
+    <Account>
+	    <AccountCode>6.1.2</AccountCode>
+	    <AccountCategory>X</AccountCategory>
+	    <AccountSubcategory>X.X</AccountSubcategory>
+	    <AccountName>Other Expenses</AccountName>
+	    <AccountDescription>Other non-operating expenses</AccountDescription>
+	</Account>
+    
+  </ChartOfAccounts>
+</root>
