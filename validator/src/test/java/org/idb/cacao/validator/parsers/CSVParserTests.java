@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
 
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
@@ -78,6 +79,7 @@ public class CSVParserTests {
 		if (mockElastic!=null)
 			mockElastic.stop();
 	}
+
 
 	/**
 	 * Test the sample file '20211411 - Pauls Guitar Shop - Chart of Accounts.csv' with the input mapping
