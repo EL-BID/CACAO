@@ -1,7 +1,9 @@
  <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 
-	<script th:nonce="${cspNonce}" th:inline="javascript">
+	<script th:nonce="${cspNonce}" th:inline="javascript" th:with="lang=${#locale.language}">
+	
+		var exportType = "";
 	
 		tabulatorPaginationSize = /*[[${@environment.getProperty('default.page.size')}]]*/ 15;
 	
@@ -31,6 +33,40 @@
 		    	return "";
 		    return value;
 		}		
+		
+		//Custom accessor for value
+		function valueConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    if ( exportType !== "PDF" )
+		    	return value;
+		    return formatDecimal(value);
+		}			
+		
+		//Custom accessor for percentage
+		function percentConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    if ( exportType !== "PDF" )
+		    	return value;		    
+		    
+		    return formatPercentage(value);
+		}
+		
+		function formatPercentage(value) {
+			return new Intl.NumberFormat(/*[[${lang}]]*/'',{maximumFractionDigits:0}).format(value) + "%";
+		}
+		
+		function formatDecimal(value) {
+			if ( symbolAfter )
+				return new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:0}).format(value) + currencySymbol;
+			else
+				return currencySymbol + new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:0}).format(value);	
+		}
+		
+		function formatCurrency(value) {
+			return new Intl.NumberFormat(/*[[${lang}]]*/'', {style: 'currency', currency: currencySymbol, currencyDisplay: "code", maximumFractionDigits:0}).format(value);
+		}
 		
 	</script>
 </html>

@@ -448,6 +448,7 @@ svg .unselected {
 			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}" th:target="${target_frame}" target="">institutional</a>
 			<a class="item hideable" th:text="#{menu.usermanual}" th:href="@{/usermanual}" th:target="${target_frame}" target="">user's manual</a>
 			<div class="ui right simple dropdown item hideable">
+<!-- 				<div id="auth" th:text="${#authentication.name}"></div> -->
 				<div sec:authentication="name"></div>
 				<i class="dropdown icon"></i>
 				<div class="menu">

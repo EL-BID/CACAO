@@ -10,6 +10,8 @@
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
 <script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>
 </head>
 <style>
 
@@ -49,7 +51,7 @@
 					<div class="ui field" id="search1">
 						<label th:text="#{taxpayer.name}">TaxPayer name</label>
                         <div style="width: 100%">
-						   <div class="ui search selection dropdown" id="select"  style="width:calc(100% - 35px)">
+						   <div class="ui search selection dropdown" id="select" style="width:calc(100% - 35px)">
 							<input id="taxpayer" type="hidden" name="personId">
 							<div class="default text" th:text="#{select}">Select</div>
 							<i class="dropdown icon"></i>
@@ -154,7 +156,7 @@
 	<div th:replace="fragments/tabulator_commons"></div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-
+	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})
@@ -221,7 +223,7 @@
 	        	},
 	     	},
 	     	onChange: function(value) {
-				$("#showtable").hide() 
+				$("#showtable").hide()				
 				$('#form').submit();
 	     	},
 	    	action: 'activate',
@@ -249,13 +251,32 @@
 				onSuccess: (function(event,fields){
 					event.preventDefault();					
 					updateColumns();					
-									
 	          	})
 	        });
 	    });
 		
+		var pdfColumnStyles = {};
+		var totalColumns = 5;
+		
+		function addColumns(columnDefinitions) {
+			pdfColumnStyles = {};
+			totalColumns = 5;
+			pdfColumnStyles[0] = { halign: 'center' };
+			columnDefinitions.forEach(addColumn);
+			for ( i = 5; i <= totalColumns; i++ ) {
+				pdfColumnStyles[i] = { halign: 'right' };
+			}
+		}
+		
 		//Add value columns according with selected parameters
 		function addColumn(column) {
+			for ( i = 0; i < column.columns.length; i++ ) {
+				if ( column.columns[i].field.substring(0,1) == "B" )
+					column.columns[i].accessorDownload = valueConvert;
+				else
+					column.columns[i].accessorDownload = percentConvert;
+				totalColumns++;				
+			}
 			table.addColumn(column);
 		}
 		
@@ -266,14 +287,13 @@
 					{ finalDate: luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate(), 
 			    	  comparisonPeriods: $('#period').val(),
 			    	  analysisType: $('#analysisType').val() } ,  // data to submit
-			    function (data, status, xhr) {			    	
-					console.log(data);
-			  		updateTable(data);			        
+			    function (data, status, xhr) {
+			  		updateTable(data);
 			    }
 			);	
 		}
 		
-		function updateTable(columdDefinitions) {
+		function updateTable(columnDefinitions) {
 		
 			table = new Tabulator('#table', {
 				index: 'id',
@@ -286,22 +306,24 @@
 				ajaxURL: /*[[@{/api/analysis/vertical-horizontal-analysis}]]*/ "/api/analysis/vertical-horizontal-analysis", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){				
 					p = new URLSearchParams()
-					p.set('taxpayerId', document.getElementById("taxpayer").value)
+					p.set('taxpayerId', $('#taxpayer').val())
 					p.set('finalDate', luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate()) 
 					p.set('zeroBalance', $('#zeroBalance').is(":checked"))
 					p.set('comparisonPeriods', $('#period').val())
 					p.set('analysisType', $('#analysisType').val())
-					console.log(url + '?' + p.toString())
+					//console.log(url + '?' + p.toString())
 					return url + '?' + p.toString()
 				},
 				ajaxRequesting:function(url, params){
-					taxpayer = document.getElementById("taxpayer").value;
+					taxpayer = $('#taxpayer').val();
 					if ( !taxpayer || taxpayer.length == 0 )
 						return false;
 					return true;
 			    },
 				ajaxContentType: "json",
-				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
+				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
+							   "<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>" + 
+							   "<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",
 				locale:'xx',					
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table		
 				rowFormatter:function(row){
@@ -330,19 +352,85 @@
 			})		
 		
 			table.on("tableBuilt", function(){
-				columdDefinitions.forEach(addColumn);
+				addColumns(columnDefinitions);				
 				document.getElementById('exportXLS').addEventListener("click", function(){
-					table.download("xlsx", getFileName() , {sheetName:'Analysis'});				    
+					exportType = "XLSX";
+					table.download("xlsx", getFileName("xlsx") , {sheetName:getSheetName(true)});				    
+				});
+				document.getElementById('exportCSV').addEventListener("click", function(){
+					exportType = "CSV";
+					table.download("csv", getFileName("csv")); //include BOM in output									    
+				});
+				document.getElementById('exportPDF').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';
+					let taxpayer = $('#select').dropdown("get text");
+					let taxpayerName = "";
+					if ( taxpayer == null )
+						taxpayer = $('#taxpayer').val()
+					else {
+						let data = taxpayer.split(":");						
+						taxpayer = data[0].trim().replace("<b>","").replace("</b>","");
+						taxpayerName = data[1].trim();
+					}
+					let title = getSheetName(false);					
+					table.download("pdf", getFileName("pdf"), {
+							orientation:"landscape", //set page orientation to portrait							
+					    	autoTable:function(doc) { 
+					            doc.setFontSize(8); //Want the tables font to be this size
+					         	// Optional - set properties on the document
+					            doc.setProperties({
+					            	title: title,
+					            	author: author,
+					            	subject: taxpayer + " " + taxpayerName,					            	
+					            	keywords: 'generated, javascript, web 2.0, ajax',
+					            	creator: 'CACAO'
+					            });					            
+					            return {
+					                styles: {cellPadding: 2, fontSize: 8},
+					                headStyles: { valign: 'middle', lineWidth: 1 },
+					                columnStyles: pdfColumnStyles,
+					                margin: { left: 15, right: 5, top: 45, botton: 15 },
+					                willDrawCell: function(data) {					                	
+										if (data.row.section === 'head' && ( data.column.dataKey === 0 || data.column.dataKey > 4 ) ) {
+											data.cell.styles.halign = 'center';
+						                }
+									},
+									didDrawPage: function (data) {
+										//Add header
+										doc.setFont(undefined, 'bold');
+										doc.text(title,15, 20);
+							            doc.text(taxpayer,15, 30);
+							            doc.text(taxpayerName,15, 40).setFont(undefined, 'normal');
+							            
+							            //Add page number
+							            let str = /*[[#{page}]]*/'';
+							            str = str + " " + doc.internal.getNumberOfPages();
+							            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+							            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+							            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+									}
+					            };
+					        },					        
+						});
 				});
 				$("#showtable").show();
 			});
 			
 		}
 	
-		function getFileName() {
-			let fileName = $('#taxpayer').val() + "_";
+		function getFileName(extension) {
+			let fileName = $('#taxpayer').val() + "_";			
 			fileName = fileName + /*[[#{taxpayers.analysis.vertical.and.horizontal}]]*/ null;
-			return  fileName + ".xlsx";
+			return  fileName + "." + extension;
+		}
+		
+		function getSheetName(cut) {			
+			let sheetName = /*[[#{taxpayers.analysis.vertical.and.horizontal}]]*/ '';
+			if (cut && sheetName.length > 31)
+				sheetName = sheetName.substring(0,30);
+		
+			return sheetName;				
 		}
 
 	</script>
