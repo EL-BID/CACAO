@@ -11,6 +11,8 @@
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
 <script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>
 <script src="/js/vega.min.js"></script>
 <script src="/js/vega-lite.min.js"></script>
 <script src="/js/vega-embed.min.js"></script>
@@ -97,6 +99,11 @@
 					<div class="six wide column unbounded" id="tableView">
 						<div id="table" class="ui orange table">
 							<!-- Display table -->
+						</div>
+						<div id="tableButtons">
+							<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>
+							<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>
+							<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>
 						</div>
 					</div>
 				</div>
@@ -228,7 +235,7 @@
 						year: $('#year').val(),				
 					} ,  //data to submit
 			    function (data, status, xhr) {						
-					console.log(data);
+					//console.log(data);
 					if ( data.length == 0 ) {						
 						$('#modal_failed').find('.description').html(errorNoDataAvailable);
 						$('#modal_failed').modal('show');
@@ -333,13 +340,12 @@
 	    	          }
 	    	        ]
 	   	        };	      
-				vegaEmbed('#vis', yourVlSpec, {"actions": { "export": true, "source": false, "compiled": false, "editor": true } });
+				vegaEmbed('#vis', yourVlSpec, {"actions": { "export": true, "source": false, "compiled": false, "editor": false } });
 				$("#vis").show()
 			}
 		}
 		
 		let tooltip = function(e, cell) {
-			console.log(cell);
 			alert(cell);			
 			row = cell.getRow();
             id = row.getCell("taxpayerId");
@@ -363,8 +369,7 @@
 				paginationSize: tabulatorPaginationSize,
 				paginationSizeSelector: tabulatorPaginationSizeSelector,				
 				langs: tabulatorLanguageSpecs,
-				data: values,
-				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",
+				data: values,				
 				locale:'xx',
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 			    groupBy:"statementName",
@@ -381,8 +386,8 @@
 							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:false, visible:false},
 							{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxpayerId", hozAlign:"left", headerSort:false, visible:false },
 							{title: /*[[#{taxpayer.name}]]*/ "Taxpayer Name", field:"taxpayerName", hozAlign:"left", headerSort:false},
-							{title: /*[[#{account.outlier.value}]]*/ "Value", field:"value", formatter: "money", 
-								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
+							{title: /*[[#{account.outlier.value}]]*/ "Value", field:"value", accessorDownload: percentConvertWithFractionDigits, formatter: "money", 
+								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol: "%", symbolAfter:symbolAfter, precision:"2"}, 
 								hozAlign:"right", headerSort:false, headerHozAlign:"right"}
 						],
 					},
@@ -391,15 +396,77 @@
 			
 			table.on("tableBuilt", function(){
 				document.getElementById('exportXLS').addEventListener("click", function(){
-					table.download("xlsx", getFileName() , {sheetName:/*[[#{taxpayers.analysis.general.outliers}]]*/''});				    
+					table.download("xlsx", getFileName("xlsx") , {sheetName:/*[[#{taxpayers.analysis.general.outliers}]]*/''});				    
 				});
+				document.getElementById('exportCSV').addEventListener("click", function(){
+					exportType = "CSV";
+					table.download("csv", getFileName("csv")); //include BOM in output									    
+				});
+				document.getElementById('exportPDF').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';
+					let qualifier = $('#qualifiers').dropdown("get text") + " : " + $('#qualifierValues').dropdown("get text");
+					let year = $('#year').val();
+					let title = /*[[#{taxpayers.analysis.general.outliers}]]*/'';
+					let first = true;
+					table.download("pdf", getFileName("pdf"), {
+						orientation:"portrait", //set page orientation to portrait
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: qualifier + " " + year,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });					            
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                columnStyles: { 1: {halign: 'right'} },
+				                margin: { left: 15, right: 250, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' ) {
+										if ( data.column.dataKey == 0)  {
+											if ( first ) {
+												first = false;
+												data.cell.styles.halign = 'center';
+											}
+											else {
+												data.cell.styles.halign = 'left';
+											}
+										}
+										else if ( data.column.dataKey == 1 )  {
+											data.cell.styles.halign = 'right';
+										}
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);
+						            doc.text(qualifier, 15, 30);
+						            doc.text(year, 15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },						        
+					});					
+				});				
 			});
 		}
 		
-		function getFileName() {
+		function getFileName(ext) {
 			let fileName = /*[[#{taxpayers.analysis.general}]]*/ null;
 			fileName = fileName + "-" + /*[[#{taxpayers.analysis.general.outliers}]]*/ null;
-			return  fileName + ".xlsx";
+			return  fileName + "." + ext;
 		}
 		
 	</script>

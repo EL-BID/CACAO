@@ -50,11 +50,21 @@
 		    if ( exportType !== "PDF" )
 		    	return value;		    
 		    
-		    return formatPercentage(value);
+		    return formatPercentage(value, 0);
 		}
 		
-		function formatPercentage(value) {
-			return new Intl.NumberFormat(/*[[${lang}]]*/'',{maximumFractionDigits:0}).format(value) + "%";
+		//Custom accessor for percentage
+		function percentConvertWithFractionDigits(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    if ( exportType !== "PDF" )
+		    	return value;		    
+		    
+		    return formatPercentage(value, 2);
+		}		
+		
+		function formatPercentage(value, fractionDigits) {
+			return new Intl.NumberFormat(/*[[${lang}]]*/'',{maximumFractionDigits:fractionDigits}).format(value) + "%";
 		}
 		
 		function formatDecimal(value) {
