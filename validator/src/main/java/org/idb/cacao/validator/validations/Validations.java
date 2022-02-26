@@ -3,20 +3,9 @@
  */
 package org.idb.cacao.validator.validations;
 
-import static org.idb.cacao.api.utils.ParserUtils.isBoolean;
-import static org.idb.cacao.api.utils.ParserUtils.isDMY;
-import static org.idb.cacao.api.utils.ParserUtils.isDecimal;
-import static org.idb.cacao.api.utils.ParserUtils.isDecimalWithComma;
-import static org.idb.cacao.api.utils.ParserUtils.isInteger;
-import static org.idb.cacao.api.utils.ParserUtils.isMDY;
-import static org.idb.cacao.api.utils.ParserUtils.isMY;
-import static org.idb.cacao.api.utils.ParserUtils.isYM;
-import static org.idb.cacao.api.utils.ParserUtils.isOnlyNumbers;
-import static org.idb.cacao.api.utils.ParserUtils.isYMD;
-import static org.idb.cacao.api.utils.ParserUtils.parseDMY;
-import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
 import static org.idb.cacao.api.utils.ParserUtils.*;
 
+import java.math.BigInteger;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.util.Collections;
@@ -106,7 +95,7 @@ public class Validations {
 
 			for (String fieldName : requiredFields) {
 				if (values.get(fieldName) == null)
-					addLogError("{field.value.not.found(" + fieldName+ ")}");
+					addLogError("{field.value.not.found(" + fieldName+ ")}", /*criticalError*/true);
 			}
 
 		});
@@ -118,10 +107,27 @@ public class Validations {
 	 * 
 	 * @param message	A message to be logged
 	 */
-	public synchronized void addLogError(String message) {
-		validationContext.addAlert(message);
-		log.log(Level.WARNING, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
-				message);
+	public void addLogError(String message) {
+		addLogError(message, /*criticalError*/true);
+	}
+	
+	/**
+	 * Add alert/error message to application log and {@link ValidationContext} instance.
+	 * 
+	 * @param message	A message to be logged
+	 * @param criticalError	 Tells whether this error may or may not prevent the file from being accepted.
+	 */
+	public synchronized void addLogError(String message, boolean criticalError) {
+		if (criticalError) {
+			validationContext.addAlert(message);
+			log.log(Level.WARNING, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
+					message);
+		}
+		else {
+			validationContext.addNonCriticalAlert(message);
+			log.log(Level.FINE, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
+					message);
+		}
 	}
 
 	/**
@@ -148,7 +154,7 @@ public class Validations {
 
 		if (parsedContents == null || parsedContents.isEmpty())
 			return;
-
+		
 		parsedContents.parallelStream().iterator().forEachRemaining(values -> {
 
 			for (DocumentField field : fields) {
@@ -161,28 +167,28 @@ public class Validations {
 						continue;
 
 					if (FieldType.BOOLEAN.equals(field.getFieldType()))
-						fieldValue = checkBooleanValue(field.getFieldName(), fieldValue);
+						fieldValue = checkBooleanValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
 
-					if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) )
+					else if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) )
 						fieldValue = checkCharacterValue(field, fieldValue);
 
-					if (FieldType.DATE.equals(field.getFieldType()))
-						fieldValue = checkDateValue(field.getFieldName(), fieldValue);
+					else if (FieldType.DATE.equals(field.getFieldType()))
+						fieldValue = checkDateValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
 
-					if (FieldType.DECIMAL.equals(field.getFieldType()))
-						fieldValue = checkDecimalValue(field.getFieldName(), fieldValue);
+					else if (FieldType.DECIMAL.equals(field.getFieldType()))
+						fieldValue = checkDecimalValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
 
-					if (FieldType.GENERIC.equals(field.getFieldType()))
+					else if (FieldType.GENERIC.equals(field.getFieldType()))
 						fieldValue = checkGenericValue(field, fieldValue);
 
-					if (FieldType.INTEGER.equals(field.getFieldType()))
-						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue);
+					else if (FieldType.INTEGER.equals(field.getFieldType()))
+						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
 
-					if (FieldType.MONTH.equals(field.getFieldType()))
-						fieldValue = checkMonthValue(field.getFieldName(), fieldValue);
+					else if (FieldType.MONTH.equals(field.getFieldType()))
+						fieldValue = checkMonthValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
 
-					if (FieldType.TIMESTAMP.equals(field.getFieldType()))
-						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue);
+					else if (FieldType.TIMESTAMP.equals(field.getFieldType()))
+						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
 
 					// Update field value to it's new representation
 					values.replace(field.getFieldName(), fieldValue);
@@ -254,14 +260,16 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
-	private Object checkTimestampValue(String fieldName, Object fieldValue) {
+	private Object checkTimestampValue(String fieldName, Object fieldValue, boolean required) {
 		if (fieldValue == null)
 			return null;
 
-		if ( fieldValue instanceof Date || fieldValue instanceof OffsetDateTime )
+		if ( (fieldValue instanceof Date) || (fieldValue instanceof OffsetDateTime) )
 			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
+		if (value==null || value.trim().length()==0)
+			return null;
 
 		if (isOnlyNumbers(value))
 			return new Date(Long.parseLong(value));
@@ -269,9 +277,29 @@ public class Validations {
 		if ( isTimestamp(value) )
 			return parseTimestamp(value);
 
-		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
-		return value;
+		if (isMDY(value))
+			return parseMDY(value);
+		
+		if (isDMY(value))
+			return parseDMY(value);
+		
+		if (isYMD(value))
+			return parseYMD(value);
+		
+		Date d = parseTimestampWithMS(value);
+		if (d!=null)
+			return d;
+		
+		d = parseTimestamp(value);
+		if (d!=null)
+			return d;
+		
+		d = parseTimestampES(value);
+		if (d!=null)
+			return d;
+
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+		return null;
 	}
 
 	/**
@@ -281,7 +309,7 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
-	private Object checkMonthValue(String fieldName, Object fieldValue) {
+	private Object checkMonthValue(String fieldName, Object fieldValue, boolean required) {
 
 		if (fieldValue == null)
 			return null;		
@@ -311,8 +339,8 @@ public class Validations {
 				return toRet;
 		}		
 		
-		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
-		return value;		
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+		return null;		
 		
 	}
 
@@ -323,7 +351,7 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
-	private Object checkIntegerValue(String fieldName, Object fieldValue) {
+	private Object checkIntegerValue(String fieldName, Object fieldValue, boolean required) {
 		if (fieldValue == null)
 			return null;
 
@@ -331,13 +359,34 @@ public class Validations {
 			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
+		if (value==null || value.trim().length()==0)
+			return null;
 
-		if (isInteger(value))
-			return Long.parseLong(value);
+		if (isInteger(value)) {
+			try {
+				return Long.parseLong(value);
+			}
+			catch (NumberFormatException ex) {
+				// Max LONG = 9223372036854775807, so if value is bigger than 18 digits, try to translate it as a BigInteger
+				if (value.length()>18) {
+					return new BigInteger(value);
+				}
+				else {
+					addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+					return null;
+				}
+			}
+		}
 
-		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
-		return value;
+		// Check other situations
+		try {
+			Number parsedNumber = ValidationContext.toNumber(value);
+			if (parsedNumber!=null)
+				return parsedNumber.longValue();
+		} catch (Throwable ex) { }
+		
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+		return null;
 
 	}
 
@@ -348,7 +397,7 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
-	private Object checkDecimalValue(String fieldName, Object fieldValue) {
+	private Object checkDecimalValue(String fieldName, Object fieldValue, boolean required) {
 
 		if (fieldValue == null)
 			return null;
@@ -357,19 +406,26 @@ public class Validations {
 			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
+		if (value==null || value.trim().length()==0)
+			return null;
 
-		if (isDecimal(value))
-			return Double.parseDouble(value);
+		try {
+			if (isDecimal(value))
+				return Double.parseDouble(value);
+	
+			if (isDecimalWithComma(value))
+				return Double.parseDouble(value.replace(".", "").replace(",", "."));
+			
+			if (isInteger(value))
+				return Double.parseDouble(value);
+		}
+		catch (NumberFormatException ex) {
+			addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+			return null;
+		}
 
-		if (isDecimalWithComma(value))
-			return Double.parseDouble(value.replace(".", "").replace(",", "."));
-		
-		if (isInteger(value))
-			return Double.parseDouble(value);
-
-		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
-		return fieldValue;
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+		return null;
 	}
 
 	/**
@@ -379,18 +435,20 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
-	private Object checkDateValue(String fieldName, Object fieldValue) {
+	private Object checkDateValue(String fieldName, Object fieldValue, boolean required) {
 
 		if (fieldValue == null)
 			return null;
 		
-		if ( fieldValue instanceof Date || fieldValue instanceof OffsetDateTime )
+		if ( (fieldValue instanceof Date) || (fieldValue instanceof OffsetDateTime) )
 			return fieldValue;
 		
 		if ( fieldValue instanceof Number )
 			return new Date(((Number)(fieldValue)).longValue());
 
 		String value = ValidationContext.toString(fieldValue);
+		if (value==null || value.trim().length()==0)
+			return null;
 
 		if (isMDY(value))
 			return parseMDY(value);
@@ -398,9 +456,9 @@ public class Validations {
 			return parseDMY(value);
 		if (isYMD(value))
 			return parseYMD(value);
-		// TODO check other situations
-		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
-		return value;
+		
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+		return null;
 	}
 
 	/**
@@ -410,7 +468,7 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
-	private Object checkBooleanValue(String fieldName, Object fieldValue) {
+	private Object checkBooleanValue(String fieldName, Object fieldValue, boolean required) {
 		if (fieldValue == null)
 			return null;
 
@@ -418,13 +476,14 @@ public class Validations {
 			return fieldValue;
 
 		String value = ValidationContext.toString(fieldValue);
+		if (value==null || value.trim().length()==0)
+			return null;
 
-		// TODO check other situations
 		if (isBoolean(value))
 			return Boolean.parseBoolean(value);
 
-		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}");
-		return fieldValue;
+		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+		return null;
 
 	}
 
@@ -478,7 +537,7 @@ public class Validations {
 				// If domain table wasn't not found, add an error message
 				if (table == null) {
 					addLogError("{domain.table.not.found(" + field.getDomainTableName() + ")(" + 
-							field.getDomainTableVersion() + ")}");
+							field.getDomainTableVersion() + ")}", /*criticalError*/true);
 					continue;
 				}
 
@@ -488,7 +547,8 @@ public class Validations {
 
 				// If value is not present at domain table entries, add error message
 				if (!result.getKey()) {
-					addLogError("{field.domain.value.not.found(" + fieldValue + ")(" + field.getFieldName() + ")}");
+					final boolean required = Boolean.TRUE.equals(field.getRequired());
+					addLogError("{field.domain.value.not.found(" + fieldValue + ")(" + field.getFieldName() + ")}", /*criticalError*/required);
 				} else {
 					String newValue = result.getValue();
 					// If value need to be updated, change value in record
@@ -656,14 +716,14 @@ public class Validations {
 		
 		//If TaxPayerId wasn't found, add an error message
 		if ( doc.getTaxPayerId() == null ) {
-			addLogError("{taxpayerid.not.found}");
+			addLogError("{taxpayerid.not.found}", /*criticalError*/true);
 		}
 		
 		//If TaxPeriod wasn't found, add an error message (unless we don't have any such field)
 		if ( doc.getTaxYear() == null && doc.getTaxMonth() == null && doc.getTaxMonthNumber() == null &&
 				doc.getTaxPeriod() == null && doc.getTaxPeriodNumber() == null ) {
 			if (field_for_tax_year!=null || field_for_tax_month!=null || field_for_tax_period!=null)
-				addLogError("{taxperiod.not.found}");	
+				addLogError("{taxperiod.not.found}", /*criticalError*/true);	
 		}
 		
 	}

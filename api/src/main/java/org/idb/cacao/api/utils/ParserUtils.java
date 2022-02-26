@@ -273,6 +273,24 @@ public class ParserUtils {
 	public static boolean isZeroes(String value) {
 		return value!=null && pZeroes.matcher(value).find();
 	}
+	
+	/**
+	 * Check if the provided expression corresponds to a valid regular expression
+	 * with supposedly capture group (may be a false positive).
+	 */
+	public static boolean mayBeRegexWithCaptureGroup(String value) {
+		if (value==null || value.length()==0)
+			return false;
+		if (!value.contains("(") && !value.contains(")"))
+			return false;
+		try {
+			Pattern.compile(value);
+			return true;
+		}
+		catch (Throwable ex) {
+			return false;
+		}
+	}
 
 	public static boolean hasChanged(String s1, String s2) {
 		if (s1==s2)

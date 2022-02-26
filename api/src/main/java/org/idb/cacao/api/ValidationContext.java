@@ -150,6 +150,11 @@ public class ValidationContext {
 	 * resolve 'some.parameter' as key to messages.properties, than will use it as a parameter using 'some.message' as key. 
 	 */
 	private List<String> alerts;
+	
+	/**
+	 * Same as 'alerts', but do not prevent the file from being processed
+	 */
+	private List<String> nonCriticalAlerts;
 
 	/**
 	 * Raw contents of parsed document.<BR>
@@ -165,6 +170,7 @@ public class ValidationContext {
 	
 	public ValidationContext() {
 		this.alerts = new LinkedList<>();
+		this.nonCriticalAlerts = new LinkedList<>();
 	}
 
 	/**
@@ -236,8 +242,22 @@ public class ValidationContext {
 		return alerts;
 	}
 	
+	/**
+	 * Same as 'alerts', but do not prevent the file from being processed
+	 */
+	public List<String> getNonCriticalAlerts() {
+		return nonCriticalAlerts;
+	}
+	
 	public boolean hasAlerts() {
 		return alerts!=null && !alerts.isEmpty();
+	}
+
+	/**
+	 * Same as 'alerts', but do not prevent the file from being processed
+	 */
+	public boolean hasNonCriticalAlerts() {
+		return nonCriticalAlerts!=null && !nonCriticalAlerts.isEmpty();
 	}
 
 	/**
@@ -254,6 +274,13 @@ public class ValidationContext {
 	}
 	
 	/**
+	 * Same as 'alerts', but do not prevent the file from being processed
+	 */
+	public void setNonCriticalAlerts(List<String> nonCriticalAlerts) {
+		this.nonCriticalAlerts = nonCriticalAlerts;
+	}
+
+	/**
 	 * Warnings produced by the validation phase. Texts informed in braces should be resolved with messages.properties.<BR>
 	 * E.g.: If the alert is "{some.message}", it will be resolved to another message according to messages.properties
 	 * and the user preference. Parameters for messages.properties entry may be provided in parentheses. For example,
@@ -269,6 +296,19 @@ public class ValidationContext {
 			this.alerts = new LinkedList<>();
 		synchronized (this.alerts) {
 			this.alerts.add(alert);
+		}
+	}
+
+	/**
+	 * Same as 'alerts', but do not prevent the file from being processed
+	 */
+	public void addNonCriticalAlert(String alert) {
+		if (alert==null || alert.trim().length()==0)
+			return;
+		if (this.nonCriticalAlerts==null)
+			this.nonCriticalAlerts = new LinkedList<>();
+		synchronized (this.nonCriticalAlerts) {
+			this.nonCriticalAlerts.add(alert);
 		}
 	}
 

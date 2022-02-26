@@ -164,6 +164,7 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	 * will try to figure it out when needed.
 	 */
 	@Transient
+	@org.springframework.data.annotation.Transient
 	@JsonIgnore
 	private transient Integer nextUnassignedFieldId;
 

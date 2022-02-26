@@ -387,12 +387,15 @@ public class FileUploadedConsumerService {
 			// check for domain table fields
 			validations.checkForDomainTableValues();
 
-			if (!validationContext.getAlerts().isEmpty()) {
+			if (validationContext.hasAlerts()) {
 				setSituation(doc, DocumentSituation.INVALID);
 				log.log(Level.SEVERE, "Not all field values are provided or compatible with specified field types on document "
 						+ documentId + ". " + "Please check document error messagens for details.");
 				saveValidationMessages(validationContext);
 				throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
+			}
+			else if (validationContext.hasNonCriticalAlerts()) {
+				saveValidationMessages(validationContext);				
 			}
 
 			// Check for domain-specific validations related to a built-in archetype
@@ -403,7 +406,7 @@ public class FileUploadedConsumerService {
 					boolean ok = archetype.get().validateDocumentUploaded(validationContext);
 					if (!ok) {
 
-						if (validationContext.getAlerts().isEmpty()) {
+						if (!validationContext.hasAlerts()) {
 							// If the validation failed but we got no specific warning message, we will use a generic one
 							validationContext.addAlert("{error.invalid.file}");
 						}
@@ -476,9 +479,7 @@ public class FileUploadedConsumerService {
 		if (validationContext == null)
 			return;
 
-		List<String> alerts = validationContext.getAlerts();
-
-		if (alerts == null || alerts.isEmpty())
+		if (!validationContext.hasAlerts() && !validationContext.hasNonCriticalAlerts())
 			return;
 
 		DocumentUploaded doc = validationContext.getDocumentUploaded();
@@ -495,12 +496,27 @@ public class FileUploadedConsumerService {
 				.withTimestamp(doc.getTimestamp())
 				.withTaxPeriodNumber(doc.getTaxPeriodNumber());
 
-		alerts.stream().forEach(alert -> {
-			DocumentValidationErrorMessage newMessage = message.clone();
-			newMessage.setErrorMessage(alert);
-			documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);
-		});
+		List<String> alerts = validationContext.getAlerts();
 
+		if (alerts != null && !alerts.isEmpty()) {
+	
+			alerts.stream().forEach(alert -> {
+				DocumentValidationErrorMessage newMessage = message.clone();
+				newMessage.setErrorMessage(alert);
+				documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);
+			});
+		}
+		
+		alerts = validationContext.getNonCriticalAlerts();
+
+		if (alerts != null && !alerts.isEmpty()) {
+			
+			alerts.stream().forEach(alert -> {
+				DocumentValidationErrorMessage newMessage = message.clone();
+				newMessage.setErrorMessage(alert);
+				documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);
+			});
+		}
 	}
 
 	/**
