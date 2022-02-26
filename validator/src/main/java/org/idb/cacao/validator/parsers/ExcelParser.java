@@ -32,7 +32,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,8 +56,10 @@ import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
+import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.ParserUtils;
 
 public class ExcelParser implements FileParser {
@@ -75,6 +79,8 @@ public class ExcelParser implements FileParser {
 	private Path path;
 
 	private DocumentInput documentInputSpec;
+	
+	private DocumentTemplate documentTemplate;
 
 	private Workbook workbook;
 	
@@ -82,6 +88,11 @@ public class ExcelParser implements FileParser {
 	 * For each 'DocumentInputFieldMapping' keep a 'DataSerie' object for iterating through the corresponding data
 	 */
 	private Map<DocumentInputFieldMapping, DataSerie> mapDataSeries;
+	
+	/**
+	 * Names of the fields that are required according to the document template
+	 */
+	private Set<String> requiredFields;
 
 	/*
 	 * (non-Javadoc)
@@ -125,6 +136,15 @@ public class ExcelParser implements FileParser {
 		this.documentInputSpec = inputSpec;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.idb.cacao.validator.parsers.FileParser#setDocumentTemplate(org.idb.cacao.api.templates.DocumentTemplate)
+	 */
+	@Override
+	public void setDocumentTemplate(DocumentTemplate template) {
+		this.documentTemplate = template;
+	}
+
 	@Override
 	public void start() {
 		if (path == null || !path.toFile().exists()) {
@@ -137,6 +157,10 @@ public class ExcelParser implements FileParser {
 			} catch (Exception e) {
 			}
 		}
+		
+		requiredFields = (documentTemplate==null) ? null
+			: documentTemplate.getRequiredFields().stream().map(DocumentField::getFieldName)
+			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 		
 		mapDataSeries = new IdentityHashMap<>();
 
@@ -191,6 +215,8 @@ public class ExcelParser implements FileParser {
 					
 				}
 				
+				addDataSerieBasedOnNamedCell(fieldMapping, sheetsByName);
+				
 				if ( sheet == null && (fieldMapping.getSheetIndex()==null || fieldMapping.getSheetIndex().intValue()<=0)
 						&& (fieldMapping.getSheetNameExpression()==null || fieldMapping.getSheetNameExpression().trim().length()==0)) {
 					// If we don't have a specific sheet for this field, let's use all the available sheets
@@ -209,6 +235,125 @@ public class ExcelParser implements FileParser {
 
 	}
 	
+	private void addDataSerieBasedOnNamedCell(DocumentInputFieldMapping fieldMapping, 
+			Map<String, Sheet> sheetsByName) {
+		
+		if (fieldMapping.getCellName()==null || fieldMapping.getCellName().trim().length()==0) 
+			return;
+			
+		// If we have an expression for named cell intervals, let's look for this
+		List<? extends Name> namedCells = workbook.getNames(fieldMapping.getCellName());
+		if (namedCells!=null && !namedCells.isEmpty()) {
+			List<CellReference> allReferencedCells = new LinkedList<>();
+			for (Name namedCell: namedCells) {
+				AreaReference aref = new AreaReference(namedCell.getRefersToFormula(), workbook.getSpreadsheetVersion());
+				for (CellReference ref: aref.getAllReferencedCells()) {
+					allReferencedCells.add(ref);
+				}
+			}
+			if (!allReferencedCells.isEmpty()) {
+				DataSerie dataSerie = new DataSerie();
+				dataSerie.cellReferences = allReferencedCells.toArray(new CellReference[0]);
+				if (isSameSheet(dataSerie.cellReferences)) {
+					String sheetName = dataSerie.cellReferences[0].getSheetName();
+					if (sheetName!=null) {
+						Sheet sheet = sheetsByName.get(sheetName);
+						if (sheet!=null)
+							dataSerie.sheet = sheet;
+					}
+				}
+				else {
+					dataSerie.sheets = sheetsByName;
+				}
+				mapDataSeries.put(fieldMapping, dataSerie);				
+			}
+		}
+		else {
+			// If the provided name does not correspond to a named cell, let's try to find out if it corresponds to
+			// a cell range
+			CellRangeAddress cellRange;
+			try {
+				cellRange = CellRangeAddress.valueOf(fieldMapping.getCellName());
+			}
+			catch (Throwable ex) {
+				cellRange = null;
+			}
+			if (cellRange!=null) {
+				List<CellReference> cellReferences = new LinkedList<>();
+				for (Sheet sheet: sheetsByName.values()) {
+					if (cellRange.getFirstRow()<0)
+						cellRange.setFirstRow(0);
+					if (cellRange.getLastRow()<0)
+						cellRange.setLastRow(sheet.getLastRowNum());
+					if (cellRange.getLastRow()<cellRange.getFirstRow())
+						continue;
+					if (cellRange.getLastColumn()<cellRange.getFirstColumn())
+						continue;
+					cellRange.forEach(cellAddress->{
+						cellReferences.add(new CellReference(sheet.getSheetName(),cellAddress.getRow(),cellAddress.getColumn(),false,false));
+					});
+				}
+				if (!cellReferences.isEmpty()) {
+					
+					DataSerie dataSerie = new DataSerie();
+					dataSerie.cellReferences = cellReferences.toArray(new CellReference[0]);
+					if (isSameSheet(dataSerie.cellReferences)) {
+						dataSerie.sheet = sheetsByName.get(dataSerie.cellReferences[0].getSheetName());
+					}
+					else {
+						dataSerie.sheets = sheetsByName;
+					}
+					mapDataSeries.put(fieldMapping, dataSerie);
+				}
+			}
+			// If the provided name does not correspond to a named cell nor a cell range, let's try to find out if
+			// it corresponds to a regular expression with capture group
+			if (cellRange==null && ParserUtils.mayBeRegexWithCaptureGroup(fieldMapping.getCellName())) {
+				Pattern pattern = Pattern.compile(fieldMapping.getCellName(), Pattern.CASE_INSENSITIVE);
+				Collection<Sheet> sheetsToMatch = sheetsByName.values();
+				List<IndividualValue> matchingValues = new LinkedList<>();
+				for (Sheet s: sheetsToMatch) {
+					Iterator<Row> rows = s.iterator();
+					while (rows.hasNext()) {
+						Row row = rows.next();
+						Iterator<Cell> cells = row.cellIterator();
+						while (cells.hasNext()) {
+							Cell cell = cells.next();
+							if (!CellType.STRING.equals(cell.getCellType()))
+								continue;
+							String cell_value;
+							try {
+								cell_value = cell.getStringCellValue();
+							} catch (Throwable ex) {
+								continue;
+							}
+							if (cell_value==null || cell_value.length()==0)
+								continue;
+							Matcher matcher = pattern.matcher(cell_value);
+							if (!matcher.find())
+								continue;
+							String extracted_value = (matcher.groupCount()>0) ? matcher.group(1) : matcher.group();
+							if (extracted_value==null || extracted_value.length()==0)
+								continue;
+							matchingValues.add(new IndividualValue(s,row.getRowNum(),cell.getColumnIndex(),extracted_value));
+						} // LOOP over cells for pattern matching
+					} // LOOP over rows for pattern matching
+				} // LOOP over sheets for pattern matching
+				if (!matchingValues.isEmpty()) {
+					DataSerie dataSerie = new DataSerie();
+					dataSerie.individualValues = matchingValues.toArray(new IndividualValue[0]);
+					if (isSameSheet(dataSerie.individualValues)) {
+						dataSerie.sheet = dataSerie.individualValues[0].getSheet();
+					}
+					else {
+						dataSerie.sheets = sheetsByName;
+					}
+					mapDataSeries.put(fieldMapping, dataSerie);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Add a new 'data serie' regarding one field mapping and one worksheet
 	 */
@@ -221,102 +366,17 @@ public class ExcelParser implements FileParser {
 			return;
 		}
 
+		if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {
+			
+			// This criteria should be configured by means of addDataSerieBasedOnNamedCell
+			return;
+			
+		}
+
 		DataSerie dataSerie = new DataSerie();
 		dataSerie.sheet = sheet;
 		
-		if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {
-			
-			// If we have an expression for named cell intervals, let's look for this
-			Name namedCell = workbook.getName(fieldMapping.getCellName());
-			if (namedCell!=null) {
-				AreaReference aref = new AreaReference(namedCell.getRefersToFormula(), workbook.getSpreadsheetVersion());
-				dataSerie.cellReferences = aref.getAllReferencedCells();
-				if (isSameSheet(dataSerie.cellReferences)) {
-					String sheetName = dataSerie.cellReferences[0].getSheetName();
-					if (sheetName!=null) {
-						sheet = sheetsByName.get(sheetName);
-						if (sheet!=null)
-							dataSerie.sheet = sheet;
-					}
-				}
-				else {
-					dataSerie.sheets = sheetsByName;
-				}
-			}
-			else {
-				// If the provided name does not correspond to a named cell, let's try to find out if it corresponds to
-				// a cell range
-				CellRangeAddress cellRange;
-				try {
-					cellRange = CellRangeAddress.valueOf(fieldMapping.getCellName());
-				}
-				catch (Throwable ex) {
-					cellRange = null;
-				}
-				if (cellRange!=null) {
-					List<CellReference> cellReferences = new LinkedList<>();
-					if (cellRange.getFirstRow()<0)
-						cellRange.setFirstRow(0);
-					if (cellRange.getLastRow()<0)
-						cellRange.setLastRow(sheet.getLastRowNum());
-					cellRange.forEach(cellAddress->{
-						cellReferences.add(new CellReference(cellAddress.getRow(),cellAddress.getColumn()));
-					});
-					dataSerie.cellReferences = cellReferences.toArray(new CellReference[0]);
-					if (isSameSheet(dataSerie.cellReferences)) {
-						String sheetName = dataSerie.cellReferences[0].getSheetName();
-						if (sheetName!=null) {
-							sheet = sheetsByName.get(sheetName);
-							if (sheet!=null)
-								dataSerie.sheet = sheet;
-						}
-					}
-					else {
-						dataSerie.sheets = sheetsByName;
-					}
-				}
-				// If the provided name does not correspond to a named cell nor a cell range, let's try to find out if
-				// it corresponds to a regular expression with capture group
-				if (cellRange==null && ParserUtils.mayBeRegexWithCaptureGroup(fieldMapping.getCellName())) {
-					Pattern pattern = Pattern.compile(fieldMapping.getCellName(), Pattern.CASE_INSENSITIVE);
-					Collection<Sheet> sheetsToMatch = (sheet!=null) ? Collections.singleton(sheet) : sheetsByName.values();
-					List<IndividualValue> matchingValues = new LinkedList<>();
-					for (Sheet s: sheetsToMatch) {
-						Iterator<Row> rows = s.iterator();
-						while (rows.hasNext()) {
-							Row row = rows.next();
-							Iterator<Cell> cells = row.cellIterator();
-							while (cells.hasNext()) {
-								Cell cell = cells.next();
-								if (!CellType.STRING.equals(cell.getCellType()))
-									continue;
-								String cell_value;
-								try {
-									cell_value = cell.getStringCellValue();
-								} catch (Throwable ex) {
-									continue;
-								}
-								if (cell_value==null || cell_value.length()==0)
-									continue;
-								Matcher matcher = pattern.matcher(cell_value);
-								if (!matcher.find())
-									continue;
-								String extracted_value = (matcher.groupCount()>0) ? matcher.group(1) : matcher.group();
-								if (extracted_value==null || extracted_value.length()==0)
-									continue;
-								matchingValues.add(new IndividualValue(s,row.getRowNum(),cell.getColumnIndex(),extracted_value));
-							} // LOOP over cells for pattern matching
-						} // LOOP over rows for pattern matching
-					} // LOOP over sheets for pattern matching
-					if (!matchingValues.isEmpty()) {
-						dataSerie.individualValues = matchingValues.toArray(new IndividualValue[0]);
-					}
-				}
-			}
-			
-		}
-		
-		else if (fieldMapping.getRowIndex()!=null) {
+		if (fieldMapping.getRowIndex()!=null) {
 			
 			// If we have a specific row, this field may be one singular value (if we also
 			// have one specific column) or it may be an entire row of values (if we don't
@@ -643,6 +703,13 @@ public class ExcelParser implements FileParser {
 				return false;
 			}
 			
+			if (requiredFields!=null && !requiredFields.isEmpty()) {
+				// If it's missing required field, let's keep searching for more
+				boolean missingRequiredField = requiredFields.stream().anyMatch(n->!toRet.containsKey(n));
+				if (missingRequiredField)
+					return false;
+			}
+			
 			// If we got here, we have data to return
 			return true;
 		}
@@ -932,6 +999,8 @@ public class ExcelParser implements FileParser {
 				try {
 					CellReference cref = cellReferences[currentCellReference];
 					Sheet sheet = (sheets!=null) ? sheets.getOrDefault(cref.getSheetName(), this.sheet) : this.sheet;
+					if (sheet==null)
+						return null;
 					Row r = sheet.getRow(cref.getRow());
 					if (r==null)
 						return null;
@@ -1089,7 +1158,11 @@ public class ExcelParser implements FileParser {
 					if (currentCellReference.intValue()>=cellReferences.length)
 						return null; // we reached the end of mapped data
 					cref = cellReferences[currentCellReference];
+					// When scanning over multiple sheets, let's make a boundary across different sheets
+					if (!cref.getSheetName().equals(cell.getSheet().getSheetName()))
+						return null;
 				}
+				Sheet sheet = cell.getSheet();
 				Row r = sheet.getRow(cref.getRow());
 				if (r==null)
 					return null;
@@ -1122,6 +1195,9 @@ public class ExcelParser implements FileParser {
 					if (currentIndividualValue.intValue()>=individualValues.length)
 						return null; // we reached the end of mapped data
 					cref = individualValues[currentIndividualValue];
+					// When scanning over multiple sheets, let's make a boundary across different sheets
+					if (!cref.getSheet().equals(cell.getSheet()))
+						return null;
 				}
 				return cref.getValue();
 			}
@@ -1339,6 +1415,25 @@ public class ExcelParser implements FileParser {
 				col = c;
 			else if (col!=c)
 				return false; // different columns
+		}
+		return true;
+	}
+
+	/**
+	 * Returns TRUE if all the cell references corresponds to the same sheet
+	 */
+	private static boolean isSameSheet(IndividualValue[] refs) {
+		if (refs==null || refs.length==0)
+			return false;
+		String sheetName = null;
+		for (IndividualValue ref: refs) {
+			String s = ref.getSheetName();
+			if (s!=null) {
+				if (sheetName==null)
+					sheetName = s;
+				else if (!sheetName.equals(s))
+					return false; // different sheets			
+			}
 		}
 		return true;
 	}

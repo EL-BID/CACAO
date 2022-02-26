@@ -265,7 +265,9 @@ public class SanitizationService {
 					|| (!(map1_value instanceof Map) 
 							&& !(map2_value instanceof Map) 
 							&& !sameContents(map1_value, map2_value))) {
-					diff.onDifference(path, key.toString(), map1_value, map2_value);
+					if (map2_value!=null) {
+						diff.onDifference(path, key.toString(), map1_value, map2_value);
+					}
 				}
 			}
 			if ((map1_value instanceof Map) && (map2_value instanceof Map)) {

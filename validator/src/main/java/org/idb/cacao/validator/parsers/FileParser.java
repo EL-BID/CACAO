@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.nio.file.Path;
 
 import org.idb.cacao.api.templates.DocumentInput;
+import org.idb.cacao.api.templates.DocumentTemplate;
 
 /**
  * This is a common interface for processing files of a particular FileFormat.<BR>
@@ -53,6 +54,11 @@ public interface FileParser extends Closeable {
 	 * Specification for this input according to the DocumentTemplate's DocumentInput
 	 */
 	public void setDocumentInputSpec(DocumentInput input);
+	
+	/**
+	 * Specification for this template
+	 */
+	default public void setDocumentTemplate(DocumentTemplate template) { }
 	
 	/**
 	 * Trigger the start of the file processing. Every information needed for this task

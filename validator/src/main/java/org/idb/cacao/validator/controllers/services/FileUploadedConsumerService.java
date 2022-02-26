@@ -218,7 +218,10 @@ public class FileUploadedConsumerService {
 			// Initializes the FileParser for processing
 			parser.setPath(filePath);
 			parser.setDocumentInputSpec(docInputExpected);
+			parser.setDocumentTemplate(template.get());
 			// TODO: more setup ???
+			
+			long timestamp = System.currentTimeMillis();
 
 			// Let's start parsing the file contents
 			try {
@@ -232,6 +235,9 @@ public class FileUploadedConsumerService {
 				throw new ValidationException(
 						"An error ocurred while attempting to read data in file " + doc.getFilename() + ".", ex);				
 			}
+			
+			final long elapsed_time_prepare_parser = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
 			
 			DataIterator iterator = null;
 
@@ -322,12 +328,18 @@ public class FileUploadedConsumerService {
 				parser.close();			
 			}
 
+			final long elapsed_time_parsing = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			// Fetch information from file name according to the configuration
 			fetchInformationFromFileName(docInputExpected, validationContext);
 
 			// Add TaxPayerId and TaxPeriod to document on database
 			validations.addTaxPayerInformation();
 			
+			final long elapsed_time_filling_taxpayer_info = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			if (doc.getTaxPayerId()!=null && doc.getTaxPayerId().trim().length()>0) {
 				AtomicReference<String> userTaxpayerId = new AtomicReference<>();
 				try {
@@ -373,6 +385,9 @@ public class FileUploadedConsumerService {
 			doc = documentsUploadedRepository.saveWithTimestamp(doc);
 			validationContext.setDocumentUploaded(doc);
 			
+			final long elapsed_time_saving = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			//TODO
 			//Check if uploader has rights to upload file for this taxpayer
 
@@ -380,12 +395,21 @@ public class FileUploadedConsumerService {
 			// check for required fields
 			validations.checkForRequiredFields();
 
+			final long elapsed_time_chk_required_fields = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			// check for mismatch in field types (should try to automatically convert some
 			// field types, e.g. String -> Date)
 			validations.checkForFieldDataTypes();
 
+			final long elapsed_time_chk_field_types = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			// check for domain table fields
 			validations.checkForDomainTableValues();
+
+			final long elapsed_time_chk_domain_tables = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
 
 			if (validationContext.hasAlerts()) {
 				setSituation(doc, DocumentSituation.INVALID);
@@ -397,6 +421,9 @@ public class FileUploadedConsumerService {
 			else if (validationContext.hasNonCriticalAlerts()) {
 				saveValidationMessages(validationContext);				
 			}
+
+			final long elapsed_time_saving_validation_alerts = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
 
 			// Check for domain-specific validations related to a built-in archetype
 			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
@@ -420,9 +447,28 @@ public class FileUploadedConsumerService {
 				}
 			}
 
+			final long elapsed_time_domain_specific = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			if (log.isLoggable(Level.INFO)) {
-				log.log(Level.INFO, "Finished validation of a message with documentId " + documentId + ", stored file: "+filePath.getFileName()+", original file: "
-					+doc.getFilename()+", template: "+doc.getTemplateName()+", taxpayer: "+doc.getTaxPayerId()+", year: "+doc.getTaxYear());
+				String msg = String.format("Finished validation of a message with documentId %s, stored file: %s, original file: %s, template: %s, taxpayer: %s, year: %d. "
+				+ "Time elapsed: prep: %d ms , parse: %d ms , info: %d ms , save: %d ms , req: %d ms , types: %d ms , domain: %d ms , alerts: %d ms , specific: %d ms",
+						documentId,
+						filePath.getFileName(),
+						doc.getFilename(),
+						doc.getTemplateName(),
+						doc.getTaxPayerId(),
+						doc.getTaxYear(),
+						elapsed_time_prepare_parser,
+						elapsed_time_parsing,
+						elapsed_time_filling_taxpayer_info,
+						elapsed_time_saving,
+						elapsed_time_chk_required_fields,
+						elapsed_time_chk_field_types,
+						elapsed_time_chk_domain_tables,
+						elapsed_time_saving_validation_alerts,
+						elapsed_time_domain_specific);
+				log.log(Level.INFO, msg);
 			}
 
 			// Stores validated data at Elastic Search
