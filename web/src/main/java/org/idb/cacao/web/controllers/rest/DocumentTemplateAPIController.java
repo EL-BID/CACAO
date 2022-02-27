@@ -264,6 +264,7 @@ public class DocumentTemplateAPIController {
 			existingDocInput.setInputName(docInput.getInputName());
 			existingDocInput.setFields(docInput.getFields());
 			existingDocInput.setFieldsIdsMatchingTemplate(template);
+			existingDocInput.setAcceptIncompleteFiles(docInput.getAcceptIncompleteFiles());
 		}
 		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);

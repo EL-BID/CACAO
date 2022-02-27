@@ -11,6 +11,7 @@ import java.time.YearMonth;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -72,6 +73,16 @@ public class Validations {
 	 * 
 	 */
 	public void checkForRequiredFields() {
+		checkForRequiredFields(/*acceptIncompleteFiles*/false);
+	}
+	
+	/**
+	 * Check for required fields in document uploaded. <br>
+	 * 
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
+	 * 
+	 */
+	public void checkForRequiredFields(boolean acceptIncompleteFiles) {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -91,14 +102,26 @@ public class Validations {
 		if (parsedContents == null || parsedContents.isEmpty())
 			return;
 
+		List<Map<String, Object>> toRemove = (acceptIncompleteFiles) ? new LinkedList<>() : null;
 		parsedContents.parallelStream().iterator().forEachRemaining(values -> {
+			
+			boolean markedRecordToRemove = false;
 
 			for (String fieldName : requiredFields) {
-				if (values.get(fieldName) == null)
-					addLogError("{field.value.not.found(" + fieldName+ ")}", /*criticalError*/true);
+				if (values.get(fieldName) == null) {
+					addLogError("{field.value.not.found(" + fieldName+ ")}", /*criticalError*/!acceptIncompleteFiles);
+					if (acceptIncompleteFiles && !markedRecordToRemove) {
+						markedRecordToRemove = true;
+						toRemove.add(values);
+					}
+				}
 			}
 
 		});
+		
+		if (toRemove!=null && !toRemove.isEmpty()) {
+			parsedContents.removeAll(toRemove);
+		}
 
 	}
 
@@ -137,6 +160,16 @@ public class Validations {
 	 * 
 	 */
 	public void checkForFieldDataTypes() {
+		checkForFieldDataTypes(/*acceptIncompleteFiles*/false);
+	}
+	
+	/**
+	 * Check for data types in all fields in document uploaded <br>
+	 * 
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
+	 * 
+	 */
+	public void checkForFieldDataTypes(boolean acceptIncompleteFiles) {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -167,28 +200,28 @@ public class Validations {
 						continue;
 
 					if (FieldType.BOOLEAN.equals(field.getFieldType()))
-						fieldValue = checkBooleanValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
+						fieldValue = checkBooleanValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					else if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) )
 						fieldValue = checkCharacterValue(field, fieldValue);
 
 					else if (FieldType.DATE.equals(field.getFieldType()))
-						fieldValue = checkDateValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
+						fieldValue = checkDateValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					else if (FieldType.DECIMAL.equals(field.getFieldType()))
-						fieldValue = checkDecimalValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
+						fieldValue = checkDecimalValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					else if (FieldType.GENERIC.equals(field.getFieldType()))
 						fieldValue = checkGenericValue(field, fieldValue);
 
 					else if (FieldType.INTEGER.equals(field.getFieldType()))
-						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
+						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					else if (FieldType.MONTH.equals(field.getFieldType()))
-						fieldValue = checkMonthValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
+						fieldValue = checkMonthValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					else if (FieldType.TIMESTAMP.equals(field.getFieldType()))
-						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue, Boolean.TRUE.equals(field.getRequired()));
+						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					// Update field value to it's new representation
 					values.replace(field.getFieldName(), fieldValue);
@@ -494,6 +527,16 @@ public class Validations {
 	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
 	 */
 	public void checkForDomainTableValues() {
+		checkForDomainTableValues(/*acceptIncompleteFiles*/false);
+	}
+	
+	/**
+	 * Check if values provided on fields that points to a domain table are present
+	 * on domain tables entries. <br>
+	 * 
+	 * All validations error will be inserted on {@link ValidationContext#addAlert(String)}. <br>
+	 */
+	public void checkForDomainTableValues(boolean acceptIncompleteFiles) {
 
 		// Get a list of fields
 		List<DocumentField> allFields = validationContext.getDocumentTemplate().getFields();
@@ -547,7 +590,7 @@ public class Validations {
 
 				// If value is not present at domain table entries, add error message
 				if (!result.getKey()) {
-					final boolean required = Boolean.TRUE.equals(field.getRequired());
+					final boolean required = !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired());
 					addLogError("{field.domain.value.not.found(" + fieldValue + ")(" + field.getFieldName() + ")}", /*criticalError*/required);
 				} else {
 					String newValue = result.getValue();

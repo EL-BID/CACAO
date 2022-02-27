@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.api.templates;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Boolean;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Integer;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Keyword;
 import static org.springframework.data.elasticsearch.annotations.FieldType.Nested;
@@ -88,6 +89,14 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	@Field(type=Nested)
 	private List<DocumentInputFieldMapping> fields;
 	
+	/**
+	 * If this is TRUE, the validation phase will accept documents for which some lines may
+	 * not fulfill all the 'required' fields. If this is FALSE (by default), the validation phase
+	 * will reject documents containing lines with missing data for required fields (will declare those files as 'invalid')
+	 */
+	@Field(type=Boolean)
+	private Boolean acceptIncompleteFiles;
+
 	public DocumentInput() {		
 	}
 	
@@ -137,6 +146,24 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 	 */
 	public void setFormat(DocumentFormat format) {
 		this.format = format;
+	}
+
+	/**
+	 * If this is TRUE, the validation phase will accept documents for which some lines may
+	 * not fulfill all the 'required' fields. If this is FALSE (by default), the validation phase
+	 * will reject documents containing lines with missing data for required fields (will declare those files as 'invalid')
+	 */
+	public Boolean getAcceptIncompleteFiles() {
+		return acceptIncompleteFiles;
+	}
+
+	/**
+	 * If this is TRUE, the validation phase will accept documents for which some lines may
+	 * not fulfill all the 'required' fields. If this is FALSE (by default), the validation phase
+	 * will reject documents containing lines with missing data for required fields (will declare those files as 'invalid')
+	 */
+	public void setAcceptIncompleteFiles(Boolean acceptIncompleteFiles) {
+		this.acceptIncompleteFiles = acceptIncompleteFiles;
 	}
 
 	public List<DocumentInputFieldMapping> getFields() {

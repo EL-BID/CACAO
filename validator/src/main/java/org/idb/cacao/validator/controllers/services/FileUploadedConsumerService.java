@@ -392,25 +392,29 @@ public class FileUploadedConsumerService {
 			final long elapsed_time_saving = System.currentTimeMillis() - timestamp;
 			timestamp = System.currentTimeMillis();
 
+			boolean acceptIncompleteFiles = Boolean.TRUE.equals(docInputExpected.getAcceptIncompleteFiles()) ;
+
 			//TODO
 			//Check if uploader has rights to upload file for this taxpayer
 
 			// Should perform generic validations:
-			// check for required fields
-			validations.checkForRequiredFields();
-
-			final long elapsed_time_chk_required_fields = System.currentTimeMillis() - timestamp;
-			timestamp = System.currentTimeMillis();
-
+			
 			// check for mismatch in field types (should try to automatically convert some
 			// field types, e.g. String -> Date)
-			validations.checkForFieldDataTypes();
+			validations.checkForFieldDataTypes(acceptIncompleteFiles);
 
 			final long elapsed_time_chk_field_types = System.currentTimeMillis() - timestamp;
 			timestamp = System.currentTimeMillis();
 
+			// check for required fields (should be performed after type validation, because the type
+			// validation may result in more 'null' values)
+			validations.checkForRequiredFields(acceptIncompleteFiles);
+
+			final long elapsed_time_chk_required_fields = System.currentTimeMillis() - timestamp;
+			timestamp = System.currentTimeMillis();
+
 			// check for domain table fields
-			validations.checkForDomainTableValues();
+			validations.checkForDomainTableValues(acceptIncompleteFiles);
 
 			final long elapsed_time_chk_domain_tables = System.currentTimeMillis() - timestamp;
 			timestamp = System.currentTimeMillis();

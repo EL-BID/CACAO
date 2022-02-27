@@ -51,6 +51,14 @@
               <input type="text" name="format" th:value="${docInput.format.toString()}" class="" id="format" readonly>
             </div>
           </div>
+          <div class="fields">
+            <div class="sixteen wide field">
+                <label th:text="#{doc.input.accept.incomplete}" style="margin-bottom: 0px; text-transform: uppercase;">Accept Incomplete</label>
+                 <div class="ui toggle checkbox">
+                    <input type="checkbox" th:field="*{acceptIncompleteFiles}" class="hidden" th:checked="*{acceptIncompleteFiles}">
+                </div>
+            </div>
+          </div>
           <div class="row">
             <input type="submit" class="ui blue button"  th:value="#{save}" value="Save"> 
             <input type="button" class="ui button" th:value="#{cancel}" value="Cancel" id="cancel">
@@ -77,6 +85,7 @@ let processForm = function(event, fields) {
   docInput.inputName = fields.inputName
   docInput.format = [[${docInput.format}]]
   docInput.fields = table.getData()
+  docInput.acceptIncompleteFiles = fields.acceptIncompleteFiles
   //console.log(template)
   let url = [[@{/api/template/{id}/input(id=${template.id})}]] 
   [# th:if="${docInput.inputName==null}"]
