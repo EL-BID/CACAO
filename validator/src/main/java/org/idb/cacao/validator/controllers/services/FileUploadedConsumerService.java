@@ -53,6 +53,7 @@ import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageReposi
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -99,6 +100,9 @@ public class FileUploadedConsumerService {
 
 	@Autowired
 	private final StreamBridge streamBridge;
+	
+	@Value("${validation.max.errors.per.upload}")
+	private long maxValidationErrorsPerUpload;
 
 	public FileUploadedConsumerService(StreamBridge streamBridge) {
 		this.streamBridge = streamBridge;
@@ -545,23 +549,35 @@ public class FileUploadedConsumerService {
 		List<String> alerts = validationContext.getAlerts();
 
 		if (alerts != null && !alerts.isEmpty()) {
-	
-			alerts.stream().forEach(alert -> {
+			List<DocumentValidationErrorMessage> messages =
+			alerts.stream()
+				.limit(maxValidationErrorsPerUpload<=0?Integer.MAX_VALUE:maxValidationErrorsPerUpload*10)
+				.distinct()
+				.limit(maxValidationErrorsPerUpload<=0?Integer.MAX_VALUE:maxValidationErrorsPerUpload)
+				.map(alert -> {
 				DocumentValidationErrorMessage newMessage = message.clone();
 				newMessage.setErrorMessage(alert);
-				documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);
-			});
+				return newMessage;
+			}).collect(Collectors.toList());
+			if (!messages.isEmpty())
+				documentValidationErrorMessageRepository.saveAllWithTimestamp(messages);
 		}
 		
 		alerts = validationContext.getNonCriticalAlerts();
 
 		if (alerts != null && !alerts.isEmpty()) {
-			
-			alerts.stream().forEach(alert -> {
+			List<DocumentValidationErrorMessage> messages =			
+			alerts.stream()
+				.limit(maxValidationErrorsPerUpload<=0?Integer.MAX_VALUE:maxValidationErrorsPerUpload*10)
+				.distinct()
+				.limit(maxValidationErrorsPerUpload<=0?Integer.MAX_VALUE:maxValidationErrorsPerUpload)
+				.map(alert -> {
 				DocumentValidationErrorMessage newMessage = message.clone();
 				newMessage.setErrorMessage(alert);
-				documentValidationErrorMessageRepository.saveWithTimestamp(newMessage);
-			});
+				return newMessage;
+			}).collect(Collectors.toList());
+			if (!messages.isEmpty())
+				documentValidationErrorMessageRepository.saveAllWithTimestamp(messages);
 		}
 	}
 

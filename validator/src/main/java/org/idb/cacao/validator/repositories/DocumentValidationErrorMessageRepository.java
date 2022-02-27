@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.validator.repositories;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.idb.cacao.api.DocumentValidationErrorMessage;
@@ -42,6 +43,12 @@ public interface DocumentValidationErrorMessageRepository extends ElasticsearchR
 	default public <S extends DocumentValidationErrorMessage> S saveWithTimestamp(S entity) {
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
+	}
+
+	default public <S extends DocumentValidationErrorMessage> Iterable<S> saveAllWithTimestamp(Iterable<S> entities) {
+		OffsetDateTime now = DateTimeUtils.now();
+		entities.forEach(e->e.setChangedTime(now));
+		return saveAll(entities);
 	}
 
 }

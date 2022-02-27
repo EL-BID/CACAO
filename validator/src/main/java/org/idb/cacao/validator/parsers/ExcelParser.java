@@ -90,7 +90,7 @@ public class ExcelParser implements FileParser {
 	private Map<DocumentInputFieldMapping, DataSerie> mapDataSeries;
 	
 	/**
-	 * Names of the fields that are required according to the document template
+	 * Names of the fields that are required according to the document template (except those that are mapped over filenames)
 	 */
 	private Set<String> requiredFields;
 
@@ -158,8 +158,14 @@ public class ExcelParser implements FileParser {
 			}
 		}
 		
+		Set<String> mappingsOverFilenames = documentInputSpec.getFields().stream()
+				.filter(m->m.getFileNameExpression()!=null && m.getFileNameExpression().trim().length()>0)
+				.map(DocumentInputFieldMapping::getFieldName)
+				.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+		
 		requiredFields = (documentTemplate==null) ? null
 			: documentTemplate.getRequiredFields().stream().map(DocumentField::getFieldName)
+			.filter(n->!mappingsOverFilenames.contains(n))
 			.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 		
 		mapDataSeries = new IdentityHashMap<>();

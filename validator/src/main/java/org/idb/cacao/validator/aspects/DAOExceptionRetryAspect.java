@@ -51,7 +51,8 @@ public class DAOExceptionRetryAspect {
 	 */
 	@Pointcut("execution(* org.springframework.data.repository.CrudRepository+.save(..))"
 			+ " || execution(* org.springframework.data.repository.CrudRepository+.saveAll(..))"
-			+ " || execution(* org.springframework.data.repository.CrudRepository+.saveWithTimestamp(..))")
+			+ " || execution(* org.springframework.data.repository.CrudRepository+.saveWithTimestamp(..))"
+			+ " || execution(* org.springframework.data.repository.CrudRepository+.saveAllWithTimestamp(..))")
 	public void pointCutForCrudRepositorySaveMethod() {};
 
 	/**
