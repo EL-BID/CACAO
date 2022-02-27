@@ -626,6 +626,23 @@ CACAO puede leer los siguientes formatos de archivo, que se pueden utilizar como
 * **PDF** - formularios PDF
 * **DOC** - Microsoft Word
 
+Cada tipo de entrada tiene sus propias características. CACAO hace todo lo posible para hacer coincidir el contenido de los archivos con los campos definidos por la plantilla de documento.
+
+El partido puede tener lugar de múltiples maneras. CACAO tiene una secuencia de pruebas y solo si ninguna tiene éxito, devuelve un error de validación.
+
+La siguiente lista muestra las diferentes (y secuenciales) pruebas:
+
+- **Primera prueba**: mediante expresiones regulares, intenta extraer valores del nombre del archivo (por ejemplo: el nombre del archivo contiene la identificación del contribuyente y el año fiscal)
+- **Segunda prueba**: extraer los valores del índice de fila (posición de fila)
+- **Tercera prueba**: extraer los valores del índice de la columna (posición de la columna)
+- **Cuarta prueba**: mediante expresiones regulares, intenta hacer coincidir el nombre de las columnas de los archivos con los campos de la plantilla del documento
+
+No todas las versiones de prueba son adecuadas para todos los formatos de archivo. Por ejemplo, la prueba **Tercera prueba** no es adecuada para los tipos **JSON** y **XML**, ya que no se pueden determinar las posiciones de las columnas como lo haríamos en un archivo **CSV**.
+
+Uno debe recordar que este es el orden de las pruebas. Por ejemplo, si el nombre del archivo no coincide con las expresiones regulares definidas en la **Primera prueba**, se ejecutará la **Segunda prueba**.
+
+Esta secuencia es por campo, se reinicializa para cada intento de coincidencia de los campos de la plantilla de documento. Por ejemplo, si la identificación del contribuyente se extrajo del índice de la columna (**Tercer prueba**), para el año fiscal la secuencia comienza desde el **Primera prueba**, tratando de extraer del nombre del archivo.
+
 > _**CONTINUARÁ**_
 
 ## Arquetipo
