@@ -70,6 +70,11 @@ public class GenericDataPublisher {
 	private static final String lineNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE.name());
 
 	/**
+	 * The field name for line numbering for the same published data contents represented as timestamps (@see javadoc comments for PublishedDataFieldNames.LINE_SORT)
+	 */
+	private static final String lineNumberSort = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE_SORT.name());
+
+	/**
 	 * The field name for date/time of published data
 	 */
 	private static final String publishedTimestamp = PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName();
@@ -165,6 +170,7 @@ public class GenericDataPublisher {
 					normalizedRecord.put(publishedTemplateName, doc.getTemplateName());
 					normalizedRecord.put(publishedTemplateVersion, doc.getTemplateVersion());
 					normalizedRecord.put(lineNumber, countRecordsOverall.longValue());
+					normalizedRecord.put(lineNumberSort, new java.util.Date(countRecordsOverall.longValue()));
 
 					// Includes data about declarant
 					if (declarantInformation.isPresent())

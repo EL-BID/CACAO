@@ -44,6 +44,14 @@ public enum PublishedDataFieldNames {
 	LINE("line"),
 
 	/**
+	 * Line number of validated data saved as timestamp, in order to allow sorting values by
+	 * this criteria (e.g. in Dashboard one may want to get the 'last value' of any other particular
+	 * field, 'sorted by' the line position in the file. Kibana requires a 'timestamp' for establishing
+	 * the sort criteria, so this is way we duplicate the line number as 'timestamps'
+	 */
+	LINE_SORT("line_sort"),
+
+	/**
 	 * TaxPayer ID. Must match the same information stored
 	 * in {@link DocumentUploaded#getTaxPayerId() taxPayerId}.
 	 */

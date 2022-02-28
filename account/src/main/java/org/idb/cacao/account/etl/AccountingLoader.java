@@ -254,6 +254,11 @@ public class AccountingLoader {
 	private static final String lineNumber = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE.name());
 
 	/**
+	 * The field name for line numbering for the same published data contents represented as timestamps (@see javadoc comments for PublishedDataFieldNames.LINE_SORT)
+	 */
+	private static final String lineNumberSort = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.LINE_SORT.name());
+
+	/**
 	 * The field name for indication of Year for each Monthly Balance Sheet
 	 */
 	private static final String publishedYear = IndexNamesUtils.formatFieldName(AccountingFieldNames.Year.name());
@@ -727,6 +732,7 @@ public class AccountingLoader {
 					normalizedRecord_GL.put(PublishedDataFieldNames.ETL_TIMESTAMP.getFieldName(), timestamp);
 					normalizedRecord_GL.put(publishedTimestamp, date);
 					normalizedRecord_GL.put(lineNumber, countRecordsInGeneralLedger.longValue());
+					normalizedRecord_GL.put(lineNumberSort, new java.util.Date(countRecordsInGeneralLedger.longValue()));
 					normalizedRecord_GL.put(publishedTaxpayerId, taxPayerId);
 					normalizedRecord_GL.put(publishedtaxPeriodNumber, taxPeriodNumber);
 					normalizedRecord_GL.put(publishedTemplateName, gl.getTemplateName());

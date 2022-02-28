@@ -242,6 +242,12 @@ public class ExcelParser implements FileParser {
 
 	}
 	
+	/**
+	 * If the input field mapping includes a 'cell name' criteria, this method will feed 'mapDataSeries' with
+	 * additional 'DataSerie' object regarding this expression.<BR>
+	 * It may consider the cell name in different ways (e.g.: as it was a 'name' for 'named cells' or as it
+	 * was 'cell addresses ranges' - like 'A:A' - or as it was some regular expression to match individual cell contents). 
+	 */
 	private void addDataSerieBasedOnNamedCell(DocumentInputFieldMapping fieldMapping, 
 			Map<String, Sheet> sheetsByName) {
 		
@@ -288,15 +294,16 @@ public class ExcelParser implements FileParser {
 			if (cellRange!=null) {
 				List<CellReference> cellReferences = new LinkedList<>();
 				for (Sheet sheet: sheetsByName.values()) {
-					if (cellRange.getFirstRow()<0)
-						cellRange.setFirstRow(0);
-					if (cellRange.getLastRow()<0)
-						cellRange.setLastRow(sheet.getLastRowNum());
-					if (cellRange.getLastRow()<cellRange.getFirstRow())
+					CellRangeAddress cellRangeForSheet = cellRange.copy();
+					if (cellRangeForSheet.getFirstRow()<0)
+						cellRangeForSheet.setFirstRow(0);
+					if (cellRangeForSheet.getLastRow()<0)
+						cellRangeForSheet.setLastRow(sheet.getLastRowNum());
+					if (cellRangeForSheet.getLastRow()<cellRangeForSheet.getFirstRow())
 						continue;
-					if (cellRange.getLastColumn()<cellRange.getFirstColumn())
+					if (cellRangeForSheet.getLastColumn()<cellRangeForSheet.getFirstColumn())
 						continue;
-					cellRange.forEach(cellAddress->{
+					cellRangeForSheet.forEach(cellAddress->{
 						cellReferences.add(new CellReference(sheet.getSheetName(),cellAddress.getRow(),cellAddress.getColumn(),false,false));
 					});
 				}
