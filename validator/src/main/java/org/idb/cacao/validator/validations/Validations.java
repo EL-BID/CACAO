@@ -304,8 +304,11 @@ public class Validations {
 		if (value==null || value.trim().length()==0)
 			return null;
 
-		if (isOnlyNumbers(value))
-			return new Date(Long.parseLong(value));
+		// Will not try to convert numbers into dates using UNIX EPOCH because it would result
+		// in unexpected result if the incoming data is not what it was supposed to be (e.g.: maybe the data
+		// came from Excel spreadsheet where some rows contains additional 'sub-total' information)
+		//if (isOnlyNumbers(value))
+		//	return new Date(Long.parseLong(value));
 		
 		if ( isTimestamp(value) )
 			return parseTimestamp(value);
@@ -476,8 +479,11 @@ public class Validations {
 		if ( (fieldValue instanceof Date) || (fieldValue instanceof OffsetDateTime) )
 			return fieldValue;
 		
-		if ( fieldValue instanceof Number )
-			return new Date(((Number)(fieldValue)).longValue());
+		// Will not try to convert numbers into dates using UNIX EPOCH because it would result
+		// in unexpected result if the incoming data is not what it was supposed to be (e.g.: maybe the data
+		// came from Excel spreadsheet where some rows contains additional 'sub-total' information)
+		//if ( fieldValue instanceof Number )
+		//	return new Date(((Number)(fieldValue)).longValue());
 
 		String value = ValidationContext.toString(fieldValue);
 		if (value==null || value.trim().length()==0)

@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -680,7 +681,8 @@ public class ExcelParser implements FileParser {
 			
 			toRet = new HashMap<>(); 
 
-			int count_variable_fields = 0;
+			int countVariableFieldsLocal = 0;
+			AtomicBoolean localIndication = new AtomicBoolean();
 
 			while (cellIterator.hasNext()) {
 				
@@ -692,20 +694,22 @@ public class ExcelParser implements FileParser {
 					if (dataSerie==null)
 						continue;
 					
-					Object value = dataSerie.getValue(currentCell);
+					Object value = dataSerie.getValue(currentCell, localIndication);
 					if (value==null)
 						continue;
 
-					if (!dataSerie.isConstant())
-						count_variable_fields++;
+					if (!dataSerie.isConstant() && localIndication.get()) {
+						countVariableFieldsLocal++;
+						
+					}
 					
 					toRet.put(fieldMapping.getFieldName(), value);
 
 				}				
 			}
 			
-			if (count_variable_fields==0) {
-				// If we got only constant data, let's try again the next row
+			if (countVariableFieldsLocal==0) {
+				// If we got only constant data, or only data gathered from other places, let's try again the next row
 				return false;
 			}
 			
@@ -1134,10 +1138,14 @@ public class ExcelParser implements FileParser {
 		
 		/**
 		 * Returns value regarding this cell, if applicable to this field.
+		 * @param cell Cell coordinates and methods for retrieving value
+		 * @param lookAtNeighbors Will be set to TRUE if the value was gathered at the cell location. Will be set to FALSE if it was gathered at neighborhood.
 		 */
-		Object getValue(Cell cell) {
+		Object getValue(Cell cell, AtomicBoolean atLocation) {
+			atLocation.set(false);
 			if (isConstant()) {
 				// If this field represents a constant, we should return always the same value regardless of the provided cell
+				atLocation.set(true);
 				return getNextValue(/*incrementAfter*/false);
 			}
 			else if (cellReferences!=null) {
@@ -1175,6 +1183,7 @@ public class ExcelParser implements FileParser {
 				Cell c = r.getCell(cref.getCol());
 				if (c==null)
 					return null;
+				atLocation.set(cellReferencesComparator.compare(requested_cell_ref, cref)==0);
 				return getCellValue(c);
 			}
 			else if (individualValues!=null) {
@@ -1205,6 +1214,7 @@ public class ExcelParser implements FileParser {
 					if (!cref.getSheet().equals(cell.getSheet()))
 						return null;
 				}
+				atLocation.set(individualValuesComparator.compare(requested_cell_ref, cref)==0);
 				return cref.getValue();
 			}
 			else if (isSameColumn()) {
@@ -1214,6 +1224,7 @@ public class ExcelParser implements FileParser {
 					return null;
 				if (firstRow!=null && cell.getRowIndex()<firstRow.intValue())
 					return null;
+				atLocation.set(true);
 				return getCellValue(cell);
 			}
 			else if (isSameRow()) {
@@ -1223,6 +1234,7 @@ public class ExcelParser implements FileParser {
 					return null;
 				if (cell.getColumnIndex()<1)
 					return null;
+				atLocation.set(true);
 				return getCellValue(cell);
 			}
 			return null;
