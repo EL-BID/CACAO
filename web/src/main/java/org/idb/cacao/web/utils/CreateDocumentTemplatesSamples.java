@@ -57,7 +57,7 @@ public class CreateDocumentTemplatesSamples {
 
 		// General Ledger
 		DocumentTemplate docTemplate = new DocumentTemplate();
-		docTemplate.setName("General Ledger");
+		docTemplate.setName("Journal");
 		docTemplate.setGroup("Accounting");
 		docTemplate.setPeriodicity(Periodicity.YEARLY);
 		docTemplate.setRequired(true);
@@ -384,28 +384,28 @@ public class CreateDocumentTemplatesSamples {
 		if (docTemplate == null)
 			return;
 
-		DocumentInput input = new DocumentInput("CSV General Ledger");
+		DocumentInput input = new DocumentInput("CSV Journal");
 		input.setFormat(DocumentFormat.CSV);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("XLS General Ledger");
+		input = new DocumentInput("XLS Journal");
 		input.setFormat(DocumentFormat.XLS);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("PDF General Ledger");
+		input = new DocumentInput("PDF Journal");
 		input.setFormat(DocumentFormat.PDF);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("DOC General Ledger");
+		input = new DocumentInput("DOC Journal");
 		input.setFormat(DocumentFormat.DOC);
 		docTemplate.addInput(input);
 
