@@ -23,10 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.Normalizer;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -48,7 +46,9 @@ import java.util.stream.IntStream;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -62,6 +62,7 @@ import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.utils.ParserUtils;
 
 public class ExcelParser implements FileParser {
@@ -86,10 +87,12 @@ public class ExcelParser implements FileParser {
 
 	private Workbook workbook;
 	
+	private FormulaEvaluator evaluator;
+	
 	/**
 	 * For each 'DocumentInputFieldMapping' keep a 'DataSerie' object for iterating through the corresponding data
 	 */
-	private Map<DocumentInputFieldMapping, DataSerie> mapDataSeries;
+	private Map<DocumentInputFieldMapping, ExcelDataSerie> mapDataSeries;
 	
 	/**
 	 * Names of the fields that are required according to the document template (except those that are mapped over filenames)
@@ -175,6 +178,7 @@ public class ExcelParser implements FileParser {
 		try {
 			FileInputStream inputStream = new FileInputStream(path.toFile());
 			workbook = WorkbookFactory.create(inputStream);
+			evaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
 			// Check if the workbook has all sheets needed
 			if (workbook.getNumberOfSheets() < MINIMUM_NUMBER_OF_SHEETS)
@@ -240,7 +244,19 @@ public class ExcelParser implements FileParser {
 		} catch (IOException | EncryptedDocumentException e) {
 			log.log(Level.SEVERE, "Error trying to read Excel file " + path.getFileName(), e);
 		}
-
+		
+		if (documentTemplate!=null && !mapDataSeries.isEmpty()) {
+			// Include indications of 'metrics' in order to avoid repeating them if we have multiple cardinality for other fields
+			Set<String> metricsNames = documentTemplate.getFields().stream().filter(f->FieldType.DECIMAL.equals(f.getFieldType()))
+				.map(DocumentField::getFieldName).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+			if (!metricsNames.isEmpty()) {
+				for (Map.Entry<DocumentInputFieldMapping, ExcelDataSerie> entry:mapDataSeries.entrySet()) {
+					boolean is_metric = metricsNames.contains(entry.getKey().getFieldName());
+					if (is_metric)
+						entry.getValue().metric = is_metric;
+				}
+			}
+		}
 	}
 	
 	/**
@@ -295,7 +311,7 @@ public class ExcelParser implements FileParser {
 				}
 			}
 			if (!allReferencedCells.isEmpty()) {
-				DataSerie dataSerie = new DataSerie();
+				ExcelDataSerie dataSerie = new ExcelDataSerie();
 				dataSerie.cellReferences = allReferencedCells.toArray(new CellReference[0]);
 				if (isSameSheet(dataSerie.cellReferences)) {
 					String sheetName = dataSerie.cellReferences[0].getSheetName();
@@ -341,7 +357,7 @@ public class ExcelParser implements FileParser {
 				}
 				if (!cellReferences.isEmpty()) {
 					
-					DataSerie dataSerie = new DataSerie();
+					ExcelDataSerie dataSerie = new ExcelDataSerie();
 					dataSerie.cellReferences = cellReferences.toArray(new CellReference[0]);
 					if (isSameSheet(dataSerie.cellReferences)) {
 						dataSerie.sheet = sheetsByName.get(dataSerie.cellReferences[0].getSheetName());
@@ -357,7 +373,7 @@ public class ExcelParser implements FileParser {
 			if (cellRange==null && ParserUtils.mayBeRegexWithCaptureGroup(fieldMapping.getCellName())) {
 				Pattern pattern = Pattern.compile(fieldMapping.getCellName(), Pattern.CASE_INSENSITIVE);
 				Collection<Sheet> sheetsToMatch = sheetsByName.values();
-				List<IndividualValue> matchingValues = new LinkedList<>();
+				List<ExcelValue> matchingValues = new LinkedList<>();
 				for (Sheet s: sheetsToMatch) {
 					Iterator<Row> rows = s.iterator();
 					while (rows.hasNext()) {
@@ -381,13 +397,13 @@ public class ExcelParser implements FileParser {
 							String extracted_value = (matcher.groupCount()>0) ? matcher.group(1) : matcher.group();
 							if (extracted_value==null || extracted_value.length()==0)
 								continue;
-							matchingValues.add(new IndividualValue(s,row.getRowNum(),cell.getColumnIndex(),extracted_value));
+							matchingValues.add(new ExcelValue(s,row.getRowNum(),cell.getColumnIndex(),extracted_value));
 						} // LOOP over cells for pattern matching
 					} // LOOP over rows for pattern matching
 				} // LOOP over sheets for pattern matching
 				if (!matchingValues.isEmpty()) {
-					DataSerie dataSerie = new DataSerie();
-					dataSerie.individualValues = matchingValues.toArray(new IndividualValue[0]);
+					ExcelDataSerie dataSerie = new ExcelDataSerie();
+					dataSerie.individualValues = matchingValues.toArray(new ExcelValue[0]);
 					if (isSameSheet(dataSerie.individualValues)) {
 						dataSerie.sheet = dataSerie.individualValues[0].getSheet();
 					}
@@ -419,7 +435,7 @@ public class ExcelParser implements FileParser {
 			
 		}
 
-		DataSerie dataSerie = new DataSerie();
+		ExcelDataSerie dataSerie = new ExcelDataSerie();
 		dataSerie.sheet = sheet;
 		
 		if (fieldMapping.getRowIndex()!=null) {
@@ -451,7 +467,7 @@ public class ExcelParser implements FileParser {
 					column = ValidationContext.matchExpression(colsInHeader, 
 						/*toText*/colInHeader->{
 							Cell cell = header.getCell(colInHeader);
-							Object value = getCellValue(cell);
+							Object value = getCellValue(cell, evaluator);
 							return (value==null) ? "" : value.toString();
 						}, 
 						fieldMapping.getColumnNameExpression())
@@ -464,7 +480,7 @@ public class ExcelParser implements FileParser {
 				// Let's increment the 'rowStart' if it looks like a column title
 				Row r = sheet.getRow(rowStart);
 				Cell c = (r==null) ? null : r.getCell(column);
-				Object value = getCellValue(c);
+				Object value = getCellValue(c, evaluator);
 				String txt = (value==null) ? "" : value.toString();
 				if (ValidationContext.matchExpression(Collections.singletonList(txt), Function.identity(), fieldMapping.getFieldName()).isPresent()
 					|| ValidationContext.matchExpression(Collections.singletonList(txt), Function.identity(), fieldMapping.getColumnNameExpression()).isPresent()) {
@@ -529,7 +545,7 @@ public class ExcelParser implements FileParser {
 			return false;
 		
 		// Some simplified and compact way to 'describe' the data spread over different sheets
-		final Function<DataSerie,String> spreadDescription = (dataSerie)->{
+		final Function<ExcelDataSerie,String> spreadDescription = (dataSerie)->{
 			return dataSerie.getSheets().stream().map(s->String.format("%s:%d",s.getSheetName(),dataSerie.getSize(s))).collect(Collectors.joining("|"));
 		};
 		
@@ -538,7 +554,7 @@ public class ExcelParser implements FileParser {
 		
 		// Check if we have different data spreads for different non-constant fields
 		for (DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields()) {
-			DataSerie dataSerie = mapDataSeries.get(fieldMapping);
+			ExcelDataSerie dataSerie = mapDataSeries.get(fieldMapping);
 			if (dataSerie==null)
 				continue;
 			if (dataSerie.isConstant())
@@ -614,11 +630,11 @@ public class ExcelParser implements FileParser {
 				
 				for (DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields()) {
 					
-					DataSerie dataSerie = mapDataSeries.get(fieldMapping);
+					ExcelDataSerie dataSerie = mapDataSeries.get(fieldMapping);
 					if (dataSerie==null)
 						continue;
 					
-					Object value = dataSerie.getNextValue(/*incrementAfter*/true);
+					Object value = dataSerie.getNextValue(/*incrementAfter*/true, evaluator);
 					if (value==null)
 						continue;
 
@@ -714,6 +730,10 @@ public class ExcelParser implements FileParser {
 			toRet = new HashMap<>();
 		}
 		
+		/**
+		 * Collects data and store inside 'toRet'
+		 * @return Returns TRUE if we have enough data to proceed, returns FALSE otherwise.
+		 */
 		private boolean feedValuesFromRow(Iterator<Cell> cellIterator) {
 			if (!cellIterator.hasNext())
 				return false;
@@ -722,6 +742,7 @@ public class ExcelParser implements FileParser {
 
 			int countVariableFieldsLocal = 0;
 			AtomicBoolean localIndication = new AtomicBoolean();
+			IdentityHashMap<DocumentInputFieldMapping, ExcelDataSerie> usedFields = new IdentityHashMap<>();
 
 			while (cellIterator.hasNext()) {
 				
@@ -729,11 +750,11 @@ public class ExcelParser implements FileParser {
 								
 				for (DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields()) {
 					
-					DataSerie dataSerie = mapDataSeries.get(fieldMapping);
+					ExcelDataSerie dataSerie = mapDataSeries.get(fieldMapping);
 					if (dataSerie==null)
 						continue;
 					
-					Object value = dataSerie.getValue(currentCell, localIndication);
+					Object value = dataSerie.getValue(currentCell, localIndication, evaluator);
 					if (value==null)
 						continue;
 
@@ -743,6 +764,8 @@ public class ExcelParser implements FileParser {
 					}
 					
 					toRet.put(fieldMapping.getFieldName(), value);
+					
+					usedFields.put(fieldMapping, dataSerie);
 
 				}				
 			}
@@ -759,7 +782,10 @@ public class ExcelParser implements FileParser {
 					return false;
 			}
 			
-			// If we got here, we have data to return
+			// If we got here, we have data to return as a 'projected record' (all collected data stored inside 'toRet')
+			
+			usedFields.values().forEach(ExcelDataSerie::setUsedPreviousValue);
+			
 			return true;
 		}
 	}
@@ -768,9 +794,10 @@ public class ExcelParser implements FileParser {
 	 * Extract and return value from a given cell
 	 * 
 	 * @param cell	A given cell to extract it's value
+	 * @param evaluator Object used for evaluating formulas.
 	 * @return	A cell value
 	 */
-	protected static Object getCellValue(Cell cell) {
+	protected static Object getCellValue(Cell cell, FormulaEvaluator evaluator) {
 		
 		if ( cell == null )
 			return null;
@@ -796,13 +823,20 @@ public class ExcelParser implements FileParser {
 		}
 		
 		if ( CellType.FORMULA.equals(type) ) { 
+			if (evaluator==null)
+				return null;
 			try {
-				String formatted = cell.getStringCellValue();
+				CellValue cellValue = evaluator.evaluate(cell);
+				String formatted = cellValue.formatAsString();
 				if ("#REF!".equals(formatted)) {
 					return null;
 				}
+				if ("#VALUE!".equals(formatted)) {
+					return null;
+				}
 				return formatted;
-			} catch (Exception e) {
+			}
+			catch (Exception ex) {
 				return null;
 			}
 		}
@@ -821,546 +855,9 @@ public class ExcelParser implements FileParser {
 	}
 	
 	/**
-	 * References for retrieving data for a specific field
-	 * @author Gustavo Figueiredo
-	 */
-	private static class DataSerie {
-
-		/**
-		 * Specific Sheet for retrieving data
-		 */
-		Sheet sheet;
-		
-		/**
-		 * For multiple sheets (referenced by multiple cellReferences) keep
-		 * a map of sheets given their names
-		 */
-		Map<String, Sheet> sheets;
-		
-		/**
-		 * Specific column for retrieving data.
-		 * If NULL or negative, there is no specific column
-		 */
-		Integer column;
-		
-		/**
-		 * Specific row for retrieving data.
-		 * If NULL or negative, there is no specific row
-		 */
-		Integer row;
-		
-		/**
-		 * First row for iterating values in the same column.
-		 */
-		Integer firstRow;
-	
-		/**
-		 * Incremented if this particular field has different values in the same row (different columns)
-		 */
-		Integer currentColumn;
-		
-		/**
-		 * Incremented if this particular field has different values in the same column (different rows)
-		 */
-		Integer currentRow;
-		
-		/**
-		 * Specific cell references for retrieving data.
-		 * IF NULL, ignores this field.
-		 */
-		CellReference[] cellReferences;
-		
-		/**
-		 * Incremented if this particular field has different cell references
-		 */
-		Integer currentCellReference;
-		
-		/**
-		 * Specific cell values already extracted from the workbook..
-		 * IF NULL, ignores this field.
-		 */
-		IndividualValue[] individualValues;
-		
-		/**
-		 * Incremented if this particular field has specified individual values
-		 */
-		Integer currentIndividualValue;
-		
-		/**
-		 * Persist the boolean indications of the field mapping (prevent unnecessary recalculations)
-		 */
-		Boolean sameRow, sameColumn;
-		
-		/**
-		 * Persist the constant value (prevent unnecessary recalculations)
-		 */
-		Object constantValue;
-		
-		/**
-		 * Keep for each sheet name the corresponding order as long as we do a full scan over all sheets
-		 */
-		Map<String,Integer> sheetOrderNumbers;
-		
-		/**
-		 * Use this object for sort and binarySearch over cellReferences as we do a full scan over all sheets
-		 */
-		Comparator<CellReference> cellReferencesComparator;
-	
-		/**
-		 * Use this object for sort and binarySearch over individualValues as we do a full scan over all sheets
-		 */
-		Comparator<IndividualValue> individualValuesComparator;
-
-		/**
-		 * Informs this field has information gathered from the same sheet and the same row 
-		 */
-		boolean isSameRow() {
-			if (sameRow!=null)
-				return sameRow;
-			sameRow = (row!=null && row.intValue()>=0) || ExcelParser.isSameRow(cellReferences) || ExcelParser.isSameRow(individualValues);
-			return sameRow;
-		}
-		
-		/**
-		 * Informs this field has information gathered from the same sheet and the same column 
-		 */
-		boolean isSameColumn() {
-			if (sameColumn!=null)
-				return sameColumn;
-			sameColumn = (column!=null && column.intValue()>=0) || ExcelParser.isSameColumn(cellReferences) || ExcelParser.isSameColumn(individualValues);
-			return sameColumn;
-		}
-		
-		/**
-		 * Informs this field has information gathered from one singular cell (same sheet, same row, same column) 
-		 */
-		boolean isConstant() {
-			return isSameColumn() && isSameRow();
-		}
-		
-		/**
-		 * Informs this field has no information at all
-		 */
-		boolean isVoid() {
-			return !isConstant() 
-					&& (cellReferences==null || cellReferences.length==0)
-					&& (individualValues==null || individualValues.length==0)
-					&& !isSameColumn() && !isSameRow();
-		}
-		
-		/**
-		 * Returns the sheets with information regarding this particular field
-		 */
-		Collection<Sheet> getSheets() {
-			if (sheet!=null)
-				return Collections.singleton(sheet);
-			else
-				return sheets.values();
-		}
-		
-		/**
-		 * Returns the expected number of information to return for a particular shield regarding this particular field
-		 */
-		int getSize(Sheet sheet) {
-			if (isConstant()) {
-				return 1;
-			}
-			if (this.sheet!=null && !this.sheet.equals(sheet)) {
-				return 0;
-			}
-			if (cellReferences!=null) {
-				final String sheet_name = sheet.getSheetName();
-				return (int)Arrays.stream(cellReferences).filter(c->sheet_name.equals(c.getSheetName())).count();
-			}
-			else if (individualValues!=null) {
-				return (int)Arrays.stream(individualValues).filter(c->sheet.equals(c.getSheet())).count();
-			}
-			else if (isSameColumn()) {
-				try {
-					int last_row = sheet.getLastRowNum();
-					if (last_row<=0)
-						return 0;
-					if (firstRow==null)
-						return last_row+1;
-					else
-						return Math.max(0,last_row-firstRow.intValue()+1);
-				}
-				catch (Throwable ex) {
-					return 0;
-				}
-			}
-			else if (isSameRow()) {
-				try {
-					Row r = sheet.getRow(row);
-					if (r==null)
-						return 0;
-					short last_col = r.getLastCellNum();
-					if (last_col<=0)
-						return 0;
-					return last_col;
-				}
-				catch (Throwable ex) {
-					return 0;
-				}
-			}
-			return 0;
-		}
-		
-		/**
-		 * Returns the next available information regarding this field, if any.
-		 * @param incrementAfter If TRUE, increments internal counters in order to return another value next time
-		 */
-		Object getNextValue(boolean incrementAfter) {
-			if (isConstant()) {
-				if (constantValue!=null)
-					return constantValue;
-				if (row!=null && row.intValue()>=0) {
-					Row r = sheet.getRow(row);
-					if (r==null)
-						return null;
-					Cell c = r.getCell(column);
-					if (c==null)
-						return null;
-					constantValue = getCellValue(c);
-					return constantValue;
-				}
-				else if (cellReferences!=null && cellReferences.length>0) {
-					Row r = sheet.getRow(cellReferences[0].getRow());
-					if (r==null)
-						return null;
-					Cell c = r.getCell(cellReferences[0].getCol());
-					if (c==null)
-						return null;
-					constantValue = getCellValue(c);
-					return constantValue;
-				}
-				else if (individualValues!=null && individualValues.length>0) {
-					constantValue = individualValues[0].getValue();
-					return constantValue;
-				}
-			}
-			else if (cellReferences!=null) {
-				if (currentCellReference==null)
-					currentCellReference = 0;
-				if (currentCellReference.intValue()>=cellReferences.length) {
-					return null;
-				}
-				try {
-					CellReference cref = cellReferences[currentCellReference];
-					Sheet sheet = (sheets!=null) ? sheets.getOrDefault(cref.getSheetName(), this.sheet) : this.sheet;
-					if (sheet==null)
-						return null;
-					Row r = sheet.getRow(cref.getRow());
-					if (r==null)
-						return null;
-					Cell c = r.getCell(cref.getCol());
-					if (c==null)
-						return null;
-					return getCellValue(c);
-				}
-				finally {
-					if (incrementAfter)
-						currentCellReference++;
-				}
-			}
-			else if (individualValues!=null) {
-				if (currentIndividualValue==null)
-					currentIndividualValue = 0;
-				if (currentIndividualValue.intValue()>=individualValues.length) {
-					return null;
-				}
-				try {
-					return individualValues[currentIndividualValue].getValue();
-				}
-				finally {
-					if (incrementAfter)
-						currentIndividualValue++;
-				}
-			}
-			else if (isSameColumn()) {
-				if (currentRow==null)
-					currentRow = (firstRow==null) ? 0 : firstRow.intValue();
-				try {
-					Row r = sheet.getRow(currentRow);
-					if (r==null)
-						return null;
-					Cell c = r.getCell(column);
-					if (c==null)
-						return null;
-					return getCellValue(c);
-				}
-				finally {
-					if (incrementAfter)
-						currentRow++;
-				}
-			}
-			else if (isSameRow()) {
-				if (currentColumn==null)
-					currentColumn = 1;
-				try {
-					Row r = sheet.getRow(row);
-					if (r==null)
-						return null;
-					Cell c = r.getCell(currentColumn);
-					if (c==null)
-						return null;
-					return getCellValue(c);
-				}
-				finally {
-					if (incrementAfter)
-						currentColumn++;
-				}				
-			}
-			return null;
-		}
-		
-		/**
-		 * Tells we are going to scan every cell in every row in every sheet in the order they appear.
-		 */
-		void optimizeForScanningAllCells(List<String> sheetOrder) {
-			
-			sheetOrderNumbers = new HashMap<>();
-			int i=0;
-			for (String s: sheetOrder) {
-				sheetOrderNumbers.put(s, i++);
-			}
-
-			if (cellReferences!=null) {
-				cellReferencesComparator = new Comparator<CellReference>() {
-					@Override
-					public int compare(CellReference c1, CellReference c2) {
-						int o1 = c1.getSheetName()==null ? Integer.MAX_VALUE : sheetOrderNumbers.get(c1.getSheetName());
-						int o2 = c2.getSheetName()==null ? Integer.MAX_VALUE : sheetOrderNumbers.get(c2.getSheetName());
-						if (o1<o2)
-							return -1;
-						if (o1>o2)
-							return 1;
-						if (c1.getRow()<c2.getRow())
-							return -1;
-						if (c1.getRow()>c2.getRow())
-							return 1;
-						if (c1.getCol()<c2.getCol())
-							return -1;
-						if (c1.getCol()>c2.getCol())
-							return 1;
-						return 0;
-					}					
-				};
-				Arrays.sort(cellReferences, cellReferencesComparator);
-				currentCellReference = null;
-			}
-			if (individualValues!=null) {
-				individualValuesComparator = new Comparator<IndividualValue>() {
-					@Override
-					public int compare(IndividualValue c1, IndividualValue c2) {
-						int o1 = c1.getSheetName()==null ? Integer.MAX_VALUE : sheetOrderNumbers.get(c1.getSheetName());
-						int o2 = c2.getSheetName()==null ? Integer.MAX_VALUE : sheetOrderNumbers.get(c2.getSheetName());
-						if (o1<o2)
-							return -1;
-						if (o1>o2)
-							return 1;
-						if (c1.getRow()<c2.getRow())
-							return -1;
-						if (c1.getRow()>c2.getRow())
-							return 1;
-						if (c1.getCol()<c2.getCol())
-							return -1;
-						if (c1.getCol()>c2.getCol())
-							return 1;
-						return 0;
-					}					
-				};
-				Arrays.sort(individualValues, individualValuesComparator);
-				currentIndividualValue = null;
-			}
-		}
-		
-		/**
-		 * Returns value regarding this cell, if applicable to this field.
-		 * @param cell Cell coordinates and methods for retrieving value
-		 * @param lookAtNeighbors Will be set to TRUE if the value was gathered at the cell location. Will be set to FALSE if it was gathered at neighborhood.
-		 */
-		Object getValue(Cell cell, AtomicBoolean atLocation) {
-			atLocation.set(false);
-			if (isConstant()) {
-				// If this field represents a constant, we should return always the same value regardless of the provided cell
-				atLocation.set(true);
-				return getNextValue(/*incrementAfter*/false);
-			}
-			else if (cellReferences!=null) {
-				if (currentCellReference==null)
-					currentCellReference = 0;
-				if (currentCellReference.intValue()>=cellReferences.length) {
-					return null;
-				}
-				CellReference requested_cell_ref = new CellReference(cell);
-				CellReference cref = cellReferences[currentCellReference];
-				if (cellReferencesComparator.compare(requested_cell_ref, cref)!=0) {
-					int position = Arrays.binarySearch(cellReferences, /*fromIndex*/currentCellReference, /*toIndex*/cellReferences.length, requested_cell_ref, cellReferencesComparator);
-					if (position<0) {
-						// If binarySearch returned negative number, we need to find an approximation to the requested cell
-						int in_range_element_position = -2-position;
-						if (in_range_element_position<0)
-							return null; // we did not reach the position for this field
-						currentCellReference = in_range_element_position;
-					}
-					else {
-						// If binarySearch returned non-negative number, this position holds the exact cell reference it was requested
-						currentCellReference = position;
-					}
-					if (currentCellReference.intValue()>=cellReferences.length)
-						return null; // we reached the end of mapped data
-					cref = cellReferences[currentCellReference];
-					// When scanning over multiple sheets, let's make a boundary across different sheets
-					if (!cref.getSheetName().equals(cell.getSheet().getSheetName()))
-						return null;
-				}
-				Sheet sheet = cell.getSheet();
-				Row r = sheet.getRow(cref.getRow());
-				if (r==null)
-					return null;
-				Cell c = r.getCell(cref.getCol());
-				if (c==null)
-					return null;
-				atLocation.set(cellReferencesComparator.compare(requested_cell_ref, cref)==0);
-				return getCellValue(c);
-			}
-			else if (individualValues!=null) {
-				if (currentIndividualValue==null)
-					currentIndividualValue = 0;
-				if (currentIndividualValue.intValue()>=individualValues.length) {
-					return null;
-				}
-				IndividualValue requested_cell_ref = new IndividualValue(cell, /*value*/null);
-				IndividualValue cref = individualValues[currentIndividualValue];
-				if (individualValuesComparator.compare(requested_cell_ref, cref)!=0) {
-					int position = Arrays.binarySearch(individualValues, /*fromIndex*/currentIndividualValue, /*toIndex*/individualValues.length, requested_cell_ref, individualValuesComparator);
-					if (position<0) {
-						// If binarySearch returned negative number, we need to find an approximation to the requested cell
-						int in_range_element_position = -2-position;
-						if (in_range_element_position<0)
-							return null; // we did not reach the position for this field
-						currentIndividualValue = in_range_element_position;
-					}
-					else {
-						// If binarySearch returned non-negative number, this position holds the exact cell reference it was requested
-						currentIndividualValue = position;
-					}
-					if (currentIndividualValue.intValue()>=individualValues.length)
-						return null; // we reached the end of mapped data
-					cref = individualValues[currentIndividualValue];
-					// When scanning over multiple sheets, let's make a boundary across different sheets
-					if (!cref.getSheet().equals(cell.getSheet()))
-						return null;
-				}
-				atLocation.set(individualValuesComparator.compare(requested_cell_ref, cref)==0);
-				return cref.getValue();
-			}
-			else if (isSameColumn()) {
-				if (sheet!=null && !sheet.equals(cell.getSheet()))
-					return null;
-				if (column!=null && column.intValue()!=cell.getColumnIndex())
-					return null;
-				if (firstRow!=null && cell.getRowIndex()<firstRow.intValue())
-					return null;
-				atLocation.set(true);
-				return getCellValue(cell);
-			}
-			else if (isSameRow()) {
-				if (sheet!=null && !sheet.equals(cell.getSheet()))
-					return null;
-				if (row!=null && row.intValue()!=cell.getRowIndex())
-					return null;
-				if (cell.getColumnIndex()<1)
-					return null;
-				atLocation.set(true);
-				return getCellValue(cell);
-			}
-			return null;
-		}
-
-	}
-	
-	/**
-	 * This class holds information regarding one singular value and the corresponding cell reference
-	 */
-	private static class IndividualValue {
-		
-		/**
-		 * The sheet from where we retrieved the information
-		 */
-		final Sheet sheet;
-
-		/**
-		 * The row number (0 based) from where we retrieved the information
-		 */
-		final int rowNumber;
-		
-		/**
-		 * The column number (0 based) from where we retrieved the information
-		 */
-		final int colNumber;
-		
-		/**
-		 * The value represented here (already extracted the value of interest from the referenced cell)
-		 */
-		final String value;
-		
-		IndividualValue(Sheet sheet, int rowNumber, int colNumber, String value) {
-			this.sheet = sheet;
-			this.rowNumber = rowNumber;
-			this.colNumber = colNumber;
-			this.value = value;
-		}
-		
-		IndividualValue(Cell cell, String value) {
-			this(cell.getSheet(), cell.getRowIndex(), cell.getColumnIndex(), value);
-		}
-		
-		/**
-		 * The sheet from where we retrieved the information
-		 */
-		public String getSheetName() {
-			return sheet.getSheetName();
-		}
-	
-		/**
-		 * The sheet from where we retrieved the information
-		 */
-		public Sheet getSheet() {
-			return sheet;
-		}
-
-		/**
-		 * The row number (0 based) from where we retrieved the information
-		 */
-		public int getRow() {
-			return rowNumber;
-		}
-		
-		/**
-		 * The column number (0 based) from where we retrieved the information
-		 */
-		public int getCol() {
-			return colNumber;
-		}
-		
-		/**
-		 * The value represented here (already extracted the value of interest from the referenced cell)
-		 */
-		public String getValue() {
-			return value;
-		}
-		
-		public String toString() {
-			return String.format("%s!%s%d=%s",getSheetName(),Character.toString((char)('A'+colNumber)),rowNumber+1,value);
-		}
-	}
-	
-	/**
 	 * Returns TRUE if all the cell references corresponds to the same row at the same sheet
 	 */
-	private static boolean isSameRow(CellReference[] refs) {
+	static boolean isSameRow(CellReference[] refs) {
 		if (refs==null || refs.length==0)
 			return false;
 		String sheetName = null;
@@ -1385,7 +882,7 @@ public class ExcelParser implements FileParser {
 	/**
 	 * Returns TRUE if all the cell references corresponds to the same column at the same sheet
 	 */
-	private static boolean isSameColumn(CellReference[] refs) {
+	static boolean isSameColumn(CellReference[] refs) {
 		if (refs==null || refs.length==0)
 			return false;
 		String sheetName = null;
@@ -1429,12 +926,12 @@ public class ExcelParser implements FileParser {
 	/**
 	 * Returns TRUE if all the individual values corresponds to the same row at the same sheet
 	 */
-	private static boolean isSameRow(IndividualValue[] refs) {
+	static boolean isSameRow(ExcelValue[] refs) {
 		if (refs==null || refs.length==0)
 			return false;
 		String sheetName = null;
 		int row = -1;
-		for (IndividualValue ref: refs) {
+		for (ExcelValue ref: refs) {
 			String s = ref.getSheetName();
 			if (s!=null) {
 				if (sheetName==null)
@@ -1454,12 +951,12 @@ public class ExcelParser implements FileParser {
 	/**
 	 * Returns TRUE if all the individual values corresponds to the same column at the same sheet
 	 */
-	private static boolean isSameColumn(IndividualValue[] refs) {
+	static boolean isSameColumn(ExcelValue[] refs) {
 		if (refs==null || refs.length==0)
 			return false;
 		String sheetName = null;
 		int col = -1;
-		for (IndividualValue ref: refs) {
+		for (ExcelValue ref: refs) {
 			String s = ref.getSheetName();
 			if (s!=null) {
 				if (sheetName==null)
@@ -1479,11 +976,11 @@ public class ExcelParser implements FileParser {
 	/**
 	 * Returns TRUE if all the cell references corresponds to the same sheet
 	 */
-	private static boolean isSameSheet(IndividualValue[] refs) {
+	private static boolean isSameSheet(ExcelValue[] refs) {
 		if (refs==null || refs.length==0)
 			return false;
 		String sheetName = null;
-		for (IndividualValue ref: refs) {
+		for (ExcelValue ref: refs) {
 			String s = ref.getSheetName();
 			if (s!=null) {
 				if (sheetName==null)

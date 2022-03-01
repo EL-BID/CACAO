@@ -29,6 +29,7 @@ import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_N
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.api.DocumentUploaded;
@@ -1192,6 +1193,155 @@ public class ExcelParserTests {
 		
 	}
 
+	/**
+	 * Test the use of named cells where some names refers to multiple values and some names refers to single values
+	 */
+	@Test
+	void testStatementComprehensiveIncomes() throws Exception {
+		
+		Resource sampleFile = new ClassPathResource("/samples/StatementIncomes.xlsx");
+		assertTrue(sampleFile.exists());
+		
+		DocumentTemplate template = new DocumentTemplate();
+		template.setName("Simple Test");
+		template.setVersion("2.0");
+		template.addField(new DocumentField("TaxPayerId").withFieldMapping(FieldMapping.TAXPAYER_ID).withFieldType(FieldType.CHARACTER).withRequired(true));
+		template.addField(new DocumentField("Year").withFieldMapping(FieldMapping.TAX_YEAR).withFieldType(FieldType.INTEGER).withRequired(true));
+		template.addField(new DocumentField("RevenueNet").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("CostOfSales").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("GrossProfit").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("OperatingExpenses").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("TotalOperatingExpenses").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("OperatingIncome").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("GainsLosses").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("IncomeBeforeTaxes").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("Taxes").withFieldType(FieldType.DECIMAL));
+		template.addField(new DocumentField("NetIncome").withFieldType(FieldType.DECIMAL));
+		
+		DocumentInput inputSpec = new DocumentInput();
+		inputSpec.setFormat(DocumentFormat.XLS);
+		inputSpec.setInputName("Simple Test Excel");
+		template.addInput(inputSpec);
+		
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("TaxPayerId")
+				.withCellName("Tax-payer")); // should ignore small differences in names (in the Excel the actual name is 'TaxPayer', but here we provided 'Tax-payer').
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Year")
+				.withCellName("YEAR")); // should ignore small differences in names (in the Excel the actual name is 'Year', but here we provided 'YEAR').
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("RevenueNet")
+				.withCellName("RevenueNet")); // in Excel we defined multiple cells with this name
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("CostOfSales")
+				.withCellName("Cost Of Sales")); // should ignore small differences in names (in the Excel the actual name is 'CostOfSales', but here we provided 'Cost of Sales').
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("GrossProfit")
+				.withCellName("GrossProfit"));
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("OperatingExpenses")
+				.withCellName("OperatingExpenses")); // in Excel we defined multiple cells with this name
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("TotalOperatingExpenses")
+				.withCellName("TotalOperatingExpenses")); 
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("OperatingIncome")
+				.withCellName("OperatingIncome")); 
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("GainsLosses")
+				.withCellName("GainsAndLosses")); 
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("IncomeBeforeTaxes")
+				.withCellName("IncomeBeforeTaxes")); 
+
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("Taxes")
+				.withCellName("Taxes")); 
+		
+		inputSpec.addField(new DocumentInputFieldMapping()
+				.withFieldName("NetIncome")
+				.withCellName("NetIncome")); 
+		
+		try (ExcelParser parser = new ExcelParser();) {
+			
+			parser.setPath(sampleFile.getFile().toPath());
+			parser.setDocumentInputSpec(inputSpec);
+			parser.setDocumentTemplate(template);
+			parser.start();
+			
+			assertTrue(parser.hasMismatchSteps(), "Some fields are in different 'pace' than others (one of two product 'Groups' are assigned to different 'Products'");
+
+			try (DataIterator iterator = parser.iterator();) {
+				
+				ValidationContext context = new ValidationContext();
+				context.setDocumentTemplate(template);
+				context.setDocumentUploaded(new DocumentUploaded());
+				
+				double revenueNet = 0.0;
+				double costOfSalves = 0.0;
+				double grossProfit = 0.0;
+				double operatingExpenses = 0.0;
+				double totalOperatingExpenses = 0.0;
+				double operatingIncome = 0.0;
+				double gainsLosses = 0.0;
+				double incomeBeforeTaxes = 0.0;
+				double taxes = 0.0;
+				double netIncome = 0.0;
+
+				while (iterator.hasNext()) {
+					Map<String,Object> record = iterator.next();
+					assertEquals("11111111111", toString(record.get("TaxPayerId")), "Every record should refer to the fixed attribute taxpayer ID");
+					assertEquals("2021", toString(record.get("Year")), "Every record should refer to the fixed attribute Year");
+					revenueNet += Optional.ofNullable(ValidationContext.toNumber(record.get("RevenueNet"))).orElse(0.0).doubleValue();
+					costOfSalves += Optional.ofNullable(ValidationContext.toNumber(record.get("CostOfSales"))).orElse(0.0).doubleValue();
+					grossProfit += Optional.ofNullable(ValidationContext.toNumber(record.get("GrossProfit"))).orElse(0.0).doubleValue();
+					operatingExpenses += Optional.ofNullable(ValidationContext.toNumber(record.get("OperatingExpenses"))).orElse(0.0).doubleValue();
+					totalOperatingExpenses += Optional.ofNullable(ValidationContext.toNumber(record.get("TotalOperatingExpenses"))).orElse(0.0).doubleValue();
+					operatingIncome += Optional.ofNullable(ValidationContext.toNumber(record.get("OperatingIncome"))).orElse(0.0).doubleValue();
+					gainsLosses += Optional.ofNullable(ValidationContext.toNumber(record.get("GainsLosses"))).orElse(0.0).doubleValue();
+					incomeBeforeTaxes += Optional.ofNullable(ValidationContext.toNumber(record.get("IncomeBeforeTaxes"))).orElse(0.0).doubleValue();
+					taxes += Optional.ofNullable(ValidationContext.toNumber(record.get("Taxes"))).orElse(0.0).doubleValue();
+					netIncome += Optional.ofNullable(ValidationContext.toNumber(record.get("NetIncome"))).orElse(0.0).doubleValue();					
+					context.addParsedContent(record);
+				}
+				
+				assertEquals(600000.0, revenueNet, /*tolerance*/0.1);
+				assertEquals(400000.0, costOfSalves, /*tolerance*/0.1);
+				assertEquals(200000.0, grossProfit, /*tolerance*/0.1);
+				assertEquals(70000.0, operatingExpenses, /*tolerance*/0.1);
+				assertEquals(70000.0, totalOperatingExpenses, /*tolerance*/0.1);
+				assertEquals(130000.0, operatingIncome, /*tolerance*/0.1);
+				assertEquals(-10000.0, gainsLosses, /*tolerance*/0.1);
+				assertEquals(120000.0, incomeBeforeTaxes, /*tolerance*/0.1);
+				assertEquals(12000.0, taxes, /*tolerance*/0.1);
+				assertEquals(108000.0, netIncome, /*tolerance*/0.1);
+				
+				Validations validations = new Validations(context, /*domainTableRepository*/null);
+				
+				validations.addTaxPayerInformation();
+				assertEquals("11111111111", context.getDocumentUploaded().getTaxPayerId(), "The taxpayer Id does not correspond to what is expected");
+				assertEquals(2021, context.getDocumentUploaded().getTaxYear(), "The tax year does not correspond to what is expected");
+				assertNull(context.getDocumentUploaded().getTaxMonth(), "There should not be indication of month");
+				assertEquals(2021, context.getDocumentUploaded().getTaxPeriodNumber(), "The period number does not correspond to what is expected");
+				
+				validations.checkForFieldDataTypes();
+				validations.checkForRequiredFields();
+				
+				assertFalse(context.hasAlerts(), "There should be no alerts");
+			}
+			
+		}		
+	}
+	
 	public static String toString(Object value) {
 		if (value instanceof Number) {
 			return String.valueOf(((Number)value).longValue());

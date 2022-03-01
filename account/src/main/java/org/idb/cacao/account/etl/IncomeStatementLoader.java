@@ -214,7 +214,7 @@ public class IncomeStatementLoader {
 						if (stmt.isAbsoluteValue()) {
 							fieldNumericValue = Math.abs(fieldNumericValue.doubleValue());
 						}
-						mapValues.put(stmt, fieldNumericValue);
+						mapValues.merge(stmt, fieldNumericValue, (a,b)->a.doubleValue()+b.doubleValue());
 					}
 					
 				}); // LOOP over all entries in Income Statement
