@@ -22,6 +22,7 @@ package org.idb.cacao.validator.parsers;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -255,13 +256,42 @@ public class ExcelParser implements FileParser {
 			return;
 			
 		// If we have an expression for named cell intervals, let's look for this
-		List<? extends Name> namedCells = workbook.getNames(fieldMapping.getCellName());
+		
+		// This function will make irrelevant any difference regarding symbols and spaces. Will also make irrelevant differences
+		// in diacritical marks.
+		final Function<String,String> uniformNames = (name)->
+			Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", "")
+				.replaceAll("[^A-Za-z\\d]", "");
+		
+		final String nameToLookAfter = uniformNames.apply(fieldMapping.getCellName());
+		
+		List<? extends Name> namedCells = workbook.getAllNames().stream()
+				.filter(n->String.CASE_INSENSITIVE_ORDER.compare(nameToLookAfter, uniformNames.apply(n.getNameName()))==0)
+				.collect(Collectors.toList());
+		
 		if (namedCells!=null && !namedCells.isEmpty()) {
 			List<CellReference> allReferencedCells = new LinkedList<>();
 			for (Name namedCell: namedCells) {
-				AreaReference aref = new AreaReference(namedCell.getRefersToFormula(), workbook.getSpreadsheetVersion());
-				for (CellReference ref: aref.getAllReferencedCells()) {
-					allReferencedCells.add(ref);
+				String formula = namedCell.getRefersToFormula();
+				try {
+					AreaReference aref = new AreaReference(formula, workbook.getSpreadsheetVersion());
+					for (CellReference ref: aref.getAllReferencedCells()) {
+						allReferencedCells.add(ref);
+					}
+				}
+				catch (IllegalArgumentException ex) {
+					if (!AreaReference.isContiguous(formula)) {
+						// Common error: 'References passed to the AreaReference must be contiguous'
+						AreaReference[] arefs = AreaReference.generateContiguous(workbook.getSpreadsheetVersion(), formula);
+						for (AreaReference aref: arefs) {
+							for (CellReference ref: aref.getAllReferencedCells()) {
+								allReferencedCells.add(ref);
+							}							
+						}
+					}
+					else {
+						throw ex;
+					}
 				}
 			}
 			if (!allReferencedCells.isEmpty()) {
@@ -295,6 +325,8 @@ public class ExcelParser implements FileParser {
 				List<CellReference> cellReferences = new LinkedList<>();
 				for (Sheet sheet: sheetsByName.values()) {
 					CellRangeAddress cellRangeForSheet = cellRange.copy();
+					if (cellRangeForSheet.getFirstColumn()<0)
+						continue;
 					if (cellRangeForSheet.getFirstRow()<0)
 						cellRangeForSheet.setFirstRow(0);
 					if (cellRangeForSheet.getLastRow()<0)
