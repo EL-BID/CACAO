@@ -144,7 +144,11 @@
 	    });
 		
 		$('#sourceData').on('change', function() {
-			$("#dataView").hide();			
+			$("#dataView").hide();
+			let selectedYear = $('#year').val();
+			updateYears();
+			if ( selectedYear != null && selectedYear.length() > 0 )
+				$('#year').val(selectedYear);
 			$('#form').submit();
 	    });		
 		

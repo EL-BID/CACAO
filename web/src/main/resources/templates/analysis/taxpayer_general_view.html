@@ -146,7 +146,7 @@
 		
 		function updateYears() {		
 			$('#year').find('option').remove();
-			$.get('/api/analysis/years', {sourceData: '4'}, //data to submit
+			$.get('/api/analysis/years', {sourceData: '5'}, //data to submit
 			    function (data, status, xhr) {
 					if ( data.length == 0 ) {						
 						$('#modal_failed').find('.description').html(errorYearsNotFound);

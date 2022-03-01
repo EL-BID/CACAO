@@ -121,6 +121,7 @@ public class AnalysisService {
 	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
 	private final static int SOURCE_BOOTH_INCOME_STATEMENT = 3;
 	private final static int SOURCE_SHAREHOLDERS = 4;
+	private final static int SOURCE_BOOTH_INCOME_STATEMENT_AND_SHAREHOLDERS = 5;
 
 	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Flow Daily");
@@ -1053,6 +1054,7 @@ public class AnalysisService {
 	 *		2 - SOURCE_DECLARED_INCOME_STATEMENT
 	 *		3 - SOURCE_BOOTH_INCOME_STATEMENT (1 and 2 options)
 	 *		4 - SOURCE_SHAREHOLDERS
+	 *		5 - SOURCE_BOOTH_INCOME_STATEMENT (1 and 2 options) AND SOURCE_SHAREHOLDERS
 	 * 
 	 * @return A list of years present in Accounting Statement Income indexes
 	 */
@@ -1062,6 +1064,12 @@ public class AnalysisService {
 		if (sourceData == SOURCE_BOOTH_INCOME_STATEMENT) {
 			List<Integer> toRet = getYearsByIndex(SOURCE_JOURNAL);
 			toRet.addAll(getYearsByIndex(SOURCE_DECLARED_INCOME_STATEMENT));
+			return toRet.stream().distinct().map(Integer::intValue).sorted().collect(Collectors.toList());
+		}
+		else if (sourceData == SOURCE_BOOTH_INCOME_STATEMENT_AND_SHAREHOLDERS) {
+			List<Integer> toRet = getYearsByIndex(SOURCE_JOURNAL);
+			toRet.addAll(getYearsByIndex(SOURCE_DECLARED_INCOME_STATEMENT));
+			toRet.addAll(getYearsByIndex(SOURCE_SHAREHOLDERS));
 			return toRet.stream().distinct().map(Integer::intValue).sorted().collect(Collectors.toList());
 		}
 
@@ -1116,7 +1124,7 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO, "No data found for years");
-			return Collections.emptyList(); // No data found
+			return new LinkedList<>(); // No data found
 		} else {
 
 			// Let's fill the resulting list with values
