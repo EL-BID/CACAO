@@ -71,6 +71,7 @@ import org.idb.cacao.web.dto.CustomerVsSupplier;
 import org.idb.cacao.web.dto.Outlier;
 import org.idb.cacao.web.dto.Shareholding;
 import org.idb.cacao.web.dto.StatementIncomeItem;
+import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.FormatUtils;
 import org.idb.cacao.web.utils.Script;
 import org.idb.cacao.web.utils.SearchUtils;
@@ -1117,7 +1118,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting year values", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting year values", ex);
 		}
 
 		List<Integer> values = new LinkedList<>();
@@ -1463,7 +1466,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting shareholdings", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting shareholdings", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
@@ -1536,7 +1541,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting shareholders", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting shareholders", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
@@ -1607,7 +1614,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
@@ -1675,7 +1684,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting tax provision", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting tax provision", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
@@ -1795,7 +1806,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting tax provision", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting tax provision", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
@@ -1895,7 +1908,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting major customers", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
@@ -2011,7 +2026,9 @@ public class AnalysisService {
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error getting major customers", ex);
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
