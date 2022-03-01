@@ -549,13 +549,13 @@ El mismo procedimiento para agregar entradas se puede utilizar para editar infor
 <div>
 <div class="title">
 <i class="dropdown icon"></i>
-<span class="ui header">Gestión de plantillas de documentos</span>
+<span class="ui header">Plantillas de documentos</span>
 </div>
 <div class="content markdown">
 
 ## ¿Qué son las plantillas de documentos en CACAO?
 
-CACAO es un sistema de recepción y mantenimiento de archivos con datos contables de los contribuyentes. Para recibir correctamente los archivos y validarlos, CACAO debe conocer de antemano su diseño y cómo interpretar sus datos.
+CACAO es un sistema de recepción y mantenimiento de archivos con datos contables de los contribuyentes. Para recibir correctamente los archivos y validarlos, CACAO debe conocer de antemano su diseño y cómo interpretar sus datos. Las **Plantillas de documentos** están disponibles después de seleccionar la opción `Plantillas de documentos` en el menú de la barra lateral.
 
 > **¡Atención!**
 > Cada una de las plantillas de documentos disponibles en la funcionalidad `Cargar Documentos` debe informarse y especificarse en la opción `Plantillas de Documentos` antes de su uso.
@@ -643,7 +643,73 @@ Uno debe recordar que este es el orden de las pruebas. Por ejemplo, si el nombre
 
 Esta secuencia es por campo, se reinicializa para cada intento de coincidencia de los campos de la plantilla de documento. Por ejemplo, si la identificación del contribuyente se extrajo del índice de la columna (**Tercer prueba**), para el año fiscal la secuencia comienza desde el **Primera prueba**, tratando de extraer del nombre del archivo.
 
-> _**CONTINUARÁ**_
+## Gestión de plantillas de documentos
+
+En la parte inferior izquierda de la lista de **Plantillas de documentos** hay un botón llamado "Gestionar plantilla". Seleccione este botón si desea:
+
+* Crear una plantilla de documento desde cero
+* Usa uno de los Arquetipos CACAO
+* Editar una de las plantillas existentes
+
+Después de seleccionar la opción `Gestionar plantilla`, CACAO mostrará tres opciones nuevas: `Plantilla de documento vacía`, para crear plantillas de documentos desde cero, `Arquetipo`, que mostrará una lista de todos los arquetipos disponibles para que usted elija, y `Plantilla de documento existente `, que mostrará una lista de plantillas de documentos existentes.
+
+## Crear un Plantilla de documento
+
+Después de seleccionar la opción `Plantilla de documento vacía`, se mostrará **Nueva plantilla de documento**. Para explicar cómo crear una **Plantilla de documento**, es más fácil paso a paso.
+
+En el formulario **Nueva plantilla de documento**, debe proporcionar:
+
+* **Nombre del documento**: el nombre de la plantilla.
+* **Versión**: para la versión, puede comenzar con algo como _1.0_. Cuando está creando una evolución sobre una existente, sin eliminar la plantilla anterior, probablemente elegiría otro número de versión (por ejemplo, 1.1, 2.0, etc.).
+* **Activo**: debe recordar hacer clic en el botón de alternancia 'ACTIVO' para que esté disponible para su uso una vez que esté completo. Solo debe _activar_ una plantilla después de haber completado todos los pasos relacionados con la configuración de campos y entradas.
+* **Periodicidad**: Aquí es donde usted informa a CACAO si existe alguna periodicidad para la recepción de archivos.
+* **Grupo**: aquí es donde informa un nombre para agrupar otras plantillas relacionadas.
+* **Requerido**: este campo solo es útil si tiene más de una plantilla agrupada (es decir, con el mismo nombre de "grupo"). La plantilla _requerida_ es una que debe estar presente para proceder a analizar otras plantillas del mismo grupo.
+
+En la parte inferior del formulario **Nueva plantilla de documento**, usted creará los **campos de plantilla**. Esta es la estructura final que tendrán sus datos una vez que hayan pasado por todas las fases de procesamiento de datos (es decir, validación, extracción, transformación y carga). Para cada campo, debe presionar el botón `Nuevo campo de plantilla` y completar la especificación del campo. Se mostrará un formulario de **Campo de Plantilla**, donde deberá proporcionar la información requerida. Algunos consejos:
+
+* El **nombre del campo** no debe corresponder al contenido del archivo. Usted es libre de elegir algo significativo para el análisis de datos. Debe pensar en todos los demás archivos que eventualmente le gustaría almacenar en esta misma tabla, posiblemente provenientes de otros contribuyentes o de otros períodos. Debe tratar de mantenerlo simple y no incluir algo muy específico para un contribuyente en particular o un archivo en particular.
+* El **tipo de campo** debe coincidir con lo esperado para cada campo. Solo hay unas pocas opciones para elegir. Por ejemplo, los campos que contienen fechas deben indicar _Fecha_ para el **Tipo de campo**. Esto es relevante a los efectos de la _validación de datos_. CACAO intentará validar los datos según sus tipos de campo. Aunque es muy flexible. Se permiten diferentes formatos para cada uno de ellos.
+* El **mapeo de campos** solo es necesario para aquellas informaciones que son tratadas de manera especial por CACAO. Por ejemplo, si los campos representan la identificación del contribuyente, se debe elegir un mapeo específico (el ‘ID del contribuyente’). Para todos los demás campos sin información especial, puede mantener _sin asignación_, lo que significa que se tratarán como _tipos de datos genéricos_.
+* El indicador **requerido** se utiliza para declarar algún campo como obligatorio. Si algún campo está configurado como **requerido**, el contenido del archivo se considera si proporciona algún dato válido para esos campos. Todos los demás campos se consideran _opcionales_, en cuyo caso pueden estar ausentes.
+* El indicador de **datos personales** se usa solo con fines de documentación, para identificar fácilmente entre todos los datos recopilados cuáles deben considerarse como _datos personales_ (cosas como nombres, números de identificación, direcciones, etc.). En varias jurisdicciones los _datos personales_ tienen un control más estricto.
+* El indicador de **exclusividad del archivo** se utiliza para determinar qué campo (o una combinación de varios campos) debe utilizarse como _criterio de exclusividad_. Si finalmente otro archivo cargado coincide con los mismos criterios, el contenido del anterior se eliminará automáticamente de la base de datos. Por ejemplo, si estamos considerando el _identificador del contribuyente_ como el _criterio de unicidad_, significa que cualquier otro archivo que carguemos sobre el mismo contribuyente reemplazará por completo al anterior. Este puede no ser el caso para otras plantillas. Por ejemplo, si desea conservar diferentes datos para el mismo contribuyente con respecto a diferentes años, debe señalar un campo adicional (tal vez uno llamado 'año') como también un criterio de _exclusividad del archivo_ (tanto el _id del contribuyente_ **Y** el _año_). Tenga en cuenta que cualquier criterio adicional debe ser informado en cada archivo entrante.
+
+Una vez que haya proporcionado toda la información sobre una plantilla, haga clic en el botón `Guardar` para almacenar estas definiciones en CACAO.
+
+> **¡Atención!**
+> Recuerde seleccionar siempre el botón `Guardar` para conservar los cambios realizados en la **Plantilla de documento**.
+
+## Creación de una entrada de documento para una plantilla de documento
+
+En el paso anterior definimos la **plantilla de documento**, que da cuenta de la estructura final de nuestros datos. En este paso, debemos informar a CACAO los medios para recuperar esta información de los archivos entrantes. Esto es lo que llamamos **Entrada de documentos**. Para cada plantilla puede informar múltiples formas alternativas (múltiples entradas de documentos).
+
+Primero, seleccione la plantilla que acabamos de crear en el paso anterior y luego haga clic en `Entradas de documentos`. Seleccione `Nueva entrada de documento`. Se mostrarán varias opciones de entrada de documentos. Debe completar el siguiente formulario de acuerdo con la entrada de documentos seleccionada. Algunos consejos:
+
+* Las opciones que puede tener que configurar dependen del formato de archivo que eligió como **entrada**. En este paso a paso, estamos configurando un formato de archivo de Excel como entrada, por lo que tenemos varias opciones con respecto a los conceptos de Excel (por ejemplo, hojas, filas, columnas y celdas). Si estuviéramos configurando un formato de archivo diferente (por ejemplo, algún archivo 'TEXT/CSV' o algún archivo 'XML'), las opciones serían diferentes y menos.
+* Hay varias opciones para configurar porque CACAO es muy flexible. Pero no es necesario que los proporcione todos. Debe centrarse solo en aquellos criterios que coincidan con sus necesidades.
+* Cada campo puede provenir de diferentes partes del archivo. Por lo tanto, proporciona configuraciones independientes para cada uno.
+* Dado que hay tantas opciones, puede ser difícil configurarlo correctamente por primera vez. Esta es una forma de razonar sobre todas las opciones posibles:
+	* ¿La información se recopila del nombre del archivo original o se informa dentro del contenido del archivo? Si proviene del nombre de archivo, solo debe informar el campo para los criterios de **Expresión de nombre de archivo** e ignorar todos los demás criterios. En general, se obtendrá del contenido del archivo. Pero si lo desea, puede indicar que se debe proporcionar cierta información como el nombre del archivo en sí; en este caso, alguien que cargue archivos debe prestar atención a los nombres de los archivos que está cargando.
+	* ¿La información se obtiene de una hoja en particular? Si solo hay una hoja de interés para un campo en particular, debe proporcionar el nombre de la hoja (como criterio de **Expresión de hoja**) o la posición de la hoja basada en 0 en el archivo (como criterio de **Índice de hoja**) . Si la información puede provenir de cualquier hoja, debe dejar vacíos ambos criterios relacionados con la hoja.
+	* ¿Se recopila la información de una columna en particular? Si solo hay una columna de interés para un campo en particular, puede informar esto de diferentes maneras:
+		* Si la posición de la columna es fija y si se conoce de antemano, puede informar la posición de la columna basada en 0 como el criterio del **Índice de columna** (por ejemplo: _0_ para la primera columna), o la _expresión de rango de columna similar a Excel_ como criterio de **Nombre de celda/Expresión** (p. ej.: _A:A_ para la primera columna). La opción **Índice de columnas** espera que una línea de la tabla contenga _títulos de columna_, por lo que se ignorará la primera fila de la tabla. La opción **Nombre de celda/Expresión** no hace esta suposición, por lo que todas las filas se tratarán como datos. Tenga en cuenta que si el archivo entrante no coincide exactamente con el mismo orden de columnas esperado (por ejemplo, si finalmente incluyó o suprimió otras columnas, desplazando la columna deseada a la derecha o a la izquierda), esto arruinará el orden de las columnas, lo que evitará que esto suceda. el archivo sea validado con éxito.
+		* Si la información proviene de una columna en particular, pero desea otorgar cierta flexibilidad a la posición de la columna (tal vez la posición de la columna puede variar de un archivo a otro), puede proporcionar en los criterios de **Expresión de columna** algún texto que debería coincida con el _título de la columna_ de interés. En este caso, se espera que una línea de la tabla contenga _títulos de columna_. Estos son los textos que se compararán con la expresión proporcionada. Por ejemplo, si los datos contienen 3 columnas y si la primera línea contiene las celdas Fecha, Contribuyente e Importe, y si la **Expresión de columna** proporcionada es Importe, solo se considerará la tercera columna para el campo. Si finalmente otro archivo cambia el orden de las columnas (digamos que el segundo archivo informa la cantidad como la primera columna), CACAO lo analizará correctamente, ya que está buscando la columna cuyo título coincida con la expresión de texto proporcionada.
+	* ¿Se recopila la información de una fila en particular? Si solo hay una fila de interés para un campo en particular, puede informar esto como el criterio de **Índice de fila** basado en 0. La primera celda de la fila se descartará (se tratará como una especie de "etiqueta" de datos). Todas las celdas restantes de la fila proporcionada se considerarán como datos para ese campo.
+	* Si ninguno de los criterios anteriores coincide con sus necesidades, puede usar el 'Nombre de celda/Expresión' para sus criterios de una de las diferentes maneras:
+		* El **Nombre de celda/Expresión** puede referirse a algún _nombre_ que proporcionó en el archivo de Excel. Tenga en cuenta que _celda con nombre_ es una característica específica de Excel. Puede dar _nombres_ a cualquier celda en particular o a cualquier rango de múltiples celdas, y esto se realiza en el propio archivo de Excel. Por ejemplo, podría indicarle al archivo de Excel que una columna en particular corresponde al nombre Cantidad. Si este es el caso, puede informar el mismo nombre (en este caso, el nombre _Cantidad_) como criterio de **Nombre de celda/Expresión**. De esta forma, CACAO ubicará en Excel todas las celdas cuyos nombres se declaran como se indica.
+		* El **Nombre de celda/Expresión** puede referirse a alguna _dirección de celda_. Por ejemplo, A1 es una dirección de celda válida que corresponde a la primera columna y la primera fila. También podría proporcionar algo como A1:C3 para hacer referencia a varias celdas (en este caso, a todas las celdas que abarcan las primeras 3 columnas y 3 filas). También podría escribir una expresión como _A:A_ para referirse a una columna completa (en este caso, la primera columna). Hay muchas otras posibilidades con respecto a **expresiones de rango de celdas**.
+		* El **Nombre/Expresión de celda** también puede referirse a algún tipo de _expresión regular_ que incluye una sintaxis de _captura de grupo_ para extraer información específica del contenido de la celda, donde sea que ocurra. Este es un tema muy avanzado y puede ser útil para aquellas situaciones en las que los contenidos deben extraerse del interior de celdas individuales repartidas en las hojas del libro de trabajo.
+
+Como puede ver, hay muchas opciones diferentes de diseños de archivos que se pueden asignar a CACAO. Algunos de ellos son muy simples de representar (como aquellos que tienen algún tipo de **estructura de tabla estática** y algunos pueden requerir el uso de algunas técnicas avanzadas como _expresiones regulares_.
+
+La opción `ACEPTAR ARCHIVOS PARCIALMENTE NO VÁLIDOS` permite aceptar archivos entrantes cuyo contenido puede no satisfacer todos los criterios (los relacionados con los campos **requeridos**). Si la opción "ACEPTAR ARCHIVOS PARCIALMENTE NO VÁLIDOS" está activada, las _líneas no válidas_ simplemente se ignorarán del resultado, pero aún podremos conocer su existencia si verificamos la situación de importar dicho archivo.
+
+> **¡Atención!**
+> Recuerde seleccionar siempre el botón `Guardar` para conservar cualquier cambio realizado en **Entrada de documento**.
+
+> **¡Atención!**
+> Si eligió usar un **Arquetipo**, puede ver cómo maneja las entradas de documentos, como un ejemplo de trabajo real.
 
 ## Arquetipo
 
@@ -661,6 +727,22 @@ Los arquetipos de CACAO son:
 Para usar los arquetipos para iniciar la creación de una plantilla de documento, seleccione la opción `Plantillas de documento` ubicada en el menú de la barra lateral. A continuación, seleccione la opción `Gestionar plantillas` en la parte inferior izquierda de la lista Plantillas de documentos y, por último, seleccione la tarjeta `Arquetipo`.
 
 Después de seleccionar el arquetipo deseado, CACAO mostrará la interfaz **Editar plantilla de documento**. Desde este punto, es posible personalizar aún más la plantilla de documento.
+
+## Edición de plantillas de documentos existentes
+
+Hay dos opciones para seleccionar una plantilla para editar: (1) seleccionar una plantilla de la lista **Plantilla de documento** que se muestra después de seleccionar la opción `Plantillas de documento` del menú de la barra lateral, o (2) seleccionar una plantilla de la opción `Plantilla de documento existente` después de seleccionar el botón `Gestionar plantilla`.
+
+La diferencia entre los 2 enfoques anteriores son:
+
+* (1) este enfoque muestra todos los detalles de la plantilla del documento, pero está bloqueada para su edición. Debe seleccionar el botón `Editar` para acceder al formulario **Editar plantilla de documento**.
+* (2) este enfoque lo lleva directamente al formulario **Editar plantilla de documento**.
+
+Una vez que se muestra el formulario **Editar plantilla de documento**, no hay más diferencias entre los enfoques.
+
+> **¡Atención!**
+> Recuerde seleccionar siempre el botón `Guardar` para conservar los cambios realizados en la **Plantilla de documento**.
+
+Para **editar** una plantilla de documento, use los mismos conceptos y procedimientos para crear una nueva plantilla de documento.
 
 </div>
 </div>

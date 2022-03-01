@@ -553,13 +553,13 @@ The same procedure for adding entries can be used to edit informations on the do
 <div>
 <div class="title">
 <i class="dropdown icon"></i>
-<span class="ui header">Managing Document Templates</span>
+<span class="ui header">Document Templates</span>
 </div>
 <div class="content markdown">
 
 ## What are Document Templates in CACAO?
 
-CACAO is a system for receiving and maintaining files with accounting data of taxpayers. In order to correctly receive files and validate them, CACAO must know beforehand its layout and how to interpret its data. 
+CACAO is a system for receiving and maintaining files with accounting data of taxpayers. In order to correctly receive files and validate them, CACAO must know beforehand its layout and how to interpret its data. The **Document Templates** are available after selecting the `Document Templates` option from the sidebar menu.
 
 > **Attention!**
 > Each of the document templates available on the `Upload Documents` functionality must be informed and specified on the `Document Templates` option prior to its use.
@@ -648,7 +648,73 @@ One must remember this is the order of trials. For instance, if the file name do
 
 This sequence is field-wise, it reinitializes for each Document Template's fields attempt of matching. For instance, if the taxpayer id was extracted from the column index (**Third Trial**), for the tax year the sequence begins from the **First Trial**, trying to extract from the file name.
 
-> _**TO BE CONTINUED**_
+## Managing Document Templates
+
+On the bottom left of the **Document Templates** list is a button labeled `Manage Templates`. Select this button if you want to:
+
+* Create a Document Template from scratch
+* Use one of CACAO Archetypes
+* Edit on of the existing templates
+
+After selecting the `Manage Template` option, CACAO will shown three new options: `Empty Document Template`, for creating document templates from scratch, `Archetype`, that will list all available archetype for you to choose from, and `Existing Document Template`, that will show a list of existing document templates.
+
+## Create a Document Template
+
+After selecting the `Empty Document Template` option, the **New Document Template** for will be shown. To explain how create a **Document Template**, its easier step by step.
+
+At the **New Document Template** form, you must provide:
+
+* **Document name**: the name of the template.
+* **Version**: for version, you may start with something like _1.0_. When you are creating a evolution over an existing one, without removing the previous template, you would probably choose another version number (e.g. 1.1, 2.0 and so on).
+* **Active**: You should remember to click on ‘ACTIVE’ toggle button to make it available for use once it’s complete. You should only _activate_ a template after you have completed all the steps regarding fields and inputs configurations. 
+* **Periodicity**: This is where you inform to CACAO if there is some periodicity for receiving files. 
+* **Group**: This is where you inform a name to group up other related templates together. 
+* **Required**: This field is only useful if you have more than one template grouped together (i.e.: with the same ‘group’ name). A _required_ template is one that must be present to proceed parsing other templates of the same group. 
+ 
+At the bottom of the **New Document Template** form, you will create the **template fields**. This is the final structure your data will have once it has passed through all data processing phases (i.e. validation, extract, transform and load). For each field you need to press the `New Template Field` button and fill in the field specification. A ** Template Field** form will be shown, where you must provide the required information. Some advice:
+
+* The **field name** must not correspond to the file contents. You are free to choose something meaningful for the purpose of data analysis. You should think about all the other files that you would eventually like to store in this same table, possibly coming from other taxpayers or other periods. You should try to keep it simple and not to include something very specific to a particular taxpayer or a particular file.
+* The **field type** should match what is expected for each field. There are only a few options to select from. For example, fields containing dates should indicate _Date_ for the **Field Type**. This is relevant for the purpose of _data validation_. CACAO will try to validate the data according to their field types. It’s very flexible though. Different formats are allowed for each of them.
+* The **field mapping** is only necessary for that information that are treated in special ways by CACAO. For instance, if the fields represents the identification of the taxpayer, a specific mapping must be chosen (the ‘taxpayer ID’). For all the other fields without special information you may keep _no mapping_, which means they will be treated as _generic data types_.
+* The **required** flag is used for declaring some field as mandatory. If some field is configured as **required**, the file contents are considered if they provide some valid data for those fields. All the other fields are considered _optional_, in which case they may be absent. 
+* The **personal data** flag is used only for documentation purposes, to easily identify among all the collected data which ones should be considered as _personal data_ (things like names, identification numbers, addresses, etc.). In various jurisdictions _personal data_ have tighter control.
+* The **file uniqueness** flag is used for determining which field (or a combination of multiple fields) should be used as _uniqueness criteria_. If eventually another uploaded file matches the same criteria, the contents from the previous one will be automatically deleted from the database. For example, if we are considering the _taxpayer id_ as the _uniqueness criteria_, it means that any other file we upload regarding the same taxpayer will fully replace the previous one. This may not be the case for other templates. For example, if you want to hold different data for the same taxpayer regarding different years, you should point out an additional field (maybe one called ‘year’) as also being a _file uniqueness_ criteria (both the _taxpayer id_ **AND** the _year_). Please note that any additional criteria must somehow be informed in each incoming file.
+
+Once you have provided all the information regarding a template, click the `Save` button to store these definitions in CACAO. 
+
+> **Attention!**
+> Remember to always select the `Save` button in order to persist any changes made to the **Document Template**.
+
+## Creating a Document Input for a Document Template
+
+In the previous step we defined the ** Document template**, which accounts for the final structure of our data. In this step we need to inform to CACAO the means for retrieving this information out of the incoming files. This is what we call **Document Input**. For each template you may inform multiple alternative ways (multiple document inputs).
+
+First, select the template we just created at the previous step, and then click over the `Document Inputs`. Select the `New Document Input`. Various Document Input options will be show. You must fill the following form accordingly to the Document Input select. A few advice:
+
+* The choices you may have to configure depend on the file format you chose as **input**. In this step by step we are configuring an Excel file format as input, so we have several choices regarding Excel concepts (e.g.: sheets, rows, columns and cells). If we were configuring a different file format (e.g., some ‘TEXT/CSV’ file or some ‘XML’ file), the options would be different and fewer.
+* There are several options to configure because CACAO is very flexible. But you don’t have to provide all of them. You should focus on only those criteria that match your needs.
+* Each field may come from different parts of the file. Therefore, you provide independent configurations for each one.
+* Since there are so many options, it may be hard to properly configure it for the first time. This is a way to reason about all the possible choices:
+	* Is the information gathered from the original filename or is it informed inside the file contents? If it’s coming from the filename, you should only inform for the field the **Filename expression** criteria and ignore all the other criteria. In general, it will be gathered from the file contents. But if you want, you may indicate that some information must be provided as the filename itself – in this case, someone uploading files should pay attention to the names of the files they are uploading. 
+	* Is the information gathered from one particular sheet? If there is only one sheet of interest for a particular field, you should provide either the sheet name (as **Sheet Expression** criteria) or the 0-based sheet position in the file (as **Sheet Index** criteria). If the information may come from any sheet, you should keep both sheet-related criteria empty.
+	* Is the information gathered from one particular column? If there is only one column of interest for a particular field, you may inform this in different ways:
+		* If the column position is fixed and if it’s known beforehand, you may either inform the 0-based column position as the **Column Index** criteria (e.g: _0_ for the first column), or the _Excel-like column range expression_ as the **Cell Name/Expression** criteria (e.g.: _A:A_ for the first column). The option **Column Index** expects that one line of the table contains _column titles_, so the first row of the table will be ignored. The option **Cell Name/Expression** doesn’t make this assumption, so all rows will be treated as data. Please note that if the incoming file does not match exactly the same expected column order (e.g. if it eventually included or suppressed other columns, shifting the desired column to the right or to the left), this will ruin the column ordering, thus preventing this file from being successfully validated.
+		* If the information comes from a particular column, but you want to give some flexibility to the column position (maybe the column position may vary from file to file), you may provide in the **Column Expression** criteria some text that should match the _column title_ of interest. In this case it’s expected that one line of the table contains _column titles_. These are the texts that will be matched with the provided expression. For example, if the data contains 3 columns and if the first line contains the cells Date, Taxpayer and Amount, and if the provided **Column Expression** is Amount, only the third column will be considered for the field. If eventually another file changes the column order (let’s say the second file informs the Amount as the first column) it will be properly parsed by CACAO, since it’s looking for the column whose title matches the provided text expression.
+	* Is the information gathered from one particular row? If there is only one row of interest for a particular field, you may inform this as the 0-based **Row Index** criteria. The first cell of the row will be discarded (it will be treated as some sort of data ‘label’). All the remaining cells of the provided row will be considered as data for that field.
+	* If none of the above criteria match your needs, you may use the ‘Cell Name/Expression’ for your criteria in one of the different ways:
+		* The **Cell Name/Expression** may refer to some _name_ you provided in Excel file. Please note that _named cell_ is a feature specific to Excel. You may give _names_ to any particular cell or to any range of multiple cells – and this is performed in Excel file itself. For example, you could indicate in Excel file that one particular column corresponds to the name Amount. If this is the case, you may inform the same name (in this case, the name _Amount_) as the **Cell Name/Expression** criteria. Doing this way, CACAO will locate in Excel for all cells whose names are declared as provided.
+		* The **Cell Name/Expression** may refer to some _cell address_. For example, A1 is a valid cell address that corresponds to the first column and the first row. You could also provide something like A1:C3 to refer to multiple cells (in this case, to all the cells spanning over the first 3 columns and 3 rows). You could also write an expression like  _A:A_ to refer to an entire column (in this case, the first column). There are many other possibilities regarding **cell range expressions**.
+		* The **Cell Name/Expression** may also refer to some kind of _regular expression_ including a _group capture_ syntax to extract specific information from cell contents, wherever they occur. This is a very advanced topic and may be useful for those situations where the contents must be extracted from inside individual cells spread over the workbook sheets.
+
+As you can see, there are many different options of file layouts that can be mapped into CACAO. Some of them are very simple to represent (like those ones that have some sort of **static table structure** and some may require the use of some advanced techniques like _regular expressions_. 
+
+The option `ACCEPT PARTIALLY INVALID FILES` makes it possible to accept incoming files whose contents may not satisfy all the criteria (the ones related to **required** fields). If the ‘ACCEPT PARTIALLY INVALID FILES’ is turned on, the _invalid lines_ will be simply ignored from the outcome – but we will still be able to know about their existence if we check the situation of importing such file.
+
+> **Attention!**
+> Remember to always select the `Save` button in order to persist any changes made to the **Document Input**.
+
+> **Attention!**
+> If you chose to use an **Archetype**, you can see how it handles Document Inputs, as a real working example.
 
 ## Archetype
 
@@ -667,6 +733,21 @@ To use the Archetypes to kickstart a Document Template creation, select the `Doc
 
 After selecting the desired archetype, CACAO will show the **Edit Document Template** interface. From this point, its possible to further customize the Document Template.
   
+## Editing existing Document Templates
+
+There are two options to select a template for editing : (1) selecting a template from the **Document Template** list shown after selecting the `Document Templates` option from the sidebar menu, or (2) selecting a template from the `Existing Document Template` option after selecting the `Manage template` button.
+
+The difference between the 2 previous approaches are:
+
+* (1) this approach shows all the details of the document template, but it's blocked for edition. You have to select the `Edit` button to access the **Edit Document Template** form.
+* (2) this approach leads you directly to the **Edit Document Template** form.
+
+Once the **Edit Document Template** form is displayed, there are no more differences between the approaches.
+
+> **Attention!**
+> Remember to always select the `Save` button in order to persist any changes made to the **Document Template**.
+
+To **edit** a Document Template, use the same concepts and procedures for creating a new Document Template.
 
 </div>
 </div>
