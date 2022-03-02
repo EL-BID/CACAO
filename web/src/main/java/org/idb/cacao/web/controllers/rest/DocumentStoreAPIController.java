@@ -19,7 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -431,7 +430,7 @@ public class DocumentStoreAPIController {
 	@ApiIgnore
 	private Map<String, String> uploadFile(final String originalFilename, final InputStream fileStream,
 			final boolean closeInputStream, final String template, final String templateVersion,
-			final String remoteIpAddr, final User user) throws IOException, GeneralException {
+			final String remoteIpAddr, final User user) throws GeneralException {
 		// Hold rollback procedures only to be used in case of error
 		List<Runnable> rollbackProcedures = new LinkedList<>(); 
 		try {
@@ -502,7 +501,7 @@ public class DocumentStoreAPIController {
 		for (Runnable proc : rollbackProcedures) {
 			try {
 				proc.run();
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				log.log(Level.SEVERE, "Could not rollback", ex);
 			}
 		}
@@ -758,7 +757,7 @@ public class DocumentStoreAPIController {
 			SearchResponse sresp = null;
 			try {
 				sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				if (ErrorUtils.isErrorNoIndexFound(ex))
 					continue;
 				boolean fixed = false;
@@ -843,7 +842,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.ok().body(situations);
 
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
+			log.log(Level.SEVERE, e, () -> "Error while searching for situations for document " + documentId);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 

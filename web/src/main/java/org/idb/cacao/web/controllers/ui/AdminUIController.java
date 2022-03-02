@@ -89,12 +89,11 @@ public class AdminUIController {
 	 * Returns the current LOG directory configured for use with LOG4J (@see 'log4j2.xml')
 	 */
 	public static File getLogDir() {
-		String log_dir = System.getProperty("LOG_DIR");
-		if (log_dir!=null && log_dir.trim().length()>0)
-			return new File(log_dir);
-		File user_home = new File(System.getProperty("user.home"));
-		File default_log_dir = new File(user_home, "cacao_log");
-		return default_log_dir;
+		String logDir = System.getProperty("LOG_DIR");
+		if (logDir!=null && logDir.trim().length()>0)
+			return new File(logDir);
+		File userHome = new File(System.getProperty("user.home"));
+		return new File(userHome, "cacao_log");
 	}
 
 	/**
@@ -108,16 +107,16 @@ public class AdminUIController {
 			final Date maximumTimestamp, 
 			final Integer vicinity) {
 		// Get the LOG directory (according to system properties)
-		File log_dir = getLogDir();
-		if (log_dir==null)
+		File logDir = getLogDir();
+		if (logDir==null)
 			return null;
 
 		// If we have a 'minimumTimestamp' constraint, we should not care about files
 		// created or changed in the 'previous day' before the provided timestamp, because
 		// the LOG files are daily.
-		final Date min_day_before;
+		final Date minDayBefore;
 		if (minimumTimestamp==null) {
-			min_day_before = null;
+			minDayBefore = null;
 		}
 		else {
 			Calendar c = Calendar.getInstance();
@@ -127,15 +126,15 @@ public class AdminUIController {
 			c.set(Calendar.MINUTE, 0);
 			c.set(Calendar.HOUR_OF_DAY, 0);
 			c.add(Calendar.DAY_OF_YEAR, -1);
-			min_day_before = c.getTime();
+			minDayBefore = c.getTime();
 		}
 
 		// If we have a 'maximumTimestamp' constraint, we should not care about files
 		// created or changed in the 'next day' after the provided timestamp, because
 		// the LOG files are daily.
-		final Date max_day_after;
+		final Date maxDayAfter;
 		if (maximumTimestamp==null) {
-			max_day_after = null;
+			maxDayAfter = null;
 		}
 		else {
 			Calendar c = Calendar.getInstance();
@@ -145,31 +144,31 @@ public class AdminUIController {
 			c.set(Calendar.MINUTE, 0);
 			c.set(Calendar.HOUR_OF_DAY, 0);
 			c.add(Calendar.DAY_OF_YEAR, 1);
-			max_day_after = c.getTime();
+			maxDayAfter = c.getTime();
 		}
 		
 		// Get the last modified file in LOG directory
-		final File[] log_files = log_dir.listFiles(new FileFilter() {
+		final File[] logFiles = logDir.listFiles(new FileFilter() {
 			
 			@Override
 			public boolean accept(File f) {
 				long t = f.lastModified();
 				if (minimumTimestamp!=null) {
-					if (t<min_day_before.getTime())
+					if (t<minDayBefore.getTime())
 						return false;					
 				}
 				if (maximumTimestamp!=null) {
-					if (t>max_day_after.getTime())
+					if (t>maxDayAfter.getTime())
 						return false;
 				}
 				return f.isFile();
 			}
 		});
-		if (log_files==null || log_files.length==0)
+		if (logFiles==null || logFiles.length==0)
 			return null;
 		
 		// Put files in reverse chronological order
-		Arrays.sort(log_files, new Comparator<File>() {
+		Arrays.sort(logFiles, new Comparator<File>() {
 			public int compare(File f1, File f2) {
 				long t1 = f1.lastModified();
 				long t2 = f2.lastModified();
@@ -179,8 +178,8 @@ public class AdminUIController {
 			}
 		});
 		
-		final SimpleDateFormat log_sdf = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.US);
-		final Pattern p_sdf = Pattern.compile("^\\d{2}-[^-]{3}-\\d{4} \\d{2}:\\d{2}:\\d{2}");
+		final SimpleDateFormat logSdf = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.US);
+		final Pattern pSdf = Pattern.compile("^\\d{2}-[^-]{3}-\\d{4} \\d{2}:\\d{2}:\\d{2}");
 		
 		// The following structure is only used during 'search' with a 'Pattern' and when it's desired to include additional rows in the 'vicinity' of each match
 		final class CircularBuffer {
@@ -206,10 +205,10 @@ public class AdminUIController {
 			 * Writes into 'sink' all the lines stored in this circular buffer and clear this buffer afterwards.
 			 */
 			void flush(List<String> sink) {
-				int first_pos = (full) ? index : 0;
+				int firstPos = (full) ? index : 0;
 				int num = (full) ? lines.length : index;
 				for (int i=0; i<num; i++) {
-					int pos = (first_pos+i)%lines.length;
+					int pos = (firstPos+i)%lines.length;
 					String line = lines[pos];
 					sink.add(line);
 				}
@@ -235,56 +234,56 @@ public class AdminUIController {
 				return lines.length;
 			}
 		}
-		final CircularBuffer circular_buffer = (search!=null && vicinity!=null && vicinity.intValue()>1) ? new CircularBuffer(vicinity.intValue()/2) : null;
-		int count_lines_after_match = 0;
-		final int include_lines_after_match = (search!=null && vicinity!=null) ? vicinity.intValue() - (circular_buffer==null?0:circular_buffer.capacity()) : 0;
+		final CircularBuffer circularBuffer = (search!=null && vicinity!=null && vicinity.intValue()>1) ? new CircularBuffer(vicinity.intValue()/2) : null;
+		int countLinesAfterMatch = 0;
+		final int include_lines_after_match = (search!=null && vicinity!=null) ? vicinity.intValue() - (circularBuffer==null?0:circularBuffer.capacity()) : 0;
 		
 		// Read the last file contents
 		List<String> lines = new LinkedList<>();
 		try {
-			for (File file: log_files) {
-				boolean ignored_prev_stack_trace_line = false;
-				boolean seeking_timestamp = false;
-				boolean print_boundary = false;
+			for (File file: logFiles) {
+				boolean ignoredPrevStackTraceLine = false;
+				boolean seekingTimestamp = false;
+				boolean printBoundary = false;
 				try (ReversedLinesFileReader reader = new ReversedLinesFileReader(file, StandardCharsets.UTF_8);) {
 					String line;
 					while ((line = reader.readLine())!=null) {
 						if (IGNORE_STACKTRACE_LOG_LINE.matcher(line).find()) {
-							ignored_prev_stack_trace_line = true;
+							ignoredPrevStackTraceLine = true;
 							continue;
 						}
-						final boolean looking_for_timestamps = (minimumTimestamp!=null) || (maximumTimestamp!=null && seeking_timestamp);
+						final boolean looking_for_timestamps = (minimumTimestamp!=null) || (maximumTimestamp!=null && seekingTimestamp);
 						if (looking_for_timestamps) {
-							Date timestamp_from_log_line;
-							Matcher m_sdf = p_sdf.matcher(line);
+							Date timestampFromLogLine;
+							Matcher m_sdf = pSdf.matcher(line);
 							if (!m_sdf.find()) {
-								timestamp_from_log_line = null;
+								timestampFromLogLine = null;
 							}
 							else {
 								try {
-									timestamp_from_log_line = log_sdf.parse(m_sdf.group());
+									timestampFromLogLine = logSdf.parse(m_sdf.group());
 								} catch (ParseException e) {
-									timestamp_from_log_line = null;
+									timestampFromLogLine = null;
 								}
 							}
 							if (minimumTimestamp!=null) {
-								if (timestamp_from_log_line!=null && timestamp_from_log_line.before(minimumTimestamp))
+								if (timestampFromLogLine!=null && timestampFromLogLine.before(minimumTimestamp))
 									break;
 							}
-							if (maximumTimestamp!=null && seeking_timestamp) {
-								if (timestamp_from_log_line==null)
+							if (maximumTimestamp!=null && seekingTimestamp) {
+								if (timestampFromLogLine==null)
 									continue;
-								if (timestamp_from_log_line.after(maximumTimestamp))
+								if (timestampFromLogLine.after(maximumTimestamp))
 									continue;
-								seeking_timestamp = true;
+								seekingTimestamp = true;
 							}
 						}
-						String treated_line;
+						String treatedLine;
 						if (treatLine) {
-							treated_line = treatLine(line);
+							treatedLine = treatLine(line);
 						}
 						else {
-							treated_line = StringEscapeUtils.escapeHtml4(line);		// escapes all HTML characters (including '<', '>') to avoid HTML injection when printing
+							treatedLine = StringEscapeUtils.escapeHtml4(line);		// escapes all HTML characters (including '<', '>') to avoid HTML injection when printing
 						}
 						// If we are avoiding some lines according to a pattern...
 						if (avoid!=null && avoid.matcher(line).find()) {
@@ -298,18 +297,18 @@ public class AdminUIController {
 								// before the match
 								// Note that we are reading lines backwards, so the rows 'before the match'
 								// are actually the lines we are reading after the match.
-								if (count_lines_after_match<include_lines_after_match) {
-									count_lines_after_match++;
-									if (count_lines_after_match==include_lines_after_match)
-										print_boundary = true;
+								if (countLinesAfterMatch<include_lines_after_match) {
+									countLinesAfterMatch++;
+									if (countLinesAfterMatch==include_lines_after_match)
+										printBoundary = true;
 								}
 								else {
-									if (print_boundary) {
-										print_boundary = false;
+									if (printBoundary) {
+										printBoundary = false;
 										lines.add("----------------------"); // print a 'boundary'
 									}
-									if (circular_buffer!=null)
-										circular_buffer.add(treated_line);
+									if (circularBuffer!=null)
+										circularBuffer.add(treatedLine);
 									continue;
 								}
 							}
@@ -317,18 +316,18 @@ public class AdminUIController {
 								// If we got a match, let's flush whatever we got in the vicinity after the match (circular buffer)								
 								// Note that we are reading lines backwards, so the 'circular buffer' corresponds to the rows that comes 'after'
 								// the match
-								if (circular_buffer!=null && !circular_buffer.isEmpty()) {
-									circular_buffer.flush(lines);
+								if (circularBuffer!=null && !circularBuffer.isEmpty()) {
+									circularBuffer.flush(lines);
 								}
 								// Reset the counter for considering the other rows before the match
-								count_lines_after_match = 0;
+								countLinesAfterMatch = 0;
 							}
 						}
-						if (ignored_prev_stack_trace_line) {
-							ignored_prev_stack_trace_line = false;
+						if (ignoredPrevStackTraceLine) {
+							ignoredPrevStackTraceLine = false;
 							lines.add("\t...");
 						}
-						lines.add(treated_line);
+						lines.add(treatedLine);
 						if (lines.size()>=max_lines)
 							break;
 					} // LOOP for each line

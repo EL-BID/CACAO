@@ -366,10 +366,10 @@ public class KibanaSpacesService {
 		new_index_pattern.setTitle(indexPatternTitle);
 		new_index_pattern.setTimeFieldName(dashboardTimestamp);
 		
-		String index_pattern_id;
+		String indexPatternId;
 		try {
-			index_pattern_id = ESUtils.createKibanaIndexPattern(env, restTemplate, /*spaceId*/null, new_index_pattern);
-			if (index_pattern_id==null || index_pattern_id.trim().length()==0)
+			indexPatternId = ESUtils.createKibanaIndexPattern(env, restTemplate, /*spaceId*/null, new_index_pattern);
+			if (indexPatternId==null || indexPatternId.trim().length()==0)
 				throw new RuntimeException("The API did not create a new index pattern!");
 		}
 		catch (Throwable ex) {
@@ -378,13 +378,13 @@ public class KibanaSpacesService {
 				List<KibanaSavedObject> existing_index_patterns;
 				try {
 					existing_index_patterns = ESUtils.getKibanaIndexPatterns(env, restTemplate, /*spaceId*/null);
-				} catch (IOException e) {
+				} catch (Exception e) {
 					log.log(Level.WARNING, "Failed to create a new index pattern called '"+indexPatternTitle+"' at Kibana for template "+templateName, ex);
 					return false;
 				}
-				index_pattern_id = (existing_index_patterns==null) ? null
+				indexPatternId = (existing_index_patterns==null) ? null
 						: existing_index_patterns.stream().filter(ip->indexPatternTitle.equalsIgnoreCase(ip.getTitle())).findAny().map(ip->ip.getId()).orElse(null);
-				if (index_pattern_id==null) {
+				if (indexPatternId==null) {
 					log.log(Level.WARNING, "Failed to create a new index pattern called '"+indexPatternTitle+"' at Kibana for template "+templateName, ex);
 					return false;
 				}
@@ -401,10 +401,10 @@ public class KibanaSpacesService {
 				if (space.getId()==null || space.getId().trim().length()==0 || "default".equalsIgnoreCase(space.getId()))
 					continue;
 				try {
-					ESUtils.copyKibanaSavedObjects(env, restTemplate, /*spaceIdSource*/null, /*spaceIdTarget*/space.getId(), "index-pattern", new String[] {index_pattern_id});
+					ESUtils.copyKibanaSavedObjects(env, restTemplate, /*spaceIdSource*/null, /*spaceIdTarget*/space.getId(), "index-pattern", new String[] {indexPatternId});
 				}
 				catch (Throwable ex) {
-					log.log(Level.WARNING, "Failed to copy index pattern called '"+indexPatternTitle+"' with id '"+index_pattern_id+"' at Kibana default space to the space "+space.getName()+" with id "+space.getId(), ex);						
+					log.log(Level.WARNING, "Failed to copy index pattern called '"+indexPatternTitle+"' with id '"+indexPatternId+"' at Kibana default space to the space "+space.getName()+" with id "+space.getId(), ex);						
 				}
 			}
 		}

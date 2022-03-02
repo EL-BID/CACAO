@@ -121,7 +121,7 @@ public class DocumentTemplateAPIController {
         }
         
         Optional<DocumentTemplate> existing = templateRepository.findByNameAndVersion(template.getName(), template.getVersion());
-		if (existing!=null && existing.isPresent()) {
+		if (existing.isPresent()) {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 			String username = (auth==null) ? null : auth.getName();
 			if (log.isLoggable(Level.FINE)) {

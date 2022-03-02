@@ -53,6 +53,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class DocumentTemplateUIController {
+	private static final String ERROR_INVALID_TEMPLATE_ID = "Invalid template Id:";
+
+	private static final String ATTRIBUTE_FIELD_MAPPINGS = "fieldMappings";
+
+	private static final String ATTRIBUTE_FIELD_TYPES = "fieldTypes";
+
+	private static final String ATTRIBUTE_TEMPLATE = "template";
+
 	@Autowired
 	private DocumentTemplateRepository documentTemplateRepository;
 
@@ -64,7 +72,7 @@ public class DocumentTemplateUIController {
 		try {
 			model.addAttribute("templates", IterableUtils.toList(documentTemplateRepository.findAll(Sort.by("name.keyword","version.keyword").ascending())));
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex))
 				throw ex;
 			model.addAttribute("templates", Collections.emptyList());
@@ -86,13 +94,13 @@ public class DocumentTemplateUIController {
     
     @GetMapping("/templates/{id}")
     public String showTemplate(@PathVariable("id") String id,  @RequestParam("showInputs") Optional<Boolean> showInputs, Model model) {
-    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
-        model.addAttribute("template", template);
-        model.addAttribute("fieldTypes", FieldType.values());
-        model.addAttribute("fieldMappings", FieldMapping.values());
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
+        model.addAttribute(ATTRIBUTE_TEMPLATE, template);
+        model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
+        model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
         List<DocumentFormat> usedFormats = template.getInputs()== null ? Collections.emptyList() : 
         	template.getInputs().stream()
-        	.map(input -> input.getFormat())
+        	.map(DocumentInput::getFormat)
         	.collect(Collectors.toList());
         List<DocumentFormat> availableFormats = Arrays.stream(DocumentFormat.values())
             .filter(format -> !usedFormats.contains(format))
@@ -105,23 +113,23 @@ public class DocumentTemplateUIController {
     @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/edit")
     public String showUpdateForm(@PathVariable("id") String id, Model model) {
-    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
-        model.addAttribute("template", template);
-        model.addAttribute("fieldTypes", FieldType.values());
-        model.addAttribute("fieldMappings", FieldMapping.values());
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
+        model.addAttribute(ATTRIBUTE_TEMPLATE, template);
+        model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
+        model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
         return "templates/edit_template";
     }
 
     @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/input/{format}")
     public String showEditDocumentInput(@PathVariable("id") String id, @PathVariable("format") String format, Model model) {
-    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
     	DocumentFormat docFormat = DocumentFormat.valueOf(format);
     	DocumentInput docInput = template.getInputOfFormat(docFormat);
     	if(docInput==null) {
     		throw new IllegalArgumentException("Input format " + docFormat.toString() + " is not defined in template");
     	}
-        model.addAttribute("template", template);
+        model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute("docInput", docInput);
         return "templates/edit_doc_input";
     }
@@ -129,7 +137,7 @@ public class DocumentTemplateUIController {
     @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/addinput")
     public String showAddDocumentInput(@PathVariable("id") String id, @RequestParam("format") String format, Model model) {
-    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
+    	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
     	DocumentFormat docFormat = DocumentFormat.valueOf(format);
     	if (template.getInputOfFormat(docFormat)!=null) {
     		throw new IllegalArgumentException("Input format " + docFormat.toString() + " is already defined in template");
@@ -141,39 +149,36 @@ public class DocumentTemplateUIController {
     			.withFieldName(f.getFieldName())
     			.withFieldId(f.getId())));
     	docInput.setFormat(docFormat);
-        model.addAttribute("template", template);
+        model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute("docInput", docInput);
         return "templates/edit_doc_input";
     }
 
     @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping(value="/templates/new")
-    public String showEditForm(Model model, @RequestParam("type") Optional<String> type_param, @RequestParam("id") Optional<String> id_param) {
-    	String type=type_param.orElse("empty");
-    	String id=id_param.orElse("");
+    public String showEditForm(Model model, @RequestParam("type") Optional<String> typeParam, @RequestParam("id") Optional<String> idParam) {
+    	String type=typeParam.orElse("empty");
+    	String id=idParam.orElse("");
     	DocumentTemplate template = new DocumentTemplate();
-		switch(type) {
-			case "template":
-				DocumentTemplate referenceTemplate = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid template Id:" + id));
-				template.setName(referenceTemplate.getName());
-				template.setArchetype(referenceTemplate.getArchetype());
-				template.setGroup(referenceTemplate.getGroup());
-				template.setFields(referenceTemplate.getFields());
-				template.setPeriodicity(referenceTemplate.getPeriodicity());
-				template.setRequired(referenceTemplate.getRequired());
-				break;
-			case "archetype":
-				TemplateArchetype archetype = TemplateArchetypes.getArchetype(id).orElseThrow(() -> new IllegalArgumentException("Invalid archetype Id:" + id));
-				template.setArchetype(id);
-				template.setGroup(archetype.getSuggestedGroup());
-				template.setFields(resolveDescriptions(archetype.getRequiredFields()));
-				template.setName(messages.getMessage(id, null, LocaleContextHolder.getLocale()));
-				break;
+		if (ATTRIBUTE_TEMPLATE.equals(type)) {
+			DocumentTemplate referenceTemplate = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
+			template.setName(referenceTemplate.getName());
+			template.setArchetype(referenceTemplate.getArchetype());
+			template.setGroup(referenceTemplate.getGroup());
+			template.setFields(referenceTemplate.getFields());
+			template.setPeriodicity(referenceTemplate.getPeriodicity());
+			template.setRequired(referenceTemplate.getRequired());
+		} else if ("archetype".equals(type)) {
+			TemplateArchetype archetype = TemplateArchetypes.getArchetype(id).orElseThrow(() -> new IllegalArgumentException("Invalid archetype Id:" + id));
+			template.setArchetype(id);
+			template.setGroup(archetype.getSuggestedGroup());
+			template.setFields(resolveDescriptions(archetype.getRequiredFields()));
+			template.setName(messages.getMessage(id, null, LocaleContextHolder.getLocale()));
 		}
-		model.addAttribute("template", template);
-        model.addAttribute("template", template);
-        model.addAttribute("fieldTypes", FieldType.values());
-        model.addAttribute("fieldMappings", FieldMapping.values());
+		model.addAttribute(ATTRIBUTE_TEMPLATE, template);
+        model.addAttribute(ATTRIBUTE_TEMPLATE, template);
+        model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
+        model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
         return "templates/edit_template";
     
     }
@@ -195,7 +200,7 @@ public class DocumentTemplateUIController {
     					if (translated!=null && translated.trim().length()>0)
     						field.setDescription(translated);
     				}
-    				catch (Throwable ex) {
+    				catch (Exception ex) {
     					// keep the description as informed
     				}
     			}

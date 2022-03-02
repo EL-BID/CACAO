@@ -67,20 +67,12 @@ public class CryptoUtils {
 		byte[] contentBytes = content.getBytes();
 		CMSProcessableByteArray cms = new CMSProcessableByteArray(contentBytes);
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-		OutputStream out = null;
-		try {
-			out = new BufferedOutputStream(buffer);
+		try(OutputStream out = new BufferedOutputStream(buffer)) {
 			encrypt(cms, out, cert);
 			out.flush();
-			out.close();
-			out = null;
-			byte[] cipherContent = buffer.toByteArray();
-	    	String encoded = Base64.getEncoder().encodeToString(cipherContent);
-	    	return encoded;
-		} finally {
-			if (out != null)
-				out.close();
 		}
+		byte[] cipherContent = buffer.toByteArray();
+		return Base64.getEncoder().encodeToString(cipherContent);
 	}
 	
 	protected static void encrypt(CMSProcessable content, OutputStream out, X509Certificate  cert) throws Exception {
@@ -92,7 +84,6 @@ public class CryptoUtils {
 		content.write(cout);
 		cout.flush();
 		cout.close();
-		return;
 	}
 
 	/**
@@ -102,24 +93,16 @@ public class CryptoUtils {
 	public static String decrypt(String cipherContent, PrivateKey privKey) throws Exception {
     	byte[] cipherContentBytes = Base64.getDecoder().decode(cipherContent.getBytes());
 
-		InputStream cin = null;
-		try {
-			CMSEnvelopedDataParser envData = new CMSEnvelopedDataParser(cipherContentBytes);
-			cin = decrypt(envData, privKey);
+		CMSEnvelopedDataParser envData = new CMSEnvelopedDataParser(cipherContentBytes);
+		try(InputStream cin = decrypt(envData, privKey)) {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			byte[] buffer = new byte[1000];
-			int bytes_read;
-			while ((bytes_read = cin.read(buffer)) > 0) {
-				out.write(buffer, 0, bytes_read);
+			int bytesRead;
+			while ((bytesRead = cin.read(buffer)) > 0) {
+				out.write(buffer, 0, bytesRead);
 			}
 			byte[] decryptedContent = out.toByteArray();
-	    	String decoded = new String(decryptedContent);
-	    	return decoded;
-		} finally {
-			if (cin != null) {
-				cin.close();
-				cin = null;
-			}
+	    	return new String(decryptedContent);
 		}
 	}
 
@@ -130,21 +113,21 @@ public class CryptoUtils {
 		@SuppressWarnings("unchecked")
 		Iterator<RecipientInformation> iter = recipients.getRecipients().iterator();
 		CMSTypedStream resultado = null;
-		Exception last_exception = null;
+		Exception lastException = null;
 		while ((iter.hasNext()) && (resultado == null)) {
 			try {
 				KeyTransRecipientInformation ktri = (KeyTransRecipientInformation) iter.next();
 				Recipient recipient = new JceKeyTransEnvelopedRecipient(privKey).setProvider("BC");
 				resultado = ktri.getContentStream(recipient);
 			} catch (Exception e) {
-				last_exception = e;
+				lastException = e;
 				resultado = null;
 			}
 		}
 
 		if (resultado == null) {
-			if (last_exception != null)
-				throw new Exception("Falha na descriptografia!",last_exception);
+			if (lastException != null)
+				throw new Exception("Falha na descriptografia!",lastException);
 			else
 				throw new Exception("Falha na descriptografia!");
 		}

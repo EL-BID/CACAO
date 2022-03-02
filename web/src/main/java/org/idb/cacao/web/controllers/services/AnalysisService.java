@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -116,25 +117,25 @@ public class AnalysisService {
 			.formatIndexNameForPublishedData("Accounting Customers");
 	public static final String SUPPLIERS_INDEX = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Suppliers");
-	private final String TAXPAYER_INDEX = "cacao_taxpayers";
+	private static final String TAXPAYER_INDEX = "cacao_taxpayers";
 
-	private final static int SOURCE_JOURNAL = 1;
-	private final static int SOURCE_DECLARED_INCOME_STATEMENT = 2;
-	private final static int SOURCE_BOOTH_INCOME_STATEMENT = 3;
-	private final static int SOURCE_SHAREHOLDERS = 4;
-	private final static int SOURCE_BOOTH_INCOME_STATEMENT_AND_SHAREHOLDERS = 5;
+	private static final int SOURCE_JOURNAL = 1;
+	private static final int SOURCE_DECLARED_INCOME_STATEMENT = 2;
+	private static final int SOURCE_BOOTH_INCOME_STATEMENT = 3;
+	private static final int SOURCE_SHAREHOLDERS = 4;
+	private static final int SOURCE_BOOTH_INCOME_STATEMENT_AND_SHAREHOLDERS = 5;
 
 	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Flow Daily");
 
-	public final static int SEARCH_SHAREHOLDINGS = 1;
-	public final static int SEARCH_SHAREHOLDERS = 2;
-	public final static int REVENUE_NET_AND_GROSS_PROFIT_DECLARED = 3;
-	public final static int REVENUE_NET_AND_GROSS_PROFIT_COMPUTED = 4;
-	public final static int TAX_PROVISION = 5;
-	public final static int ANALYTICS_ACCOUNTS = 6;
-	public final static int CUSTOMERS = 7;
-	public final static int SUPPLIERS = 8;
+	public static final int SEARCH_SHAREHOLDINGS = 1;
+	public static final int SEARCH_SHAREHOLDERS = 2;
+	public static final int REVENUE_NET_AND_GROSS_PROFIT_DECLARED = 3;
+	public static final int REVENUE_NET_AND_GROSS_PROFIT_COMPUTED = 4;
+	public static final int TAX_PROVISION = 5;
+	public static final int ANALYTICS_ACCOUNTS = 6;
+	public static final int CUSTOMERS = 7;
+	public static final int SUPPLIERS = 8;
 
 	/**
 	 * Retrieves and return a balance sheet for a given taxpayer and period (month
@@ -231,14 +232,14 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
 		List<Account> accounts = new LinkedList<>();
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());
+			log.log(Level.INFO, () -> "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());
 			return Collections.emptyList(); // No balance sheet found
 		} else {
 
@@ -345,8 +346,8 @@ public class AnalysisService {
 
 		// Group all categories
 		Map<String, Map<String, Double>> result = accounts.stream()
-				.collect(Collectors.groupingBy(account -> account.getCategoryCode(), Collectors.groupingBy(
-						account -> account.getCategory(), Collectors.summingDouble(account -> account.getBalance()))));
+				.collect(Collectors.groupingBy(Account::getCategoryCode, Collectors.groupingBy(
+						Account::getCategory, Collectors.summingDouble(Account::getBalance))));
 
 		Map<String, Double> categoriesSum = new HashMap<>();
 
@@ -367,11 +368,11 @@ public class AnalysisService {
 		// Group all subcategories
 		Map<String, Map<String, Map<String, Map<String, Double>>>> resultSubcategories = accounts.stream()
 				.filter(account -> account.getSubcategory() != null)
-				.collect(Collectors.groupingBy(account -> account.getCategoryCode(),
-						Collectors.groupingBy(account -> account.getCategory(),
-								Collectors.groupingBy(account -> account.getSubcategoryCode(),
-										Collectors.groupingBy(account -> account.getSubcategory(),
-												Collectors.summingDouble(account -> account.getBalance()))))));
+				.collect(Collectors.groupingBy(Account::getCategoryCode,
+						Collectors.groupingBy(Account::getCategory,
+								Collectors.groupingBy(Account::getSubcategoryCode,
+										Collectors.groupingBy(Account::getSubcategory,
+												Collectors.summingDouble(Account::getBalance))))));
 
 		Map<String, Double> subcategoriesSum = new HashMap<>();
 
@@ -585,7 +586,7 @@ public class AnalysisService {
 		List<String> taxpayerIds = getTaxPayersId(qualifier, qualifierValue);
 
 		if (taxpayerIds == null || taxpayerIds.isEmpty()) {
-			log.log(Level.INFO, "No taxpayers found for qualifier " + qualifier + " for year " + year);
+			log.log(Level.INFO, () -> "No taxpayers found for qualifier " + qualifier + " for year " + year);
 			return null; // No data found
 		}
 
@@ -596,12 +597,12 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No data found for qualifier " + qualifier + " for year " + year);
+			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " for year " + year);
 			return null; // No data found
 		} else {
 
@@ -782,7 +783,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting outliers", ex);
 		}
 
@@ -828,7 +829,7 @@ public class AnalysisService {
 		sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting outliers", ex);
 		}
 
@@ -957,14 +958,14 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
 		List<String> taxpayers = new LinkedList<>();
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No data found for qualifier " + qualifier + " with value " + qualifierValue);
+			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " with value " + qualifierValue);
 			return Collections.emptyList(); // No data found
 		} else {
 
@@ -1014,14 +1015,14 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting qualifier values", ex);
 		}
 
 		List<String> values = new LinkedList<>();
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No data found for qualifier " + qualifier);
+			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier);
 			return Collections.emptyList(); // No data found
 		} else {
 
@@ -1117,7 +1118,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting year values", ex);
@@ -1185,12 +1186,12 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting flows", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
+			log.log(Level.INFO, () -> "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
 			return Collections.emptyList(); // No flows found
 		}
 
@@ -1199,11 +1200,7 @@ public class AnalysisService {
 			return new AggregatedAccountingFlow(values, sum.getValue());
 		};
 
-		List<AggregatedAccountingFlow> result = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
-				function);
-
-		return result;
-
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 	}
 
 	/**
@@ -1317,7 +1314,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
@@ -1465,14 +1462,14 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting shareholdings", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No shareholding information found for taxPayer " + taxpayerId + " for period " + year);
+			log.log(Level.INFO, () -> "No shareholding information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholding found
 		}
 
@@ -1540,14 +1537,14 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting shareholders", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No shareholders information found for taxPayer " + taxpayerId + " for period " + year);
+			log.log(Level.INFO, () -> "No shareholders information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholders found
 		}
 
@@ -1613,14 +1610,14 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
-			log.log(Level.INFO, "No revenue net and gross profit information found for taxPayer " + taxpayerId
+			log.log(Level.INFO, () -> "No revenue net and gross profit information found for taxPayer " + taxpayerId
 					+ " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
@@ -1683,7 +1680,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting tax provision", ex);
@@ -1691,7 +1688,7 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO,
-					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
@@ -1805,7 +1802,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting tax provision", ex);
@@ -1813,7 +1810,7 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO,
-					"No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
@@ -1849,7 +1846,7 @@ public class AnalysisService {
 				function);
 		
 		//Remove null itens
-		instances = instances.stream().filter(instance->instance != null).collect(Collectors.toList());
+		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());
 		
 		for ( String key : yearValues.keySet() ) {
 			for ( Map<String, Object> map : instances ) {
@@ -1907,7 +1904,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting major customers", ex);
@@ -1915,7 +1912,7 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO,
-					"No major customers information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
@@ -2025,7 +2022,7 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
 				log.log(Level.SEVERE, "Error getting major customers", ex);
@@ -2033,7 +2030,7 @@ public class AnalysisService {
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO,
-					"No major customers information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
@@ -2173,13 +2170,13 @@ public class AnalysisService {
 		SearchResponse sresp = null;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
 		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
 			log.log(Level.INFO,
-					"No customers information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 

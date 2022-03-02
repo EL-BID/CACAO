@@ -102,16 +102,18 @@ public class AdminAPIController {
     	if (command==null || command.trim().length()==0)
     		throw new MissingParameter("command");
 
-		String ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+		String ipAddr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
-		log.log(Level.INFO, LOG_PREFIX_FOR_SHELL_COMMANDS+" "+ip_addr+" user "+user.getLogin()+": "+command);
+		if (log.isLoggable(Level.INFO)) {
+			log.log(Level.INFO, String.format("%s %s user %s: %s", LOG_PREFIX_FOR_SHELL_COMMANDS, ipAddr, user.getLogin(), command));
+		}
 
 		Object response;
 		try {
 			response = adminService.performOperation(command);
 		}
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error while performing SHELL COMMAND from IP address "+ip_addr+" user "+user.getLogin(), ex);
+		catch (Exception ex) {
+			log.log(Level.SEVERE, String.format("Error while performing SHELL COMMAND from IP address %s user %s", ipAddr, user.getLogin()), ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
 		}
 		

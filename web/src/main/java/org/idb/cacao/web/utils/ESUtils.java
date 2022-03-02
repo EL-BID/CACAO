@@ -524,8 +524,7 @@ public class ESUtils {
 	 */
 	public static boolean disableUser(RestHighLevelClient client, String username) throws IOException {
 		DisableUserRequest request = new DisableUserRequest(username, RefreshPolicy.IMMEDIATE);
-		boolean disabled = client.security().disableUser(request, RequestOptions.DEFAULT);
-		return disabled;
+		return client.security().disableUser(request, RequestOptions.DEFAULT);
 	}
 
 	/**
@@ -535,14 +534,13 @@ public class ESUtils {
 	 */
 	public static boolean enableUser(RestHighLevelClient client, String username) throws IOException {
 		EnableUserRequest request = new EnableUserRequest(username, RefreshPolicy.IMMEDIATE);
-		boolean enabled = client.security().enableUser(request, RequestOptions.DEFAULT);
-		return enabled;
+		return client.security().enableUser(request, RequestOptions.DEFAULT);
 	}
 	
 	/**
 	 * Create a Kibana SPACE
 	 */
-	public static void createKibanaSpace(Environment env, RestTemplate restTemplate, KibanaSpace space) throws IOException {
+	public static void createKibanaSpace(Environment env, RestTemplate restTemplate, KibanaSpace space) {
 		String url = getKibanaURL(env, "/api/spaces/space");
 		
 		ResponseExtractor<Boolean> responseExtractor = clientHttpResponse->{
@@ -558,7 +556,7 @@ public class ESUtils {
 	/**
 	 * Returns information about all Kibana SPACE's created
 	 */
-	public static List<KibanaSpace> getKibanaSpaces(Environment env, RestTemplate restTemplate) throws IOException {
+	public static List<KibanaSpace> getKibanaSpaces(Environment env, RestTemplate restTemplate) {
 		String url = getKibanaURL(env, "/api/spaces/space");
 		
 		ResponseExtractor<List<KibanaSpace>> responseExtractor = clientHttpResponse->{
@@ -580,7 +578,7 @@ public class ESUtils {
 	/**
 	 * Returns indication that a Kibana SPACE exists
 	 */
-	public static boolean hasKibanaSpace(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+	public static boolean hasKibanaSpace(Environment env, RestTemplate restTemplate, String spaceId) {
 		String url = getKibanaURL(env, "/api/spaces/space/"+spaceId);
 		
 		ResponseExtractor<Boolean> responseExtractor = clientHttpResponse->{
@@ -604,7 +602,7 @@ public class ESUtils {
 	/**
 	 * Returns information about all Kibana saved objects of some type created
 	 */
-	public static List<KibanaSavedObject> getKibanaSavedObjects(Environment env, RestTemplate restTemplate, String spaceId, String type) throws IOException {
+	public static List<KibanaSavedObject> getKibanaSavedObjects(Environment env, RestTemplate restTemplate, String spaceId, String type) {
 		String url = getKibanaURL(env, 
 				(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/saved_objects/_find?type="+type+"&per_page=10000" 
 						: "/api/saved_objects/_find?type="+type+"&per_page=10000");
@@ -634,14 +632,14 @@ public class ESUtils {
 	/**
 	 * Returns information about all Kibana Dashboards created
 	 */
-	public static List<KibanaSavedObject> getKibanaDashboards(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+	public static List<KibanaSavedObject> getKibanaDashboards(Environment env, RestTemplate restTemplate, String spaceId) {
 		return getKibanaSavedObjects(env, restTemplate, spaceId, "dashboard");
 	}
 	
 	/**
 	 * Copy one or more SavedObjects (e.g.: Dashboards, IndexPatterns, Lens, etc.) from one SPACE to another
 	 */
-	public static boolean copyKibanaSavedObjects(Environment env, RestTemplate restTemplate, String spaceIdSource, String spaceIdTarget, String type, String[] ids) throws IOException {
+	public static boolean copyKibanaSavedObjects(Environment env, RestTemplate restTemplate, String spaceIdSource, String spaceIdTarget, String type, String[] ids) {
 		String url = getKibanaURL(env, 
 				(spaceIdSource!=null && spaceIdSource.trim().length()>0 && !"Default".equalsIgnoreCase(spaceIdSource)) ? "/s/"+spaceIdSource+"/api/spaces/_copy_saved_objects" 
 						: "/api/spaces/_copy_saved_objects");
@@ -657,8 +655,8 @@ public class ESUtils {
 		}
 		@SuppressWarnings("unused")
 		final class RequestBody {
-			public final SavedObject objects[];
-			public final String spaces[];
+			public final SavedObject[] objects;
+			public final String[] spaces;
 			public final boolean includeReferences;
 			public final boolean overwrite;
 			public final boolean createNewCopies;
@@ -759,21 +757,21 @@ public class ESUtils {
 	/**
 	 * Returns information about all Kibana IndexPattern created
 	 */
-	public static List<KibanaSavedObject> getKibanaIndexPatterns(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+	public static List<KibanaSavedObject> getKibanaIndexPatterns(Environment env, RestTemplate restTemplate, String spaceId) {
 		return getKibanaSavedObjects(env, restTemplate, spaceId, "index-pattern");
 	}
 
 	/**
 	 * Returns information about all Kibana Visualization created
 	 */
-	public static List<KibanaSavedObject> getKibanaVisualizations(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+	public static List<KibanaSavedObject> getKibanaVisualizations(Environment env, RestTemplate restTemplate, String spaceId) {
 		return getKibanaSavedObjects(env, restTemplate, spaceId, "visualization");
 	}
 
 	/**
 	 * Returns information about all Kibana Lens created
 	 */
-	public static List<KibanaSavedObject> getKibanaLens(Environment env, RestTemplate restTemplate, String spaceId) throws IOException {
+	public static List<KibanaSavedObject> getKibanaLens(Environment env, RestTemplate restTemplate, String spaceId) {
 		return getKibanaSavedObjects(env, restTemplate, spaceId, "lens");
 	}
 
@@ -783,7 +781,7 @@ public class ESUtils {
 	public static String createKibanaIndexPattern(Environment env, 
 			RestTemplate restTemplate,
 			String spaceId,
-			KibanaIndexPattern indexPattern) throws IOException {
+			KibanaIndexPattern indexPattern) {
 		
 		String url = getKibanaURL(env, 
 			(spaceId!=null && spaceId.trim().length()>0 && !"Default".equalsIgnoreCase(spaceId)) ? "/s/"+spaceId+"/api/index_patterns/index_pattern" 
@@ -864,23 +862,22 @@ public class ESUtils {
 	 * Returns URL for Kibana API requests
 	 */
 	public static String getKibanaURL(Environment env, String endpoint) {
-		String kibana_host = env.getProperty("kibana.host", "127.0.0.1");
-		int kibana_port = Integer.parseInt(env.getProperty("kibana.port", String.valueOf("5601")));	
-		String protocol = (kibana_port==443 || "true".equalsIgnoreCase(env.getProperty("es.ssl"))) ? "https" : "http";
+		String kibanaHost = env.getProperty("kibana.host", "127.0.0.1");
+		int kibanaPort = Integer.parseInt(env.getProperty("kibana.port", String.valueOf("5601")));	
+		String protocol = (kibanaPort==443 || "true".equalsIgnoreCase(env.getProperty("es.ssl"))) ? "https" : "http";
 		String context = env.getProperty("kibana.endpoint", "/kibana");
-		String uri = String.format("%s://%s:%d/%s/%s", protocol, kibana_host, kibana_port, context, endpoint);
-		return uri;
+		return String.format("%s://%s:%d/%s/%s", protocol, kibanaHost, kibanaPort, context, endpoint);
 	}
 	
 	/**
 	 * Object used with Kibana API requests for passing along authorization token given the application properties
 	 */
 	public static RequestCallback getKibanaRequestCallback(Environment env, Object requestBody) {
-		String kibana_user = env.getProperty("es.user", "elastic");
-		String kibana_password = env.getProperty("es.password");
-		if (kibana_user!=null && kibana_user.length()>0 && kibana_password!=null && kibana_password.length()>0) {
-			String encoding = Base64.getEncoder().encodeToString((String.join(":", kibana_user, kibana_password)).getBytes());
-			RequestCallback requestCallback = req->{
+		String kibanaUser = env.getProperty("es.user", "elastic");
+		String kibanaPassword = env.getProperty("es.password");
+		if (kibanaUser!=null && kibanaUser.length()>0 && kibanaPassword!=null && kibanaPassword.length()>0) {
+			String encoding = Base64.getEncoder().encodeToString((String.join(":", kibanaUser, kibanaPassword)).getBytes());
+			return req->{
 				req.getHeaders().set(HttpHeaders.AUTHORIZATION, "Basic "+encoding);
 				if (requestBody!=null) {
 					req.getHeaders().set("kbn-xsrf", "reporting");
@@ -889,22 +886,19 @@ public class ESUtils {
 					req.getBody().write(mapper.writeValueAsBytes(requestBody));
 				}
 			};
-			return requestCallback;
 		}
 		else if (requestBody!=null) {
-			RequestCallback requestCallback = req->{
+			return req->{
 				req.getHeaders().set("kbn-xsrf", "reporting");
 				ObjectMapper mapper = new ObjectMapper();
 				mapper.setSerializationInclusion(Include.NON_NULL);
 				req.getBody().write(mapper.writeValueAsBytes(requestBody));
 			};			
-			return requestCallback;
 		}
 		else {
-			RequestCallback requestCallback = req->{
+			return req->{
 				req.getHeaders().set("kbn-xsrf", "reporting");
 			};			
-			return requestCallback;			
 		}
 	}
 	

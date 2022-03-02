@@ -82,23 +82,23 @@ public class DocumentStoreService {
 	 */
 	public void getDocumentInformation(DocumentUploaded doc, Authentication auth, Consumer<Map<String,Object>> consumer) throws Exception {
     	String template = doc.getTemplateName();
-    	String index_name = IndexNamesUtils.formatIndexNameForValidatedData(template, doc.getTemplateVersion());
-    	SearchRequest searchRequest = new SearchRequest(index_name);
+    	String indexName = IndexNamesUtils.formatIndexNameForValidatedData(template, doc.getTemplateVersion());
+    	SearchRequest searchRequest = new SearchRequest(indexName);
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
     			.query(QueryBuilders.idsQuery().addIds(doc.getId()));   
     	searchRequest.source(searchSourceBuilder);
-    	SearchResponse resp = null;
+    	final SearchResponse resp;
 		try {
 			resp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (IOException ex) {
 			if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex))
 				return; // no match
-			log.log(Level.SEVERE, "Error while fetching document details about document "+doc.getId()+" "+template, ex);
+			log.log(Level.SEVERE, ex, () -> "Error while fetching document details about document "+doc.getId()+" "+template);
 			throw new Exception(messageSource.getMessage("general_error_msg1", null, LocaleContextHolder.getLocale()));
 		}
 		if (resp!=null) 
 		{
-	    	log.log(Level.FINE, "User "+auth.getName()+" requested details about document "+doc.getId()+" "+template+" and got "+resp.getHits().getTotalHits().value+" response in "+resp.getTook());
+	    	log.log(Level.FINE, () -> "User "+auth.getName()+" requested details about document "+doc.getId()+" "+template+" and got "+resp.getHits().getTotalHits().value+" response in "+resp.getTook());
 	    	
 	    	if (resp.isTimedOut() || Boolean.TRUE.equals(resp.isTerminatedEarly())) {
 	    		throw new Exception(messageSource.getMessage("timed_out", null, LocaleContextHolder.getLocale()));
@@ -162,14 +162,7 @@ public class DocumentStoreService {
 			throw new RuntimeException(ex);
 		}
 		
-    	if (sresp.getHits().getTotalHits().value==0) {
-    		return false;	// No match
-    	}
-    	else {
-    		
-    		return true; 	// At least one match
-    		
-    	} // condition: got results from query
+    	return sresp.getHits().getTotalHits().value!=0;
 	}
 
 	/**
@@ -217,14 +210,7 @@ public class DocumentStoreService {
 			throw new RuntimeException(ex);
 		}
 		
-    	if (sresp.getHits().getTotalHits().value==0) {
-    		return false;	// No match
-    	}
-    	else {
-    		
-    		return true; 	// At least one match
-    		
-    	} // condition: got results from query
+    	return sresp.getHits().getTotalHits().value!=0;
 	}
 
 	/**
@@ -283,23 +269,23 @@ public class DocumentStoreService {
     		if (max==null || max.getValue()==0 || Double.isNaN(max.getValue()))
     			return null;
     		
-    		int prev_period = (int)max.getValue();
-    		Number next_period = Periodicity.getNextPeriod(prev_period);
-    		if (next_period==null)
+    		int prevPeriod = (int)max.getValue();
+    		Number nextPeriod = Periodicity.getNextPeriod(prevPeriod);
+    		if (nextPeriod==null)
     			return null;  // Could not validate period number
     		
-    		if (next_period.intValue()>=filter_period_max.intValue())
+    		if (nextPeriod.intValue()>=filter_period_max.intValue())
     			return null;  // No missing period
     		
-    		return (int)next_period.intValue(); // first missing period number
+    		return (int)nextPeriod.intValue(); // first missing period number
     		
     	} // condition: got results from query
 	}
 
 	/**
 	 * Given all documents uploaded since 'min_timestamp', returns the first period of declaration aggregated by taxpayer and by declaration template.
-	 * @param filter_taxpayers_ids Optional filter for taxpayers. If not null, will be used to restrict the search for these taxpayers. Provide their ID's.
-	 * @param filter_template Optional filter for template. If present, will be used to restrict the search for this template name.
+	 * @param filterTaxpayersIds Optional filter for taxpayers. If not null, will be used to restrict the search for these taxpayers. Provide their ID's.
+	 * @param filterTemplate Optional filter for template. If present, will be used to restrict the search for this template name.
 	 * @return Returns a map with the following structure:<BR>
 	 * First level of aggregation contains taxpayers' Ids as keys.<BR>
 	 * Second level of aggregation contains template names as keys.<BR>
@@ -307,12 +293,12 @@ public class DocumentStoreService {
 	 */
 	@Transactional(readOnly=true)
 	public Map<String,Map<String,Integer>> getMapTaxpayersFirstPeriod(
-			final Set<String> filter_taxpayers_ids, 
-			final Optional<String> filter_template) {
+			final Set<String> filterTaxpayersIds, 
+			final Optional<String> filterTemplate) {
 		
 		SearchRequest searchRequest = searchTaxpayersDeclarationsFirstPeriods(
-				filter_taxpayers_ids,
-				filter_template,
+				filterTaxpayersIds,
+				filterTemplate,
 				"templateName.keyword");
 		
     	SearchResponse sresp;
@@ -321,8 +307,8 @@ public class DocumentStoreService {
 		} catch (Throwable ex) {
 			if (ErrorUtils.isErrorIllegalArgumentFieldsNotOptimized(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
 				searchRequest = searchTaxpayersDeclarationsFirstPeriods(
-						filter_taxpayers_ids,
-						filter_template,
+						filterTaxpayersIds,
+						filterTemplate,
 						"templateName");
 				try {
 					sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -354,15 +340,15 @@ public class DocumentStoreService {
     			if (taxpayerId==null || taxpayerId.trim().length()==0)
     				continue;
     			
-    			Map<String,Integer> statistics_for_taxpayer = new TreeMap<>();
-    			statistics.put(taxpayerId, statistics_for_taxpayer);
+    			Map<String,Integer> statisticsForTaxpayer = new TreeMap<>();
+    			statistics.put(taxpayerId, statisticsForTaxpayer);
     			
     			Terms templates = txid_bucket.getAggregations().get("byTemplate");
     			
     			for (Terms.Bucket template_bucket : templates.getBuckets()) {
     				
-    				String template_name = template_bucket.getKeyAsString();
-    				if (template_name==null || template_name.trim().length()==0)
+    				String templateName = template_bucket.getKeyAsString();
+    				if (templateName==null || templateName.trim().length()==0)
     					continue;
     				
     				Min minPeriod = template_bucket.getAggregations().get("minPeriod");
@@ -370,7 +356,7 @@ public class DocumentStoreService {
     				if (minPeriod==null || minPeriod.getValue()==0 || Double.isNaN(minPeriod.getValue()))
     					continue;
     				
-    				statistics_for_taxpayer.put(template_name, (int)minPeriod.getValue());
+    				statisticsForTaxpayer.put(templateName, (int)minPeriod.getValue());
     				
     			} // LOOP over templates names buckets
     		} // LOOP over taxpayers buckets
@@ -384,8 +370,8 @@ public class DocumentStoreService {
 	/**
 	 * Build the query object used by {@link #getMapTaxpayersFirstPeriod(Set, Optional) getMapTaxpayersFirstPeriod}
 	 */
-	private SearchRequest searchTaxpayersDeclarationsFirstPeriods(final Set<String> filter_taxpayers_ids, 
-			final Optional<String> filter_template,
+	private SearchRequest searchTaxpayersDeclarationsFirstPeriods(final Set<String> filterTaxpayersIds, 
+			final Optional<String> filterTemplate,
 			final String templateFieldName) {
     	// Index over 'DocumentUploaded' objects
     	SearchRequest searchRequest = new SearchRequest("docs_uploaded");
@@ -394,9 +380,9 @@ public class DocumentStoreService {
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
     	
     	// Optional filter by taxpayers Id's (depends on user profile and UI advanced filters)
-    	if (filter_taxpayers_ids!=null) {
+    	if (filterTaxpayersIds!=null) {
 			BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-			for (String argument: filter_taxpayers_ids) {
+			for (String argument: filterTaxpayersIds) {
 				subquery = subquery.should(new TermQueryBuilder("taxPayerId.keyword", argument));
 			}
 			subquery = subquery.minimumShouldMatch(1);
@@ -404,8 +390,8 @@ public class DocumentStoreService {
     	}
     	
     	// Optional filter for template name
-    	if (filter_template!=null && filter_template.isPresent()) {
-    		query = query.must(new TermQueryBuilder(templateFieldName, filter_template.get()));
+    	if (filterTemplate!=null && filterTemplate.isPresent()) {
+    		query = query.must(new TermQueryBuilder(templateFieldName, filterTemplate.get()));
     	}
 
     	// Configure the aggregations

@@ -80,7 +80,7 @@ public class DocumentTemplateService {
 		try {
 			pTemplate = Pattern.compile("^"+(template.replaceAll("[^A-Za-z\\d]", "\\."))+"$",Pattern.CASE_INSENSITIVE);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			pTemplate = Pattern.compile("^"+Pattern.quote(template)+"$",Pattern.CASE_INSENSITIVE);
 		}
 		
@@ -125,8 +125,8 @@ public class DocumentTemplateService {
 	 */
 	public Map<String, Periodicity> getTemplatesWithFilesPeriodicityMap() {
 		
-		Map<String, Periodicity> templates_periodicity = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Map<String, OffsetDateTime> templates_timestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		Map<String, Periodicity> templatesPeriodicity = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		Map<String, OffsetDateTime> templatesTimestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		List<DocumentTemplate> templates = getTemplatesWithFiles();
 		for (DocumentTemplate template:templates) {
 			if (null==template.getName())
@@ -136,23 +136,23 @@ public class DocumentTemplateService {
 			String name = template.getName();
 			OffsetDateTime timestamp = template.getTemplateCreateTime();
 			Periodicity periodicity = template.getPeriodicity();
-			Periodicity last_known_periodicity = templates_periodicity.get(name);
-			if (last_known_periodicity==null || Periodicity.UNKNOWN.equals(last_known_periodicity)) {
-				templates_periodicity.put(name, periodicity);
-				templates_timestamps.put(name, timestamp);
+			Periodicity lastKnownPeriodicity = templatesPeriodicity.get(name);
+			if (lastKnownPeriodicity==null || Periodicity.UNKNOWN.equals(lastKnownPeriodicity)) {
+				templatesPeriodicity.put(name, periodicity);
+				templatesTimestamps.put(name, timestamp);
 			}
 			else if (!Periodicity.UNKNOWN.equals(periodicity)
-					&& !last_known_periodicity.equals(periodicity)) {
+					&& !lastKnownPeriodicity.equals(periodicity)) {
 				// If we got different periodicities for the same template name, keeps the last one
-				OffsetDateTime last_known_timestamp = templates_timestamps.get(name);
-				if (last_known_timestamp!=null && timestamp!=null && last_known_timestamp.isBefore(timestamp)) {
-					templates_periodicity.put(name, periodicity);
-					templates_timestamps.put(name, timestamp);					
+				OffsetDateTime lastKnownTimestamp = templatesTimestamps.get(name);
+				if (lastKnownTimestamp!=null && timestamp!=null && lastKnownTimestamp.isBefore(timestamp)) {
+					templatesPeriodicity.put(name, periodicity);
+					templatesTimestamps.put(name, timestamp);					
 				}
 			}
 		}
 
-		return templates_periodicity;		
+		return templatesPeriodicity;		
 	}
 
 	/**
@@ -163,7 +163,7 @@ public class DocumentTemplateService {
 			Page<DocumentTemplate> allTemplates = templateRepository.findByActive(true, PageRequest.of(0, 10_000, Sort.by("name.keyword","version.keyword").ascending()));
 			return allTemplates.getContent();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex))
 				throw ex;
 			return Collections.emptyList();
@@ -283,24 +283,24 @@ public class DocumentTemplateService {
 		
 		// Let's get all the fields information from the DocumentTemplate
 
-		Map<String,Integer> all_mapFieldNames = template.getFields().stream()
+		Map<String,Integer> allMapFieldNames = template.getFields().stream()
 				.filter(f->f!=null && f.getFieldName()!=null && f.getFieldName().trim().length()>0)
 				.collect(Collectors.toMap(
 					/*keyMapper*/DocumentField::getFieldName, 
 					/*valueMapper*/DocumentField::getId, 
 					/*mergeFunction*/(a,b)->a, 
 					/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
-		if (all_mapFieldNames.isEmpty())
+		if (allMapFieldNames.isEmpty())
 			return;
 
 		// First of all, let's make sure every field in DocumentTemplate has an unique ID
 		Map<Integer,String> mapFieldIds = new HashMap<>();
-		for (Map.Entry<String,Integer> entry: new ArrayList<>(all_mapFieldNames.entrySet())) {
+		for (Map.Entry<String,Integer> entry: new ArrayList<>(allMapFieldNames.entrySet())) {
 			String fieldName = entry.getKey();
 			Integer fieldId = entry.getValue();
 			if (mapFieldIds.containsKey(fieldId)) {
 				fieldId = template.getNextUnassignedFieldId();
-				all_mapFieldNames.put(fieldName, fieldId);
+				allMapFieldNames.put(fieldName, fieldId);
 				mapFieldIds.put(fieldId, fieldName);
 				template.getField(fieldName).setId(fieldId);
 				template.evictNextUnassignedFieldId();
@@ -315,7 +315,7 @@ public class DocumentTemplateService {
 				continue;
 			
 			Map<String,Integer> mapFieldNames = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-			mapFieldNames.putAll(all_mapFieldNames);
+			mapFieldNames.putAll(allMapFieldNames);
 			
 			if (input.getFields()==null || input.getFields().isEmpty()) {
 				// If the DocumentInput has no mappings, let's include one for each DocumentField
@@ -328,15 +328,15 @@ public class DocumentTemplateService {
 			}
 			else {
 				// If the DocumentInput has some mappings, let's check what is absent and what is exceeding
-				List<DocumentInputFieldMapping> exceeding_maps = new LinkedList<>();
+				List<DocumentInputFieldMapping> exceedingMaps = new LinkedList<>();
 				for (DocumentInputFieldMapping map: input.getFields()) {
 					if (map.getFieldName()==null || map.getFieldName().trim().length()==0)
 						continue;
-					Integer field_id = mapFieldNames.remove(map.getFieldName());
-					if (field_id==null) {
+					Integer fieldId = mapFieldNames.remove(map.getFieldName());
+					if (fieldId==null) {
 						// This DocumentInputFieldMapping refers to a name that does not exist in DocumentTemplate
 						// Let's see check later if they have been renamed
-						exceeding_maps.add(map);
+						exceedingMaps.add(map);
 					}
 					else {
 						// This DocumentInputFieldMapping matches a DocumentField in DocumentTemplate
@@ -348,11 +348,11 @@ public class DocumentTemplateService {
 						String fieldName = entry.getKey();
 						Integer fieldId = entry.getValue();
 						// Check for possible renamed field in FieldMappings (something with different name but the same id)
-						DocumentInputFieldMapping possible_renamed_field = exceeding_maps.stream().filter(m->fieldId.equals(m.getFieldId())).findAny().orElse(null);
-						if (possible_renamed_field!=null) {
+						DocumentInputFieldMapping possibleRenamedField = exceedingMaps.stream().filter(m->fieldId.equals(m.getFieldId())).findAny().orElse(null);
+						if (possibleRenamedField!=null) {
 							// Change the name of the existent field mapping
-							possible_renamed_field.setFieldName(fieldName);
-							exceeding_maps.remove(possible_renamed_field); // it's not to be considered 'exceeding' anymore
+							possibleRenamedField.setFieldName(fieldName);
+							exceedingMaps.remove(possibleRenamedField); // it's not to be considered 'exceeding' anymore
 						}
 						else {
 							// Add a new field mapping
@@ -363,9 +363,9 @@ public class DocumentTemplateService {
 						}
 					} // LOOP over missing DocumentInputFieldMapping's in DocumentInput
 				}
-				if (!exceeding_maps.isEmpty()) {
+				if (!exceedingMaps.isEmpty()) {
 					// Some fields are exceeding in DocumentInput ...
-					exceeding_maps.stream().forEach(input::removeField);
+					exceedingMaps.stream().forEach(input::removeField);
 				}
 			}
 		}

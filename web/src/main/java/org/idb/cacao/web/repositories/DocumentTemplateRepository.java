@@ -50,7 +50,7 @@ public interface DocumentTemplateRepository extends ElasticsearchRepository<Docu
 	
 	public void deleteById(String id);
 
-	default public <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
+	public default <S extends DocumentTemplate> S saveWithTimestamp(S entity) {
 		if (entity.getTemplateCreateTime()==null)
 			entity.setTemplateCreateTime(DateTimeUtils.now());
 		entity.setChangedTime(DateTimeUtils.now());

@@ -64,7 +64,6 @@ public class DocumentStoreUIController {
 	@Secured({"ROLE_TAX_DECLARATION_READ"})
 	@GetMapping("/docs-search")
 	public String searchDocs(Model model) {
-		//model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
 		return "docs/docs_search";
 	}
 
@@ -107,7 +106,7 @@ public class DocumentStoreUIController {
 		try {
 			response.sendRedirect("/api/doc/download?documentId=" + documentId);
 		} catch (IOException e) {
-			log.log(Level.SEVERE, "Error while redirecting for download document " + documentId, e);
+			log.log(Level.SEVERE, String.format("Error while redirecting for download document %s", documentId), e);
 		}
     }
 }

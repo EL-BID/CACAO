@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -380,22 +381,22 @@ public class AdminService {
 			throw new Exception("No operation!");
 		
 		QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(command);
-		String[] command_parts = new String[tokenizer.countTokens()];
-		for (int i=0; i<command_parts.length; i++) {
-			command_parts[i] = tokenizer.nextToken();
+		String[] commandParts = new String[tokenizer.countTokens()];
+		for (int i=0; i<commandParts.length; i++) {
+			commandParts[i] = tokenizer.nextToken();
 		}
 		
-		String command_name = (command_parts.length>0) ? command_parts[0].toUpperCase() : null;
+		String commandName = (commandParts.length>0) ? commandParts[0].toUpperCase() : null;
 		
 		AdminOperations op;
 		try {
-			op = AdminOperations.valueOf(command_name);
+			op = AdminOperations.valueOf(commandName);
 		}
-		catch (Throwable ex) {
-			throw new UnsupportedOperationException("Unknown operation: "+command_name);
+		catch (Exception ex) {
+			throw new UnsupportedOperationException("Unknown operation: "+commandName);
 		}
 		if (op==null) {
-			throw new UnsupportedOperationException("Unknown operation: "+command_name);
+			throw new UnsupportedOperationException("Unknown operation: "+commandName);
 		}
 		
 		
@@ -403,7 +404,7 @@ public class AdminService {
 		CommandLine cmdLine = null;
 		try
 		{
-			cmdLine = parser.parse(op.getCommandLineOptions(), command_parts);
+			cmdLine = parser.parse(op.getCommandLineOptions(), commandParts);
 		}
 		catch (ParseException ex)
 		{
@@ -413,9 +414,7 @@ public class AdminService {
 			throw new IllegalStateException("Invalid command line options for command "+op.name());
 		}
 		
-		Object response = op.doAction(this, cmdLine);
-
-		return response;
+		return op.doAction(this, cmdLine);
 	}
 	
 	/**
@@ -423,25 +422,25 @@ public class AdminService {
 	 */
 	public static Object getHelp(AdminService service, CommandLine cmdLine) throws Exception {
 		if (cmdLine.hasOption("c")) {
-			String command_name = cmdLine.getOptionValue("c").toUpperCase();
-			return getHelp(command_name);
+			String commandName = cmdLine.getOptionValue("c").toUpperCase();
+			return getHelp(commandName);
 		}
 		else if (cmdLine.getArgs().length==2) {
-			String command_name = cmdLine.getArgs()[1].toUpperCase();
+			String commandName = cmdLine.getArgs()[1].toUpperCase();
 			AdminOperations op;
 			try {
-				op = AdminOperations.valueOf(command_name);
+				op = AdminOperations.valueOf(commandName);
 			}
-			catch (Throwable ex) {
-				throw new UnsupportedOperationException("Unknown operation: "+command_name);
+			catch (Exception ex) {
+				throw new UnsupportedOperationException("Unknown operation: "+commandName);
 			}
 			if (op==null) {
-				throw new UnsupportedOperationException("Unknown operation: "+command_name);
+				throw new UnsupportedOperationException("Unknown operation: "+commandName);
 			}
 			HelpFormatter formatter = new HelpFormatter();
 			StringWriter buffer = new StringWriter();
 			PrintWriter output = new PrintWriter(buffer);
-			formatter.printHelp(output, /*width*/80, /*cmdLineSyntax*/command_name, 
+			formatter.printHelp(output, /*width*/80, /*cmdLineSyntax*/commandName, 
 				/*header*/null, op.getCommandLineOptions(), 
 				formatter.getLeftPadding(), 
 				formatter.getDescPadding(), 
@@ -490,7 +489,7 @@ public class AdminService {
 		try {
 			op = AdminOperations.valueOf(commandName);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			throw new UnsupportedOperationException("Unknown operation: "+commandName);
 		}
 		if (op==null) {
@@ -520,31 +519,31 @@ public class AdminService {
 		if (!cmdLine.hasOption("d"))
 			throw new Exception("Missing required command line option 'd'!");
 		
-		String source_index_name = cmdLine.getOptionValue("s");
-		String destination_index_name = cmdLine.getOptionValue("d");
-		if (source_index_name.equals(destination_index_name)) 
+		String sourceIndexName = cmdLine.getOptionValue("s");
+		String destinationIndexName = cmdLine.getOptionValue("d");
+		if (sourceIndexName.equals(destinationIndexName)) 
 			throw new Exception("Source index should not be the same as the destination index!");
 
 		// Check if destination already exists
-		boolean destination_exists;
+		boolean destinationExists;
     	try {
-    		ESUtils.hasMappings(service.elasticsearchClient, destination_index_name);
+    		ESUtils.hasMappings(service.elasticsearchClient, destinationIndexName);
     		
     		// the index may exist and have no mapping
     		// if there was now exception thrown, we know there was an index
-    		destination_exists = true;
+    		destinationExists = true;
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		if (!ErrorUtils.isErrorNoIndexFound(ex))
     			throw ex;
-    		destination_exists = false;
+    		destinationExists = false;
     	}
     	
-    	if (destination_exists)
+    	if (destinationExists)
     		throw new Exception("Destination already exists!");
 
 		// Make the index read only (necessary for 'clone')
-		ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, source_index_name, ESUtils.SETTING_READ_ONLY, /*setting_value*/true, /*closeAndReopenIndex*/false);
+		ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, sourceIndexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/true, /*closeAndReopenIndex*/false);
 		
 		try {
 
@@ -556,25 +555,25 @@ public class AdminService {
 			RequestOptions options = RequestOptions.DEFAULT.toBuilder()
 			.setRequestConfig(requestConfig)
 			.build();
-			ResizeRequest clone_request = new ResizeRequest(/*target_index*/destination_index_name, /*source_index*/source_index_name);
-			clone_request.setTimeout(TimeValue.timeValueSeconds(60));
-			clone_request.setMasterTimeout(TimeValue.timeValueSeconds(60));
-			clone_request.setWaitForActiveShards(1);
-			ResizeResponse resizeResponse = service.elasticsearchClient.indices().clone(clone_request, options);
+			ResizeRequest cloneRequest = new ResizeRequest(/*target_index*/destinationIndexName, /*source_index*/sourceIndexName);
+			cloneRequest.setTimeout(TimeValue.timeValueSeconds(60));
+			cloneRequest.setMasterTimeout(TimeValue.timeValueSeconds(60));
+			cloneRequest.setWaitForActiveShards(1);
+			ResizeResponse resizeResponse = service.elasticsearchClient.indices().clone(cloneRequest, options);
 			if (!resizeResponse.isAcknowledged()) {
-				throw new RuntimeException("Could not copy index '"+source_index_name+"'. Failed to acknownledge CLONE to "+destination_index_name);
+				throw new RuntimeException("Could not copy index '"+sourceIndexName+"'. Failed to acknownledge CLONE to "+destinationIndexName);
 			}
 			if (!resizeResponse.isShardsAcknowledged()) {
-				throw new RuntimeException("Could not copy index '"+source_index_name+"'. Failed to acknownledge CLONE to "+destination_index_name);
+				throw new RuntimeException("Could not copy index '"+sourceIndexName+"'. Failed to acknownledge CLONE to "+destinationIndexName);
 			}
 
 
 		}
 		finally {
-			ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, source_index_name, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
+			ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, sourceIndexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
 			try {
-				ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, destination_index_name, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
-			} catch (Throwable ex2) { }
+				ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, destinationIndexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
+			} catch (Exception ex2) { }
 		}
 		
 		return "SUCCESS";
@@ -585,8 +584,8 @@ public class AdminService {
 	 */
 	public static Object log(AdminService service, CommandLine cmdLine) throws Exception {
 		
-		File log_dir = AdminUIController.getLogDir();
-		if (log_dir==null || !log_dir.exists()) {
+		File logDir = AdminUIController.getLogDir();
+		if (logDir==null || !logDir.exists()) {
 			return "LOG dir is not configured property!";
 		}
 		
@@ -633,24 +632,24 @@ public class AdminService {
 	/**
 	 * Return information about the directory for LOG files
 	 */
-	public static Object logdir(AdminService service, CommandLine cmdLine) throws Exception {
+	public static Object logdir(AdminService service, CommandLine cmdLine) {
 		
-		File log_dir = AdminUIController.getLogDir();
+		File logDir = AdminUIController.getLogDir();
 		
 		StringBuilder report = new StringBuilder();
-		if (log_dir==null) {
+		if (logDir==null) {
 			report.append("LOG directory was not defined!");
 		}
 		else {
-			report.append("LOG directory: ").append(log_dir.getAbsolutePath()).append("\n");
-			if (!log_dir.exists()) {
+			report.append("LOG directory: ").append(logDir.getAbsolutePath()).append("\n");
+			if (!logDir.exists()) {
 				report.append("Directory does not exists!\n");
 			}
 			else {
-				long total_space = log_dir.getTotalSpace();
-				long free_space = log_dir.getFreeSpace();
-				report.append("Total space at LOG disk: ").append(total_space).append("\n");
-				report.append("Free space at LOG disk: ").append(free_space).append("\n");
+				long totalSpace = logDir.getTotalSpace();
+				long freeSpace = logDir.getFreeSpace();
+				report.append("Total space at LOG disk: ").append(totalSpace).append("\n");
+				report.append("Free space at LOG disk: ").append(freeSpace).append("\n");
 			}
 		}
 		
@@ -779,8 +778,8 @@ public class AdminService {
 			try {
 				ESUtils.copyTransitiveDependencies(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "dashboard", dashboardId, /*max_iterations*/5);
 			}
-			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error copying transitive dependencies for dashboard "+dashboardId+" from "+sourceSpaceId+" to "+targetSpaceId, ex);
+			catch (Exception ex) {
+				log.log(Level.SEVERE, ex, () -> "Error copying transitive dependencies for dashboard "+dashboardId+" from "+sourceSpaceId+" to "+targetSpaceId);
 			}
 		}
 		
@@ -804,8 +803,8 @@ public class AdminService {
 		
 		if (cmdLine.hasOption("dt")) {
 			// Creates built-in domain tables
-			int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/false);
-			report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+			int countDomainTablesCreated = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/false);
+			report.append("Created ").append(countDomainTablesCreated).append(" built-in domain tables from template's archetypes.\n");
 		}
 		
 		if (cmdLine.hasOption("t")) {
@@ -826,13 +825,13 @@ public class AdminService {
 		
 		if (cmdLine.hasOption("d")) {
 			// Add sample data (documents) according to provided template name
-			String template_name = cmdLine.getOptionValue("d");
-			if (template_name.trim().length()==0)
+			String templateName = cmdLine.getOptionValue("d");
+			if (templateName.trim().length()==0)
 				report.append("Missing template name with 'd' option!");
 			else {
 				boolean background = cmdLine.hasOption("bg");
-				int limit_docs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
-				long fixed_limit_records = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
+				int limitDocs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
+				long fixedLimitRecords = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
 				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
 				int year = (cmdLine.hasOption("y")) ? Integer.parseInt(cmdLine.getOptionValue("y")) : Year.now().getValue() - 1;
 				int threads = (cmdLine.hasOption("thr")) ? Integer.parseInt(cmdLine.getOptionValue("thr")) : DEFAULT_PARALLELISM_FOR_DATA_GENERATOR;
@@ -846,24 +845,25 @@ public class AdminService {
 						{
 							setDaemon(true);
 						}
+						@Override
 						public void run() {
 							StringBuilder bg_report = new StringBuilder();
-							bg_report.append("Report for background process of creation of ").append(limit_docs).append(" documents with random data for template ").append(template_name).append("\n");
+							bg_report.append("Report for background process of creation of ").append(limitDocs).append(" documents with random data for template ").append(templateName).append("\n");
 							try {
-								service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, bg_report, threads);
+								service.createSampleDocuments(auth, remoteIpAddr, templateName.trim(), limitDocs, fixedLimitRecords, seedWord, year, bg_report, threads);
 							}
-							catch (Throwable ex) {
-								log.log(Level.SEVERE, "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()), ex);
+							catch (Exception ex) {
+								log.log(Level.SEVERE, ex, () -> "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()));
 							}
 							finally {
 								log.log(Level.INFO, bg_report.toString());
 							}
 						}
 					}.start();
-					report.append("Creating ").append(limit_docs).append(" documents with random data for template ").append(template_name).append(" at background\n");
+					report.append("Creating ").append(limitDocs).append(" documents with random data for template ").append(templateName).append(" at background\n");
 				}
 				else {
-					service.createSampleDocuments(auth, remoteIpAddr, template_name.trim(), limit_docs, fixed_limit_records, seedWord, year, report, threads);
+					service.createSampleDocuments(auth, remoteIpAddr, templateName.trim(), limitDocs, fixedLimitRecords, seedWord, year, report, threads);
 				}
 			}
 		}
@@ -875,7 +875,7 @@ public class AdminService {
 	/**
 	 * Lists the domain tables
 	 */
-	public static Object tables(AdminService service, CommandLine cmdLine) throws Exception {
+	public static Object tables(AdminService service, CommandLine cmdLine) {
 		StringBuilder report = new StringBuilder();
 		
 		report.append(String.format("%-40s\t%-10s\t%s\n", "name", "version", "group"));
@@ -891,7 +891,7 @@ public class AdminService {
 	/**
 	 * Lists the templates
 	 */
-	public static Object templates(AdminService service, CommandLine cmdLine) throws Exception {
+	public static Object templates(AdminService service, CommandLine cmdLine) {
 		StringBuilder report = new StringBuilder();
 
 		report.append(String.format("%-40s\t%-10s\t%s\n", "name", "version", "group"));
@@ -907,25 +907,25 @@ public class AdminService {
 	/**
 	 * Creates sample documents with random data according to the provided template
 	 */
-	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String template_name, int limit_docs, 
-			long fixed_limit_records, String seedWord, int year, StringBuilder report, int threads) throws Exception {
-		List<DocumentTemplate> templates_versions = templateRepository.findByNameIgnoreCase(template_name);
-		if (templates_versions==null || templates_versions.isEmpty()) {
-			report.append("Could not find a template with name: ").append(template_name).append("\n");
+	private void createSampleDocuments(Authentication auth, String remoteIpAddr, String templateName, int limitDocs, 
+			long fixedLimitRecords, String seedWord, int year, StringBuilder report, int threads) throws Exception {
+		List<DocumentTemplate> templatesVersions = templateRepository.findByNameIgnoreCase(templateName);
+		if (templatesVersions==null || templatesVersions.isEmpty()) {
+			report.append("Could not find a template with name: ").append(templateName).append("\n");
 			return;
 		}
 		
 		DocumentTemplate template;
 		
-		if (templates_versions.size()>1) {
+		if (templatesVersions.size()>1) {
 			// In case of multiple versions, use the last one
-			template = templates_versions.stream()
+			template = templatesVersions.stream()
 					.filter(t->t.getInputs()!=null && !t.getInputs().isEmpty())
 					.sorted(Comparator.comparing(DocumentTemplate::getTemplateCreateTime).reversed())
 					.findFirst().get();
 		}
 		else {
-			template = templates_versions.get(0);
+			template = templatesVersions.get(0);
 		}
 		
 		List<DocumentInput> inputFormats = template.getInputs();
@@ -946,7 +946,7 @@ public class AdminService {
 			seed = ByteBuffer.wrap(Hashing.sha256().hashString(seedWord, StandardCharsets.UTF_8).asBytes()).asLongBuffer().get();
 		}
 		
-        ExecutorService executor = (limit_docs>1) ? Executors.newFixedThreadPool(threads) : null;
+        ExecutorService executor = (limitDocs>1) ? Executors.newFixedThreadPool(threads) : null;
 
 		// Let's use this for generating SEED per document
 		Random genSeed = new Random(seed);
@@ -959,7 +959,7 @@ public class AdminService {
 			
 			final boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
 
-			for (int i=0; i<limit_docs; i++) {
+			for (int i=0; i<limitDocs; i++) {
 				String subDir = fileSystemStorageService.getSubDir();
 				final Path location = fileSystemStorageService.getLocation(subDir);
 				
@@ -974,17 +974,17 @@ public class AdminService {
 				final List<DocumentField> taxPayerIdFields = template.getFieldsOfType(FieldMapping.TAXPAYER_ID);
 				final int num_digits_for_taxpayer_id = (taxPayerIdFields.isEmpty()) ? 10 : Math.min(20, Math.max(1, Optional.ofNullable(taxPayerIdFields.iterator().next().getMaxLength()).orElse(10)));
 
-				final Integer partition = (limit_docs>1) ? i : null;
+				final Integer partition = (limitDocs>1) ? i : null;
 				
 				final int doc_index = i;
 
 	        	Callable<Object> procedure = ()->{
 
-					final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixed_limit_records) : null;
+					final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixedLimitRecords) : null;
 
-					final long limit_records = (fixed_limit_records<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
-							: (fixed_limit_records<0 && custom_gen==null) ? 10_000 
-							: fixed_limit_records;
+					final long limit_records = (fixedLimitRecords<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
+							: (fixedLimitRecords<0 && custom_gen==null) ? 10_000 
+							: fixedLimitRecords;
 
 	    			final FileGenerator gen = FileGenerators.getFileGenerator(format);
 	    			gen.setDocumentTemplate(template);
@@ -1001,7 +1001,7 @@ public class AdminService {
 							custom_gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
 							if (year!=0)
 								custom_gen.setTaxYear(year);
-							custom_gen.setOverallSeed(seed, limit_docs, doc_index);
+							custom_gen.setOverallSeed(seed, limitDocs, doc_index);
 							custom_gen.start();
 							taxpayerId = custom_gen.getTaxpayerId();
 							gen.setFixedYear(custom_gen.getTaxYear());
@@ -1050,26 +1050,26 @@ public class AdminService {
 							// Creates a new taxpayer with random name
 							RandomDataGenerator randomDataGenerator = new RandomDataGenerator(doc_seed);
 							String name = randomDataGenerator.nextPersonName();
-							Taxpayer new_txp = new Taxpayer();
-							new_txp.setName(name);
-							new_txp.setTaxPayerId(taxpayerId);
+							Taxpayer newTxp = new Taxpayer();
+							newTxp.setName(name);
+							newTxp.setTaxPayerId(taxpayerId);
 							
 							// suppose Qualifier1 refers to Economic Sector
-							new_txp.setQualifier1(SampleEconomicSectors.sample(randomDataGenerator.getRandomGenerator()).getName());
+							newTxp.setQualifier1(SampleEconomicSectors.sample(randomDataGenerator.getRandomGenerator()).getName());
 
 							// suppose Qualifier2 refers to Legal Entity
-							new_txp.setQualifier2(SampleLegalEntities.sample(randomDataGenerator.getRandomGenerator()).getName());
+							newTxp.setQualifier2(SampleLegalEntities.sample(randomDataGenerator.getRandomGenerator()).getName());
 
 							// suppose Qualifier3 refers to County
-							new_txp.setQualifier3(SampleCounty.sample(randomDataGenerator.getRandomGenerator()).getName());
+							newTxp.setQualifier3(SampleCounty.sample(randomDataGenerator.getRandomGenerator()).getName());
 
 							// suppose Qualifier4 refers to Size of Company
-							new_txp.setQualifier4(SampleCompanySizes.sample(randomDataGenerator.getRandomGenerator()).getName());
+							newTxp.setQualifier4(SampleCompanySizes.sample(randomDataGenerator.getRandomGenerator()).getName());
 
 							// suppose Qualifier5 refers to Tax Regime
-							new_txp.setQualifier5(SampleTaxRegimes.sample(randomDataGenerator.getRandomGenerator()).getName());
+							newTxp.setQualifier5(SampleTaxRegimes.sample(randomDataGenerator.getRandomGenerator()).getName());
 
-							taxPayerRepository.saveWithTimestamp(new_txp);
+							taxPayerRepository.saveWithTimestamp(newTxp);
 						}
 					}
 				
@@ -1124,13 +1124,13 @@ public class AdminService {
 		        try {
 					boolean ok = executor.awaitTermination(1, TimeUnit.HOURS);
 					if (!ok)
-						log.log(Level.WARNING,"Too much time waiting for termination of generation of "+limit_docs+" documents of template "+template.getName());
+						log.log(Level.WARNING, () -> "Too much time waiting for termination of generation of "+limitDocs+" documents of template "+template.getName());
 				} catch (InterruptedException e) {
 		        	log.log(Level.WARNING,"Interrupted data generation", e);
 				}
 			}
 
-			report.append("Created ").append(limit_docs).append(" documents with random data of format ").append(format.name()).append(" for template ").append(template.getName()).append(" version ").append(template.getVersion()).append("\n");
+			report.append("Created ").append(limitDocs).append(" documents with random data of format ").append(format.name()).append(" for template ").append(template.getName()).append(" version ").append(template.getVersion()).append("\n");
 			return;
 		}
 		
@@ -1139,8 +1139,9 @@ public class AdminService {
 	
 	/**
 	 * Updates index patterns at KIBANA
+	 * @throws IOException 
 	 */
-	public static Object updateIndexPattern(AdminService service, CommandLine cmdLine) throws Exception {
+	public static Object updateIndexPattern(AdminService service, CommandLine cmdLine) throws IOException {
 
 		String indexIdOrName = cmdLine.getOptionValue("i", null);
 		String spaceId = cmdLine.getOptionValue("s");
@@ -1159,8 +1160,8 @@ public class AdminService {
 					updateIndexPattern(service, space.getId(), indexIdOrName, countUpdates, countErrors);
 					
 				}
-				catch (Throwable ex) {
-					log.log(Level.SEVERE, "Error while updating index patterns at Kibana space "+space.getId(), ex);
+				catch (Exception ex) {
+					log.log(Level.SEVERE, ex, () -> "Error while updating index patterns at Kibana space "+space.getId());
 					countErrors.increment();
 				}
 			}
@@ -1183,15 +1184,15 @@ public class AdminService {
 		if (indexIdOrName==null || indexIdOrName.trim().length()==0) {
 			
 			// Updates all index patterns
-			List<ESUtils.KibanaSavedObject> index_patterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, spaceId);
-			if (index_patterns==null || index_patterns.isEmpty()) {
+			List<ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, spaceId);
+			if (indexPatterns==null || indexPatterns.isEmpty()) {
 				
 				return;
 				
 			}
 			else {
 				
-				final String[] indexPatternsIds = index_patterns.stream().map(ESUtils.KibanaSavedObject::getId).toArray(String[]::new);
+				final String[] indexPatternsIds = indexPatterns.stream().map(ESUtils.KibanaSavedObject::getId).toArray(String[]::new);
 				
 				for (String patternId: indexPatternsIds) {
 					updateIndexPatternInternal(service, spaceId, patternId, countUpdates, countErrors);
@@ -1203,40 +1204,40 @@ public class AdminService {
 			
 			// Updates one specific index pattern
 			
-			boolean is_uuid;
+			boolean isUuid;
 			try{
 			    UUID.fromString(indexIdOrName);
-			    is_uuid = true;
+			    isUuid = true;
 			} catch (IllegalArgumentException exception){
-				is_uuid = false;
+				isUuid = false;
 			}
 			
-			if (is_uuid) {
+			if (isUuid) {
 			
 				updateIndexPatternInternal(service, spaceId, indexIdOrName, countUpdates, countErrors);
 				
 			}
 			else {
 				
-				List<ESUtils.KibanaSavedObject> index_patterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, spaceId);
-				if (index_patterns==null || index_patterns.isEmpty()) {
+				List<ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, spaceId);
+				if (indexPatterns==null || indexPatterns.isEmpty()) {
 					
 					return;
 					
 				}
 				else {
 					
-					ESUtils.KibanaSavedObject index_pattern =
-					index_patterns.stream().filter(i->String.CASE_INSENSITIVE_ORDER.compare(i.getTitle(), indexIdOrName)==0).findAny().orElse(null);
+					ESUtils.KibanaSavedObject indexPattern =
+					indexPatterns.stream().filter(i->String.CASE_INSENSITIVE_ORDER.compare(i.getTitle(), indexIdOrName)==0).findAny().orElse(null);
 					
-					if (index_pattern==null) {
+					if (indexPattern==null) {
 						
 						return;
 						
 					}
 					else {
 						
-						updateIndexPatternInternal(service, spaceId, index_pattern.getId(), countUpdates, countErrors);
+						updateIndexPatternInternal(service, spaceId, indexPattern.getId(), countUpdates, countErrors);
 
 					}
 					
@@ -1255,18 +1256,20 @@ public class AdminService {
 			ESUtils.updateKibanaIndexPattern(service.env, service.restTemplate, spaceId, patternId, indexPattern);
 			countUpdates.increment();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			countErrors.increment();
 			if (countErrors.longValue()==1) {
-				log.log(Level.SEVERE, "Error while updating index pattern "+patternId+" of space "+spaceId, ex);
+				log.log(Level.SEVERE, ex, () -> "Error while updating index pattern "+patternId+" of space "+spaceId);
 			}
 		}
 	}
 	
 	/**
 	 * Operations on KAFKA
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
 	 */
-	public static Object kafka(AdminService service, CommandLine cmdLine) throws Exception {
+	public static Object kafka(AdminService service, CommandLine cmdLine) throws InterruptedException, ExecutionException {
 		
 		Option[] options = cmdLine.getOptions();
 		if (options==null || options.length==0) {		
@@ -1316,21 +1319,21 @@ public class AdminService {
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
 				report.append(String.format("%-20s\t%s\t%s\t%s\n","topic","part","offset","timestamp"));
-				ListTopicsResult topics_info = kafkaAdminClient.listTopics();
-				for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topics_info.names().get()).all().get().entrySet()) {
+				ListTopicsResult topicsInfo = kafkaAdminClient.listTopics();
+				for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topicsInfo.names().get()).all().get().entrySet()) {
 					String topic = tp_entry.getKey();
 					Map<TopicPartition,OffsetSpec> requestInfo = 
 						tp_entry.getValue().partitions().stream()
-						.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+						.map(tpInfo->new TopicPartition(topic,tpInfo.partition()))
 						.collect(Collectors.toMap(Function.identity(), 
 								(e)->OffsetSpec.latest()));
 					Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
 					long total = 0;
 					for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
 						int part = tp_info.partition();
-						ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
-						long offset = (offset_info==null) ? 0 : offset_info.offset();
-						long timestamp = (offset_info==null) ? 0 : offset_info.timestamp();
+						ListOffsetsResultInfo offsetInfo = offsets.get(new TopicPartition(topic,tp_info.partition()));
+						long offset = (offsetInfo==null) ? 0 : offsetInfo.offset();
+						long timestamp = (offsetInfo==null) ? 0 : offsetInfo.timestamp();
 						if (timestamp>0)
 							report.append(String.format("%-20s\t%d\t%d\t%s\n",topic, part, offset, ParserUtils.formatTimestampWithMS(new Date(timestamp))));
 						else
@@ -1350,21 +1353,21 @@ public class AdminService {
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 				Map<TopicPartition, RecordsToDelete> recordsToDelete = new HashMap<>();
 				String arg = cmdLine.getOptionValue("d").trim();
-				boolean all_topics = "all".equalsIgnoreCase(arg);
-				if (all_topics) {
-					ListTopicsResult topics_info = kafkaAdminClient.listTopics();
-					for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topics_info.names().get()).all().get().entrySet()) {
+				boolean allTopics = "all".equalsIgnoreCase(arg);
+				if (allTopics) {
+					ListTopicsResult topicsInfo = kafkaAdminClient.listTopics();
+					for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topicsInfo.names().get()).all().get().entrySet()) {
 						String topic = tp_entry.getKey();
 						Map<TopicPartition,OffsetSpec> requestInfo = 
 							tp_entry.getValue().partitions().stream()
-							.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+							.map(tpInfo->new TopicPartition(topic,tpInfo.partition()))
 							.collect(Collectors.toMap(Function.identity(), 
 									(e)->OffsetSpec.latest()));
 						Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
 						for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
 							int part = tp_info.partition();
-							ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
-							long offset = (offset_info==null) ? -1 : offset_info.offset();
+							ListOffsetsResultInfo offsetInfo = offsets.get(new TopicPartition(topic,tp_info.partition()));
+							long offset = (offsetInfo==null) ? -1 : offsetInfo.offset();
 							if (offset<=0)
 								continue;
 							report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
@@ -1384,7 +1387,7 @@ public class AdminService {
 						else {
 							requestInfo = 
 								tp_entry.getValue().partitions().stream()
-								.map(tp_info->new TopicPartition(topic,tp_info.partition()))
+								.map(tpInfo->new TopicPartition(topic,tpInfo.partition()))
 								.collect(Collectors.toMap(Function.identity(), 
 										(e)->OffsetSpec.latest()));
 						}
@@ -1400,8 +1403,8 @@ public class AdminService {
 							Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
 							for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
 								int part = tp_info.partition();
-								ListOffsetsResultInfo offset_info = offsets.get(new TopicPartition(topic,tp_info.partition()));
-								long offset = (offset_info==null) ? -1 : offset_info.offset();
+								ListOffsetsResultInfo offsetInfo = offsets.get(new TopicPartition(topic,tp_info.partition()));
+								long offset = (offsetInfo==null) ? -1 : offsetInfo.offset();
 								if (offset<=0)
 									continue;
 								report.append("Deleting ").append(offset).append(" records from topic ").append(topic).append(" partition ").append(part).append("\n");
@@ -1433,19 +1436,19 @@ public class AdminService {
 
 		if (cmdLine.hasOption("p") || cmdLine.hasOption("a")) {
 			// Deletes all published (denormalized) views
-			int deleted_indices = 0;
-			long deleted_documents = 0;
+			int deletedIndices = 0;
+			long deletedDocuments = 0;
 			try {
 				GetIndexRequest request = new GetIndexRequest(IndexNamesUtils.PUBLISHED_DATA_INDEX_PREFIX+"*");
 				GetIndexResponse response = service.elasticsearchClient.indices().get(request, RequestOptions.DEFAULT);
 				String[] indices = response.getIndices();
 				for (String indexName: indices) {
 					try {
-						deleted_documents = ESUtils.countDocs(service.elasticsearchClient, indexName);
+						deletedDocuments = ESUtils.countDocs(service.elasticsearchClient, indexName);
 						ESUtils.deleteIndex(service.elasticsearchClient, indexName);
-						deleted_indices++;
+						deletedIndices++;
 					}
-					catch (Throwable ex) { }
+					catch (Exception ex) { }
 				}
 			}
 			catch (Exception ex) {
@@ -1453,23 +1456,23 @@ public class AdminService {
 					throw ex;
 				}
 			}
-			report.append("Deleted ").append(deleted_indices).append(" indices containing ").append(deleted_documents).append(" published (denormalized) data.\n");
+			report.append("Deleted ").append(deletedIndices).append(" indices containing ").append(deletedDocuments).append(" published (denormalized) data.\n");
 		}
 
 		if (cmdLine.hasOption("v") || cmdLine.hasOption("a")) {
 			// Deletes all validated records for all document templates
-			int deleted_indices = 0;
-			long deleted_documents = 0;
+			int deletedIndices = 0;
+			long deletedDocuments = 0;
 			for (DocumentTemplate template: service.templateRepository.findAll(PageRequest.of(0, 10_000))) {
 				String indexName = IndexNamesUtils.formatIndexNameForValidatedData(template);
 				try {
-					deleted_documents = ESUtils.countDocs(service.elasticsearchClient, indexName);
+					deletedDocuments = ESUtils.countDocs(service.elasticsearchClient, indexName);
 					ESUtils.deleteIndex(service.elasticsearchClient, indexName);
-					deleted_indices++;
+					deletedIndices++;
 				}
-				catch (Throwable ex) { }
+				catch (Exception ex) { }
 			}
-			report.append("Deleted ").append(deleted_indices).append(" indices containing ").append(deleted_documents).append(" validated data of uploaded files.\n");
+			report.append("Deleted ").append(deletedIndices).append(" indices containing ").append(deletedDocuments).append(" validated data of uploaded files.\n");
 		}
 
 		if (cmdLine.hasOption("t") || cmdLine.hasOption("a")) {
@@ -1478,9 +1481,9 @@ public class AdminService {
 			
 			if (cmdLine.hasOption("a") || argument==null || "all".equalsIgnoreCase(argument)) {
 				// Deletes all templates
-				long count_templates = service.templateRepository.count();
+				long countTemplates = service.templateRepository.count();
 				service.templateRepository.deleteAll();
-				report.append("Deleted ").append(count_templates).append(" templates from database.\n");
+				report.append("Deleted ").append(countTemplates).append(" templates from database.\n");
 			}
 			else if (argument.contains(":")) {
 				// The argument includes a version
@@ -1518,12 +1521,12 @@ public class AdminService {
 			
 			if (cmdLine.hasOption("a") || argument==null || "all".equalsIgnoreCase(argument)) {
 				// Deletes all domain tables. Recreates domain tables automatically.
-				long count_domain_tables = service.domainTableRepository.count();
+				long countDomainTables = service.domainTableRepository.count();
 				service.domainTableRepository.deleteAll();
-				report.append("Deleted ").append(count_domain_tables).append(" domain tables from database.\n");
+				report.append("Deleted ").append(countDomainTables).append(" domain tables from database.\n");
 				
-				int count_domain_tables_created = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/true);
-				report.append("Created ").append(count_domain_tables_created).append(" built-in domain tables from template's archetypes.\n");
+				int countDomainTablesCreated = service.domainTableService.assertDomainTablesForAllArchetypes(/*overwrite*/true);
+				report.append("Created ").append(countDomainTablesCreated).append(" built-in domain tables from template's archetypes.\n");
 			}
 			else if (argument.contains(":")) {
 				// The argument includes a version
@@ -1557,31 +1560,31 @@ public class AdminService {
 
 		if (cmdLine.hasOption("txp") || cmdLine.hasOption("a")) {
 			// Deletes all taxpayers. Recreates domain tables automatically.
-			long count_taxpayers = service.taxPayerRepository.count();
+			long countTaxpayers = service.taxPayerRepository.count();
 			service.taxPayerRepository.deleteAll();
-			report.append("Deleted ").append(count_taxpayers).append(" taxpayers from database.\n");			
+			report.append("Deleted ").append(countTaxpayers).append(" taxpayers from database.\n");			
 		}
 
 		if (cmdLine.hasOption("u") || cmdLine.hasOption("a")) {
 			// Deletes all upload records
-			long count_uploads = service.documentUploadedRepository.count();
+			long countUploads = service.documentUploadedRepository.count();
 			service.documentUploadedRepository.deleteAll();
 			service.documentSituationHistoryRepository.deleteAll();
 			service.documentValidationErrorMessageRepository.deleteAll();
-			report.append("Deleted ").append(count_uploads).append(" upload records from database.\n");
-			int deleted_files = service.fileSystemStorageService.deleteAll();
-			report.append("Deleted ").append(deleted_files).append(" uploaded files from file storage.\n");
+			report.append("Deleted ").append(countUploads).append(" upload records from database.\n");
+			int deletedFiles = service.fileSystemStorageService.deleteAll();
+			report.append("Deleted ").append(deletedFiles).append(" uploaded files from file storage.\n");
 		}
 		
 		if (cmdLine.hasOption("s") || cmdLine.hasOption("a")) {
 			// Deletes history of SYNC operations
-			long count_history = service.syncCommitHistoryRepository.count();
+			long countHistory = service.syncCommitHistoryRepository.count();
 			service.syncCommitHistoryRepository.deleteAll();
-			report.append("Deleted ").append(count_history).append(" records of SYNC history.\n");
+			report.append("Deleted ").append(countHistory).append(" records of SYNC history.\n");
 			
-			long count_milestones = service.syncCommitMilestoneRepository.count();
+			long countMilestones = service.syncCommitMilestoneRepository.count();
 			service.syncCommitMilestoneRepository.deleteAll();
-			report.append("Deleted ").append(count_milestones).append(" records of SYNC last state (milestones).\n");			
+			report.append("Deleted ").append(countMilestones).append(" records of SYNC last state (milestones).\n");			
 		}
 
 		if (cmdLine.hasOption("kp")) {
@@ -1632,15 +1635,15 @@ public class AdminService {
 		if (indexIdOrName==null || indexIdOrName.trim().length()==0) {
 			
 			// Copy all index patterns
-			List<ESUtils.KibanaSavedObject> index_patterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, sourceSpaceId);
-			if (index_patterns==null || index_patterns.isEmpty()) {
+			List<ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, sourceSpaceId);
+			if (indexPatterns==null || indexPatterns.isEmpty()) {
 				
 				return "No index patterns was found at space \""+sourceSpaceId+"\"";
 				
 			}
 			else {
 				
-				final String[] indexPatternsIds = index_patterns.stream().map(ESUtils.KibanaSavedObject::getId).toArray(String[]::new);
+				final String[] indexPatternsIds = indexPatterns.stream().map(ESUtils.KibanaSavedObject::getId).toArray(String[]::new);
 				boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", indexPatternsIds);
 				if (success)
 					return "SUCCESS";
@@ -1654,15 +1657,15 @@ public class AdminService {
 			
 			// Copy one specific index pattern
 			
-			boolean is_uuid;
+			boolean isUuid;
 			try{
 			    UUID.fromString(indexIdOrName);
-			    is_uuid = true;
+			    isUuid = true;
 			} catch (IllegalArgumentException exception){
-				is_uuid = false;
+				isUuid = false;
 			}
 			
-			if (is_uuid) {
+			if (isUuid) {
 			
 				boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", new String[] { indexIdOrName });
 				if (success)
@@ -1673,25 +1676,25 @@ public class AdminService {
 			}
 			else {
 				
-				List<ESUtils.KibanaSavedObject> index_patterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, sourceSpaceId);
-				if (index_patterns==null || index_patterns.isEmpty()) {
+				List<ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, sourceSpaceId);
+				if (indexPatterns==null || indexPatterns.isEmpty()) {
 					
 					return "No index patterns was found at space \""+sourceSpaceId+"\"";
 					
 				}
 				else {
 					
-					ESUtils.KibanaSavedObject index_pattern =
-					index_patterns.stream().filter(i->String.CASE_INSENSITIVE_ORDER.compare(i.getTitle(), indexIdOrName)==0).findAny().orElse(null);
+					ESUtils.KibanaSavedObject indexPattern =
+					indexPatterns.stream().filter(i->String.CASE_INSENSITIVE_ORDER.compare(i.getTitle(), indexIdOrName)==0).findAny().orElse(null);
 					
-					if (index_pattern==null) {
+					if (indexPattern==null) {
 						
 						return "No index pattern with name \""+indexIdOrName+"\" was found at space \""+sourceSpaceId+"\"";
 						
 					}
 					else {
 						
-						boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", new String[] { index_pattern.getId() });
+						boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", new String[] { indexPattern.getId() });
 						if (success)
 							return "SUCCESS";
 						else
@@ -1762,42 +1765,42 @@ public class AdminService {
 		if (cmdLine.hasOption("val")) {
 			// Redo validation phase
 			Stream<DocumentUploaded> stream;
-			String val_opt = cmdLine.getOptionValue("val");
-			if (val_opt.equalsIgnoreCase("all")) {
+			String valOpt = cmdLine.getOptionValue("val");
+			if (valOpt.equalsIgnoreCase("all")) {
 				stream = ScrollUtils.findAll(service.documentUploadedRepository, service.elasticsearchClient, /*durationInMinutes*/5);
 			}
-			else if (val_opt.equalsIgnoreCase("unprocessed")
-					|| val_opt.equalsIgnoreCase("processed")
-					|| val_opt.equalsIgnoreCase("pending")
-					|| val_opt.equalsIgnoreCase("received")
-					|| val_opt.equalsIgnoreCase("invalid")
-					|| val_opt.equalsIgnoreCase("valid")) {
+			else if (valOpt.equalsIgnoreCase("unprocessed")
+					|| valOpt.equalsIgnoreCase("processed")
+					|| valOpt.equalsIgnoreCase("pending")
+					|| valOpt.equalsIgnoreCase("received")
+					|| valOpt.equalsIgnoreCase("invalid")
+					|| valOpt.equalsIgnoreCase("valid")) {
 				stream = ScrollUtils.findWithScroll(
 					/*entity*/DocumentUploaded.class, 
 					/*indexName*/"cacao_docs_uploaded", 
 					/*clientForScrollSearch*/service.elasticsearchClient, 
 					/*customizeSearch*/e->{
 						BoolQueryBuilder query = QueryBuilders.boolQuery();
-						if (val_opt.equalsIgnoreCase("unprocessed"))
+						if (valOpt.equalsIgnoreCase("unprocessed"))
 							query.mustNot(new TermQueryBuilder("situation.keyword", "PROCESSED"));
-						else if (val_opt.equalsIgnoreCase("processed"))
+						else if (valOpt.equalsIgnoreCase("processed"))
 							query.must(new TermQueryBuilder("situation.keyword", "PROCESSED"));
-						else if (val_opt.equalsIgnoreCase("pending"))
+						else if (valOpt.equalsIgnoreCase("pending"))
 							query.must(new TermQueryBuilder("situation.keyword", "PENDING"));
-						else if (val_opt.equalsIgnoreCase("invalid"))
+						else if (valOpt.equalsIgnoreCase("invalid"))
 							query.must(new TermQueryBuilder("situation.keyword", "INVALID"));
-						else if (val_opt.equalsIgnoreCase("valid"))
+						else if (valOpt.equalsIgnoreCase("valid"))
 							query.must(new TermQueryBuilder("situation.keyword", "VALID"));
 						e.query(query);
 					},
 					/*durationInMinutes*/5);
 			}
 			else {
-				report.append("Invalid argument for '--validation' option: "+val_opt);
+				report.append("Invalid argument for '--validation' option: "+valOpt);
 				stream = null;
 			}
 			if (stream!=null) {
-				LongAdder count_docs = new LongAdder();
+				LongAdder countDocs = new LongAdder();
 				try {
 					AtomicInteger partition = new AtomicInteger(0);
 					stream.forEach(doc->{
@@ -1806,7 +1809,7 @@ public class AdminService {
 						FileUploadedEvent event = new FileUploadedEvent();
 						event.setFileId(doc.getId());
 						service.fileUploadedProducer.fileUploaded(event, partition.getAndIncrement());
-						count_docs.increment();
+						countDocs.increment();
 
 					});
 				}
@@ -1814,7 +1817,7 @@ public class AdminService {
 					stream.close();
 				}
 				
-				report.append("Submitted ").append(count_docs.longValue()).append(" events for validation of documents according to the criteria '").append(val_opt).append("'\n");
+				report.append("Submitted ").append(countDocs.longValue()).append(" events for validation of documents according to the criteria '").append(valOpt).append("'\n");
 			}
 		}
 

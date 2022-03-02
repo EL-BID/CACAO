@@ -314,13 +314,13 @@ public class AuditLogAspect {
 			}
 			if (value==null)
 				return;
-			String text_value = ValidationContext.toString(value);
-			if (text_value==null)
+			String textValue = ValidationContext.toString(value);
+			if (textValue==null)
 				return;
 			if (fieldName.startsWith(parameterName))
-				entry.addParam(fieldName, text_value);
+				entry.addParam(fieldName, textValue);
 			else
-				entry.addParam(parameterName+_fieldName, text_value);
+				entry.addParam(parameterName+_fieldName, textValue);
 		}
 		
 	}
@@ -349,7 +349,7 @@ public class AuditLogAspect {
 	 * information from it. Make use of an internal cache of possible implementations for different types.
 	 */
 	public AuditTrailParameterCollector getAuditTrailParameterCollectorCacheable(Class<?> type) {
-		return mapAuditTrailParametersCollectors.computeIfAbsent(type, (k)->getAuditTrailParameterCollector(k));
+		return mapAuditTrailParametersCollectors.computeIfAbsent(type, AuditLogAspect::getAuditTrailParameterCollector);
 	}
 	
 	/**
