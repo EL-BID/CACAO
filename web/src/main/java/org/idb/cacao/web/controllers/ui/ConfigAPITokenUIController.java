@@ -56,7 +56,7 @@ public class ConfigAPITokenUIController {
     	if (user==null)
     		throw new UserNotFoundException();
 		model.addAttribute("user", user);
-		return "config/token/config-token-api";
+		return "config/token/config_token_api";
 	}
 
 
