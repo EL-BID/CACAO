@@ -120,7 +120,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
 	protected void configure(HttpSecurity http) throws Exception {
         http
-        //.csrf().disable()
+        .csrf()
+        	// ignore Kibana-related endpoints since they are managed by Kibana
+        	.ignoringAntMatchers("/kibana/**")
+        	.and()
         .addFilterBefore(apiAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)      
         .addFilterBefore(new CSPNonceFilter(), HeaderWriterFilter.class)
         .addFilterAfter(new SwaggerUIAuthenticationFilter(), HeaderWriterFilter.class)
