@@ -120,18 +120,19 @@ public class DocumentTemplateAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        Optional<DocumentTemplate> existing_template = templateRepository.findByNameAndVersion(template.getName(), template.getVersion());
-		if (existing_template!=null && existing_template.isPresent()) {
+        Optional<DocumentTemplate> existing = templateRepository.findByNameAndVersion(template.getName(), template.getVersion());
+		if (existing!=null && existing.isPresent()) {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 			String username = (auth==null) ? null : auth.getName();
-			log.log(Level.FINE, "User "+username+" attempted to create new template with name "+template.getName()+" and version "+template.getVersion()+", but there is already an existing template with the same name and version");
-			return ResponseEntity.ok().body(existing_template.get());
+			if (log.isLoggable(Level.FINE)) {
+				log.log(Level.FINE, String.format("User %s attempted to create new template with name %s and version %s, but there is already an existing template with the same name and version",
+						username, template.getName(), template.getVersion()));
+			}
+			return ResponseEntity.ok().body(existing.get());
 		}
    
 		templateService.compatibilizeTemplateFieldsMappings(template);
 
-//        template.setTemplateCreateTime(new Date());
-        
         try {
         	templateRepository.saveWithTimestamp(template);
         }
@@ -154,11 +155,11 @@ public class DocumentTemplateAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
-		if (existing_template.isPresent()) {
+		Optional<DocumentTemplate> existing = templateRepository.findById(id);
+		if (existing.isPresent()) {
 			// just a few parts of DocumentTemplate object are editable 
 			// let's copy all the properties to be preserved, except the properties that might change
-			BeanUtils.copyProperties(existing_template.get(), template, 
+			BeanUtils.copyProperties(existing.get(), template, 
 					/*ignoreProperties = editable properties*/
 					"name", "version", "periodicity", "required", "fields", "active");
 		}
@@ -176,10 +177,10 @@ public class DocumentTemplateAPIController {
     		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
         
-		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
-		if (!existing_template.isPresent())
+		Optional<DocumentTemplate> existing = templateRepository.findById(id);
+		if (!existing.isPresent())
         	return ResponseEntity.notFound().build();
-		DocumentTemplate template = existing_template.get();
+		DocumentTemplate template = existing.get();
 		template.setActive(true);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
@@ -192,10 +193,10 @@ public class DocumentTemplateAPIController {
     		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
         
-		Optional<DocumentTemplate> existing_template = templateRepository.findById(id);
-		if (!existing_template.isPresent())
+		Optional<DocumentTemplate> existing = templateRepository.findById(id);
+		if (!existing.isPresent())
         	return ResponseEntity.notFound().build();
-		DocumentTemplate template = existing_template.get();
+		DocumentTemplate template = existing.get();
 		template.setActive(false);
         templateRepository.saveWithTimestamp(template);
         return ResponseEntity.ok().body(template);
@@ -309,8 +310,7 @@ public class DocumentTemplateAPIController {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
 			docs = Page.empty();
 		}		
-		PaginationData<DocumentTemplate> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
+		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 	}
 	
 }

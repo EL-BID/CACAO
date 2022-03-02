@@ -114,10 +114,8 @@ public class AdvancedSearch implements Cloneable {
 		if (hasFilters()) {
 			for (Iterator<QueryFilter> it=filters.iterator(); it.hasNext(); ) {
 				QueryFilter filter = it.next();
-				if (filter==null || filter.getName()==null)
-					it.remove(); // removes invalid filters (should not be here anyway)
-				else if (filter.getName().equals(name))
-					it.remove(); // removes filters with the 'name' equals to argument
+				if (filter==null || filter.getName()==null || filter.getName().equals(name))
+					it.remove(); // removes filters without a name or with the 'name' equals to argument
 			}
 		}
 		return this;
@@ -127,7 +125,7 @@ public class AdvancedSearch implements Cloneable {
 	 * Return this object after making a copy of all arguments provided in argument
 	 */
 	public AdvancedSearch withArguments(Optional<AdvancedSearch> filters) {
-		if (filters!=null && filters.isPresent() && !filters.get().isEmpty()) {
+		if (filters.isPresent() && !filters.get().isEmpty()) {
 			for (QueryFilter filter:filters.get().getFilters()) {
 				getFilter(filter.getName()).ifPresent(f->f.copyArguments(filter));
 			}
@@ -138,17 +136,17 @@ public class AdvancedSearch implements Cloneable {
 	/**
 	 * Return this object after making a copy of 'display names' provided in argument'
 	 */
-	public AdvancedSearch withDisplayNames(AdvancedSearch obj_with_names) {
-		if (!obj_with_names.hasFilters() || !this.hasFilters())
+	public AdvancedSearch withDisplayNames(AdvancedSearch objWithNames) {
+		if (!objWithNames.hasFilters() || !this.hasFilters())
 			return this;
-		Map<String, String> map_names_to_display_names = obj_with_names.getFilters().stream()
+		Map<String, String> mapNamesToDisplayNames = objWithNames.getFilters().stream()
 				.collect(Collectors.toMap(QueryFilter::getName, QueryFilter::getDisplayName, (a,b)->a));
 		for (QueryFilter filter: getFilters()) {
 			if (filter==null || filter.getName()==null)
 				continue;
-			String display_name = map_names_to_display_names.get(filter.getName());
-			if (display_name!=null && display_name.length()>0)
-				filter.setDisplayName(display_name);
+			String displayName = mapNamesToDisplayNames.get(filter.getName());
+			if (displayName!=null && displayName.length()>0)
+				filter.setDisplayName(displayName);
 		}
 		return this;
 	}
@@ -198,12 +196,12 @@ public class AdvancedSearch implements Cloneable {
 		
 		Set<String> filterNamesSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		Arrays.stream(filterNames).forEach(filterNamesSet::add);
-		List<QueryFilter> filtered_filters = filters.stream().filter(f->filterNamesSet.contains(f.getName())).collect(Collectors.toList());
-		if (filtered_filters.isEmpty())
+		List<QueryFilter> filteredFilters = filters.stream().filter(f->filterNamesSet.contains(f.getName())).collect(Collectors.toList());
+		if (filteredFilters.isEmpty())
 			return Optional.empty();
 		
-		filtered_filters.forEach(this.filters::remove);
-		return Optional.of(new AdvancedSearch(filtered_filters));
+		filteredFilters.forEach(this.filters::remove);
+		return Optional.of(new AdvancedSearch(filteredFilters));
 	}
 
 	@JsonTypeInfo(
@@ -223,7 +221,7 @@ public class AdvancedSearch implements Cloneable {
 			  @Type(value = QueryFilterDoesNotExist.class, name = "dont_exist")
 			})
 	@JsonInclude(Include.NON_NULL)
-	public static abstract class QueryFilter implements Cloneable {
+	public abstract static class QueryFilter implements Cloneable {
 		
 		@JsonProperty("n")
 		private String name;
@@ -234,9 +232,9 @@ public class AdvancedSearch implements Cloneable {
 		@JsonIgnore
 		protected transient MessageSource messageSource;
 
-		public QueryFilter() { }
+		protected QueryFilter() { }
 		
-		public QueryFilter(String name) {
+		protected QueryFilter(String name) {
 			this.name = name;
 		}
 
@@ -865,6 +863,7 @@ public class AdvancedSearch implements Cloneable {
 
 		@Override
 		public void copyArguments(QueryFilter other) {
+			// This class does not use arguments
 		}
 		
 		@Override
@@ -889,6 +888,7 @@ public class AdvancedSearch implements Cloneable {
 
 		@Override
 		public void copyArguments(QueryFilter other) {
+			// This class does not use arguments
 		}
 		
 		@Override

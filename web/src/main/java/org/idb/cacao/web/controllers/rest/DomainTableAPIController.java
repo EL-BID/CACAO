@@ -78,7 +78,7 @@ public class DomainTableAPIController {
 	/*
 	 * Maximum items returned on a search
 	 */
-	public static int LIMIT_RESULT = 10;
+	public static final int LIMIT_RESULT = 10;
 	
 	@Autowired
 	private MessageSource messageSource;
@@ -165,8 +165,7 @@ public class DomainTableAPIController {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
 			docs = Page.empty();
 		}		
-		PaginationData<DomainTable> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
+		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 	}
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
@@ -177,7 +176,9 @@ public class DomainTableAPIController {
         if (table==null)
         	return ResponseEntity.notFound().build();
         
-        log.log(Level.INFO, "Deleting domain table #"+id+" "+ table.getId() +" " + table.getName());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Deleting domain table #%s | %s", table.getId(), table.getName()));
+        }
         
         // Removes Domain Table object itself
 
@@ -193,9 +194,9 @@ public class DomainTableAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-//        Optional<DomainTable> table_in_database = domainTableRepository.findById(id);
-        
-        log.log(Level.INFO, "Changing domain table #"+id+" "+table.getId() +" "+ table.getName());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Changing domain table #%s | %s", table.getId(), table.getName()));
+        }
 
         table.setId(id);
         domainTableRepository.saveWithTimestamp(table);
@@ -239,7 +240,7 @@ public class DomainTableAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        log.log(Level.INFO, "Adding domain table "+ table.getName());
+        log.log(Level.INFO, "Adding domain table {0}", table.getName());
 
         domainTableRepository.saveWithTimestamp(table);
         

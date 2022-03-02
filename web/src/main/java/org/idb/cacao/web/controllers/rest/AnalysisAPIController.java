@@ -70,6 +70,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name="analysis-api-controller", description="Controller class for all endpoints related to 'TaxPayer' analysis interacting by a REST interface.")
 public class AnalysisAPIController {
 
+	private static final String MISSING_PARAMETER_TAXPAYER_ID = "Missing parameter 'taxpayerId'";
+
 	private static final Logger log = Logger.getLogger(AnalysisAPIController.class.getName());
 	
 	private static final int VERTICAL = 1;
@@ -100,7 +102,7 @@ public class AnalysisAPIController {
 			@RequestParam("comparisonPeriods") int comparisonPeriods) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
-			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
@@ -109,9 +111,9 @@ public class AnalysisAPIController {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 
-		YearMonth period = YearMonth.from(finalDate); //ParserUtils.parseDayMonthDayYear(finalDate);
+		YearMonth period = YearMonth.from(finalDate);
 		
-		boolean fetchZeroBalance = ( zeroBalance == null ? false : "true".equalsIgnoreCase(zeroBalance) );
+		boolean fetchZeroBalance = zeroBalance != null && "true".equalsIgnoreCase(zeroBalance);
 		
 		List<YearMonth> additionalPeriods = getAdditionalPeriods(period,comparisonPeriods);
 		
@@ -230,7 +232,7 @@ public class AnalysisAPIController {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 
-		YearMonth period = YearMonth.from(finalDate); ///ParserUtils.parseDayMonthDayYear(finalDate);
+		YearMonth period = YearMonth.from(finalDate); 
 
 		List<YearMonth> allPeriods = getAdditionalPeriods(period, comparisonPeriods);
 		
@@ -252,7 +254,7 @@ public class AnalysisAPIController {
 		List<Map<String,Object>> allColumns = new LinkedList<>();
 		int i = 0;
 		
-		Map<String,Object> column = new HashMap<>();
+		Map<String,Object> column;
 		
 		Map<String,Object> formatCurrency = new HashMap<>();
 		formatCurrency.put("decimal", decimalChar);
@@ -434,7 +436,7 @@ public class AnalysisAPIController {
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
-			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
@@ -463,7 +465,7 @@ public class AnalysisAPIController {
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
-			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
@@ -500,7 +502,7 @@ public class AnalysisAPIController {
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
-			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
@@ -538,7 +540,7 @@ public class AnalysisAPIController {
 			@RequestParam("year") String year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
-			log.log(Level.WARNING, "Missing parameter 'taxpayerId'");
+			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		

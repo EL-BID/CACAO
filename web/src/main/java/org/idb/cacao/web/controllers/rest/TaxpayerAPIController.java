@@ -83,6 +83,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name="taxpayer-api-controller", description="Controller class for all endpoints related to 'TaxPayer' object interacting by a REST interface.")
 public class TaxpayerAPIController {
 
+	private static final String FIELD_TAX_PAYER_ID = "taxPayerId";
+
 	private static final Logger log = Logger.getLogger(TaxpayerAPIController.class.getName());
 
 	@Autowired
@@ -118,7 +120,7 @@ public class TaxpayerAPIController {
 
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<Taxpayer> docs;
-		Optional<String> sortField = Optional.of(sortBy.orElse("taxPayerId"));
+		Optional<String> sortField = Optional.of(sortBy.orElse(FIELD_TAX_PAYER_ID));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), Taxpayer.class, elasticsearchClient, page, size, 
@@ -129,8 +131,7 @@ public class TaxpayerAPIController {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
 			docs = Page.empty();
 		}		
-		PaginationData<Taxpayer> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
+		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 	}
 	
 	/**
@@ -142,11 +143,11 @@ public class TaxpayerAPIController {
 	public SearchResult<NameId> autocompleteTaxpayer(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<NameId> result;
 		try {
-			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, "taxPayerId", "name", term.orElse(""), 10)
+			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, FIELD_TAX_PAYER_ID, "name", term.orElse(""), 10)
 			    .stream()
-			    .map(t -> new NameId(t.get("name").toString(), t.get("taxPayerId").toString()))
+			    .map(t -> new NameId(t.get("name").toString(), t.get(FIELD_TAX_PAYER_ID).toString()))
 			    .collect(Collectors.toList());
-			return new SearchResult<NameId>(result);
+			return new SearchResult<>(result);
 		} catch (IOException ex) {
 			log.log(Level.SEVERE,"Search taxpayer failed", ex);
 		}
@@ -162,7 +163,7 @@ public class TaxpayerAPIController {
 	@ApiOperation(value="Method used for returning names of taxpayers that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> getTaxpayerNames(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<String> names;
-		if (term!=null && term.isPresent()) {
+		if (term.isPresent()) {
 			Pattern pattern = Pattern.compile(Pattern.quote(term.get()), Pattern.CASE_INSENSITIVE);
 			names =
 			StreamSupport.stream(taxpayerRepository.findAll().spliterator(),false)
@@ -188,7 +189,9 @@ public class TaxpayerAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        log.log(Level.INFO, "Creating new taxpayer "+ taxpayer.getName()+" "+ taxpayer.getTaxPayerId());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Creating new taxpayer %s | %s", taxpayer.getName(), taxpayer.getTaxPayerId()));
+        }
         
         try {
         	taxpayerRepository.saveWithTimestamp(taxpayer);
@@ -209,7 +212,9 @@ public class TaxpayerAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        log.log(Level.INFO, "Changing taxpayer #"+id+" "+taxpayer.getName()+" "+taxpayer.getTaxPayerId());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Changing taxpayer #%s | %s | %s", id, taxpayer.getName(), taxpayer.getTaxPayerId()));
+        }
 
         taxpayer.setId(id);
         taxpayerRepository.saveWithTimestamp(taxpayer);
@@ -226,9 +231,10 @@ public class TaxpayerAPIController {
         if (taxpayer==null)
         	return ResponseEntity.notFound().build();
         
-        log.log(Level.INFO, "Deleting taxpayer #"+id+" "+taxpayer.getName()+" "+taxpayer.getTaxPayerId());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Deleting taxpayer #%s | %s | %s", id, taxpayer.getName(), taxpayer.getTaxPayerId()));
+        }
         
-        //taxpayerRepository.delete(taxpayer);
         try {
         	taxpayer.setActive(false);
         	taxpayerRepository.saveWithTimestamp(taxpayer);
@@ -252,8 +258,19 @@ public class TaxpayerAPIController {
 		if (!existing.isPresent())
         	return ResponseEntity.notFound().build();
 		Taxpayer taxpayer = existing.get();
-		taxpayer.setActive(true);
-        taxpayerRepository.saveWithTimestamp(taxpayer);
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Activating taxpayer #%s | %s | %s", id, taxpayer.getName(), taxpayer.getTaxPayerId()));
+        }
+        
+        try {
+			taxpayer.setActive(true);
+	        taxpayerRepository.saveWithTimestamp(taxpayer);
+        }
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Activate taxpayer failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        }
+        
         return ResponseEntity.ok().body(taxpayer);
     }
 
@@ -268,8 +285,18 @@ public class TaxpayerAPIController {
 		if (!existing.isPresent())
         	return ResponseEntity.notFound().build();
 		Taxpayer taxpayer= existing.get();
-		taxpayer.setActive(false);
-        taxpayerRepository.saveWithTimestamp(taxpayer);
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Deactivating taxpayer #%s | %s | %s", id, taxpayer.getName(), taxpayer.getTaxPayerId()));
+        }
+        
+        try {
+			taxpayer.setActive(false);
+	        taxpayerRepository.saveWithTimestamp(taxpayer);
+        }
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Deactivate taxpayer failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        }   
         return ResponseEntity.ok().body(taxpayer);
     }
 
