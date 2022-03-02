@@ -85,7 +85,7 @@ public class InterpersonalAPIController {
 	/**
 	 * Default paralelism for bulk load operations
 	 */
-	public static int DEFAULT_BULK_LOAD_PARALELISM = 4;
+	public static final int DEFAULT_BULK_LOAD_PARALELISM = 4;
 
 	@Autowired
 	private MessageSource messageSource;
@@ -132,8 +132,7 @@ public class InterpersonalAPIController {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
 			docs = Page.empty();
 		}		
-		PaginationData<Interpersonal> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
+		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 	}
 	
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
@@ -158,7 +157,9 @@ public class InterpersonalAPIController {
             return ResponseEntity.badRequest().body(messageSource.getMessage("interpersonal.error.already.exists", null, LocaleContextHolder.getLocale()));
         }
         
-        log.log(Level.INFO, "Creating new interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Creating new interpersonal relationship between % and %s with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
+        }
 
         interpersonal.setId(null);
         interpersonal.setTimestamp(DateTimeUtils.now());
@@ -177,12 +178,12 @@ public class InterpersonalAPIController {
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add multiple interpersonal relationship configurations",response=GenericCounts.class)
-    public ResponseEntity<Object> addInterpersonals(@Valid @RequestBody Interpersonal[] interpersonal_relationships, BindingResult result) {
+    public ResponseEntity<Object> addInterpersonals(@Valid @RequestBody Interpersonal[] interpersonalRelationships, BindingResult result) {
         if (result!=null && result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        if (interpersonal_relationships==null || interpersonal_relationships.length==0) {
+        if (interpersonalRelationships==null || interpersonalRelationships.length==0) {
         	return ResponseEntity.badRequest().build();
         }
         
@@ -193,10 +194,11 @@ public class InterpersonalAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
 
-        log.log(Level.INFO, "Creating/updating list of "+interpersonal_relationships.length+" interpersonal relationships");
+    	if (log.isLoggable(Level.INFO)) {
+    		log.log(Level.INFO, String.format("Creating/updating list of %d interpersonal relationships", interpersonalRelationships.length));
+    	}
 
-
-        GenericCounts counts = addOrCreateInterpersonals(interpersonal_relationships, user);
+        GenericCounts counts = addOrCreateInterpersonals(interpersonalRelationships, user);
 
         if (!counts.hasChanges()) {
         	return ResponseEntity.badRequest().build();
@@ -206,7 +208,7 @@ public class InterpersonalAPIController {
         }
     }
 	
-	private GenericCounts addOrCreateInterpersonals(Interpersonal[] interpersonal_relationships, User user) {
+	private GenericCounts addOrCreateInterpersonals(Interpersonal[] interpersonalRelationships, User user) {
 		
         LongAdder countCreated = new LongAdder();
         LongAdder countUpdated = new LongAdder();
@@ -214,7 +216,7 @@ public class InterpersonalAPIController {
         
         ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_BULK_LOAD_PARALELISM);
         
-        for (Interpersonal interpersonal:interpersonal_relationships) {
+        for (Interpersonal interpersonal:interpersonalRelationships) {
         	if (interpersonal==null) {
         		countErrors.increment();
         		continue;
@@ -224,11 +226,10 @@ public class InterpersonalAPIController {
                 Optional<Interpersonal> existent =
                     interpersonalRepository.findByActiveIsTrueAndPersonId1AndRelationshipTypeAndPersonId2(interpersonal.getPersonId1(), interpersonal.getRelationshipType().name(), interpersonal.getPersonId2()); 
 
-	            if (existent!=null) {
-	            	// If this relationship already exists, there is nothing to update
-	            }
-	            else {
-	            	log.log(Level.INFO, "Creating new interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
+	            if (!existent.isPresent()) {
+	            	if (log.isLoggable(Level.INFO)) {
+	            		log.log(Level.INFO, String.format("Creating new interpersonal relationship between % and % with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
+	            	}
 	
 	                interpersonal.setId(null);
 	                interpersonal.setTimestamp(DateTimeUtils.now());
@@ -253,6 +254,7 @@ public class InterpersonalAPIController {
 				log.log(Level.WARNING,"Too much time waiting for bulk load termination");
 		} catch (InterruptedException e) {
         	log.log(Level.WARNING,"Interrupted bulk load", e);
+        	Thread.currentThread().interrupt();
 		}
 		
         return new GenericCounts().withCreated(countCreated.longValue()).withUpdated(countUpdated.longValue()).withErrors(countErrors.longValue());
@@ -260,13 +262,15 @@ public class InterpersonalAPIController {
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @DeleteMapping(value="/interpersonal/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deletes an existing interpersonal relationship configuration (actually it will only disable this configuration)",response=Interpersonal.class)
-    public ResponseEntity<Object> deleteInterpersonal(@PathVariable("id") String id) {
+	@ApiOperation(value="Deactivate an existing interpersonal relationship configuration",response=Interpersonal.class)
+    public ResponseEntity<Object> deactivateInterpersonal(@PathVariable("id") String id) {
 		Interpersonal interpersonal = interpersonalRepository.findById(id).orElse(null);
         if (interpersonal==null)
         	return ResponseEntity.notFound().build();
         
-        log.log(Level.INFO, "Deleting interpersonal relationship between "+interpersonal.getPersonId1()+" and "+interpersonal.getPersonId2()+" with type "+interpersonal.getRelationshipType().name());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Deactivate interpersonal relationship between %s and %s with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
+        }
 
         interpersonal.setActive(false);
         interpersonal.setRemovedTimestamp(DateTimeUtils.now());

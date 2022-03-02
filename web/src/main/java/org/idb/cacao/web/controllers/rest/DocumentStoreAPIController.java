@@ -199,8 +199,10 @@ public class DocumentStoreAPIController {
 			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
 
-		log.log(Level.FINE,
-				"Incoming file (upload): " + fileinput.getOriginalFilename() + ", size: " + fileinput.getSize());
+		if (log.isLoggable(Level.FINE)) {
+			log.log(Level.FINE,
+				String.format("Incoming file (upload): %s, size: %d", fileinput.getOriginalFilename(), fileinput.getSize()));
+		}
 
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null)
@@ -264,7 +266,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Collections.singletonMap("error", ex.getMessage()));
 		} catch (IOException ex) {
-			log.log(Level.SEVERE, "Failed upload " + fileinput.getOriginalFilename(), ex);
+			log.log(Level.SEVERE, String.format("Failed upload %s", fileinput.getOriginalFilename()), ex);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Collections.singletonMap("error", messageSource.getMessage("upload.failed.file",
 							new Object[] { fileinput.getOriginalFilename() }, LocaleContextHolder.getLocale())));
@@ -284,9 +286,10 @@ public class DocumentStoreAPIController {
 			@RequestParam("templateName") String templateName, 
 			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
-
-		log.log(Level.FINE,
-				"Incoming files (upload): " + filezip.getOriginalFilename() + ", size: " + filezip.getSize());
+		if (log.isLoggable(Level.FINE)) {
+			log.log(Level.FINE,
+				String.format("Incoming files (upload): %s, size: %d", filezip.getOriginalFilename(), filezip.getSize()));
+		}
 
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null)
@@ -334,7 +337,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Collections.singletonMap("error", ex.getMessage()));
 		} catch (IOException ex) {
-			log.log(Level.SEVERE, "Failed upload " + filezip.getOriginalFilename(), ex);
+			log.log(Level.SEVERE, String.format("Failed upload %s", filezip.getOriginalFilename()), ex);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Collections.singletonMap("error", messageSource.getMessage("upload.failed.file",
 							new Object[] { filezip.getOriginalFilename() }, LocaleContextHolder.getLocale())));
@@ -370,7 +373,9 @@ public class DocumentStoreAPIController {
 		}
 
 		final long allSizes = Arrays.stream(files).mapToLong(MultipartFile::getSize).sum();
-		log.log(Level.FINE, "Incoming files (upload): " + files.length + ", size: " + allSizes);
+		if (log.isLoggable(Level.FINE)) {
+			log.log(Level.FINE, String.format("Incoming files (upload): %d, total size: %d", files.length, allSizes));
+		}
 
 		if (files.length == 0) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error",
@@ -408,7 +413,7 @@ public class DocumentStoreAPIController {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 						.body(Collections.singletonMap("error", ex.getMessage()));
 			} catch (IOException ex) {
-				log.log(Level.SEVERE, "Failed upload " + fileinput.getOriginalFilename(), ex);
+				log.log(Level.SEVERE, String.format("Failed upload %s", fileinput.getOriginalFilename()), ex);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 						.body(Collections.singletonMap("error", messageSource.getMessage("upload.failed.file",
 								new Object[] { fileinput.getOriginalFilename() }, LocaleContextHolder.getLocale())));
@@ -427,13 +432,13 @@ public class DocumentStoreAPIController {
 	private Map<String, String> uploadFile(final String originalFilename, final InputStream fileStream,
 			final boolean closeInputStream, final String template, final String templateVersion,
 			final String remoteIpAddr, final User user) throws IOException, GeneralException {
-		File tempFile1 = null;
 		// Hold rollback procedures only to be used in case of error
 		List<Runnable> rollbackProcedures = new LinkedList<>(); 
 		try {
-
-			log.log(Level.INFO, "User " + user.getLogin() + " uploading file " + originalFilename + " for template "
-					+ template + " from " + remoteIpAddr);
+			if (log.isLoggable(Level.INFO)) {
+				log.log(Level.INFO, String.format("User %s uploading file %s for template %s from %s",
+						user.getLogin(), originalFilename, template, remoteIpAddr));
+			}
 
 			String fileId = UUID.randomUUID().toString();
 
@@ -488,13 +493,6 @@ public class DocumentStoreAPIController {
 		} catch (GeneralException ex) {
 			callRollbackProcedures(rollbackProcedures);
 			throw ex;
-		} finally {
-			if (tempFile1 != null && tempFile1.exists()) {
-				if (!tempFile1.delete()) {
-					log.log(Level.WARNING, "Could not delete temporary file " + tempFile1.getAbsolutePath()
-							+ " created from incoming file " + originalFilename);
-				}
-			}
 		}
 	}
 
@@ -622,8 +620,7 @@ public class DocumentStoreAPIController {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
 			docs = Page.empty();
 		}
-		PaginationData<DocumentUploaded> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
+		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 	}
 
 	/**
@@ -645,17 +642,17 @@ public class DocumentStoreAPIController {
 
 		SearchRequest searchRequest = new SearchRequest("docs_uploaded");
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		if (days != null && days.isPresent() && days.get().trim().length() > 0) {
+		if (days.isPresent() && days.get().trim().length() > 0) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
 			Calendar cal = Calendar.getInstance();
 			cal.add(Calendar.DAY_OF_YEAR, -Integer.parseInt(days.get()));
 			timestampQuery.from(ParserUtils.formatTimestampES(cal.getTime()), true);
 			query.must(timestampQuery);
-		} else if ((fromDate != null && fromDate.isPresent()) || (toDate != null && toDate.isPresent())) {
+		} else if (fromDate.isPresent() || toDate.isPresent()) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
-			if (fromDate != null && fromDate.isPresent())
+			if (fromDate.isPresent())
 				timestampQuery.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(fromDate.get())), true);
-			if (toDate != null && toDate.isPresent())
+			if (toDate.isPresent())
 				timestampQuery.to(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(toDate.get())), true);
 			query.must(timestampQuery);
 		}
@@ -721,17 +718,17 @@ public class DocumentStoreAPIController {
 
 		// Parse the optional temporal query parameters
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		if (days != null && days.isPresent() && days.get().trim().length() > 0) {
+		if (days.isPresent() && days.get().trim().length() > 0) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
 			Calendar cal = Calendar.getInstance();
 			cal.add(Calendar.DAY_OF_YEAR, -Integer.parseInt(days.get()));
 			timestampQuery.from(ParserUtils.formatTimestampES(cal.getTime()), true);
 			query.must(timestampQuery);
-		} else if ((fromDate != null && fromDate.isPresent()) || (toDate != null && toDate.isPresent())) {
+		} else if (fromDate.isPresent() || toDate.isPresent()) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
-			if (fromDate != null && fromDate.isPresent())
+			if (fromDate.isPresent())
 				timestampQuery.from(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(fromDate.get())), true);
-			if (toDate != null && toDate.isPresent())
+			if (toDate.isPresent())
 				timestampQuery.to(ParserUtils.formatTimestampES(ParserUtils.parseFlexibleDate(toDate.get())), true);
 			query.must(timestampQuery);
 		}
@@ -922,7 +919,7 @@ public class DocumentStoreAPIController {
 					direction);
 
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error while searching for situations for document " + documentId, e);
+			log.log(Level.SEVERE, String.format("Error while searching for situations for document %s", documentId), e);
 			messages = Page.empty();
 		}
 
@@ -992,7 +989,7 @@ public class DocumentStoreAPIController {
 			return ResponseEntity.ok().headers(headers).contentLength(path.toFile().length())
 					.contentType(MediaType.APPLICATION_OCTET_STREAM).body(resource);
 		} catch (IOException e) {
-			log.log(Level.SEVERE, "Error whiling sending file from document " + documentId, e);
+			log.log(Level.SEVERE, String.format("Error whiling sending file from document %s", documentId), e);
 		}
 
 		throw new ResponseStatusException(HttpStatus.NOT_FOUND,

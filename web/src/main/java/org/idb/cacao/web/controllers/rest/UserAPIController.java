@@ -132,8 +132,7 @@ public class UserAPIController {
 			log.log(Level.SEVERE, "Error while searching for all documents", ex);
 			docs = Page.empty();
 		}		
-		PaginationData<User> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-		return result;
+		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 	}
 	
 	/**
@@ -144,7 +143,7 @@ public class UserAPIController {
 	@ApiOperation(value="Method used for returning names of users that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> getUserNames(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<String> names;
-		if (term!=null && term.isPresent()) {
+		if (term.isPresent()) {
 			Pattern pattern = Pattern.compile(Pattern.quote(term.get()), Pattern.CASE_INSENSITIVE);
 			names =
 			StreamSupport.stream(userRepository.findAll().spliterator(),false)
@@ -169,11 +168,9 @@ public class UserAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        if (UserProfile.SYSADMIN.equals(user.getProfile())) {
-        	// Only a SYSADMIN may create another SYSADMIN user account
-        	if (!ControllerUtils.isSystemAdmin()) {
-        		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
-        	}
+        // Only a SYSADMIN may create another SYSADMIN user account
+        if (UserProfile.SYSADMIN.equals(user.getProfile()) && !ControllerUtils.isSystemAdmin()) {
+       		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
         }
 
         User existent = userRepository.findByLoginIgnoreCase(user.getLogin());
@@ -197,7 +194,9 @@ public class UserAPIController {
         	user.setPassword(new BCryptPasswordEncoder(11).encode(user.getPassword()));
         }
         
-        log.log(Level.INFO, "Creating new user "+user.getName()+" "+user.getLogin()+" "+user.getProfile());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Creating new user %s|%s|%s", user.getName(), user.getLogin(), user.getProfile()));
+        }
         
         try {
         	userRepository.saveWithTimestamp(user);
@@ -217,9 +216,9 @@ public class UserAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        Optional<User> user_in_database = userRepository.findById(id);
+        Optional<User> userInDatabase = userRepository.findById(id);
         
-        if ((user_in_database.isPresent() && UserProfile.SYSADMIN.equals(user_in_database.get().getProfile()))
+        if ((userInDatabase.isPresent() && UserProfile.SYSADMIN.equals(userInDatabase.get().getProfile()))
         	|| UserProfile.SYSADMIN.equals(user.getProfile())) {
         	// Only a SYSADMIN may change the user account of another SYSADMIN
         	if (!ControllerUtils.isSystemAdmin()) {
@@ -227,15 +226,17 @@ public class UserAPIController {
         	}
         }
         
-        final boolean changed_user_profile = user_in_database.isPresent() && hasChanged(user_in_database.get().getProfile(), user.getProfile());
+        final boolean changed_user_profile = userInDatabase.isPresent() && hasChanged(userInDatabase.get().getProfile(), user.getProfile());
 
         // Keep previous password, token and telegram information
-        if (user_in_database.isPresent()) {      
-        	user.setPassword(user_in_database.get().getPassword());
-        	user.setApiToken(user_in_database.get().getApiToken());
+        if (userInDatabase.isPresent()) {      
+        	user.setPassword(userInDatabase.get().getPassword());
+        	user.setApiToken(userInDatabase.get().getApiToken());
         }
         
-        log.log(Level.INFO, "Changing user #"+id+" "+user.getName()+" "+user.getLogin()+" "+user.getProfile());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Changing user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
+        }
 
         user.setId(id);
         userRepository.saveWithTimestamp(user);
@@ -249,7 +250,7 @@ public class UserAPIController {
         		userService.updateUserForKibanaAccess(user);
         	}
         	catch (Throwable ex) {
-        		log.log(Level.SEVERE, "Error while updating user access at Kibana for user account "+user.getLogin(), ex);
+        		log.log(Level.SEVERE, String.format("Error while updating user access at Kibana for user account %s", user.getLogin()), ex);
         	}
         }
 
@@ -264,14 +265,14 @@ public class UserAPIController {
         if (user==null)
         	return ResponseEntity.notFound().build();
         
-        if (UserProfile.SYSADMIN.equals(user.getProfile())) {
-        	// Only a SYSADMIN may change the user account of another SYSADMIN
-        	if (!ControllerUtils.isSystemAdmin()) {
-        		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
-        	}
+        // Only a SYSADMIN may change the user account of another SYSADMIN
+        if (UserProfile.SYSADMIN.equals(user.getProfile()) && !ControllerUtils.isSystemAdmin()) {
+       		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
         }
 
-        log.log(Level.INFO, "Deleting user #"+id+" "+user.getName()+" "+user.getLogin()+" "+user.getProfile());
+        if (log.isLoggable(Level.INFO)) {
+        	log.log(Level.INFO, String.format("Deleting user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
+        }
         
         user.setActive(false);
         try {
@@ -296,7 +297,16 @@ public class UserAPIController {
         	return ResponseEntity.notFound().build();
 		User user = existing.get();
 		user.setActive(true);
-        userRepository.saveWithTimestamp(user);
+		if (log.isLoggable(Level.INFO)) {
+			log.log(Level.INFO, String.format("Activating user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
+		}
+		try {
+			userRepository.saveWithTimestamp(user);
+		}
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Activate user failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        }
         return ResponseEntity.ok().body(user);
     }
 
@@ -312,7 +322,16 @@ public class UserAPIController {
         	return ResponseEntity.notFound().build();
 		User user= existing.get();
 		user.setActive(false);
-        userRepository.saveWithTimestamp(user);
+		if (log.isLoggable(Level.INFO)) {
+			log.log(Level.INFO, String.format("Deactivating user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
+		}
+		try {
+			userRepository.saveWithTimestamp(user);
+		}
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Deactivate user failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        }	
         return ResponseEntity.ok().body(user);
     }
 
