@@ -87,7 +87,7 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(email);
 		
 		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "OAUTH-LOGIN: fullname:"+full_name
+			log.log(Level.FINEST, () -> "OAUTH-LOGIN: fullname:"+full_name
 			+" email:"+email
 			+" attributes:"+oauthUser.getAttributes()
 			);

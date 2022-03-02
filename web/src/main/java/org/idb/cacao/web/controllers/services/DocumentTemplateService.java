@@ -110,9 +110,7 @@ public class DocumentTemplateService {
 		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		Iterable<DocumentTemplate> allTemplates = templateRepository.findAll();
 		for (DocumentTemplate template:allTemplates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
+			if (null==template.getName() || (template.getName().trim().length()==0))
 				continue;
 			templatesNames.add(template.getName());
 		}
@@ -129,9 +127,7 @@ public class DocumentTemplateService {
 		Map<String, OffsetDateTime> templatesTimestamps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		List<DocumentTemplate> templates = getTemplatesWithFiles();
 		for (DocumentTemplate template:templates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
+			if (null==template.getName() || (template.getName().trim().length()==0))
 				continue;
 			String name = template.getName();
 			OffsetDateTime timestamp = template.getTemplateCreateTime();
@@ -178,9 +174,7 @@ public class DocumentTemplateService {
 		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
 		for (DocumentTemplate template:allTemplates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
+			if (null==template.getName() || (template.getName().trim().length()==0))
 				continue;
 			templatesNames.add(template.getName());
 		}
@@ -197,9 +191,7 @@ public class DocumentTemplateService {
 		Map<String,String> templatesNames = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
 		for (DocumentTemplate template:allTemplates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
+			if (null==template.getName() || (template.getName().trim().length()==0))
 				continue;
 			templatesNames.put(template.getName(),template.getVersion());
 		}
@@ -215,11 +207,7 @@ public class DocumentTemplateService {
 		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
 		for (DocumentTemplate template:allTemplates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
-				continue;
-			if (Periodicity.UNKNOWN.equals(template.getPeriodicity()))
+			if (null==template.getName() || (template.getName().trim().length()==0) || (Periodicity.UNKNOWN.equals(template.getPeriodicity())))
 				continue;
 			templatesNames.add(template.getName());
 		}
@@ -235,13 +223,8 @@ public class DocumentTemplateService {
 		Set<String> templatesNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
 		for (DocumentTemplate template:allTemplates) {
-			if (null==template.getName())
-				continue;
-			if (template.getName().trim().length()==0)
-				continue;
-			if (!periodicity.equals(template.getPeriodicity()))
-				continue;
-			templatesNames.add(template.getName());
+			if (null==template.getName() || (template.getName().trim().length()==0) || (!periodicity.equals(template.getPeriodicity())))
+				templatesNames.add(template.getName());
 		}
 
 		return templatesNames;

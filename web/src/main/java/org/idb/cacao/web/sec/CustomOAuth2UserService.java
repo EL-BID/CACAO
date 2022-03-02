@@ -89,7 +89,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
 		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(email);
 		
 		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "OAUTH-LOGIN: fullname:"+oidcUser.getFullName()
+			log.log(Level.FINEST, () -> "OAUTH-LOGIN: fullname:"+oidcUser.getFullName()
 			+" email:"+oidcUser.getEmail()
 			+" name:"+oidcUser.getName()
 			+" given name:"+oidcUser.getGivenName()

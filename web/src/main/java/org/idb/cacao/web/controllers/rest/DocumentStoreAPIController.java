@@ -594,8 +594,7 @@ public class DocumentStoreAPIController {
 					log.log(Level.SEVERE, "Error while searching for all documents", ex);
 					docs = Page.empty();
 				}
-				PaginationData<DocumentUploaded> result = new PaginationData<>(docs.getTotalPages(), docs.getContent());
-				return result;
+				return new PaginationData<>(docs.getTotalPages(), docs.getContent());
 			}
 		}
 		else {
@@ -828,12 +827,9 @@ public class DocumentStoreAPIController {
 			final Set<String> filterTaxpayersIds;
 			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsAnyRelationship(auth);
 			
-			if ( filterTaxpayersIds != null ) {
-				
-				if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(refDoc.getTaxPayerId())) {
-					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+			if (( filterTaxpayersIds != null ) && ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(refDoc.getTaxPayerId()))) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND,
 							messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
-				}			
 			}
 		}
 
@@ -893,12 +889,9 @@ public class DocumentStoreAPIController {
 			final Set<String> filterTaxpayersIds;
 			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsAnyRelationship(auth);
 			
-			if ( filterTaxpayersIds != null ) {
-				
-				if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(refDoc.getTaxPayerId())) {
-					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+			if (( filterTaxpayersIds != null ) && ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(refDoc.getTaxPayerId()))) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND,
 							messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
-				}			
 			}
 		}
 
@@ -966,12 +959,9 @@ public class DocumentStoreAPIController {
 			final Set<String> filterTaxpayersIds;
 			filterTaxpayersIds = userService.getFilteredTaxpayersForUserAsManager(auth);
 			
-			if ( filterTaxpayersIds != null ) {
-				
-				if ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(doc.getTaxPayerId())) {
-					throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+			if (( filterTaxpayersIds != null ) && ( filterTaxpayersIds.isEmpty() || !filterTaxpayersIds.contains(doc.getTaxPayerId()))) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND,
 							messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));	
-				}			
 			}
 		}
 

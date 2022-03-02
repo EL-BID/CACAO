@@ -390,7 +390,7 @@ public class DocumentStoreService {
     	}
     	
     	// Optional filter for template name
-    	if (filterTemplate!=null && filterTemplate.isPresent()) {
+    	if (filterTemplate.isPresent()) {
     		query = query.must(new TermQueryBuilder(templateFieldName, filterTemplate.get()));
     	}
 

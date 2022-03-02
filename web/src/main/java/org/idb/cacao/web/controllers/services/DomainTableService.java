@@ -185,7 +185,7 @@ public class DomainTableService {
 				assertDomainTable(builtInDomainTable, /*overwrite*/false);
 			}
 			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while asserting the built-in domain table "+builtInDomainTable.getName(), ex);
+				log.log(Level.SEVERE, ex, () -> "Error while asserting the built-in domain table "+builtInDomainTable.getName());
 			}
 		}
 	}
@@ -244,7 +244,7 @@ public class DomainTableService {
 				count++;
 			}
 			catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while asserting the built-in domain table "+builtInDomainTable.getName(), ex);
+				log.log(Level.SEVERE, ex, () -> "Error while asserting the built-in domain table "+builtInDomainTable.getName());
 			}
 		}
 		
