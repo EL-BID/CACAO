@@ -59,7 +59,7 @@ public class FieldValidationTests {
 		//yyyy-MM-dd'T'HH:mm:ss
 		String sDateTime = "2021-12-31T21:15:30";
 		Date date = ParserUtils.parseTimestamp(sDateTime);		
-		LocalDateTime dateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.ofHours(-3));
+		LocalDateTime dateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.systemDefault());
 		assertEquals(2021,dateTime.getYear());
 		assertEquals(12,dateTime.getMonthValue());
 		assertEquals(31,dateTime.getDayOfMonth());
