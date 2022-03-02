@@ -34,6 +34,7 @@
 			<div class="ui orange segment">
 				<form action="#" name="form" id="form" class="ui form"
 					th:object="${template}">
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 					<div class="fields">
 						<div class="ten wide field">
 							<label th:text="#{template.name}"

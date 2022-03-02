@@ -19,6 +19,7 @@
 			<div class="ui middle aligned center aligned grid container">
 				<div class="ui orange fluid segment">
 					<form action="#" th:object="${user}" method="post">
+						<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 						<div class="ui positive message left aligned container" th:utext="#{config.token.api.help}">Some explanation about this token</div>
 						<div class="ui warning message warn_no_token" th:text="#{config.token.api.none}">No Token defined!</div>
 						<div class="row">

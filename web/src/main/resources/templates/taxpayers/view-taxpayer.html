@@ -26,6 +26,7 @@
         <div class="ui container">
             <div class="ui orange segment">
                 <form class="ui form" action="#" name="form" id="form" th:object="${taxpayer}" method="post">
+                	<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="fields">
                       <div class="six wide field">
                         <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 

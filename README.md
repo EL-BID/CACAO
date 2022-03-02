@@ -196,7 +196,7 @@ http://127.0.0.1:9000/account/security/
 			<activeByDefault>true</activeByDefault>
 		</activation>
 		<properties>
-			<sonar.host.url>https://127.0.0.1:9000</sonar.host.url>
+			<sonar.host.url>http://127.0.0.1:9000</sonar.host.url>
 			<sonar.login>  ... paste your Sonarqube access token here ... </sonar.login>
 		</properties>
 	</profile>

@@ -62,6 +62,7 @@
         <div class="ui container">
             <div class="ui orange segment">
                 <form class="ui form" id="form_add" action="#">
+                	<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="fields">
                       <div class="five wide field">
                         <label th:text="#{domain.entry.key}" style="margin-bottom: 0px; text-transform: uppercase;">Key</label>

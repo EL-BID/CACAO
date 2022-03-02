@@ -35,6 +35,7 @@
 				</div>
 				<div class="ui bottom attached tab segment active" data-tab="one_file">
 					<form id="uploadform" method="POST" enctype="multipart/form-data" action="/">
+						<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 						<div class="ui positive message" th:text="#{docs.main.upload.file.help}">Upload one file</div>
 						<div class="ui middle aligned center aligned grid container">						    
 							<input type="file" name="fileinput" class="inputfile" id="fileinput"/>

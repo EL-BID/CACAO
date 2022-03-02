@@ -37,6 +37,7 @@
     <div class="ui container">
       <div class="ui orange segment">
         <form action="#" name="form" id="form" class="ui form" th:object="${template}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <div class="fields">
             <div class="ten wide field">
               <label th:text="#{template.name}" style="margin-bottom: 0px; text-transform: uppercase;">Declaration Name</label> 
@@ -95,6 +96,7 @@
         <div class="header" th:text="#{template.field}"></div>
         <div class="content">
             <form class="ui form" id="form_edit_field">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
               <div class="fields">
                 <div class="six wide field">
                   <label th:text="#{field.name}">Field Name</i></label> 

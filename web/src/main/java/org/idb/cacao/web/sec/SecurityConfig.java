@@ -53,6 +53,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * All configurations related to security and login
@@ -119,7 +120,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
 	protected void configure(HttpSecurity http) throws Exception {
         http
-        .csrf().disable()
+        //.csrf().disable()
         .addFilterBefore(apiAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)      
         .addFilterBefore(new CSPNonceFilter(), HeaderWriterFilter.class)
         .addFilterAfter(new SwaggerUIAuthenticationFilter(), HeaderWriterFilter.class)
@@ -197,6 +198,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         // LOGOUT PAGES ...
         .logout()
             .invalidateHttpSession(false)
+            .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
             .logoutSuccessUrl("/login?logout=true")
             .deleteCookies("JSESSIONID")
             .permitAll();

@@ -44,6 +44,7 @@
             </h3>
           </div>
           <form action="#" name="form" id="form" class="ui form" method="post">
+          	  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
               <div class="ui field" id="search1">
                 <label th:text="#{interpersonal.person1}">Referring person</label>
                 <div style="width: 100%">

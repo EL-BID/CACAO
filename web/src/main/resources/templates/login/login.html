@@ -52,7 +52,7 @@
 								<h4 th:text="#{login.with('Facebook')}" style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px;">Login with Facebook</h4>
 							</a>
 						</div>
-						<form class="ui large form" action="login" method="POST">
+						<form class="ui large form" th:action="login" action="login" method="POST">
 							<div class="ui orange segment">
 								<h4 th:text="#{login.with.password}">Login with Password</h4>
 								<div class="field">

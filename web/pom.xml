@@ -42,6 +42,11 @@
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-taglibs</artifactId>
+		</dependency>
+
 		<!-- This dependency goes for the 'auto discovery service capability' provided by Netflix's Eureka.
 			This application is itself a client and a service registered at Eureka -->
 		<dependency>
