@@ -55,13 +55,13 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					console.log(config)
-					console.log(params)
+					//console.log(config)
+					//console.log(params)
 					p = new URLSearchParams()
 					p.set('searchType', '3')
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					console.log(url + '?' + p.toString())		
+					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -71,11 +71,13 @@
 			        //response - the JSON object returned in the body of the response.
 		
 			        declaredData = response;
-			        console.log(response);
+			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
-											"<button id='showGraphRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
+								"<button id='exportCSVRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>"+
+								"<button id='exportPDFRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>"+
+								"<button id='showGraphRevenueNetGrossProfitDeclared' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 			    groupBy:"statementName",
@@ -92,7 +94,8 @@
 							{title: /*[[#{account.statement}]]*/ "Statement Order", field:"statementOrder", hozAlign:"left", headerSort:true, visible:false},
 							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:true, visible:false},
 							{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
-							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"center", formatter: "money", hozAlign:"right", headerSort:true, 
+							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"center", accessorDownload: valueConvertWithFractionDigits, 
+								formatter: "money", hozAlign:"right", headerSort:true, 
 								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2", symbol:currencySymbol, symbolAfter:symbolAfter}},
 						],
 					},
@@ -105,7 +108,7 @@
 			
 			tableRevenueNetGrossProfitDeclared.on("tableBuilt", function(){
 				document.getElementById('exportXLSRevenueNetGrossProfitDeclared').addEventListener("click", function(){
-					tableRevenueNetGrossProfitDeclared.download("xlsx", getFileName(3), {sheetName:getSheetName(3)});				    
+					tableRevenueNetGrossProfitDeclared.download("xlsx", getFileName(3,"xlsx"), {sheetName:getSheetName(3,true)});				    
 				});
 				
 				document.getElementById('showGraphRevenueNetGrossProfitDeclared').addEventListener("click", function(){					
@@ -116,6 +119,63 @@
 					showRevenueNetAndGrossProfitGraph(width,height);
 					window.dispatchEvent(new Event('resize'));					
 					
+				});
+				document.getElementById('exportCSVRevenueNetGrossProfitDeclared').addEventListener("click", function(){
+					exportType = "CSV";
+					tableRevenueNetGrossProfitDeclared.download("csv", getFileName(3,"csv"));									    
+				});				
+				document.getElementById('exportPDFRevenueNetGrossProfitDeclared').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';					
+					let year = $('#year').val();
+					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
+					let title = /*[[#{taxpayers.analysis.general.view.revenue}]]*/'';
+					title = title + " " + /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/'';
+					let first = true;
+					tableRevenueNetGrossProfitDeclared.download("pdf", getFileName(3,"pdf"), {
+						orientation:"portrait", //set page orientation to portrait
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: taxpayer[0] + " " + taxpayer[1] + " " + year,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                columnStyles: { 0: {halign: 'center'}, 1: {halign: 'right'} },
+				                margin: { left: 15, right: 250, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' ) {
+										if ( data.column.dataKey == 0)  {
+											data.cell.styles.halign = 'center';
+										}
+										else if ( data.column.dataKey == 1 )  {
+											data.cell.styles.halign = 'right';
+										}
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);						            
+									doc.text(taxpayer[0] + " " + taxpayer[1],15, 30);
+						            doc.text(year,15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },						        
+					});					
 				});				
 			});
 		
@@ -133,13 +193,13 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					console.log(config)
-					console.log(params)
+					//console.log(config)
+					//console.log(params)
 					p = new URLSearchParams()
 					p.set('searchType', '4')
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					console.log(url + '?' + p.toString())		
+					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -149,10 +209,12 @@
 			        //response - the JSON object returned in the body of the response.
 		
 			        calculatedData = response;
-			        console.log(response);
+			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='exportCSVRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>"+
+								"<button id='exportPDFRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>"+
 								"<button id='showGraphRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",	
 				locale:'xx',
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
@@ -170,7 +232,8 @@
 							{title: /*[[#{account.statement}]]*/ "Statement Order", field:"statementOrder", hozAlign:"left", headerSort:true, visible:false},
 							{title: /*[[#{account.statement}]]*/ "Statement", field:"statementName", hozAlign:"left", headerSort:true, visible:false},
 							{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"center", headerSort:true, headerHozAlign:"center"},
-							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"center", formatter: "money", hozAlign:"right", headerSort:true, 
+							{title: /*[[#{value}]]*/ "Value", field:"value", headerHozAlign:"center", accessorDownload: valueConvertWithFractionDigits,
+								formatter: "money", hozAlign:"right", headerSort:true, 
 								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2", symbol:currencySymbol, symbolAfter:symbolAfter}},
 						],
 					},
@@ -183,7 +246,7 @@
 			
 			tableRevenueNetGrossProfitCalculated.on("tableBuilt", function(){
 				document.getElementById('exportXLSRevenueNetGrossProfitCalculated').addEventListener("click", function(){
-					tableRevenueNetGrossProfitCalculated.download("xlsx", getFileName(4), {sheetName:getSheetName(4)});				    
+					tableRevenueNetGrossProfitCalculated.download("xlsx", getFileName(4,"xlsx"), {sheetName:getSheetName(4,true)});				    
 				});
 				
 				document.getElementById('showGraphRevenueNetGrossProfitCalculated').addEventListener("click", function(){
@@ -195,6 +258,63 @@
 					showRevenueNetAndGrossProfitGraph(width,height);
 					window.dispatchEvent(new Event('resize'));					
 					
+				});
+				document.getElementById('exportCSVRevenueNetGrossProfitCalculated').addEventListener("click", function(){
+					exportType = "CSV";
+					tableRevenueNetGrossProfitCalculated.download("csv", getFileName(4,"csv"));									    
+				});				
+				document.getElementById('exportPDFRevenueNetGrossProfitCalculated').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';					
+					let year = $('#year').val();
+					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
+					let title = /*[[#{taxpayers.analysis.general.view.revenue}]]*/'';
+					title = title + " " + /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/'';
+					let first = true;
+					tableRevenueNetGrossProfitCalculated.download("pdf", getFileName(4,"pdf"), {
+						orientation:"portrait", //set page orientation to portrait
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: taxpayer[0] + " " + taxpayer[1] + " " + year,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                columnStyles: { 0: {halign: 'center'}, 1: {halign: 'right'} },
+				                margin: { left: 15, right: 250, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' ) {
+										if ( data.column.dataKey == 0)  {
+											data.cell.styles.halign = 'center';
+										}
+										else if ( data.column.dataKey == 1 )  {
+											data.cell.styles.halign = 'right';
+										}
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);						            
+									doc.text(taxpayer[0] + " " + taxpayer[1],15, 30);
+						            doc.text(year,15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },						        
+					});					
 				});					
 			});
 		

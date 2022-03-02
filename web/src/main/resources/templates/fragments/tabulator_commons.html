@@ -27,6 +27,26 @@
 	        }
     	};
 		
+		function getTaxpayer(value) {
+			let taxpayer = [];
+			if ( value == null ) {
+				taxpayer[0] = '';
+				taxpayer[1] = '';
+			}
+			else {
+				let data = value.split(":");
+				if ( data.length > 1 ) {
+					taxpayer[0] = data[0].trim().replace("<b>","").replace("</b>","");
+					taxpayer[1] = data[1].trim();
+				}
+				else {
+					taxpayer[0] = '';
+					taxpayer[1] = '';		
+				}
+			}
+			return taxpayer;
+		} 
+		
 		//Custom accessor
 		function nullConvert(value, data, type, component){
 		    if ( value == null )
@@ -41,7 +61,25 @@
 		    if ( exportType !== "PDF" )
 		    	return value;
 		    return formatDecimal(value);
+		}
+		
+		//Custom accessor for value
+		function valueConvertWithFractionDigits(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    if ( exportType !== "PDF" )
+		    	return value;
+		    return formatDecimal(value, 2);
 		}			
+		
+		//Custom accessor for quantity
+		function quantityConvert(value, data, type, component){
+		    if ( value == null )
+		    	return "";
+		    if ( exportType !== "PDF" )
+		    	return value;
+		    return formatQuantity(value);
+		}		
 		
 		//Custom accessor for percentage
 		function percentConvert(value, data, type, component){
@@ -64,15 +102,19 @@
 		}		
 		
 		function formatPercentage(value, fractionDigits) {
-			return new Intl.NumberFormat(/*[[${lang}]]*/'',{maximumFractionDigits:fractionDigits}).format(value) + "%";
+			return new Intl.NumberFormat(/*[[${lang}]]*/'',{maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits}).format(value) + "%";
 		}
 		
-		function formatDecimal(value) {
+		function formatDecimal(value, fractionDigits) {
 			if ( symbolAfter )
-				return new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:0}).format(value) + currencySymbol;
+				return new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits}).format(value) + currencySymbol;
 			else
-				return currencySymbol + new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:0}).format(value);	
+				return currencySymbol + new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits}).format(value);	
 		}
+		
+		function formatQuantity(value) {
+			return new Intl.NumberFormat(/*[[${lang}]]*/'', {maximumFractionDigits:0}).format(value);	
+		}		
 		
 		function formatCurrency(value) {
 			return new Intl.NumberFormat(/*[[${lang}]]*/'', {style: 'currency', currency: currencySymbol, currencyDisplay: "code", maximumFractionDigits:0}).format(value);

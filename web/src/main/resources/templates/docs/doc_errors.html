@@ -67,7 +67,7 @@
 					p.set('sortorder', params.sort[0].dir)
 				}				
 				p.set('documentId', documentId)
-				console.log(url + '?' + p.toString())
+				//console.log(url + '?' + p.toString())
 				return url + '?' + p.toString()
 			},
 			ajaxContentType: "json",			
@@ -81,7 +81,7 @@
 		    locale:'xx',
 			columns:[ //Define Table Columns
 				{title: /*[[#{taxpayer.id}]] */ "Taxpayer Id", field:"taxPayerId", headerFilter: true},
-				{title: /*[[#{tax.period}]] */ "Tax Period", field:"templateName", headerFilter: true},
+				{title: /*[[#{tax.period}]] */ "Tax Period", field:"taxPeriodNumber", headerFilter: true},
 				{title: /*[[#{doc.timestamp}]] */ "Transmission Time", field:"timestamp", formatter: dateFormatter, headerFilter: true},
 				{title: /*[[#{doc.error.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter: true},				
 				{title: /*[[#{doc.error.message}]]*/ "Error Message", field:"errorMessage", headerFilter: true},								
