@@ -37,13 +37,13 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					console.log(config)
-					console.log(params)
+					//console.log(config)
+					//console.log(params)
 					p = new URLSearchParams()
 					p.set('searchType', '2') //Shareholders
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					console.log(url + '?' + p.toString())		
+					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},	
 				ajaxContentType: "json",
@@ -53,10 +53,12 @@
 			        //response - the JSON object returned in the body of the response.
 	
 			        shareholdersData = response;
-			        console.log(response);
+			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='exportCSVShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>"+
+								"<button id='exportPDFShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>"+
 								"<button id='showGraphAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx', 
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
@@ -64,13 +66,13 @@
 						{title: /*[[#{shareholder.name}]]*/ "Shareholder Name", field:"shareholderName", hozAlign:"left", headerSort:true},
 						{title: /*[[#{share.class}]]*/ "Share Class", field:"shareClass", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
 						{title: /*[[#{share.type}]]*/ "Share Type", field:"shareType", hozAlign:"left", headerSort:true, accessorDownload:nullConvert},
-						{title: /*[[#{share.amount}]]*/ "Share Amout", field:"shareAmount", headerSort:true, formatter: "money", 
+						{title: /*[[#{share.amount}]]*/ "Share Amout", field:"shareAmount", headerSort:true, accessorDownload: valueConvertWithFractionDigits, formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 							hozAlign:"right", headerSort:true, headerHozAlign:"right"},
-						{title: /*[[#{share.percentage}]]*/ "Share %", field:"sharePercentage", headerSort:false, formatter: "money", 
+						{title: /*[[#{share.percentage}]]*/ "Share %", field:"sharePercentage", headerSort:false, accessorDownload: percentConvertWithFractionDigits, formatter: "money", 
 								formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:"%", symbolAfter:true, precision:"2"}, 
 								hozAlign:"right", headerSort:true, headerHozAlign:"right"},
-						{title: /*[[#{share.quantity}]]*/ "Share Quantity", field:"shareQuantity", formatter: "money", 
+						{title: /*[[#{share.quantity}]]*/ "Share Quantity", field:"shareQuantity", accessorDownload: valueConvert, formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, precision:"2"}, 
 							hozAlign:"right", headerSort:true, headerHozAlign:"right"}
 				],
@@ -81,7 +83,7 @@
 			
 			tableShareholders.on("tableBuilt", function(){
 				document.getElementById('exportXLSShareholders').addEventListener("click", function(){
-					tableShareholders.download("xlsx", getFileName(2), {sheetName:getSheetName(2)});				    
+					tableShareholders.download("xlsx", getFileName(2, "xlsx"), {sheetName:getSheetName(2, true)});				    
 				});
 				document.getElementById('showGraphAnalyticsAccounts').addEventListener("click", function(){					
 					$('#modal_shareholders_graph').modal('show');
@@ -91,7 +93,64 @@
 					showShareholdersGraph(width,height);
 					window.dispatchEvent(new Event('resize'));					
 					
-				});
+				});				
+				document.getElementById('exportCSVShareholders').addEventListener("click", function(){
+					exportType = "CSV";
+					tableShareholders.download("csv", getFileName(2,"csv"));									    
+				});				
+				document.getElementById('exportPDFShareholders').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';					
+					let year = $('#year').val();
+					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
+					let title = /*[[#{taxpayers.analysis.general.view.shareholders}]]*/'';
+					let first = true;
+					tableShareholders.download("pdf", getFileName(2,"pdf"), {
+						orientation:"portrait", //set page orientation to portrait
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: taxpayer[0] + " " + taxpayer[1] + " " + year,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });					            
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                columnStyles: { 1: {halign: 'center'}, 3: {halign: 'right'}, 4: {halign: 'right'}, 
+				                	5: {halign: 'right'}, 6: {halign: 'right'} },
+				                margin: { left: 15, right: 10, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' ) {
+										if ( data.column.dataKey == 1)  {
+											data.cell.styles.halign = 'center';
+										}
+										else if ( data.column.dataKey >= 3 )  {
+											data.cell.styles.halign = 'center';
+										}
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);						            
+									doc.text(taxpayer[0] + " " + taxpayer[1],15, 30);
+						            doc.text(year,15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },						        
+					});					
+				});					
 			});		
 			
 		}

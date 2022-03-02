@@ -12,6 +12,8 @@
 <script src="/js/luxon.min.js"></script>
 <script src="/js/d3.v7.min.js"></script>
 <script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>
 <script src="/js/vega.min.js"></script>
 <script src="/js/vega-lite.min.js"></script>
 <script src="/js/vega-embed.min.js"></script>
@@ -203,9 +205,9 @@
 	        });
 		}
 
-		function getFileName(searchType) {
+		function getFileName(searchType, ext) {
 			
-			let fileName = $('#taxpayer').val() + "_";
+			let fileName = $('#taxpayer').val() + "_" + $('#year').val() + "_";
 
 			if ( searchType == 1 ) 
 				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ '';
@@ -236,11 +238,11 @@
 			else if ( searchType == 11 ) 
 				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';
 			
-			return fileName + ".xlsx";
+			return fileName + "." + ext;
 			
 		}
 		
-		function getSheetName(searchType) {
+		function getSheetName(searchType, cut) {
 			
 			let sheetName = "Sheet 1";
 			
@@ -267,7 +269,7 @@
 			else if ( searchType == 11 ) 
 				sheetName = /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';
 			
-			if (sheetName.length > 31)
+			if (cut && sheetName.length > 31)
 				sheetName = sheetName.substring(0,30);
 		
 			return sheetName;

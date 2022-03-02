@@ -11,6 +11,8 @@
 <script src="/js/tabulator.min.js"></script>
 <script src="/js/luxon.min.js"></script>
 <script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
+<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>
 <script src="/js/vega.min.js"></script>
 <script src="/js/vega-lite.min.js"></script>
 <script src="/js/vega-embed.min.js"></script>
@@ -183,12 +185,12 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/customers-vs-suppliers-analysis}]]*/ "/api/analysis/customers-vs-suppliers-analysis", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					console.log(config)
-					console.log(params)
+					//console.log(config)
+					//console.log(params)
 					p = new URLSearchParams()
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					console.log(url + '?' + p.toString())		
+					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -197,10 +199,12 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.		
 			        
-			        console.log(response);
+			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
-				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>",			
+				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
+								"<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>"+
+								"<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",			
 				locale:'xx',
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
 			    groupBy:"month",
@@ -234,38 +238,97 @@
 					{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customerName", hozAlign:"left", headerSort:false},
 					{title: /*[[#{customer.value}]]*/ "Declared Value", field:"customerValue", headerSort:false, formatter: "money", 
 						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
-						hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+						accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:false, headerHozAlign:"right"},
 					{title: /*[[#{supplier.value}]]*/ "Calculated Value", field:"supplierValue", headerSort:false, formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
-							hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+							accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:false, headerHozAlign:"right"},
 					{title: /*[[#{customer.supplier.difference}]]*/ "Difference", field:"difference", formatter: "money", 
 						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
-						hozAlign:"right", headerSort:false, headerHozAlign:"right"}
+						accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:false, headerHozAlign:"right"}
 				]
 			});
 			
 			table.on("tableBuilt", function(){
 				document.getElementById('exportXLS').addEventListener("click", function(){
-					table.download("xlsx", getFileName() , {sheetName: getSheetName()});				    
+					table.download("xlsx", getFileName("xlsx") , {sheetName: getSheetName(true)});				    
 				});
+				document.getElementById('exportCSV').addEventListener("click", function(){
+					exportType = "CSV";
+					table.download("csv", getFileName("csv"));									    
+				});				
+				document.getElementById('exportPDF').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';					
+					let year = $('#year').val();
+					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
+					let title = /*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/'';
+					let first = true;
+					table.download("pdf", getFileName("pdf"), {
+						orientation:"portrait", //set page orientation to portrait
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: taxpayer[0] + " " + taxpayer[1] + " " + year,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });
+				           	let first = true;
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                columnStyles: { 1: {halign: 'right'}, 2: {halign: 'right'}, 3: {halign: 'right'} },
+				                margin: { left: 15, right: 200, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' ) {
+										if ( first && data.column.dataKey == 0 )  {
+											first = false;
+											data.cell.styles.halign = 'center';
+										}
+										else if ( data.column.dataKey >= 1 )  {
+											data.cell.styles.halign = 'right';
+										}
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);						            
+									doc.text(taxpayer[0] + " " + taxpayer[1],15, 30);
+						            doc.text(year,15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },						        
+					});					
+				});					
+				
 			});
 		}
 		
-		function getSheetName() {
+		function getSheetName(cut) {
 			
 			let sheetName = /*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/'';
 
-			if (sheetName.length > 31)
+			if (cut && sheetName.length > 31)
 				sheetName = sheetName.substring(0,30);
 		
 			return sheetName;			
 			
 		}
 		
-		function getFileName() {
+		function getFileName(ext) {
 			let fileName = $('#taxpayer').val() + "_";
 			fileName = fileName + /*[[#{taxpayers.analysis.customers.versus.suppliers}]]*/ null;
-			return  fileName + ".xlsx";
+			return  fileName + "." + ext;
 		}
 		
 	</script>

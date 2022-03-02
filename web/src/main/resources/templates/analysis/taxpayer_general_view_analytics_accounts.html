@@ -37,13 +37,13 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					console.log(config)
-					console.log(params)
+					//console.log(config)
+					//console.log(params)
 					p = new URLSearchParams()
 					p.set('searchType', '6')
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					console.log(url + '?' + p.toString())		
+					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -53,10 +53,12 @@
 			        //response - the JSON object returned in the body of the response.
 		
 			        analyticsAccountsData = response;
-			        console.log(response);
+			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
+								"<button id='exportCSVAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>"+
+								"<button id='exportPDFAnalyticsAccounts' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>"+
 								"<button id='showGraphShareholders' class='ui left floated compact button tabulator-footer'><i class='chart pie icon'></i>[(#{show.graph})]</button>",			
 				locale:'xx',
 			    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
@@ -70,10 +72,10 @@
 			    },				    
 				columns:[ //Define Table Columns
 						{title: /*[[#{tax.year}]]*/ "Year", field:"year", hozAlign:"left", headerSort:true, headerHozAlign:"left", visible:false},
-						{title: /*[[#{account.code}]]*/ "Account Code", field:"values.account_code", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
-						{title: /*[[#{account.name}]]*/ "Account Name", field:"values.account_name", hozAlign:"left", headerSort:true, headerHozAlign:"left"},
-						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"values.value", headerSort:true, formatter: "money", hozAlign:"right", headerSort:true, 
-							headerHozAlign:"right", 
+						{title: /*[[#{account.code}]]*/ "Account Code", field:"values.account_code", hozAlign:"left", headerSort:false, headerHozAlign:"left"},
+						{title: /*[[#{account.name}]]*/ "Account Name", field:"values.account_name", hozAlign:"left", headerSort:false, headerHozAlign:"left"},
+						{title: /*[[#{account.finalBalance}]]*/ "Final Balance", field:"values.value", headerSort:true, formatter: "money",  
+							headerHozAlign:"right", accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:true,
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}},
 				],
 			    initialSort:[
@@ -83,8 +85,8 @@
 			
 			tableAnalyticsAccounts.on("tableBuilt", function(){
 				document.getElementById('exportXLSAnalyticsAccounts').addEventListener("click", function(){
-					tableAnalyticsAccounts.download("xlsx", getFileName(6/*seach type*/), 
-							{sheetName: getSheetName(6/*search type*/)});				    
+					tableAnalyticsAccounts.download("xlsx", getFileName(6/*seach type*/,"xlsx"), 
+							{sheetName: getSheetName(6/*search type*/, true)});				    
 				});
 				document.getElementById('showGraphShareholders').addEventListener("click", function(){					
 					$('#modal_analytics_accounts_graph').modal('show');
@@ -94,7 +96,60 @@
 					showAnalyticsAccountsGraph(width,height);
 					window.dispatchEvent(new Event('resize'));					
 					
+				});
+				document.getElementById('exportCSVAnalyticsAccounts').addEventListener("click", function(){
+					exportType = "CSV";
+					tableAnalyticsAccounts.download("csv", getFileName(6,"csv"));									    
 				});				
+				document.getElementById('exportPDFAnalyticsAccounts').addEventListener("click", function(){
+					exportType = "PDF";
+					let author = /*[[${#authentication.name}]]*/'';					
+					let year = $('#year').val();
+					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
+					let title = /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/'';
+					let first = true;
+					tableAnalyticsAccounts.download("pdf", getFileName(6,"pdf"), {
+						orientation:"portrait", //set page orientation to portrait
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: taxpayer[0] + " " + taxpayer[1] + " " + year,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                columnStyles: { 2: {halign: 'right'} },
+				                margin: { left: 15, right: 250, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' ) {
+										if ( data.column.dataKey == 2 )  {
+											data.cell.styles.halign = 'right';
+										}
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);						            
+									doc.text(taxpayer[0] + " " + taxpayer[1],15, 30);
+						            doc.text(year,15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },						        
+					});					
+				});						
 			});
 		
 		}

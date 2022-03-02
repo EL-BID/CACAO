@@ -359,20 +359,12 @@
 				});
 				document.getElementById('exportCSV').addEventListener("click", function(){
 					exportType = "CSV";
-					table.download("csv", getFileName("csv")); //include BOM in output									    
+					table.download("csv", getFileName("csv"));									    
 				});
 				document.getElementById('exportPDF').addEventListener("click", function(){
 					exportType = "PDF";
 					let author = /*[[${#authentication.name}]]*/'';
-					let taxpayer = $('#select').dropdown("get text");
-					let taxpayerName = "";
-					if ( taxpayer == null )
-						taxpayer = $('#taxpayer').val()
-					else {
-						let data = taxpayer.split(":");						
-						taxpayer = data[0].trim().replace("<b>","").replace("</b>","");
-						taxpayerName = data[1].trim();
-					}
+					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 					let title = getSheetName(false);					
 					table.download("pdf", getFileName("pdf"), {
 							orientation:"landscape", //set page orientation to portrait							
@@ -382,7 +374,7 @@
 					            doc.setProperties({
 					            	title: title,
 					            	author: author,
-					            	subject: taxpayer + " " + taxpayerName,					            	
+					            	subject: taxpayer[0] + " " + taxpayer[1],					            	
 					            	keywords: 'generated, javascript, web 2.0, ajax',
 					            	creator: 'CACAO'
 					            });					            
@@ -399,9 +391,9 @@
 									didDrawPage: function (data) {
 										//Add header
 										doc.setFont(undefined, 'bold');
-										doc.text(title,15, 20);
-							            doc.text(taxpayer,15, 30);
-							            doc.text(taxpayerName,15, 40).setFont(undefined, 'normal');
+										doc.text(title, 15, 20);
+							            doc.text(taxpayer[0], 15, 30);
+							            doc.text(taxpayer[1], 15, 40).setFont(undefined, 'normal');
 							            
 							            //Add page number
 							            let str = /*[[#{page}]]*/'';

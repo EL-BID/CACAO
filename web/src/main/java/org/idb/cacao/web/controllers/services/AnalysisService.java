@@ -1482,7 +1482,7 @@ public class AnalysisService {
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");
 			Sum equityResult = agg.get("equityMethodResult");
-			return new Shareholding(values, amount.getValue(), percentage.getValue()/100, quantity.getValue(), equityResult.getValue());
+			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue(), equityResult.getValue());
 		};
 
 		// Update shareholding information for this taxpayer
@@ -1556,7 +1556,7 @@ public class AnalysisService {
 			Sum amount = agg.get("shareAmount");
 			Sum percentage = agg.get("sharePercentage");
 			Sum quantity = agg.get("shareQuantity");			
-			return new Shareholding(values, amount.getValue(), percentage.getValue()/100, quantity.getValue(), 0d);
+			return new Shareholding(values, amount.getValue(), percentage.getValue(), quantity.getValue(), 0d);
 		};
 
 		// Update shareholding information for this taxpayer

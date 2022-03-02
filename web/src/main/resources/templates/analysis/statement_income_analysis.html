@@ -181,12 +181,12 @@
 			langs: tabulatorLanguageSpecs,
 			ajaxURL: /*[[@{/api/analysis/statement-income-analysis}]]*/ "/api/analysis/statement-income-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
-				console.log(config)
-				console.log(params)
+				//console.log(config)
+				//console.log(params)
 				p = new URLSearchParams()
 				p.set('taxpayerId', document.getElementById("taxpayer").value)
 				p.set('year', $('#year').val())
-				console.log(url + '?' + p.toString())		
+				//console.log(url + '?' + p.toString())		
 				return url + '?' + p.toString()
 			},
 			ajaxContentType: "json",
