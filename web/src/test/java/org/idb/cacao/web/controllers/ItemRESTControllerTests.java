@@ -21,6 +21,7 @@ package org.idb.cacao.web.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -105,7 +106,7 @@ public class ItemRESTControllerTests {
 	@Test
 	public void addItem() throws Exception {
 		Item item = new Item("iPhoneX", "Mobiles");
-		MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.post("/api/addItem").accept(MediaType.APPLICATION_JSON).contentType(MediaType.APPLICATION_JSON)
+		MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.post("/api/addItem").with(csrf()).accept(MediaType.APPLICATION_JSON).contentType(MediaType.APPLICATION_JSON)
 				.content(json.write(item).getJson())).andReturn().getResponse();
 		
 		assertEquals(HttpStatus.OK.value(),response.getStatus());
@@ -133,6 +134,7 @@ public class ItemRESTControllerTests {
 		saved.setCategory("Watch");
 		
 		MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.put("/api/updateItem")
+				.with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json.write(saved).getJson()))
 				.andReturn().getResponse();
@@ -155,6 +157,7 @@ public class ItemRESTControllerTests {
 		Item item = new Item("iPhoneX", "Mobiles");
 		Item saved = itemRepository.save(item);
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/delete/" + saved.getId())
+        		.with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isAccepted());
     }	

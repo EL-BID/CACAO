@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -108,6 +109,7 @@ class DocumentStoreAPIControllerTests {
 		this.mockMvc.perform(
 				multipart("/api/doc")
 				.file(multipartFile)
+				.with(csrf())
 				.param("templateName", "TEST")
 				.param("templateVersion", "1.0"))
 				.andExpect(status().isOk());

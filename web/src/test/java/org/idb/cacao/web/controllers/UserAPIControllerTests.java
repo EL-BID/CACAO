@@ -20,6 +20,7 @@
 package org.idb.cacao.web.controllers;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.idb.cacao.web.entities.User;
@@ -93,6 +94,7 @@ class UserAPIControllerTests {
 		user.setProfile(UserProfile.SYSADMIN);
 		MockHttpServletResponse response = mvc.perform(
                 post("/api/user")
+                	.with(csrf())
                     .accept(MediaType.APPLICATION_JSON)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
