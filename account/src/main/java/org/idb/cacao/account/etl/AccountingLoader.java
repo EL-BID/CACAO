@@ -566,7 +566,7 @@ public class AccountingLoader {
 					.findFirst().orElseGet(DocumentTemplate::new);
 			final Periodicity periodicity = gl_template.getPeriodicity();
 
-			DocumentField account_category_field_map = coa_template.getField(AccountCategory.name());
+			DocumentField account_category_field_map = (coa_template==null) ? null : coa_template.getField(AccountCategory.name());
 			String account_category_domain_table_name = (account_category_field_map==null) ? null : account_category_field_map.getDomainTableName();
 			final AccountStandard account_standard = AccountBuiltInDomainTables.getAccountStandardRelatedToDomainTable(account_category_domain_table_name);
 

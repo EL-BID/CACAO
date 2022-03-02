@@ -257,7 +257,7 @@ public class CustomersSuppliersProcessor {
 		if (CustomerSupplierIndication.NONE.equals(indication))
 			return;
 		
-		final int year_month = (date==null) ? 0 : ( date.getYear() * 100 + date.getMonthValue() );
+		final int year_month = ( date.getYear() * 100 + date.getMonthValue() );
 		final boolean changed_month = year_month!=0 && previousMonth.get()!=0 && previousMonth.get()!=year_month;
 		final int previous_year_month = previousMonth.get();
 		if (date!=null && (changed_month || previousMonth.get()==0)) {

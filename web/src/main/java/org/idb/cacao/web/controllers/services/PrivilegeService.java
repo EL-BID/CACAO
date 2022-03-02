@@ -48,9 +48,9 @@ public class PrivilegeService {
 	@Autowired
 	private Environment env;
 
-	private Map<UserProfile,Set<SystemPrivilege>> map_user_profiles_to_privileges;
+	private volatile Map<UserProfile,Set<SystemPrivilege>> map_user_profiles_to_privileges;
 
-	private Map<SystemPrivilege,Set<UserProfile>> map_privileges_to_user_profiles;
+	private volatile Map<SystemPrivilege,Set<UserProfile>> map_privileges_to_user_profiles;
 	
 	/**
 	 * Returns system privileges associated to user profile
