@@ -152,7 +152,78 @@ Inform 'admin' as login and inform the password you saw at step 4.
 When prompted, inform new password for 'admin' account.
 
 When prompted, confirm the option for 'anonymous access' to the repository (otherwise you will need to provide user credentials at each of the project modules).
-  
+
+___
+
+## How to setup SONARQUBE 
+
+Sonarqube is a open source platform for countinuous inspection of code quality. It's used at development environment in order to check if the code complies to generally accepted programming standards.
+
+It requires a 'server' related to Sonarqube and also some additional tools provided by Sonarqube platform that are used to 'scan' the source code. There are different ways to setup Solarqube platforms and there are different versions of it. Here we are going to show the quickest way possible to setup and use the 'Community Edition'.
+
+1. For the 'server' part, it's possible to start quickly with a docker image. If you want to run the latest available image version and want to make it accessible at localhost using the default port number 9000, just type in:
+
+```
+docker run -d --name sonarqube -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true -p 9000:9000 sonarqube:latest
+```
+
+2. Sonarqube provides a web user interface and requires user authentication. For your first access as 'admin' user you will need to provide a new password. So log in to the user interface, like this:
+
+http://127.0.0.1:9000/
+
+3. When prompted for credentials, type in the initial 'admin/admin' (user: admin, password: admin) account. After confirmation, you have to provide a new password for this 'admin' account. Just proceed as instructed.
+
+4. After changing the password, the user interface may welcome you with some hints about projects, but you can just skip these steps and jump into the 'accounts page' in order to create an 'access token' that will be required by Maven later. Just go to the 'Accounts' / 'Security' page, or follow this link:
+
+http://127.0.0.1:9000/account/security/
+
+5. Generate a new token. Choose a token name (e.g.: "Maven build") and press 'generate'
+
+6. Copy the generated token (it's very important you do it now, because the token will not be presented again later)
+
+7. Edit your Maven 'settings.xml' file (for Windows users, locate this file at your user home directory, subdirectory '.m2').
+
+8. Include the following lines:
+   
+```
+<pluginGroups>
+	<pluginGroup>org.sonarsource.scanner.maven</pluginGroup>
+</pluginGroups>
+<profiles>
+	<profile>
+		<id>sonar</id>
+		<activation>
+			<activeByDefault>true</activeByDefault>
+		</activation>
+		<properties>
+			<sonar.host.url>https://127.0.0.1:9000</sonar.host.url>
+			<sonar.login>  ... paste your Sonarqube access token here ... </sonar.login>
+		</properties>
+	</profile>
+</profiles>
+```
+
+9. If you didn't do it yet, build CACAO using the following Maven command line (standing at the project root directory):
+
+```
+mvn install
+```
+
+10. Run the following Maven command line for starting the code scanning using Sonarqube (you need at least Java 11 for this - older versions of Java won't work)
+
+```
+mvn sonar:sonar
+```
+
+Note: it's also possible to run both commands at once, like this:
+
+```
+mvn install sonar:sonar
+```
+ 
+11. The procedure may take some time to complete. After all the work, check for error messages (if any). If the procedure runs fine, check the results at the web user interface (the URL will be displayed as result of the previous command).
+ 
+   
 ___
 
 ## How to Setup Google Authentication (Login with Google)

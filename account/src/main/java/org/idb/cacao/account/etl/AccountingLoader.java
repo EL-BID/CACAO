@@ -555,7 +555,7 @@ public class AccountingLoader {
 			
 			DocumentTemplate coa_template =
 					templatesForCoA.stream().filter(t->coa.getTemplateName().equalsIgnoreCase(t.getName()) && coa.getTemplateVersion().equalsIgnoreCase(t.getVersion()))
-					.findFirst().orElse(null);
+					.findFirst().orElseGet(DocumentTemplate::new);
 			DocumentField category_field = (coa_template==null) ? null : coa_template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name());
 			DocumentField subcategory_field = (coa_template==null) ? null : coa_template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name());
 			Optional<DomainTable> category_domain_table = (category_field==null) ? Optional.empty() : context.getDomainTableRepository().findByNameAndVersion(category_field.getDomainTableName(), category_field.getDomainTableVersion());
@@ -563,7 +563,7 @@ public class AccountingLoader {
 			
 			DocumentTemplate gl_template =
 					templatesForLedger.stream().filter(t->gl.getTemplateName().equalsIgnoreCase(t.getName()) && gl.getTemplateVersion().equalsIgnoreCase(t.getVersion()))
-					.findFirst().orElse(null);
+					.findFirst().orElseGet(DocumentTemplate::new);
 			final Periodicity periodicity = gl_template.getPeriodicity();
 
 			DocumentField account_category_field_map = coa_template.getField(AccountCategory.name());
