@@ -728,7 +728,7 @@ public class ParserUtils {
     	    		return parseDecimal(value);
     	    	}    			    		
     		}
-    		else if (Pattern.compile("\\d{4,}\\.").matcher(value).find()
+    		else if (Pattern.compile("\\d{4}\\.").matcher(value).find()
     			|| !Pattern.compile("\\d\\.\\d{3}").matcher(value).find()) {
     			// If we have four or more digits before any dot, or if we don't have
     			// three digits after any dot, probably dots are decimal separators

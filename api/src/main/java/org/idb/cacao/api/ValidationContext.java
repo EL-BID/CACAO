@@ -641,7 +641,7 @@ public class ValidationContext {
 		    	    		return parseDecimal(txt);
 		    	    	}    			    		
 		    		}
-		    		else if (Pattern.compile("\\d{4,}\\.").matcher(txt).find()
+		    		else if (Pattern.compile("\\d{4}\\.").matcher(txt).find()
 		    			|| !Pattern.compile("\\d\\.\\d{3}").matcher(txt).find()) {
 		    			// If we have four or more digits before any dot, or if we don't have
 		    			// three digits after any dot, probably dots are decimal separators
