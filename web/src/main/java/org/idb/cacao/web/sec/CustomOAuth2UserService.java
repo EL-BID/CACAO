@@ -30,8 +30,8 @@ import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -83,7 +83,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
 		String email = oidcUser.getEmail();
 		
 		if (email==null) {
-			throw new UsernameNotFoundException("No email provided for user: " + full_name);
+			throw new BadCredentialsException("Bad credentials");
 		}
 		
 		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(email);
@@ -104,7 +104,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
 		}
 		
         if (user == null || user.getLogin()==null) {
-            throw new UsernameNotFoundException("No user found with email: " + email);
+        	throw new BadCredentialsException("Bad credentials");
         }
         
          return new CustomOidcUser(user, oidcUser);

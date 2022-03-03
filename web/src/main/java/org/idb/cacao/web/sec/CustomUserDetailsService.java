@@ -27,6 +27,7 @@ import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -60,11 +61,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 		
 		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(name);
         if (user == null || user.getLogin()==null) {
-            throw new UsernameNotFoundException("No user found with username: " + name);
+        	throw new BadCredentialsException("Bad credentials");
         }
         
         if (user.getPassword()==null || user.getPassword().trim().length()==0) {
-        	throw new UsernameNotFoundException("Missing password for user: " + name);
+        	throw new BadCredentialsException("Bad credentials");
         }
 
         org.springframework.security.core.userdetails.User.UserBuilder builder =

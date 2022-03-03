@@ -30,8 +30,8 @@ import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -81,7 +81,7 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 		String email = oauthUser.getAttribute(ATTRIBUTE_EMAIL);
 		
 		if (email==null) {
-			throw new UsernameNotFoundException("No email provided for user: " + full_name);
+			throw new BadCredentialsException("Bad credentials");
 		}
 		
 		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(email);
@@ -100,7 +100,7 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 		}
 		
         if (user == null || user.getLogin()==null) {
-            throw new UsernameNotFoundException("No user found with email: " + email);
+        	throw new BadCredentialsException("Bad credentials");
         }
         
         return new CustomOAuth2User(user, oauthUser);
