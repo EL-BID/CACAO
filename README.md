@@ -183,7 +183,7 @@ http://127.0.0.1:9000/account/security/
 
 7. Edit your Maven 'settings.xml' file (for Windows users, locate this file at your user home directory, subdirectory '.m2').
 
-8. Include the following lines:
+8. If you already have a settings.xml file, include the following lines:
    
 ```
 <pluginGroups>
@@ -202,6 +202,51 @@ http://127.0.0.1:9000/account/security/
 	</profile>
 </profiles>
 ```
+
+If there's no settings.xml file, you should create at .m2 directory
+
+```
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+ <localRepository>  ... paste your maven local repository path here ... </localRepository>
+ <interactiveMode>true</interactiveMode>
+ <offline>false</offline>
+
+ <pluginGroups>
+ 	<pluginGroup>org.sonarsource.scanner.maven</pluginGroup>
+ </pluginGroups>
+
+ 
+<profiles>
+	<profile>
+		<id>sonar</id>
+		<activation>
+			<activeByDefault>true</activeByDefault>
+		</activation>
+		<properties>
+			<sonar.host.url>http://127.0.0.1:9000</sonar.host.url>
+			<sonar.login>  ... paste your Sonarqube access token here ... </sonar.login>
+		</properties>
+	</profile>
+</profiles>
+
+  <activeProfiles></activeProfiles>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>  ... paste your installed maven version here ... </version>
+        </plugin>           
+      </plugins>
+    </pluginManagement>   
+</build>
+</settings>
+```
+
 
 9. If you didn't do it yet, build CACAO using the following Maven command line (standing at the project root directory):
 
