@@ -39,6 +39,7 @@ import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.csrf.CsrfFilter;
 
 /**
  * Filter used for pre-authenticating user requests based on API token.
@@ -86,6 +87,8 @@ public class ApiKeyAuthenticationFilter implements Filter {
                 	else {
 	                    ApiKeyAuthenticationToken apiToken = new ApiKeyAuthenticationToken(matching_user.get(), privilegeService.getGrantedAuthorities(matching_user.get().getProfile()));
 	                    SecurityContextHolder.getContext().setAuthentication(apiToken);
+	                    // Since this is a stateless request to API using access token, we won't need the CSRF filter for this request
+	                    CsrfFilter.skipRequest((HttpServletRequest)request);
                 	}
                 } else {
                     HttpServletResponse httpResponse = (HttpServletResponse) response;

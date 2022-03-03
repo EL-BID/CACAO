@@ -51,6 +51,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -124,7 +125,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         	// ignore Kibana-related endpoints since they are managed by Kibana
         	.ignoringAntMatchers("/kibana/**")
         	.and()
-        .addFilterBefore(apiAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)      
+        .addFilterBefore(apiAuthenticationFilter(), CsrfFilter.class)      
         .addFilterBefore(new CSPNonceFilter(), HeaderWriterFilter.class)
         .addFilterAfter(new SwaggerUIAuthenticationFilter(), HeaderWriterFilter.class)
         .headers()
