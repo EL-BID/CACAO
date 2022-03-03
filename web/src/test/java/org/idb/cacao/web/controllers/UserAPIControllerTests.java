@@ -87,7 +87,7 @@ class UserAPIControllerTests {
 
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
-	void testHandleFileUpload() throws Exception {
+	void testCreateUser() throws Exception {
 		User user = new User();
 		user.setLogin("k@g.com");
 		user.setName("Joao da Silva");

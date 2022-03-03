@@ -37,6 +37,7 @@ import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.web.dto.DocumentTemplateDto;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -357,7 +358,7 @@ public class DocumentTemplateService {
 	/**
 	 * Performs additional validation over templates
 	 */
-	public void validateTemplate(DocumentTemplate template, BindingResult result) {
+	public void validateTemplate(DocumentTemplateDto template, BindingResult result) {
 		if (template==null || result==null)
 			return;
 		if (template.getFields()!=null && !template.getFields().isEmpty()) {

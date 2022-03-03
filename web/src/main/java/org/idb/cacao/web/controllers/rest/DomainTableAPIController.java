@@ -36,6 +36,7 @@ import org.idb.cacao.api.Views;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.DomainTableService;
+import org.idb.cacao.web.dto.DomainTableDto;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -134,7 +135,7 @@ public class DomainTableAPIController {
 
 	@GetMapping("/domaintables")
 	@ApiOperation(value="Method used for listing domain tables using pagination")
-	public PaginationData<DomainTable> getDomainTableWithPagination(Model model, 
+	public PaginationData<DomainTableDto> getDomainTableWithPagination(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -153,12 +154,13 @@ public class DomainTableAPIController {
     		throw new UserNotFoundException();
 
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
-		Page<DomainTable> docs;
+		Page<DomainTableDto> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("name"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DomainTable.class, elasticsearchClient, page, size, 
-					sortField, direction);
+					sortField, direction)
+					  .map(t -> new DomainTableDto(t));
 
 		}
 		catch (Exception ex) {
@@ -170,7 +172,7 @@ public class DomainTableAPIController {
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @DeleteMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deletes an existing domain table",response=DomainTable.class)
+	@ApiOperation(value="Deletes an existing domain table",response=DomainTableDto.class)
     public ResponseEntity<Object> deleteDomainTable(@PathVariable("id") String id) {
         DomainTable table = domainTableRepository.findById(id).orElse(null);
         if (table==null)
@@ -183,30 +185,34 @@ public class DomainTableAPIController {
         // Removes Domain Table object itself
 
         domainTableRepository.delete(table);
-        return ResponseEntity.ok().body(table);
+        return ResponseEntity.ok().body(new DomainTableDto(table));
     }
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
 	@PutMapping(value="/domaintable/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Updates an existing domain table",response=DomainTable.class)
-    public ResponseEntity<Object> updateDomainTable(@PathVariable("id") String id, @Valid @RequestBody DomainTable table, BindingResult result) {
+	@ApiOperation(value="Updates an existing domain table",response=DomainTableDto.class)
+    public ResponseEntity<Object> updateDomainTable(@PathVariable("id") String id, @Valid @RequestBody DomainTableDto table, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
+        
+        DomainTable entity = domainTableRepository.findById(id).orElse(null);
+        if (entity==null)
+        	return ResponseEntity.notFound().build();
         
         if (log.isLoggable(Level.INFO)) {
         	log.log(Level.INFO, String.format("Changing domain table #%s | %s", table.getId(), table.getName()));
         }
 
-        table.setId(id);
-        domainTableRepository.saveWithTimestamp(table);
+        table.updateEntity(entity);
+        domainTableRepository.saveWithTimestamp(entity);
         
         return ResponseEntity.ok().body(table);
     }
 	
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @GetMapping(value="/domaintable/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Activate an existing domain table", response=DomainTable.class)
+	@ApiOperation(value="Activate an existing domain table", response=DomainTableDto.class)
     public ResponseEntity<Object> activateDomainTable(@PathVariable("id") String id) {
         
 		Optional<DomainTable> existing = domainTableRepository.findById(id);
@@ -215,12 +221,12 @@ public class DomainTableAPIController {
 		DomainTable table = existing.get();
 		table.setActive(true);
         domainTableRepository.saveWithTimestamp(table);
-        return ResponseEntity.ok().body(table);
+        return ResponseEntity.ok().body(new DomainTableDto(table));
     }
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @GetMapping(value="/domaintable/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deactivate an existing domain table", response=DomainTable.class)
+	@ApiOperation(value="Deactivate an existing domain table", response=DomainTableDto.class)
     public ResponseEntity<Object> deactivateDomainTable(@PathVariable("id") String id) {
         
 		Optional<DomainTable> existing = domainTableRepository.findById(id);
@@ -229,22 +235,26 @@ public class DomainTableAPIController {
 		DomainTable table = existing.get();
 		table.setActive(false);
 		domainTableRepository.saveWithTimestamp(table);
-        return ResponseEntity.ok().body(table);
+        return ResponseEntity.ok().body(new DomainTableDto(table));
     }
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
     @PostMapping(value="/domaintable", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Adds a new domain table",response=DomainTable.class)
-    public ResponseEntity<Object> addDomainTable(@Valid @RequestBody DomainTable table, BindingResult result) {
+	@ApiOperation(value="Adds a new domain table",response=DomainTableDto.class)
+    public ResponseEntity<Object> addDomainTable(@Valid @RequestBody DomainTableDto table, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
-        
+        Optional<DomainTable> existent = domainTableRepository.findByNameAndVersion(table.getName(), table.getVersion());
+        if (existent.isPresent()) {
+        	return ControllerUtils.returnBadRequest("domain.table.error.already.exists", messageSource, table.getName(), table.getVersion());
+        }
         log.log(Level.INFO, "Adding domain table {0}", table.getName());
-
-        domainTableRepository.saveWithTimestamp(table);
+        DomainTable entity = new DomainTable();
+        table.updateEntity(entity);
+        domainTableRepository.saveWithTimestamp(entity);
         
-        return ResponseEntity.ok().body(table);
+        return ResponseEntity.ok().body(new DomainTableDto(entity));
     }
 
 }

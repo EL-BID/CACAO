@@ -35,6 +35,7 @@ import org.idb.cacao.api.Views;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.GenericCounts;
 import org.idb.cacao.web.controllers.AdvancedSearch;
+import org.idb.cacao.web.dto.InterpersonalDto;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.User;
@@ -100,7 +101,7 @@ public class InterpersonalAPIController {
 	@JsonView(Views.Authority.class)
 	@GetMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing interpersonal relationships using pagination")
-	public PaginationData<Interpersonal> getRelationshipsWithPagination(Model model, 
+	public PaginationData<InterpersonalDto> getRelationshipsWithPagination(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -120,12 +121,13 @@ public class InterpersonalAPIController {
 
 		AdvancedSearch filters = SearchUtils.fromTabulatorJSON(filter).orElse(new AdvancedSearch());
 		filters.addFilter(new AdvancedSearch.QueryFilterBoolean("active", "true"));
-		Page<Interpersonal> docs;
+		Page<InterpersonalDto> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("personId1"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters, Interpersonal.class, elasticsearchClient, page, size, 
-					sortField, direction);
+					sortField, direction)
+				.map(t -> new InterpersonalDto(t));
 
 		}
 		catch (Exception ex) {
@@ -137,8 +139,8 @@ public class InterpersonalAPIController {
 	
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonal", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Add a new interpersonal relationship configuration",response=Interpersonal.class)
-    public ResponseEntity<Object> addInterpersonal(@Valid @RequestBody Interpersonal interpersonal, BindingResult result) {
+	@ApiOperation(value="Add a new interpersonal relationship configuration",response=InterpersonalDto.class)
+    public ResponseEntity<Object> addInterpersonal(@Valid @RequestBody InterpersonalDto interpersonal, BindingResult result) {
         if (result!=null && result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
@@ -161,24 +163,26 @@ public class InterpersonalAPIController {
         	log.log(Level.INFO, String.format("Creating new interpersonal relationship between % and %s with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
         }
 
-        interpersonal.setId(null);
-        interpersonal.setTimestamp(DateTimeUtils.now());
-        interpersonal.setUser(user.getLogin());
+        Interpersonal entity = new Interpersonal();
+        interpersonal.updateEntity(entity);
+        
+        entity.setTimestamp(DateTimeUtils.now());
+        entity.setUser(user.getLogin());
 
         try {
-        	interpersonalRepository.saveWithTimestamp(interpersonal);
+        	interpersonalRepository.saveWithTimestamp(entity);
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Create interpersonal relationship failed", ex);
         	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
         }
-        return ResponseEntity.ok().body(interpersonal);
+        return ResponseEntity.ok().body(new InterpersonalDto(entity));
     }
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add multiple interpersonal relationship configurations",response=GenericCounts.class)
-    public ResponseEntity<Object> addInterpersonals(@Valid @RequestBody Interpersonal[] interpersonalRelationships, BindingResult result) {
+    public ResponseEntity<Object> addInterpersonals(@Valid @RequestBody InterpersonalDto[] interpersonalRelationships, BindingResult result) {
         if (result!=null && result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
@@ -208,7 +212,7 @@ public class InterpersonalAPIController {
         }
     }
 	
-	private GenericCounts addOrCreateInterpersonals(Interpersonal[] interpersonalRelationships, User user) {
+	private GenericCounts addOrCreateInterpersonals(InterpersonalDto[] interpersonalRelationships, User user) {
 		
         LongAdder countCreated = new LongAdder();
         LongAdder countUpdated = new LongAdder();
@@ -216,7 +220,7 @@ public class InterpersonalAPIController {
         
         ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_BULK_LOAD_PARALELISM);
         
-        for (Interpersonal interpersonal:interpersonalRelationships) {
+        for (InterpersonalDto interpersonal:interpersonalRelationships) {
         	if (interpersonal==null) {
         		countErrors.increment();
         		continue;
@@ -230,13 +234,13 @@ public class InterpersonalAPIController {
 	            	if (log.isLoggable(Level.INFO)) {
 	            		log.log(Level.INFO, String.format("Creating new interpersonal relationship between % and % with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
 	            	}
-	
-	                interpersonal.setId(null);
-	                interpersonal.setTimestamp(DateTimeUtils.now());
-	                interpersonal.setUser(user.getLogin());
+	            	Interpersonal entity = new Interpersonal();
+	                interpersonal.updateEntity(entity);
+	                entity.setTimestamp(DateTimeUtils.now());
+	                entity.setUser(user.getLogin());
 
 	                try {
-	                	interpersonalRepository.saveWithTimestamp(interpersonal);
+	                	interpersonalRepository.saveWithTimestamp(entity);
 	                }
 	                catch (Exception ex) {
 	                	log.log(Level.SEVERE,"Create interpersonal relationship failed", ex);
@@ -262,7 +266,7 @@ public class InterpersonalAPIController {
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @DeleteMapping(value="/interpersonal/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deactivate an existing interpersonal relationship configuration",response=Interpersonal.class)
+	@ApiOperation(value="Deactivate an existing interpersonal relationship configuration",response=InterpersonalDto.class)
     public ResponseEntity<Object> deactivateInterpersonal(@PathVariable("id") String id) {
 		Interpersonal interpersonal = interpersonalRepository.findById(id).orElse(null);
         if (interpersonal==null)
@@ -276,7 +280,7 @@ public class InterpersonalAPIController {
         interpersonal.setRemovedTimestamp(DateTimeUtils.now());
         interpersonalRepository.saveWithTimestamp(interpersonal);
         
-        return ResponseEntity.ok().body(interpersonal);
+        return ResponseEntity.ok().body(new InterpersonalDto(interpersonal));
     }
 
 }

@@ -38,6 +38,7 @@ import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.dto.NameId;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.dto.SearchResult;
+import org.idb.cacao.web.dto.TaxpayerDto;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.TaxpayerRepository;
@@ -83,6 +84,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name="taxpayer-api-controller", description="Controller class for all endpoints related to 'TaxPayer' object interacting by a REST interface.")
 public class TaxpayerAPIController {
 
+	private static final String ERROR_OP_FAILED = "op.failed";
+
 	private static final String FIELD_TAX_PAYER_ID = "taxPayerId";
 
 	private static final Logger log = Logger.getLogger(TaxpayerAPIController.class.getName());
@@ -100,7 +103,7 @@ public class TaxpayerAPIController {
 	@JsonView(Views.Declarant.class)
 	@GetMapping(value="/taxpayers", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing taxpayers using pagination")
-	public PaginationData<Taxpayer> getUsersWithPagination(Model model, 
+	public PaginationData<TaxpayerDto> getUsersWithPagination(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -119,12 +122,13 @@ public class TaxpayerAPIController {
     		throw new UserNotFoundException();
 
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
-		Page<Taxpayer> docs;
+		Page<TaxpayerDto> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse(FIELD_TAX_PAYER_ID));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), Taxpayer.class, elasticsearchClient, page, size, 
-					sortField, direction);
+					sortField, direction)
+				     .map(TaxpayerDto::new);
 
 		}
 		catch (Exception ex) {
@@ -182,9 +186,9 @@ public class TaxpayerAPIController {
 
 	@Secured({"ROLE_TAXPAYER_WRITE"})
     @PostMapping(value="/taxpayer", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Add a new taxpayer",response=Taxpayer.class)
+	@ApiOperation(value="Add a new taxpayer",response=TaxpayerDto.class)
 	@CacheEvict(value={"qualifierValues"})
-    public ResponseEntity<Object> addTaxpayer(@Valid @RequestBody Taxpayer taxpayer, BindingResult result) {
+    public ResponseEntity<Object> addTaxpayer(@Valid @RequestBody TaxpayerDto taxpayer, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
@@ -194,43 +198,54 @@ public class TaxpayerAPIController {
         }
         
         try {
-        	taxpayerRepository.saveWithTimestamp(taxpayer);
+        	Taxpayer entity = new Taxpayer();
+        	taxpayer.updateEntity(entity);
+        	taxpayerRepository.saveWithTimestamp(entity);
+        	taxpayer.setId(entity.getId());
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Create taxpayer failed", ex);
-        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        	return ResponseEntity.badRequest().body(messageSource.getMessage(ERROR_OP_FAILED, null, LocaleContextHolder.getLocale()));
         }
         return ResponseEntity.ok().body(taxpayer);
     }
 
 	@Secured({"ROLE_TAXPAYER_WRITE"})
 	@PutMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Updates an existing taxpayer",response=Taxpayer.class)
+	@ApiOperation(value="Updates an existing taxpayer",response=TaxpayerDto.class)
 	@CacheEvict(value={"qualifierValues"})
-    public ResponseEntity<Object> updateTaxpayer(@PathVariable("id") String id, @Valid @RequestBody Taxpayer taxpayer, BindingResult result) {
+    public ResponseEntity<Object> updateTaxpayer(@PathVariable("id") String id, @Valid @RequestBody TaxpayerDto taxpayer, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
+        }
+        
+        Optional<Taxpayer> existent = taxpayerRepository.findById(id);
+        
+        if (!existent.isPresent()) {
+           	return ResponseEntity.notFound().build();
         }
         
         if (log.isLoggable(Level.INFO)) {
         	log.log(Level.INFO, String.format("Changing taxpayer #%s | %s | %s", id, taxpayer.getName(), taxpayer.getTaxPayerId()));
         }
 
-        taxpayer.setId(id);
-        taxpayerRepository.saveWithTimestamp(taxpayer);
+        Taxpayer entity = existent.get();
+        taxpayer.updateEntity(entity);
+        taxpayerRepository.saveWithTimestamp(entity);
         
         return ResponseEntity.ok().body(taxpayer);
     }
     
 	@Secured({"ROLE_TAXPAYER_WRITE"})
 	@DeleteMapping(value="/taxpayer/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deletes an existing taxpayer",response=Taxpayer.class)
+	@ApiOperation(value="Deletes an existing taxpayer",response=TaxpayerDto.class)
 	@CacheEvict(value={"qualifierValues"})
     public ResponseEntity<Object> deleteTaxpayer(@PathVariable("id") String id) {
-    	Taxpayer taxpayer = taxpayerRepository.findById(id).orElse(null);
-        if (taxpayer==null)
+    	Optional<Taxpayer> existent = taxpayerRepository.findById(id);
+        if (!existent.isPresent())
         	return ResponseEntity.notFound().build();
         
+        Taxpayer taxpayer = existent.get();
         if (log.isLoggable(Level.INFO)) {
         	log.log(Level.INFO, String.format("Deleting taxpayer #%s | %s | %s", id, taxpayer.getName(), taxpayer.getTaxPayerId()));
         }
@@ -241,15 +256,15 @@ public class TaxpayerAPIController {
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Delete taxpayer failed", ex);
-        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        	return ResponseEntity.badRequest().body(messageSource.getMessage(ERROR_OP_FAILED, null, LocaleContextHolder.getLocale()));
         }
 
-        return ResponseEntity.ok().body(taxpayer);
+        return ResponseEntity.ok().body(new TaxpayerDto(taxpayer));
     }
 	
 	@Secured({"ROLE_TAXPAYER_WRITE"})
     @GetMapping(value="/taxpayer/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Activate an existing taxpayer", response=Taxpayer.class)
+	@ApiOperation(value="Activate an existing taxpayer", response=TaxpayerDto.class)
     public ResponseEntity<Object> activate(
     		@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -268,15 +283,15 @@ public class TaxpayerAPIController {
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Activate taxpayer failed", ex);
-        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        	return ResponseEntity.badRequest().body(messageSource.getMessage(ERROR_OP_FAILED, null, LocaleContextHolder.getLocale()));
         }
         
-        return ResponseEntity.ok().body(taxpayer);
+        return ResponseEntity.ok().body(new TaxpayerDto(taxpayer));
     }
 
 	@Secured({"ROLE_TAXPAYER_WRITE"})
     @GetMapping(value="/taxpayer/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deactivate an existing taxpayer", response=Taxpayer.class)
+	@ApiOperation(value="Deactivate an existing taxpayer", response=TaxpayerDto.class)
     public ResponseEntity<Object> deactivate(
     		@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -295,9 +310,9 @@ public class TaxpayerAPIController {
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Deactivate taxpayer failed", ex);
-        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        	return ResponseEntity.badRequest().body(messageSource.getMessage(ERROR_OP_FAILED, null, LocaleContextHolder.getLocale()));
         }   
-        return ResponseEntity.ok().body(taxpayer);
+        return ResponseEntity.ok().body(new TaxpayerDto(taxpayer));
     }
 
 }

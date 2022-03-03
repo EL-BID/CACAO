@@ -292,7 +292,7 @@ public class SearchUtils {
 			
 		}
 		if (filter!=null) {
-			query.must(filter);
+			query.filter(filter);
 		}
 		builder.query(query);
 		SearchRequest searchRequest = new SearchRequest(indexName).source(builder);

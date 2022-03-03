@@ -35,6 +35,7 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
+import org.idb.cacao.web.dto.DocumentTemplateDto;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -42,7 +43,6 @@ import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
@@ -88,17 +88,17 @@ public class DocumentTemplateAPIController {
 	private RestHighLevelClient elasticsearchClient;
 	
     @GetMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Returns the list of all document templates",response=DocumentTemplate[].class)
-	public ResponseEntity<DocumentTemplate[]> getTemplates() {
-		List<DocumentTemplate> allTemplates = new LinkedList<>();
+	@ApiOperation(value="Returns the list of all document templates",response=DocumentTemplateDto[].class)
+	public ResponseEntity<DocumentTemplateDto[]> getTemplates() {
+		List<DocumentTemplateDto> allTemplates = new LinkedList<>();
 		try (Stream<DocumentTemplate> stream = ScrollUtils.findAll(templateRepository, elasticsearchClient, 1);) {
-			stream.forEach(allTemplates::add);
+			stream.forEach(t -> allTemplates.add(new DocumentTemplateDto(t)));
 		}
-		return ResponseEntity.ok(allTemplates.toArray(new DocumentTemplate[0]));
+		return ResponseEntity.ok(allTemplates.toArray(new DocumentTemplateDto[0]));
 	}
 
     @GetMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Returns the template configuration given its internal identification",response=DocumentTemplate.class)
+	@ApiOperation(value="Returns the template configuration given its internal identification",response=DocumentTemplateDto.class)
 	public ResponseEntity<Object> getTemplate(
 			@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@PathVariable("id") String id) {
@@ -106,13 +106,13 @@ public class DocumentTemplateAPIController {
 		if (!match.isPresent())
         	return ResponseEntity.notFound().build();
 
-		return ResponseEntity.ok(match.get());
+		return ResponseEntity.ok(new DocumentTemplateDto(match.get()));
 	}
 
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PostMapping(value="/template", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Add a new document template",response=DocumentTemplate.class)
-    public ResponseEntity<Object> addTemplate(@Valid @RequestBody DocumentTemplate template, BindingResult result) {
+	@ApiOperation(value="Add a new document template",response=DocumentTemplateDto.class)
+    public ResponseEntity<Object> addTemplate(@Valid @RequestBody DocumentTemplateDto template, BindingResult result) {
 		
 		templateService.validateTemplate(template, result);
 		
@@ -130,24 +130,26 @@ public class DocumentTemplateAPIController {
 			}
 			return ResponseEntity.ok().body(existing.get());
 		}
-   
-		templateService.compatibilizeTemplateFieldsMappings(template);
+		
+		DocumentTemplate entity = new DocumentTemplate();
+		template.updateEntity(entity);
+		templateService.compatibilizeTemplateFieldsMappings(entity);
 
         try {
-        	templateRepository.saveWithTimestamp(template);
+        	templateRepository.saveWithTimestamp(entity);
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Create template failed", ex);
         	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
         }
         
-        return ResponseEntity.ok().body(template);
+        return ResponseEntity.ok().body(new DocumentTemplateDto(entity));
     }
 
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PutMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Updates an existing document template", response=DocumentTemplate.class)
-    public ResponseEntity<Object> updateTemplate(@PathVariable("id") String id, @Valid @RequestBody DocumentTemplate template, BindingResult result) {
+	@ApiOperation(value="Updates an existing document template", response=DocumentTemplateDto.class)
+    public ResponseEntity<Object> updateTemplate(@PathVariable("id") String id, @Valid @RequestBody DocumentTemplateDto template, BindingResult result) {
 		
 		templateService.validateTemplate(template, result);
 		
@@ -156,23 +158,19 @@ public class DocumentTemplateAPIController {
         }
         
 		Optional<DocumentTemplate> existing = templateRepository.findById(id);
-		if (existing.isPresent()) {
-			// just a few parts of DocumentTemplate object are editable 
-			// let's copy all the properties to be preserved, except the properties that might change
-			BeanUtils.copyProperties(existing.get(), template, 
-					/*ignoreProperties = editable properties*/
-					"name", "version", "periodicity", "required", "fields", "active");
-		}
+		if (!existing.isPresent())
+        	return ResponseEntity.notFound().build();
 
-        template.setId(id);
-		templateService.compatibilizeTemplateFieldsMappings(template);
-        templateRepository.saveWithTimestamp(template);
-        return ResponseEntity.ok().body(template);
+		DocumentTemplate entity = existing.get();
+		template.updateEntity(entity);
+		templateService.compatibilizeTemplateFieldsMappings(entity);
+        templateRepository.saveWithTimestamp(entity);
+        return ResponseEntity.ok().body(new DocumentTemplateDto(entity));
     }
 
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping(value="/template/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Activate an existing document template", response=DocumentTemplate.class)
+	@ApiOperation(value="Activate an existing document template", response=DocumentTemplateDto.class)
     public ResponseEntity<Object> activateTemplate(
     		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -183,12 +181,12 @@ public class DocumentTemplateAPIController {
 		DocumentTemplate template = existing.get();
 		template.setActive(true);
         templateRepository.saveWithTimestamp(template);
-        return ResponseEntity.ok().body(template);
+        return ResponseEntity.ok().body(new DocumentTemplateDto(template));
     }
 
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping(value="/template/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deactivate an existing document template", response=DocumentTemplate.class)
+	@ApiOperation(value="Deactivate an existing document template", response=DocumentTemplateDto.class)
     public ResponseEntity<Object> deactivateTemplate(
     		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -199,12 +197,12 @@ public class DocumentTemplateAPIController {
 		DocumentTemplate template = existing.get();
 		template.setActive(false);
         templateRepository.saveWithTimestamp(template);
-        return ResponseEntity.ok().body(template);
+        return ResponseEntity.ok().body(new DocumentTemplateDto(template));
     }
 
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @DeleteMapping(value="/template/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deletes an existing document template", response=DocumentTemplate.class)
+	@ApiOperation(value="Deletes an existing document template", response=DocumentTemplateDto.class)
     public ResponseEntity<Object> deleteTemplate(
     		@ApiParam(name = "Document ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -220,7 +218,7 @@ public class DocumentTemplateAPIController {
 	
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PostMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Creates a new document input", response=DocumentTemplate.class)
+	@ApiOperation(value="Creates a new document input", response=DocumentTemplateDto.class)
     public ResponseEntity<Object> addDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
@@ -239,13 +237,13 @@ public class DocumentTemplateAPIController {
 		template.addInput(docInput);
 		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
-        return ResponseEntity.ok().body(template);
+        return ResponseEntity.ok().body(new DocumentTemplateDto(template));
     }
 
     
 	@Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @PutMapping(value="/template/{id}/input", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Updates an existing document template", response=DocumentTemplate.class)
+	@ApiOperation(value="Updates an existing document template", response=DocumentTemplateDto.class)
     public ResponseEntity<Object> editDocumentInput(@PathVariable("id") String id, @Valid @RequestBody DocumentInput docInput, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
@@ -269,7 +267,7 @@ public class DocumentTemplateAPIController {
 		}
 		templateService.compatibilizeTemplateFieldsMappings(template);
         templateRepository.saveWithTimestamp(template);
-        return ResponseEntity.ok().body(template);
+        return ResponseEntity.ok().body(new DocumentTemplateDto(template));
     }
     
     
@@ -279,7 +277,7 @@ public class DocumentTemplateAPIController {
 	 */
 	@GetMapping(value="/templates", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing existing templates")
-	public PaginationData<DocumentTemplate> getTemplatesWithPagination(Model model, 
+	public PaginationData<DocumentTemplateDto> getTemplatesWithPagination(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -298,12 +296,13 @@ public class DocumentTemplateAPIController {
     		throw new UserNotFoundException();
 
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
-		Page<DocumentTemplate> docs;
+		Page<DocumentTemplateDto> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("name"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), DocumentTemplate.class, elasticsearchClient, page, size, 
-					sortField, direction);
+					sortField, direction)
+					  .map(DocumentTemplateDto::new);
 
 		}
 		catch (Exception ex) {
