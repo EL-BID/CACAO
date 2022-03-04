@@ -193,6 +193,12 @@ public class TaxpayerAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
+        Optional<Taxpayer> existent = taxpayerRepository.findByTaxPayerId(taxpayer.getTaxPayerId());
+        
+        if (existent.isPresent()) {
+           	return ControllerUtils.returnBadRequest("taxpayer.error.already.exists", messageSource, taxpayer.getTaxPayerId());
+        }
+
         if (log.isLoggable(Level.INFO)) {
         	log.log(Level.INFO, String.format("Creating new taxpayer %s | %s", taxpayer.getName(), taxpayer.getTaxPayerId()));
         }

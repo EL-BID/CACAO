@@ -144,6 +144,13 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		taxpayer.setActive(active);
 	}
 	
+	public Taxpayer createEntity() {
+		Taxpayer taxpayer = new Taxpayer();
+		taxpayer.setId(id);
+		updateEntity(taxpayer);
+		return taxpayer;
+	}
+	
 	public String getId() {
 		return id;
 	}
