@@ -42,7 +42,7 @@ public enum ESStandardRoles {
 //			/*userProfiles*/UserProfile.DECLARANT,UserProfile.BANK,UserProfile.QUERIES,UserProfile.AUTHORITY),
 	
 	DASHBOARDS_WRITE("roleDashboardsWrite", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_dashboard.all","feature_discover.all","feature_visualize.all"), /*resources*/Arrays.asList("space:default","space:tax-public","space:declarant-public","space:tax-master"), /*allIndicesPrivileges*/Arrays.asList("read"),
-			/*userProfiles*/UserProfile.SYSADMIN,UserProfile.MASTER,UserProfile.SUPPORT),
+			/*userProfiles*/UserProfile.SYSADMIN,UserProfile.MASTER,UserProfile.SUPPORT,UserProfile.AUTHORITY),
 	
 	INDEX_PATTERN_WRITE("roleIndexPatternWrite", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_indexPatterns.all"), /*resources*/Arrays.asList("*"), /*allIndicesPrivileges*/Arrays.asList("read"),
 			/*userProfiles*/UserProfile.SYSADMIN,UserProfile.SUPPORT);
