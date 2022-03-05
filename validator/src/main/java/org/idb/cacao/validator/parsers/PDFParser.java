@@ -24,13 +24,15 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,7 +47,6 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDXFAResource;
 import org.idb.cacao.api.ValidationContext;
-import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.validator.utils.XMLUtils;
@@ -65,13 +66,9 @@ import org.w3c.dom.NodeList;
  * @since 26/11/2021
  *
  */
-public class PDFParser implements FileParser {
+public class PDFParser extends FileParserAdapter {
 
 	private static final Logger log = Logger.getLogger(PDFParser.class.getName());
-
-	private Path path;
-
-	private DocumentInput documentInputSpec;
 
 	private Map<String, List<Object>> allFieldsValues;
 	
@@ -79,48 +76,6 @@ public class PDFParser implements FileParser {
 	 * Field positions relative to column positions
 	 */
 	private Map<String,String> fieldComlunKeys;	
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
-	 */
-	@Override
-	public Path getPath() {
-		return path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#setPath(java.nio.file.Path)
-	 */
-	@Override
-	public void setPath(Path path) {
-		this.path = path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#getDocumentInputSpec()
-	 */
-	@Override
-	public DocumentInput getDocumentInputSpec() {
-		return documentInputSpec;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.idb.cacao.validator.parsers.FileParser#setDocumentInputSpec(org.idb.cacao
-	 * .api.templates.DocumentInput)
-	 */
-	@Override
-	public void setDocumentInputSpec(DocumentInput inputSpec) {
-		this.documentInputSpec = inputSpec;
-	}
 
 	@Override
 	public void start() {
@@ -191,15 +146,18 @@ public class PDFParser implements FileParser {
 		try {
 			
 			final PDFParser parser = this;
-			final int size = allFieldsValues.size() == 0 ? 0 : 
-				allFieldsValues.values().stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst().get();			
+			final int size = allFieldsValues.isEmpty() ? 0 : getSize(allFieldsValues.values());
+							
 			
 			return new DataIterator() {
 				
 				int atual = 0;
 				
 				@Override
-				public Map<String, Object> next() {					
+				public Map<String, Object> next() {
+					if(!hasNext()){
+						throw new NoSuchElementException();
+					}					
 					return getNext(atual++);
 				}
 				
@@ -219,6 +177,13 @@ public class PDFParser implements FileParser {
 		}
 		
 		return null;
+	}
+
+	private int getSize(Collection<List<Object>> allValues) {		
+		Optional<Integer> value = allValues.stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst();
+		if ( value.isPresent() )
+			return value.get();
+		return 0;
 	}
 
 	/**
@@ -292,6 +257,9 @@ public class PDFParser implements FileParser {
 				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 				factory.setNamespaceAware(true);
 				factory.setValidating(false);
+				//completely disable external entities declarations
+				factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+				factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
 				DocumentBuilder builder = factory.newDocumentBuilder();
 				try (InputStream in = new BufferedInputStream(new ByteArrayInputStream(pdfxfa.getBytes()))) {
 					Document root = builder.parse(in);
@@ -354,9 +322,8 @@ public class PDFParser implements FileParser {
 								Node float_value = XMLUtils.locateNode(node_value, null, "float");
 								if (float_value!=null) {
 									String content = float_value.getTextContent();
-									if (content!=null)
+									if (content!=null && !content.trim().isEmpty() ) {
 										content = content.trim();
-									if (content.length()>0) {
 										Number valor;		
 										if (content.contains(",") && !content.contains("."))
 											valor = ParserUtils.parseDecimalWithComma(content);
@@ -373,10 +340,8 @@ public class PDFParser implements FileParser {
 									Node date_value = XMLUtils.locateNode(node_value, null, "date");
 									if (date_value!=null) {
 										String content = date_value.getTextContent();
-										if (content!=null)
-											content = content.trim();
-										if (content.length()>0) {
-											Date d = ParserUtils.parseFlexibleDate(content);
+										if (content!=null && !content.trim().isEmpty() ) {
+											Date d = ParserUtils.parseFlexibleDate(content.trim());
 											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(d);
 										}
 										else if (includeAllNamedObject) {
@@ -388,10 +353,8 @@ public class PDFParser implements FileParser {
 										Node integer_value = XMLUtils.locateNode(node_value, null, "integer");
 										if (integer_value!=null) {
 											String content = integer_value.getTextContent();
-											if (content!=null)
-												content = content.trim();
-											if (content.length()>0) {
-												long valor = Long.valueOf(content);		
+											if (content!=null && !content.trim().isEmpty() ) {
+												long valor = Long.valueOf(content.trim());		
 												fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(valor);
 											}
 											else if (includeAllNamedObject) {
@@ -403,9 +366,8 @@ public class PDFParser implements FileParser {
 											Node decimal_value = XMLUtils.locateNode(node_value, null, "decimal");
 											if (decimal_value!=null) {
 												String content = decimal_value.getTextContent();
-												if (content!=null)
+												if (content!=null && !content.trim().isEmpty() ) {
 													content = content.trim();
-												if (content.length()>0) {
 													Number valor;		
 													if (content.contains(",") && !content.contains("."))
 														valor = ParserUtils.parseDecimalWithComma(content);

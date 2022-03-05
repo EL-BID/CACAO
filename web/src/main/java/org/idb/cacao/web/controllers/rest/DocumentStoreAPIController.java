@@ -99,7 +99,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -426,7 +425,6 @@ public class DocumentStoreAPIController {
 	/**
 	 * Upload a file
 	 */
-	@Transactional
 	@ApiIgnore
 	private Map<String, String> uploadFile(final String originalFilename, final InputStream fileStream,
 			final boolean closeInputStream, final String template, final String templateVersion,

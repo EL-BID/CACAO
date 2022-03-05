@@ -3,7 +3,25 @@
  */
 package org.idb.cacao.validator.validations;
 
-import static org.idb.cacao.api.utils.ParserUtils.*;
+import static org.idb.cacao.api.utils.ParserUtils.getYearMonth;
+import static org.idb.cacao.api.utils.ParserUtils.isBoolean;
+import static org.idb.cacao.api.utils.ParserUtils.isDMY;
+import static org.idb.cacao.api.utils.ParserUtils.isDecimal;
+import static org.idb.cacao.api.utils.ParserUtils.isDecimalWithComma;
+import static org.idb.cacao.api.utils.ParserUtils.isInteger;
+import static org.idb.cacao.api.utils.ParserUtils.isMDY;
+import static org.idb.cacao.api.utils.ParserUtils.isMY;
+import static org.idb.cacao.api.utils.ParserUtils.isMonthYear;
+import static org.idb.cacao.api.utils.ParserUtils.isTimestamp;
+import static org.idb.cacao.api.utils.ParserUtils.isYM;
+import static org.idb.cacao.api.utils.ParserUtils.isYMD;
+import static org.idb.cacao.api.utils.ParserUtils.isYearMonth;
+import static org.idb.cacao.api.utils.ParserUtils.parseDMY;
+import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
+import static org.idb.cacao.api.utils.ParserUtils.parseTimestamp;
+import static org.idb.cacao.api.utils.ParserUtils.parseTimestampES;
+import static org.idb.cacao.api.utils.ParserUtils.parseTimestampWithMS;
+import static org.idb.cacao.api.utils.ParserUtils.parseYMD;
 
 import java.math.BigInteger;
 import java.time.OffsetDateTime;
@@ -29,7 +47,6 @@ import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.utils.ParserUtils;
-import org.idb.cacao.api.utils.StringUtils;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 
 /**
@@ -226,8 +243,7 @@ public class Validations {
 					// Update field value to it's new representation
 					values.replace(field.getFieldName(), fieldValue);
 				} catch (Exception e) {
-					log.log(Level.SEVERE,"Error parsing record values.", e);
-					e.printStackTrace();
+					log.log(Level.SEVERE,"Error parsing record values.", e);					
 				}
 
 			}
@@ -351,11 +367,11 @@ public class Validations {
 			return null;		
 		
 		if ( fieldValue instanceof Date ) {
-			return StringUtils.formatMonth((Date)fieldValue);
+			return ParserUtils.formatMonth((Date)fieldValue);
 		}
 		
 		if ( fieldValue instanceof OffsetDateTime ) {
-			return StringUtils.formatMonth((OffsetDateTime)fieldValue);
+			return ParserUtils.formatMonth((OffsetDateTime)fieldValue);
 		}
 		
 		String value = ValidationContext.toString(fieldValue);

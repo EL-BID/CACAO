@@ -21,10 +21,10 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,7 +32,6 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
-import org.idb.cacao.api.templates.DocumentInput;
 
 /**
  * Implements {@link FileParser} interface to parse WORD (DOC/DOCX) files. <br>
@@ -48,61 +47,15 @@ import org.idb.cacao.api.templates.DocumentInput;
  * @since 15/12/2021
  *
  */
-public class WordParser implements FileParser {
+public class WordParser extends FileParserAdapter {
 
 	private static final Logger log = Logger.getLogger(WordParser.class.getName());
-
-	private Path path;
-
-	private DocumentInput documentInputSpec;
 
 	// Table with data
 	private XWPFTable dataTable;
 
 	private TabulatedData tab;
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
-	 */
-	@Override
-	public Path getPath() {
-		return path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#setPath(java.nio.file.Path)
-	 */
-	@Override
-	public void setPath(Path path) {
-		this.path = path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#getDocumentInputSpec()
-	 */
-	@Override
-	public DocumentInput getDocumentInputSpec() {
-		return documentInputSpec;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.idb.cacao.validator.parsers.FileParser#setDocumentInputSpec(org.idb.cacao
-	 * .api.templates.DocumentInput)
-	 */
-	@Override
-	public void setDocumentInputSpec(DocumentInput inputSpec) {
-		this.documentInputSpec = inputSpec;
-	}
-
+	
 	@Override
 	public void start() {
 
@@ -221,6 +174,10 @@ public class WordParser implements FileParser {
 
 				@Override
 				public Map<String, Object> next() {
+					
+					if(!hasNext()){
+						throw new NoSuchElementException();
+					}
 
 					XWPFTableRow row = dataTable.getRow(nextRow++);
 

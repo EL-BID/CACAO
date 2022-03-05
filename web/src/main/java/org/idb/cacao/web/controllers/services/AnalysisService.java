@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
+import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -238,7 +239,7 @@ public class AnalysisService {
 
 		List<Account> accounts = new LinkedList<>();
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());
 			return Collections.emptyList(); // No balance sheet found
 		} else {
@@ -335,6 +336,15 @@ public class AnalysisService {
 		accounts.sort(null);
 
 		return accounts;
+	}
+
+	private long getTotalHits(SearchResponse sresp) {
+		if ( sresp == null )
+			return 0;
+		TotalHits hits = sresp.getHits().getTotalHits();		
+		if (hits != null )
+			return hits.value;
+		return 0;
 	}
 
 	/**
@@ -601,7 +611,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " for year " + year);
 			return null; // No data found
 		} else {
@@ -787,7 +797,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting outliers", ex);
 		}
 
-		if (sresp != null && sresp.getHits().getTotalHits().value > 0) {
+		if (sresp != null && getTotalHits(sresp) > 0) {
 
 			// Let's fill the resulting list with values
 			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");
@@ -833,7 +843,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting outliers", ex);
 		}
 
-		if (sresp != null && sresp.getHits().getTotalHits().value > 0) {
+		if (sresp != null && getTotalHits(sresp) > 0) {
 
 			// Let's fill the resulting list with values
 
@@ -964,7 +974,7 @@ public class AnalysisService {
 
 		List<String> taxpayers = new LinkedList<>();
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " with value " + qualifierValue);
 			return Collections.emptyList(); // No data found
 		} else {
@@ -1021,7 +1031,7 @@ public class AnalysisService {
 
 		List<String> values = new LinkedList<>();
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier);
 			return Collections.emptyList(); // No data found
 		} else {
@@ -1126,7 +1136,7 @@ public class AnalysisService {
 
 		List<Integer> values = new LinkedList<>();
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, "No data found for years");
 			return new LinkedList<>(); // No data found
 		} else {
@@ -1190,7 +1200,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting flows", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
 			return Collections.emptyList(); // No flows found
 		}
@@ -1318,7 +1328,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, "No data found");
 			return; // No data found
 		} else {
@@ -1468,7 +1478,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting shareholdings", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No shareholding information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholding found
 		}
@@ -1543,7 +1553,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting shareholders", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No shareholders information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholders found
 		}
@@ -1616,7 +1626,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No revenue net and gross profit information found for taxPayer " + taxpayerId
 					+ " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1686,7 +1696,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting tax provision", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1808,7 +1818,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting tax provision", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1910,7 +1920,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -2028,7 +2038,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -2174,7 +2184,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) {
+		if (sresp == null || getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found

@@ -489,7 +489,7 @@ public class FileUploadedConsumerService {
 
 		} catch (GeneralException ex) {
 			callRollbackProcedures(rollbackProcedures);
-			ex.printStackTrace();
+			log.log(Level.SEVERE, ex.getMessage(), ex);
 			throw ex;
 		} finally {
 			

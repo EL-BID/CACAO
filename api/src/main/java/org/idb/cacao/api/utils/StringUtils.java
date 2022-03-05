@@ -23,8 +23,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.regex.Pattern;
@@ -44,173 +42,6 @@ public class StringUtils {
     public static final Pattern pInteger = Pattern.compile("^[+-]?\\s*\\d+$");
     public static final Pattern pDecimal = Pattern.compile("^[+-]?\\s*\\d+\\.\\d+$");
     public static final Pattern pBoolean = Pattern.compile("^(?>true|false)$",Pattern.CASE_INSENSITIVE);
-
-    /**
-     * Timestamp format that conforms to ISO 8601
-     */
-    private static final ThreadLocal<SimpleDateFormat> tlDateFormat = new ThreadLocal<SimpleDateFormat>() {
-
-		@Override
-		protected SimpleDateFormat initialValue() {
-			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		}
-    	
-    };
-    
-    /**
-     * Timestamp format used in ElasticSearch
-     */
-    private static final ThreadLocal<SimpleDateFormat> tlDateFormatES = new ThreadLocal<SimpleDateFormat>() {
-
-		@Override
-		protected SimpleDateFormat initialValue() {
-			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
-		}
-    	
-    };
-    
-    /**
-     * Month format as in yyyy/MM
-     */
-    private static final ThreadLocal<SimpleDateFormat> tlDateFormatMonth = new ThreadLocal<SimpleDateFormat>() {
-
-		@Override
-		protected SimpleDateFormat initialValue() {
-			return new SimpleDateFormat("yyyy-MM");
-		}
-    	
-    };    
-    
-    /**
-     * Month format as in yyyy/MM
-     */
-    private static final ThreadLocal<DateTimeFormatter> tlDateTimeFormatMonth = new ThreadLocal<DateTimeFormatter>() {
-
-		@Override
-		protected DateTimeFormatter initialValue() {		
-			return DateTimeFormatter.ofPattern("yyyy-MM");
-		}
-    	
-    };    
-
-	/**
-	 * E.g.: 01/Jan/2010
-	 */
-	public static final ThreadLocal<Pattern> flexible_date2 = new ThreadLocal<Pattern>() {
-		@Override
-		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{1,2})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{2,4})$", Pattern.CASE_INSENSITIVE);
-		}
-	};
-
-	/**
-	 * E.g.: 1º de jan de 2010
-	 */
-	public static final ThreadLocal<Pattern> flexible_date4 = new ThreadLocal<Pattern>() {
-		@Override
-		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{1,2})º?\\s+de\\s+([A-Z]{3,})\\s+de\\s+(\\d{4})$", Pattern.CASE_INSENSITIVE);
-		}
-	};
-
-	/**
-	 * E.g.: 2010/Jan/01
-	 */
-	public static final ThreadLocal<Pattern> flexible_date6 = new ThreadLocal<Pattern>() {
-		@Override
-		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{4})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{1,2})$", Pattern.CASE_INSENSITIVE);
-		}
-	};
-
-	/**
-	 * E.g.: 2010-01-01
-	 */
-	public static final ThreadLocal<Pattern> flexible_date7 = new ThreadLocal<Pattern>() {
-		@Override
-		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{4})[/\\\\\\-\\.](\\d{1,2})[/\\\\\\-\\.](\\d{1,2})$");
-		}
-	};	
-
-    /**
-     * Return timestamp in a format that conforms to ISO 8601
-     */
-	public static String formatTimestamp(Date timestamp) {
-		if (timestamp==null)
-			return null;
-		return tlDateFormat.get().format(timestamp);
-	}
-	
-    /**
-     * Return a month in a format yyyy-MM
-     */	
-	public static String formatMonth(Date date) {
-		if (date==null)
-			return null;
-		return tlDateFormatMonth.get().format(date);	
-	}
-	
-    /**
-     * Return a month in a format yyyy-MM
-     */	
-	public static String formatMonth(OffsetDateTime date) {
-		if (date==null)
-			return null;
-		return date.format(tlDateTimeFormatMonth.get());	
-	}
-
-	/**
-	 * Parse the provided value as a timestamp according to ISO 8601
-	 */
-	public static Date parseTimestamp(String value) {
-		if (value==null)
-			return null;
-		try {
-			return tlDateFormat.get().parse(value);
-		}
-		catch (Throwable ex) {
-			return null;
-		}		
-	}
-	
-    /**
-     * Return timestamp in a format that conforms to Elasticsearch standard
-     */
-	public static String formatTimestampES(Date timestamp) {
-		if (timestamp==null)
-			return null;
-		return tlDateFormatES.get().format(timestamp);
-	}
-	
-	/**
-	 * Return indication that provided value looks like timestamp according to Elasticsearch standard
-	 */
-	public static boolean isTimestampES(String value) {
-		if (value==null)
-			return false;
-		try {
-			tlDateFormatES.get().parse(value);
-			return true;
-		}
-		catch (Throwable ex) {
-			return false;
-		}
-	}
-
-	/**
-	 * Parse the provided value as a timestamp according to Elasticsearch standard
-	 */
-	public static Date parseTimestampES(String value) {
-		if (value==null)
-			return null;
-		try {
-			return tlDateFormatES.get().parse(value);
-		}
-		catch (Throwable ex) {
-			return null;
-		}		
-	}
 
 	public static Date toDate(int day, int month, int year) {
 		Calendar cal = Calendar.getInstance();
@@ -248,7 +79,7 @@ public class StringUtils {
 		if (((value instanceof String) && "false".equalsIgnoreCase((String)value)) || Boolean.FALSE.equals(value))
 			return messageSource.getMessage("no", null, LocaleContextHolder.getLocale());
 		if ((value instanceof String) && ParserUtils.isTimestamp((String)value))
-			return text(messageSource, parseTimestamp((String)value)).replace(" 00:00:00", "");
+			return text(messageSource, ParserUtils.parseTimestamp((String)value)).replace(" 00:00:00", "");
 		if ((value instanceof String) && ParserUtils.isDecimal((String)value))
 			return text(messageSource, Double.parseDouble((String)value));
 		if (value instanceof Date)

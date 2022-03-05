@@ -26,6 +26,8 @@ import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -142,6 +144,30 @@ public class ParserUtils {
 		}
 
     };
+    
+    /**
+     * Month format as in yyyy/MM
+     */
+    private static final ThreadLocal<SimpleDateFormat> tlDateFormatMonth = new ThreadLocal<SimpleDateFormat>() {
+
+		@Override
+		protected SimpleDateFormat initialValue() {
+			return new SimpleDateFormat("yyyy-MM");
+		}
+    	
+    };    
+    
+    /**
+     * Month format as in yyyy/MM
+     */
+    private static final ThreadLocal<DateTimeFormatter> tlDateTimeFormatMonth = new ThreadLocal<DateTimeFormatter>() {
+
+		@Override
+		protected DateTimeFormatter initialValue() {		
+			return DateTimeFormatter.ofPattern("yyyy-MM");
+		}
+    	
+    };     
 
 	/**
 	 * Format dates
@@ -160,7 +186,7 @@ public class ParserUtils {
 	public static final ThreadLocal<Pattern> flexible_date2 = new ThreadLocal<Pattern>() {
 		@Override
 		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{1,2})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{2,4})$", Pattern.CASE_INSENSITIVE);
+			return Pattern.compile("^(\\d{1,2})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{2,4})$", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 		}
 	};
 
@@ -170,7 +196,7 @@ public class ParserUtils {
 	public static final ThreadLocal<Pattern> flexible_date4 = new ThreadLocal<Pattern>() {
 		@Override
 		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{1,2})º?\\s+de\\s+([A-Z]{3,})\\s+de\\s+(\\d{4})$", Pattern.CASE_INSENSITIVE);
+			return Pattern.compile("^(\\d{1,2})º?\\s+de\\s+([A-Z]{3,})\\s+de\\s+(\\d{4})$", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 		}
 	};
 
@@ -180,7 +206,7 @@ public class ParserUtils {
 	public static final ThreadLocal<Pattern> flexible_date6 = new ThreadLocal<Pattern>() {
 		@Override
 		protected Pattern initialValue() {
-			return Pattern.compile("^(\\d{4})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{1,2})$", Pattern.CASE_INSENSITIVE);
+			return Pattern.compile("^(\\d{4})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{1,2})$", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 		}
 	};
 
@@ -553,7 +579,7 @@ public class ParserUtils {
 		
 		//System.out.println("IN: " + value);
 		//System.out.println("OUT: " + year + "-" + String.format("%02d", monthValue.intValue()) ); 
-		return year + "-" + String.format("%02d", monthValue.intValue()); 
+		return year + "-" + String.format("%02d", (int)monthValue); 
 	}
 	
 	/**
@@ -904,5 +930,24 @@ public class ParserUtils {
 		while (g.endsWith("."))
 			g = g.substring(0, g.length()-1).trim();
 		return g;
+	}	
+
+    /**
+     * Return a month in a format yyyy-MM
+     */	
+	public static String formatMonth(Date date) {
+		if (date==null)
+			return null;
+		return tlDateFormatMonth.get().format(date);	
 	}
+	
+    /**
+     * Return a month in a format yyyy-MM
+     */	
+	public static String formatMonth(OffsetDateTime date) {
+		if (date==null)
+			return null;
+		return date.format(tlDateTimeFormatMonth.get());	
+	}
+	
 }

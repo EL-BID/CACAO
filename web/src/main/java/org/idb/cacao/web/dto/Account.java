@@ -59,7 +59,6 @@ public class Account implements Serializable, Comparable<Account> {
 	}
 
 	public Account(Map<String, Object> values) {
-		System.out.println(values.toString());
 	}
 
 	public int getLevel() {

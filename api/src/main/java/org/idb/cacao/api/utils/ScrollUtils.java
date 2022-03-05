@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
@@ -235,6 +236,9 @@ public class ScrollUtils {
 
 		@Override
 		public T next() {
+			if(!hasNext()){
+				throw new NoSuchElementException();
+			}
 			if (!moved)
 				moveForward();
 			moved = false;

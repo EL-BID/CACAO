@@ -20,7 +20,6 @@
 package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +27,9 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.underscore.U;
 import org.apache.commons.io.input.BOMInputStream;
-import org.idb.cacao.api.templates.DocumentInput;
+
+import com.github.underscore.U;
 
 
 /**
@@ -44,53 +43,13 @@ import org.idb.cacao.api.templates.DocumentInput;
  * @since 15/11/2021
  *
  */
-public class XMLParser implements FileParser {
+public class XMLParser extends FileParserAdapter {
 
 	private static final Logger log = Logger.getLogger(JSONParser.class.getName());
-
-	private Path path;
-
-	private DocumentInput documentInputSpec;
 
 	private Iterator<Object[]> entries;
 
 	private TabulatedData tab;
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
-	 */
-	@Override
-	public Path getPath() {
-		return path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#setPath(java.nio.file.Path)
-	 */
-	@Override
-	public void setPath(Path path) {
-		this.path = path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#getDocumentInputSpec()
-	 */
-	@Override
-	public DocumentInput getDocumentInputSpec() {
-		return documentInputSpec;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#setDocumentInputSpec(org.idb.cacao.api.templates.DocumentInput)
-	 */
-	@Override
-	public void setDocumentInputSpec(DocumentInput inputSpec) {
-		this.documentInputSpec = inputSpec;
-	}
 
 	@Override
 	public void start() {

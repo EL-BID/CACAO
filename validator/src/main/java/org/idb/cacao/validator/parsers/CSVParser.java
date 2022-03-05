@@ -21,14 +21,13 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.input.BOMInputStream;
-import org.idb.cacao.api.templates.DocumentInput;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -47,19 +46,9 @@ import com.univocity.parsers.csv.CsvParserSettings;
  * @since 15/11/2021
  *
  */
-public class CSVParser implements FileParser {
+public class CSVParser extends FileParserAdapter {
 	
 	private static final Logger log = Logger.getLogger(CSVParser.class.getName());
-	
-	/**
-	 * Path for file in system storage
-	 */
-	private Path path;
-	
-	/**
-	 * Document with field specifications
-	 */
-	private DocumentInput documentInputSpec;
 	
 	/**
 	 * Scanner to iterate over file lines
@@ -72,42 +61,6 @@ public class CSVParser implements FileParser {
 	private CsvParser csvParser;
 	
 	private TabulatedData tab;
-	
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
-	 */
-	@Override
-	public Path getPath() {
-		return path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#setPath(java.nio.file.Path)
-	 */
-	@Override
-	public void setPath(Path path) {
-		this.path = path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#getDocumentInputSpec()
-	 */
-	@Override
-	public DocumentInput getDocumentInputSpec() {
-		return documentInputSpec;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.validator.parsers.FileParser#setDocumentInputSpec(org.idb.cacao.api.templates.DocumentInput)
-	 */
-	@Override
-	public void setDocumentInputSpec(DocumentInput inputSpec) {
-		this.documentInputSpec = inputSpec;
-	}
 
 	@Override
 	public void start() {
@@ -122,8 +75,7 @@ public class CSVParser implements FileParser {
 			}
 		}
 		
-		try {
-			FileInputStream fis = new FileInputStream(path.toFile());
+		try (FileInputStream fis = new FileInputStream(path.toFile())) {
 			
 			BOMInputStream bis = new BOMInputStream(fis);
 			String charset = bis.getBOMCharsetName();
@@ -144,7 +96,7 @@ public class CSVParser implements FileParser {
 			
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
-		}	
+		}
 		
 	}	
 	
@@ -168,6 +120,11 @@ public class CSVParser implements FileParser {
 				
 				@Override
 				public Map<String, Object> next() {
+					
+					if(!hasNext()){
+						throw new NoSuchElementException();
+					}
+					
 					String line = scanner.nextLine();
 					
 					if ( line != null ) {					

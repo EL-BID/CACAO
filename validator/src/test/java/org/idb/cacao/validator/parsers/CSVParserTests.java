@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
 
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
-import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;

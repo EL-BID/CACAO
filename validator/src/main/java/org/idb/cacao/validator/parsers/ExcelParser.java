@@ -21,16 +21,16 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -59,13 +59,12 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
-import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.api.utils.ParserUtils;
 
-public class ExcelParser implements FileParser {
+public class ExcelParser extends FileParserAdapter {
 	
 	private static final Logger log = Logger.getLogger(ExcelParser.class.getName());
 	
@@ -78,10 +77,6 @@ public class ExcelParser implements FileParser {
 	private int MINIMUM_NUMBER_OF_SHEETS = 1;
 
 	private int numberOfLines = -1;
-
-	private Path path;
-
-	private DocumentInput documentInputSpec;
 	
 	private DocumentTemplate documentTemplate;
 
@@ -98,48 +93,6 @@ public class ExcelParser implements FileParser {
 	 * Names of the fields that are required according to the document template (except those that are mapped over filenames)
 	 */
 	private Set<String> requiredFields;
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#getPath()
-	 */
-	@Override
-	public Path getPath() {
-		return path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#setPath(java.nio.file.Path)
-	 */
-	@Override
-	public void setPath(Path path) {
-		this.path = path;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.idb.cacao.validator.parsers.FileParser#getDocumentInputSpec()
-	 */
-	@Override
-	public DocumentInput getDocumentInputSpec() {
-		return documentInputSpec;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.idb.cacao.validator.parsers.FileParser#setDocumentInputSpec(org.idb.cacao
-	 * .api.templates.DocumentInput)
-	 */
-	@Override
-	public void setDocumentInputSpec(DocumentInput inputSpec) {
-		this.documentInputSpec = inputSpec;
-	}
 
 	/*
 	 * (non-Javadoc)
@@ -584,6 +537,9 @@ public class ExcelParser implements FileParser {
 
 		@Override
 		public Map<String, Object> next() {
+			if(!hasNext()){
+				throw new NoSuchElementException();
+			}			
 			if (!moved)
 				moveForward();
 			
