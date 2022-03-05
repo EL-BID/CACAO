@@ -42,6 +42,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.jayway.jsonpath.JsonPath;
@@ -53,6 +55,7 @@ import java.util.Optional;
 @AutoConfigureJsonTesters
 @RunWith(JUnitPlatform.class)
 @AutoConfigureMockMvc
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 @SpringBootTest( webEnvironment = WebEnvironment.RANDOM_PORT)
 class UserAPIControllerTests {
 
