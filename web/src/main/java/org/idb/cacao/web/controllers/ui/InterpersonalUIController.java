@@ -80,15 +80,15 @@ public class InterpersonalUIController {
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
 	@GetMapping(value= {"/interpersonals/add"})
-    public String showAddInterpersonalRelationship(@PathVariable Optional<String> type,Interpersonal interpersonal, Model model) {
-		RelationshipType rel_type = null;
-		if (type!=null && type.isPresent()) {
-			rel_type = RelationshipType.parse(type.get());
+    public String showAddInterpersonalRelationship(@PathVariable Optional<String> type, Model model) {
+		RelationshipType relType = null;
+		if (type.isPresent()) {
+			relType = RelationshipType.parse(type.get());
 		}
-		model.addAttribute("type", Optional.ofNullable(rel_type));
-		Interpersonal new_rel = new Interpersonal();
-		new_rel.setRelationshipType(rel_type);
-		model.addAttribute("interpersonal",new_rel);
+		model.addAttribute("type", Optional.ofNullable(relType));
+		Interpersonal newRel = new Interpersonal();
+		newRel.setRelationshipType(relType);
+		model.addAttribute("interpersonal",newRel);
 		return "interpersonal/add-interpersonal";
 	}
 
