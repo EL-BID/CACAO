@@ -2,9 +2,13 @@ package org.idb.cacao.web.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.utils.RandomDataGenerator;
+import org.idb.cacao.web.dto.UserDto;
+import org.idb.cacao.web.entities.User;
+import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.utils.generators.SampleCompanySizes;
 import org.idb.cacao.web.utils.generators.SampleCounty;
 import org.idb.cacao.web.utils.generators.SampleEconomicSectors;
@@ -16,11 +20,15 @@ import com.google.common.hash.Hashing;
 public class TestDataGenerator {
 	public static Taxpayer generateTaxpayer(long seed, int numDigits) {
 		RandomDataGenerator randomDataGenerator = new RandomDataGenerator(seed);
-		String taxpayerId = randomDataGenerator.nextRandomNumberFixedLength(numDigits).toString();
+		String taxpayerId = generateTaxpayerId(randomDataGenerator, numDigits);
 		Taxpayer taxpayer = new Taxpayer();
 		taxpayer.setTaxPayerId(taxpayerId);
 		generateTaxpayer(taxpayer, randomDataGenerator);
 		return taxpayer;
+	}
+	
+	public static String generateTaxpayerId(RandomDataGenerator generator, int numDigits) {
+		return generator.nextRandomNumberFixedLength(numDigits).toString();
 	}
 		
 	public static void generateTaxpayer(Taxpayer taxpayer, RandomDataGenerator randomDataGenerator) {
@@ -41,6 +49,21 @@ public class TestDataGenerator {
 
 		// suppose Qualifier5 refers to Tax Regime
 		taxpayer.setQualifier5(SampleTaxRegimes.sample(randomDataGenerator.getRandomGenerator()).getName());
+	}
+	
+	public static UserDto generateUser(long seed, String domain, UserProfile profile, Consumer<UserDto> function) {
+		RandomDataGenerator randomDataGenerator = new RandomDataGenerator(seed);
+		String taxpayerId = generateTaxpayerId(randomDataGenerator, 11);
+		String name = randomDataGenerator.nextPersonName();
+		UserDto user = new UserDto();
+		user.setName(name);
+		user.setLogin(name.toLowerCase().replaceAll("\\s", ".") + "@" + domain);
+		user.setTaxpayerId(taxpayerId);
+		user.setProfile(profile);
+		if (function!=null) {
+			function.accept(user);
+		}
+		return user;
 	}
 	
 	public static long generateSeed(String seedWord) {

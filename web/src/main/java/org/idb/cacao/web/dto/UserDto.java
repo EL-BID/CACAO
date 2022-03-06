@@ -21,8 +21,6 @@ package org.idb.cacao.web.dto;
 
 import java.io.Serializable;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -79,7 +77,6 @@ public class UserDto implements Serializable {
 	private String name;
 	
 	@JsonView(Views.Public.class)
-	@Enumerated(EnumType.STRING)
 	@NotNull
 	@AFieldDescriptor(externalName = "user.profile")
 	private UserProfile profile;	

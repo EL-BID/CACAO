@@ -22,10 +22,13 @@ package org.idb.cacao.web.controllers;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
+import org.apache.commons.lang3.StringUtils;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
+import org.idb.cacao.web.dto.UserDto;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.repositories.UserRepository;
+import org.idb.cacao.web.utils.TestDataGenerator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,8 +52,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.jayway.jsonpath.JsonPath;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.util.Optional;
+import java.util.Random;
 
 @AutoConfigureJsonTesters
 @RunWith(JUnitPlatform.class)
@@ -68,7 +73,7 @@ class UserAPIControllerTests {
 	private UserRepository userRepository;
 	
 	@Autowired
-	private JacksonTester<User> json;
+	private JacksonTester<UserDto> json;
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -88,13 +93,48 @@ class UserAPIControllerTests {
 	void setUp() throws Exception {
 	}
 
+	public void assertEqualsSaved(String id, UserDto user) {
+        Optional<User> existing = userRepository.findById(id);
+        assertTrue(existing.isPresent());
+        
+        User saved = existing.get();
+
+		assertEquals(user.getLogin(), saved.getLogin());
+		assertEquals(user.getName(), saved.getName());
+		assertEquals(user.getProfile(), saved.getProfile());
+		assertEquals(user.getTaxpayerId(), saved.getTaxpayerId());
+	}
+	
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	void testCreateUser() throws Exception {
-		User user = new User();
-		user.setLogin("k@g.com");
-		user.setName("Joao da Silva");
-		user.setProfile(UserProfile.SYSADMIN);
+		Random random = new Random(TestDataGenerator.generateSeed("CREATE"));
+		
+		for(UserProfile profile: UserProfile.values()) {
+			UserDto user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", profile, null);
+			
+			MockHttpServletResponse response = mvc.perform(
+	                post("/api/user")
+	                	.with(csrf())
+	                    .accept(MediaType.APPLICATION_JSON)
+	                    .contentType(MediaType.APPLICATION_JSON)
+	                    .content(
+	                        json.write(user).getJson()
+	                    )
+	            )
+	            .andReturn()
+	            .getResponse();
+			
+			assertEquals(HttpStatus.OK.value(),response.getStatus());
+			String id = JsonPath.read(response.getContentAsString(), "$.id");
+			
+	        assertNotNull(id);
+	        
+	        assertEqualsSaved(id, user);
+		}
+	}
+	
+	public void assertValidationError(UserDto user, String message) throws Exception {
 		MockHttpServletResponse response = mvc.perform(
                 post("/api/user")
                 	.with(csrf())
@@ -107,17 +147,91 @@ class UserAPIControllerTests {
             .andReturn()
             .getResponse();
 		
-		assertEquals(response.getStatus(), HttpStatus.OK.value());
+		assertEquals(HttpStatus.BAD_REQUEST.value(),response.getStatus());
+		checkErrorMessage(response.getContentAsString(), message);
+	}
+	
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	void testCreateUserWithErrors() throws Exception {
+		Random random = new Random(TestDataGenerator.generateSeed("CREATE"));
+		
+		UserDto user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> u.setLogin(null));
+		assertValidationError(user, "login");
+		user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> u.setLogin("this.is.a.real.large.email.and.should.not.be.accepted@mydomain.com"));
+		assertValidationError(user, "login");
+		user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> u.setLogin("this is not an email"));
+		assertValidationError(user, "login");
+		user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> u.setName(""));
+		assertValidationError(user, "name");
+		user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> u.setName("Joe"));
+		assertValidationError(user, "name");
+		user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> u.setName(StringUtils.repeat("this is too long ", 10)));
+		assertValidationError(user, "name");
+		// Wrong confirmation password
+		user = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, u -> { u.setPassword("123"); u.setConfirmPassword("111"); });
+		assertValidationError(user, "password");
+	}
+
+	private void checkErrorMessage(String errorMessage, String message) {
+		assertTrue(errorMessage.contains(message), errorMessage + "[" + message + "]");
+	}
+	
+	private UserDto save(UserDto user) {
+		User entity = new User();
+		user.updateEntity(entity);
+		return new UserDto(userRepository.saveWithTimestamp(entity));
+	}
+	
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	void testCreateExistingUser() throws Exception {
+		Random random = new Random(TestDataGenerator.generateSeed("CREATE"));
+		
+		UserDto user = save(TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, null));
+		
+		MockHttpServletResponse response = mvc.perform(
+                post("/api/user")
+                	.with(csrf())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        json.write(user).getJson()
+                    )
+            )
+            .andReturn()
+            .getResponse();
+		
+		assertEquals(HttpStatus.BAD_REQUEST.value(),response.getStatus());
+		checkErrorMessage(response.getContentAsString(), "exists");
+	}
+
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	void testEditUser() throws Exception {
+		Random random = new Random(TestDataGenerator.generateSeed("EDIT"));
+		
+		UserDto user = save(TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, null));
+		UserDto user2 = TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.SYSADMIN, null);
+		
+		MockHttpServletResponse response = mvc.perform(
+                put("/api/user/" + user.getId())
+                	.with(csrf())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        json.write(user2).getJson()
+                    )
+            )
+            .andReturn()
+            .getResponse();
+		
+		assertEquals(HttpStatus.OK.value(),response.getStatus());
 		String id = JsonPath.read(response.getContentAsString(), "$.id");
 		
         assertNotNull(id);
         
-        Optional<User> savedUser = userRepository.findById(id);
-        assertNotNull(savedUser);
-        
-        user = savedUser.get();
-        
-        assertEquals("k@g.com", user.getLogin());
-        assertEquals("Joao da Silva", user.getName());
+        assertEqualsSaved(id, user2);
 	}
+
 }
