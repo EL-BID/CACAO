@@ -161,8 +161,8 @@ public class IncomeStatementLoader {
 			// Deletes previous published data
 			try {
 				context.getLoadDataStrategy().delete(INDEX_PUBLISHED_DECLARED_STATEMENT_INCOME, taxPayerId, taxPeriodNumber);
-			} catch (Throwable ex) {
-				log.log(Level.SEVERE, "Error while deleting previous published data at "+INDEX_PUBLISHED_DECLARED_STATEMENT_INCOME+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
+			} catch (Exception e) {
+				log.log(Level.SEVERE, "Error while deleting previous published data at "+INDEX_PUBLISHED_DECLARED_STATEMENT_INCOME+" regarding "+taxPayerId+" and period "+taxPeriodNumber, e);
 			}
 
 			// Maps entries of Statement of Comprehensive Income to multi-language descriptions
@@ -265,8 +265,8 @@ public class IncomeStatementLoader {
 				try {
 					loader.commit();
 				}
-				catch (Throwable ex) {
-					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
+				catch (Exception e) {
+					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, e);
 					success = false;
 				}
 				loader.close();
@@ -280,9 +280,9 @@ public class IncomeStatementLoader {
 			return success;
 
 		}
-		catch (Throwable ex) {
+		catch (Exception e) {
 			String fileId = (context==null || context.getDocumentUploaded()==null) ? null : context.getDocumentUploaded().getFileId();
-			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, ex);
+			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, e);
 			return false;
 		}
 

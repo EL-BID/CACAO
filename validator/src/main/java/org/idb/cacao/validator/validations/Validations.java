@@ -435,7 +435,7 @@ public class Validations {
 			Number parsedNumber = ValidationContext.toNumber(value);
 			if (parsedNumber!=null)
 				return parsedNumber.longValue();
-		} catch (Throwable ex) { }
+		} catch (Exception ex) { }
 		
 		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
 		return null;

@@ -107,7 +107,7 @@ public class ValidatedDataStorageService {
 				()->elasticsearchClient.bulk(request,
 				RequestOptions.DEFAULT));
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while storing "+count+" rows for file "+fileId+" for index '"+index_name+"' for template '"+template.getName()+"' "+template.getVersion(), ex);
 		}
 		request.requests().clear();

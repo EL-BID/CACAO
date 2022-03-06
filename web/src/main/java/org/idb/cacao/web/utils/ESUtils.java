@@ -325,7 +325,7 @@ public class ESUtils {
     	try {
     		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		if (ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
     			if (!ESUtils.hasMappings(elasticsearchClient, indexName))
     				return null;
@@ -350,7 +350,7 @@ public class ESUtils {
 		try {
 			client.index(indexRequest, RequestOptions.DEFAULT);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (null!=ErrorUtils.getIllegalArgumentTypeMismatch(ex)
 					|| null!=ErrorUtils.getIllegalArgumentInputString(ex)) {
 				// In case of an error relative to type mismatch, lets try again after changing some of the index parameters
@@ -482,7 +482,7 @@ public class ESUtils {
 			GetUsersResponse response = client.security().getUsers(request, RequestOptions.DEFAULT);
 			return response.getUsers();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (ErrorUtils.isErrorNotFound(ex))
 				return Collections.emptySet();
 			else

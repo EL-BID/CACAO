@@ -48,6 +48,7 @@ import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientInfoGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.idb.cacao.api.errors.GeneralException;
 
 /**
  * Utility methods for cryptography
@@ -127,9 +128,9 @@ public class CryptoUtils {
 
 		if (resultado == null) {
 			if (lastException != null)
-				throw new Exception("Falha na descriptografia!",lastException);
+				throw new GeneralException("Falha na descriptografia!",lastException);
 			else
-				throw new Exception("Falha na descriptografia!");
+				throw new GeneralException("Falha na descriptografia!");
 		}
 		return resultado.getContentStream();
 	}

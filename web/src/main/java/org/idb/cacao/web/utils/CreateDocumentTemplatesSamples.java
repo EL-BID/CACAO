@@ -175,7 +175,7 @@ public class CreateDocumentTemplatesSamples {
 			.withFieldType(FieldType.DECIMAL);
 			try {
 				field.withDescription(messages.getMessage(stmt.toString(), null, defaultLocale));
-			} catch (Throwable ex) { }
+			} catch (Exception ex) { }
 			fields.add(field);
 		}
 

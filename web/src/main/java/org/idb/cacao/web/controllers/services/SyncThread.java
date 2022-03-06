@@ -121,7 +121,7 @@ public class SyncThread implements Runnable {
 			
 			log.log(Level.INFO, "End of SYNC");
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error in SyncThread started by user "+user+" at "+ParserUtils.formatTimestamp(start), ex);
 		}
 		finally {

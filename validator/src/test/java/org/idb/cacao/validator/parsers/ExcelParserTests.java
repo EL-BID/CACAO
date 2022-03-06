@@ -28,6 +28,7 @@ import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_N
 import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -64,7 +65,7 @@ public class ExcelParserTests {
 	private static ElasticsearchMockClient mockElastic;
 
 	@BeforeAll
-	public static void beforeClass() throws Exception {
+	public static void beforeClass() throws IOException {
 
 		int port = ElasticsearchMockClient.findRandomPort();
 		mockElastic = new ElasticsearchMockClient(port);
@@ -82,7 +83,7 @@ public class ExcelParserTests {
 	 * given as column positions and sheet position.
 	 */
 	@Test
-	void testChartOfAccounts01() throws Exception {
+	void testChartOfAccounts01() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts.xlsx");
 		assertTrue(sampleFile.exists());
@@ -192,7 +193,7 @@ public class ExcelParserTests {
 	 * given as text expressions
 	 */
 	@Test
-	void testChartOfAccounts02() throws Exception {
+	void testChartOfAccounts02() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts.xlsx");
 		assertTrue(sampleFile.exists());
@@ -302,7 +303,7 @@ public class ExcelParserTests {
 	 * given as named cells.
 	 */
 	@Test
-	void testSimpleNamedCells() throws Exception {
+	void testSimpleNamedCells() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/SimpleNamedCells.xlsx");
 		assertTrue(sampleFile.exists());
@@ -371,7 +372,7 @@ public class ExcelParserTests {
 	 * given as named cells.
 	 */
 	@Test
-	void testColumnsOfNamedCells() throws Exception {
+	void testColumnsOfNamedCells() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/ColumnsOfNamedCells.xlsx");
 		assertTrue(sampleFile.exists());
@@ -486,7 +487,7 @@ public class ExcelParserTests {
 	 * Test the sample file 'ColumnsOfNamedCells.xlsx' with the input mapping given as cell ranges.
 	 */
 	@Test
-	void testColumnsOfNamedCells2() throws Exception {
+	void testColumnsOfNamedCells2() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/ColumnsOfNamedCells.xlsx");
 		assertTrue(sampleFile.exists());
@@ -601,7 +602,7 @@ public class ExcelParserTests {
 	 * in turn corresponds to groups of information.
 	 */
 	@Test
-	void testColumnsOfNamedCellsAndGroups() throws Exception {
+	void testColumnsOfNamedCellsAndGroups() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/ColumnsOfNamedCellsAndGroups.xlsx");
 		assertTrue(sampleFile.exists());
@@ -757,7 +758,7 @@ public class ExcelParserTests {
 	 * in turn corresponds to groups of information, and we have all of these in multiple sheets.
 	 */
 	@Test
-	void testColumnsOfNamedCellsAndGroupsMultipleSheets() throws Exception {
+	void testColumnsOfNamedCellsAndGroupsMultipleSheets() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/ColumnsOfNamedCellsAndGroupsMultipleSheets.xlsx");
 		assertTrue(sampleFile.exists());
@@ -977,7 +978,7 @@ public class ExcelParserTests {
 	 * The same as 'testColumnsOfNamedCellsAndGroupsMultipleSheets', but make use of address ranges for referring to columns of data
 	 */
 	@Test
-	void testColumnsOfNamedCellsAndGroupsMultipleSheets2() throws Exception {
+	void testColumnsOfNamedCellsAndGroupsMultipleSheets2() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/ColumnsOfNamedCellsAndGroupsMultipleSheets.xlsx");
 		assertTrue(sampleFile.exists());
@@ -1197,7 +1198,7 @@ public class ExcelParserTests {
 	 * Test the use of named cells where some names refers to multiple values and some names refers to single values
 	 */
 	@Test
-	void testStatementComprehensiveIncomes() throws Exception {
+	void testStatementComprehensiveIncomes() throws IOException {
 		
 		Resource sampleFile = new ClassPathResource("/samples/StatementIncomes.xlsx");
 		assertTrue(sampleFile.exists());

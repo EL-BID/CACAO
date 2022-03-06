@@ -184,7 +184,7 @@ public class DomainTableService {
 			try {
 				assertDomainTable(builtInDomainTable, /*overwrite*/false);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.SEVERE, ex, () -> "Error while asserting the built-in domain table "+builtInDomainTable.getName());
 			}
 		}
@@ -243,7 +243,7 @@ public class DomainTableService {
 				assertDomainTable(builtInDomainTable, overwrite);
 				count++;
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.SEVERE, ex, () -> "Error while asserting the built-in domain table "+builtInDomainTable.getName());
 			}
 		}
@@ -259,7 +259,7 @@ public class DomainTableService {
 		try (Stream<DomainTable> stream = ScrollUtils.findAll(domainTableRepository, elasticsearchClient, 1)) {
 			return stream.map(DomainTable::getName).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
 				return Collections.emptySet();
 			else
@@ -275,7 +275,7 @@ public class DomainTableService {
 		try {
 			return domainTableRepository.findByNameIgnoreCaseAndActiveTrue(name).stream().map(DomainTable::getVersion).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
 				return Collections.emptySet();
 			else

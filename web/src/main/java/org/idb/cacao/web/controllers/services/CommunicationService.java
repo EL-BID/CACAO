@@ -160,7 +160,7 @@ public class CommunicationService {
 	
 	                    mailSender.send(email_msg);
     				}
-    				catch (Throwable ex) {
+    				catch (Exception ex) {
     					log.log(Level.WARNING, "Error while sending e-mail to user "+user_audience.getLogin(), ex);
     				}
     			}

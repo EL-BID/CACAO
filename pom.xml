@@ -32,6 +32,7 @@
 		<module>etl</module>
 		<module>kibana</module>
 		<module>es</module>
+		<module>tests</module>
 	</modules>
 	<dependencies>
 

@@ -335,7 +335,7 @@ public class FileValidatedConsumerService {
 			try {
 				proc.run();
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				//TODO Add logging
 				log.log(Level.SEVERE, "Could not rollback", ex);
 			}

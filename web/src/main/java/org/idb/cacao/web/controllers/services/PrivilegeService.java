@@ -155,7 +155,7 @@ public class PrivilegeService {
 			try {
 				profile = UserProfile.parse(value);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				profile = null; // invalid profile name
 			}
 			if (profile==null) {

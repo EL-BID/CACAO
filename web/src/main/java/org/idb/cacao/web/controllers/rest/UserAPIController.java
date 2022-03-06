@@ -249,7 +249,7 @@ public class UserAPIController {
         	try {
         		userService.updateUserForKibanaAccess(user);
         	}
-        	catch (Throwable ex) {
+        	catch (Exception ex) {
         		log.log(Level.SEVERE, String.format("Error while updating user access at Kibana for user account %s", user.getLogin()), ex);
         	}
         }

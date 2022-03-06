@@ -85,7 +85,7 @@ public class Application {
 				resourceMonitorService.start();
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 

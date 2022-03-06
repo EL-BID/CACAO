@@ -152,7 +152,7 @@ public class WebApplication {
 		try {
 			log.log(Level.INFO, "Root directory for incoming files: "+fileSystemStorageService.getRootLocation().toFile().getAbsolutePath());
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
@@ -162,7 +162,7 @@ public class WebApplication {
 				sanitizationService.compatibilizeIndicesMappings();
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
@@ -171,7 +171,7 @@ public class WebApplication {
 				resourceMonitorService.start();
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
@@ -179,7 +179,7 @@ public class WebApplication {
 			boolean overwrite = "true".equalsIgnoreCase(env.getProperty("built-in.domain.tables.overwrite"));
 			domainTableService.assertDomainTablesForAllArchetypes(overwrite);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 		
@@ -188,7 +188,7 @@ public class WebApplication {
 					&& kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0)
 				kibanaSpacesService.syncKibanaIndexPatterns();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during synchronization of Kibana spaces with ElasticSearch indices", ex);
 		}
 
@@ -197,7 +197,7 @@ public class WebApplication {
 				syncAPIController.initializeNullTimestamps();
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
@@ -207,7 +207,7 @@ public class WebApplication {
 				syncAPIService.scheduleSyncThread();
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during SYNC scheduled initialization", ex);
 		}
 
@@ -222,7 +222,7 @@ public class WebApplication {
 			EmbeddedKafkaBroker broker = new EmbeddedKafkaBroker(/*count brokers*/1, /*controlledShutdown*/true, /*partitions*/1)
 			      .kafkaPorts(9092);
 			broker.afterPropertiesSet();
-		}catch (Throwable ex) { 
+		}catch (Exception ex) { 
 			log.log(Level.WARNING, "Error starting Embedded Kafka");
 		}
 

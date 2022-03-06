@@ -31,6 +31,7 @@ import org.idb.cacao.account.generator.ShareholdingGenerator;
 import org.idb.cacao.account.validations.ShareholdingValidations;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -236,7 +237,7 @@ public class ShareholdingArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public CustomDataGenerator getCustomGenerator(DocumentTemplate template, DocumentFormat format, long seed,
-			long records) throws Exception {
+			long records) throws GeneralException {
 		if (hasCustomGenerator(template, format))
 			return new ShareholdingGenerator(template, format, seed, records);
 		else

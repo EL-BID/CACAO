@@ -78,7 +78,7 @@ public class SwaggerModelPropertiesConfig implements ModelPropertyBuilderPlugin 
 								String description = messageSource.getMessage(externalName, null, LocaleContextHolder.getLocale());
 								context.getSpecificationBuilder().description(description);
 							}
-							catch (Throwable ex) {
+							catch (Exception ex) {
 								// Ignores errors if the decription could not be found at message properties
 							}
 						}

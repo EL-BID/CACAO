@@ -222,7 +222,7 @@ public class ElasticSearchService {
 				ESUtils.copyKibanaSavedObjects(env, restTemplate, sourceSpaceId, targetSpaceId, "config", ids);
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error trying to copy config from space '"+sourceSpaceId+"' to space '"+targetSpaceId+"'", ex);
 		}
 		
@@ -233,7 +233,7 @@ public class ElasticSearchService {
 				ESUtils.copyKibanaSavedObjects(env, restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", ids);
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error trying to copy index-pattern from space '"+sourceSpaceId+"' to space '"+targetSpaceId+"'", ex);			
 		}
 

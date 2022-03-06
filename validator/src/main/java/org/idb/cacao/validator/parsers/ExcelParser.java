@@ -287,7 +287,7 @@ public class ExcelParser extends FileParserAdapter {
 			try {
 				cellRange = CellRangeAddress.valueOf(fieldMapping.getCellName());
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				cellRange = null;
 			}
 			if (cellRange!=null) {
@@ -339,7 +339,7 @@ public class ExcelParser extends FileParserAdapter {
 							String cell_value;
 							try {
 								cell_value = cell.getStringCellValue();
-							} catch (Throwable ex) {
+							} catch (Exception ex) {
 								continue;
 							}
 							if (cell_value==null || cell_value.length()==0)

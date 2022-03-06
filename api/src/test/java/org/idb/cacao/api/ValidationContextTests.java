@@ -30,6 +30,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +47,7 @@ public class ValidationContextTests {
 	 * Test the outcome of 'toString' function
 	 */
 	@Test
-	public void testToString() throws Exception {
+	public void testToString() throws GeneralException {
 		
 		assertNull(ValidationContext.toString(null));
 		assertEquals("ABC", ValidationContext.toString("ABC"));
@@ -61,7 +62,7 @@ public class ValidationContextTests {
 	 * Test the outcome of 'toNumber' function
 	 */
 	@Test
-	public void testToNumber() throws Exception {
+	public void testToNumber() throws GeneralException {
 		
 		assertNull(ValidationContext.toNumber(null));
 		assertNull(ValidationContext.toNumber("ABC"));
@@ -76,7 +77,7 @@ public class ValidationContextTests {
 	 * Test the outcome of 'toDate' function
 	 */
 	@Test
-	public void testToDate() throws Exception {
+	public void testToDate() throws GeneralException {
 		
 		assertNull(ValidationContext.toDate(null));
 		
@@ -109,7 +110,7 @@ public class ValidationContextTests {
 	 * Test the outcome of 'toOffsetDateTime' function
 	 */
 	@Test
-	public void testToOffsetDateTime() throws Exception {
+	public void testToOffsetDateTime() throws GeneralException {
 		
 		assertNull(ValidationContext.toOffsetDateTime(null));
 

@@ -180,7 +180,7 @@ public class UserService {
 			}
 			
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
@@ -207,7 +207,7 @@ public class UserService {
 		try {
 			userRepository.save(user);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			// In case of any error, check if the user has already been created
 			try {
 				user = userRepository.findByLoginIgnoreCase(email);
@@ -235,7 +235,7 @@ public class UserService {
 		try {
 			userRepository.save(user);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			// In case of any error, check if the user has already been created
 			try {
 				user = userRepository.findByLoginIgnoreCase(email);
@@ -583,7 +583,7 @@ public class UserService {
 					try {
 						ESUtils.updateUser(esClient, user.getLogin(), roles);
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						log.log(Level.SEVERE, "Error assigning role "+role_name+" to user "+user.getLogin()+" for access to Kibana personal space "+personal_space_id, ex);
 					}
 				}
@@ -616,7 +616,7 @@ public class UserService {
 			role =
 				ESUtils.getRole(esClient, role_name);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			role = null;				
 		}
 		
@@ -627,7 +627,7 @@ public class UserService {
 					/*resources*/Arrays.asList("space:"+personal_space_id), 
 					/*allIndicesPrivileges*/Arrays.asList("read"));
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.SEVERE, "Error creating role "+role_name+" for user "+user.getLogin()+" for access to Kibana personal space "+personal_space_id, ex);
 			}
 		}
@@ -688,7 +688,7 @@ public class UserService {
 				try {
 					ESUtils.disableUser(esClient, user.getLogin());
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error disabling user "+user.getLogin(), ex);
 				}
 			}
@@ -703,7 +703,7 @@ public class UserService {
 		try {
 			ESUtils.enableUser(esClient, user.getLogin());
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error enabling user "+user.getLogin(), ex);
 		}
 	}

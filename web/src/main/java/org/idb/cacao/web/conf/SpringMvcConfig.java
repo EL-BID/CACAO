@@ -208,7 +208,7 @@ public class SpringMvcConfig implements WebMvcConfigurer {
 							String translated = messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
 							gen.writeString(translated);
 						}
-						catch (Throwable ex) {
+						catch (Exception ex) {
 							gen.writeString(value.name());
 						}
 					}

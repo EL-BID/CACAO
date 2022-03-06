@@ -35,6 +35,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainEntry;
@@ -68,14 +69,14 @@ public class ETLContext {
 		 * Should return empty collection if there is no templates related to the archetype. Should throw exception in
 		 * case of error while searching database.
 		 */
-		public Collection<DocumentTemplate> getTemplates(String archetype) throws Exception;
+		public Collection<DocumentTemplate> getTemplates(String archetype) throws GeneralException;
 		
 		/**
 		 * Given the {@link DocumentUploaded#getTemplateName() templateName}, the {@link DocumentUploaded#getTemplateVersion() templateVersion},
 		 * the {@link DocumentUploaded#getTaxPayerId() taxPayerId} and the {@link DocumentUploaded#getTaxPeriodNumber() taxPeriodNumber}, returns
 		 * the collection of {@link DocumentUploaded DocumentUploaded} records of pre validated files regarding these criteria.
 		 */
-		public Collection<DocumentUploaded> getUploads(String templateName, String templateVersion, String taxPayerId, Integer taxPeriodNumber) throws Exception;
+		public Collection<DocumentUploaded> getUploads(String templateName, String templateVersion, String taxPayerId, Integer taxPeriodNumber) throws GeneralException;
 		
 		/**
 		 * Given the {@link DocumentUploaded#getTemplateName() templateName}, the {@link DocumentUploaded#getTemplateVersion() templateVersion},
@@ -469,7 +470,7 @@ public class ETLContext {
 	 * processed in the ETL, change their situation from PROCESSED to REPLACED. In other words, avoid keeping multiple documents regarding the
 	 * same subject with the 'PROCESSED' situation. Only one of them will be considered PROCESSED.
 	 */
-	public static void markReplacedDocuments(DocumentUploaded prevailingDocument, ETLContext context) throws Exception {
+	public static void markReplacedDocuments(DocumentUploaded prevailingDocument, ETLContext context) throws GeneralException {
 		Collection<DocumentUploaded> uploads = context.getValidatedDataRepository().getUploads(prevailingDocument.getTemplateName(), prevailingDocument.getTemplateVersion(), 
 				prevailingDocument.getTaxPayerId(), prevailingDocument.getTaxPeriodNumber());
 		if (uploads.isEmpty()) {

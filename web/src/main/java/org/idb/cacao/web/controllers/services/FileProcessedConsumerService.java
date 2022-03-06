@@ -101,7 +101,7 @@ public class FileProcessedConsumerService {
 					if (kibanaSpacesService.getMinimumDocumentsForAutoCreateIndexPattern()>0)
 						kibanaSpacesService.syncKibanaIndexPatterns(/*avoidRedundantChecks*/true, archetype);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Failed to synchronize KIBANA spaces with index patterns related to the archetype "+archetype+" (may be ignored if there is no Kibana service online)", ex);
 				}
 				
@@ -116,14 +116,14 @@ public class FileProcessedConsumerService {
 						kibanaSpacesService.syncKibanaIndexPatternForGenericTemplate(/*avoidRedundantChecks*/true, index);
 					}
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Failed to synchronize KIBANA spaces with index patterns related to the index "+index+" (may be ignored if there is no Kibana service online)", ex);
 				}
 
 			}
 			
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error checking status about the processed document with id "+documentId, ex);
 		}
 
@@ -141,7 +141,7 @@ public class FileProcessedConsumerService {
 			try {
 				proc.run();
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				//TODO Add logging
 				log.log(Level.SEVERE, "Could not rollback", ex);
 			}

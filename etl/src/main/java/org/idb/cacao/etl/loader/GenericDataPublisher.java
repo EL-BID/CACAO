@@ -140,7 +140,7 @@ public class GenericDataPublisher {
 			if (taxPayerId!=null || taxPeriodNumber!=null) {
 				try {
 					context.getLoadDataStrategy().delete(published_data_index, taxPayerId, taxPeriodNumber);
-				} catch (Throwable ex) {
+				} catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while deleting previous published data at "+published_data_index+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
 				}
 			}
@@ -192,7 +192,7 @@ public class GenericDataPublisher {
 				try {
 					loader.commit();
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
 					success = false;
 				}
@@ -207,7 +207,7 @@ public class GenericDataPublisher {
 			return success;
 
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			String fileId = (context==null || context.getDocumentUploaded()==null) ? null : context.getDocumentUploaded().getFileId();
 			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, ex);
 			return false;
@@ -230,7 +230,7 @@ public class GenericDataPublisher {
 						try {
 							return repository.getTaxPayerData(taxPayerId).map(IndexNamesUtils::normalizeAllKeysForES);
 						}
-						catch (Throwable ex) {
+						catch (Exception ex) {
 							return Optional.empty();
 						}
 					}

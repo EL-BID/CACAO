@@ -390,7 +390,7 @@ public class PDFParser extends FileParserAdapter {
 								}
 							}
 						}
-						catch (Throwable ex) {
+						catch (Exception ex) {
 							// Algum erro de conversão...
 							fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);
 						}

@@ -70,7 +70,7 @@ public class ScrollUtils {
 		try {
 			return StreamSupport.stream(repository.findAll().spliterator(),false);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			
 			if (isErrorWindowTooLarge(ex)) {
 				
@@ -158,7 +158,7 @@ public class ScrollUtils {
     	try {
     		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		if (CommonErrors.isErrorNoMappingFoundForColumn(ex)) {
     			if (!hasMappings(elasticsearchClient, indexName))
     				return null;

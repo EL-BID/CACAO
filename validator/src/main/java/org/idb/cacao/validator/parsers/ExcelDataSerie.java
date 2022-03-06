@@ -220,7 +220,7 @@ class ExcelDataSerie {
 				else
 					return Math.max(0,last_row-firstRow.intValue()+1);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				return 0;
 			}
 		}
@@ -234,7 +234,7 @@ class ExcelDataSerie {
 					return 0;
 				return last_col;
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				return 0;
 			}
 		}

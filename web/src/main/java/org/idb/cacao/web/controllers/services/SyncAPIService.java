@@ -321,7 +321,7 @@ public class SyncAPIService {
 				syncOriginalFiles(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.ORIGINAL_FILES.getEndpoint(),0L):0L, 
 						end, bytesReceived);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
 			}
 		};
@@ -341,7 +341,7 @@ public class SyncAPIService {
 					syncBase(tokenApi, repository_class, (resumeFromLastSync)?getStartForNextSync(SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName()),0L):0L, 
 							end, bytesReceived);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while performing SYNC for "+repository_class.getSimpleName(), ex);
 				}
 			};
@@ -365,7 +365,7 @@ public class SyncAPIService {
 			templates = StreamSupport.stream(templateRepository.findAll().spliterator(), false)
 					.sorted(Comparator.comparing(DocumentTemplate::getName).thenComparing(DocumentTemplate::getVersion))
 					.collect(Collectors.toList());
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
 				throw ex;
 			else
@@ -381,7 +381,7 @@ public class SyncAPIService {
 					if (template.getArchetype()!=null && template.getArchetype().trim().length()>0)
 						archetypesNames.add(template.getArchetype());
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
 				}
 			};
@@ -426,7 +426,7 @@ public class SyncAPIService {
 					syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, 
 							end, bytesReceived);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
 				}
 			};
@@ -443,7 +443,7 @@ public class SyncAPIService {
 			syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, 
 					end, bytesReceived);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while performing SYNC for Kibana assets", ex);
 		}
 
@@ -490,7 +490,7 @@ public class SyncAPIService {
 					executor.submit(run_syncOriginalFiles);
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while performing SYNC for original files", ex);
 		}
 		
@@ -504,7 +504,7 @@ public class SyncAPIService {
 						syncBase(tokenApi, repository_class, (resumeFromLastSync)?getStartForNextSync(SyncContexts.REPOSITORY_ENTITIES.getEndpoint(repository_class.getSimpleName()),0L):0L, 
 									end, bytesReceived);
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						log.log(Level.SEVERE, "Error while performing SYNC for "+repository_class.getSimpleName(), ex);
 					}
 				};
@@ -528,7 +528,7 @@ public class SyncAPIService {
 			templates = StreamSupport.stream(templateRepository.findAll().spliterator(), false)
 					.sorted(Comparator.comparing(DocumentTemplate::getName).thenComparing(DocumentTemplate::getVersion))
 					.collect(Collectors.toList());
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex)) 
 				throw ex;
 			else
@@ -545,7 +545,7 @@ public class SyncAPIService {
 						if (template.getArchetype()!=null && template.getArchetype().trim().length()>0)
 							archetypesNames.add(template.getArchetype());
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						log.log(Level.SEVERE, "Error while performing SYNC for parsed docs of template "+template.getName()+"/"+template.getVersion(), ex);
 					}
 				};
@@ -591,7 +591,7 @@ public class SyncAPIService {
 						syncPublishedData(tokenApi, indexname, (resumeFromLastSync)?getStartForNextSync(SyncContexts.PUBLISHED_DATA.getEndpoint(indexname),0L):0L, 
 									end, bytesReceived);
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						log.log(Level.SEVERE, "Error while performing SYNC for published data "+indexname, ex);
 					}
 				};
@@ -609,7 +609,7 @@ public class SyncAPIService {
 				syncKibana(tokenApi, (resumeFromLastSync)?getStartForNextSync(SyncContexts.KIBANA_ASSETS.getEndpoint(),0L):0L, 
 						end, bytesReceived);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while performing SYNC for Kibana assets", ex);
 		}
 
@@ -638,7 +638,7 @@ public class SyncAPIService {
 				original_files_dir.mkdirs();
 			if (!original_files_dir.exists())
 				throw new FileNotFoundException(original_files_dir.getAbsolutePath());
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.SEVERE, "Error while synchronizing with "+SyncContexts.ORIGINAL_FILES.getEndpoint(), ex);
 			throw new GeneralException(messages.getMessage("error.failed.sync", null, LocaleContextHolder.getLocale()));
 		}
@@ -795,7 +795,7 @@ public class SyncAPIService {
 				repository.saveAll(batch_to_save);
 				counter.add(batch_to_save.size());
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				// In case of error, let's try saving one at a time
 				if (batch_to_save.size()>1) {
 					for (Object record: batch_to_save) {
@@ -871,7 +871,7 @@ public class SyncAPIService {
         		ESUtils.hasMappings(elasticsearchClient, index_name);
         		has_indice = true; // the index may exist and have no mapping
         	}
-        	catch (Throwable ex) {
+        	catch (Exception ex) {
         		if (ErrorUtils.isErrorNoIndexFound(ex))
         			has_indice = false;
         		else
@@ -881,12 +881,12 @@ public class SyncAPIService {
 		        try {
 			        ESUtils.createIndex(elasticsearchClient, index_name, /*ignore_malformed*/true);
 		        }
-		        catch (Throwable ex) {
+		        catch (Exception ex) {
 		        	log.log(Level.WARNING, "Ignoring error while creating new index '"+index_name+"' for template '"+template.getName()+"'", ex);
 		        }
 	        }
         }
-        catch (Throwable ex) {
+        catch (Exception ex) {
         	log.log(Level.WARNING, "Ignoring error while checking existence of index '"+index_name+"' for template '"+template.getName()+"'", ex);
         }
 
@@ -916,7 +916,7 @@ public class SyncAPIService {
 			try {
 				ESUtils.changeIndexSettingsForFasterBulkLoad(elasticsearchClient, index_name);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
 					log.log(Level.WARNING, "Error while changing index settings for faster Bulk Loads at index "+index_name, ex);
 				}
@@ -981,7 +981,7 @@ public class SyncAPIService {
 				try {
 					ESUtils.changeIndexSettingsForDefaultBulkLoad(elasticsearchClient, index_name);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
 						log.log(Level.WARNING, "Error while changing index settings for default Bulk Loads at index "+index_name, ex);
 					}
@@ -1009,7 +1009,7 @@ public class SyncAPIService {
         		ESUtils.hasMappings(elasticsearchClient, indexname);
         		has_indice = true; // the index may exist and have no mapping
         	}
-        	catch (Throwable ex) {
+        	catch (Exception ex) {
         		if (ErrorUtils.isErrorNoIndexFound(ex))
         			has_indice = false;
         		else
@@ -1019,12 +1019,12 @@ public class SyncAPIService {
 		        try {
 			        ESUtils.createIndex(elasticsearchClient, indexname, /*ignore_malformed*/true);
 		        }
-		        catch (Throwable ex) {
+		        catch (Exception ex) {
 		        	log.log(Level.WARNING, "Ignoring error while creating new index '"+indexname+"' ", ex);
 		        }
 	        }
         }
-        catch (Throwable ex) {
+        catch (Exception ex) {
         	log.log(Level.WARNING, "Ignoring error while checking existence of index '"+indexname+"' ", ex);
         }
 
@@ -1050,7 +1050,7 @@ public class SyncAPIService {
 			try {
 				ESUtils.changeIndexSettingsForFasterBulkLoad(elasticsearchClient, indexname);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
 					log.log(Level.WARNING, "Error while changing index settings for faster Bulk Loads at index "+indexname, ex);
 				}
@@ -1119,7 +1119,7 @@ public class SyncAPIService {
 				try {
 					ESUtils.changeIndexSettingsForDefaultBulkLoad(elasticsearchClient, indexname);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNotFound(ex)) {
 						log.log(Level.WARNING, "Error while changing index settings for default Bulk Loads at index "+indexname, ex);
 					}
@@ -1353,7 +1353,7 @@ public class SyncAPIService {
 						restTemplate.execute(uri, HttpMethod.GET, requestCallback, responseExtractor);
 						break;
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						if (retry+1>=DEFAULT_RETRIES_PER_REQUEST || !shouldRetryRequest(ex)) {
 							throw ex;
 						}
@@ -1377,7 +1377,7 @@ public class SyncAPIService {
 										new Date(end.get().longValue()).toInstant().atOffset(ZoneOffset.UTC) : lastTimeRun;
 						saveSyncMilestone(master, endPoint, lastTimeRun, lastTimeStart, lastTimeEnd, count_incoming_objects.longValue(), successful);
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						log.log(Level.SEVERE, "SYNC COMMIT failed for endpoint '"+endPoint+"'", ex);
 					}
 				}
@@ -1458,7 +1458,7 @@ public class SyncAPIService {
 		try {
 			return syncCommitMilestoneRepository.count()>0;
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (ErrorUtils.isErrorNoIndexFound(ex))
 				return false;
 			throw ex;
@@ -1474,7 +1474,7 @@ public class SyncAPIService {
 		try {
 			return syncCommitMilestoneRepository.findByEndPoint(endpoint).isPresent();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (ErrorUtils.isErrorNoIndexFound(ex))
 				return false;
 			throw ex;
@@ -1645,7 +1645,7 @@ public class SyncAPIService {
 				try {
 					startSyncThread(/*user*/null, /*resumeFromLastSync*/true, /*endpoints*/null);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while running SYNC at schedule time", ex);
 				}
 			}, trigger);
@@ -1668,7 +1668,7 @@ public class SyncAPIService {
 						log.log(Level.INFO, "Previous scheduled SYNC could not be canceled");
 					}
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error while trying to cancel previous scheduled SYNC", ex);
 				}
 				finally {
@@ -1706,7 +1706,7 @@ public class SyncAPIService {
 					()->elasticsearchClient.bulk(bulkRequest,
 					RequestOptions.DEFAULT));
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				try {
 					if (null!=ErrorUtils.getIllegalArgumentTypeMismatch(ex)
 							|| null!=ErrorUtils.getIllegalArgumentInputString(ex)) {
@@ -1910,7 +1910,7 @@ public class SyncAPIService {
 			if (loadParquet!=null) {
 				try {
 					loadParquet.close();
-				} catch (Throwable ex) {
+				} catch (Exception ex) {
 					log.log(Level.WARNING, "Error closing temporary file with PARQUET format!", ex);
 				}
 			}

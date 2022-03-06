@@ -124,7 +124,7 @@ public class AuditLogAspect {
 			try {
 				auditRepo.saveWithTimestamp(auditTrailEntry);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				// Ignores errors storing this information
 			}
 		});
@@ -151,27 +151,27 @@ public class AuditLogAspect {
 				
 				try {
 					entry.setIpAddress(request.getRequest().getRemoteAddr());
-				} catch (Throwable ex) { } // ignores NullPointerException
+				} catch (Exception ex) { } // ignores NullPointerException
 
 				
 				try {
 					entry.setUrl(request.getRequest().getRequestURL().toString());
-				} catch (Throwable ex) { } // ignores NullPointerException
+				} catch (Exception ex) { } // ignores NullPointerException
 
 				
 				try {
 					entry.setHttpMethod(request.getRequest().getMethod());
-				} catch (Throwable ex) { } // ignores NullPointerException
+				} catch (Exception ex) { } // ignores NullPointerException
 
-			} catch (Throwable ex) { }
+			} catch (Exception ex) { }
 
 			try {
 				entry.setControllerClass(joinPoint.getSignature().getDeclaringType().getSimpleName());
-			} catch (Throwable ex) { } // ignores NullPointerException
+			} catch (Exception ex) { } // ignores NullPointerException
 
 			try {
 				entry.setControllerMethod(joinPoint.getSignature().getName());
-			} catch (Throwable ex) { } // ignores NullPointerException
+			} catch (Exception ex) { } // ignores NullPointerException
 			
 			try {
 				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -196,7 +196,7 @@ public class AuditLogAspect {
 					entry.setUserLogin(user.getLogin());
 					entry.setUserName(user.getName());
 				}
-			} catch (Throwable ex) { } 
+			} catch (Exception ex) { } 
 
 			Object args[] = joinPoint.getArgs();
 
@@ -251,11 +251,11 @@ public class AuditLogAspect {
 						}
 					}
 				}
-				catch (Throwable ex) { }
+				catch (Exception ex) { }
 			}
 			
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			// Ignores errors while parsing request parameters
 		}
 

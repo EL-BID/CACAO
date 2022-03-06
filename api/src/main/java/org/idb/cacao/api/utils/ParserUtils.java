@@ -313,7 +313,7 @@ public class ParserUtils {
 			Pattern.compile(value);
 			return true;
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return false;
 		}
 	}
@@ -368,7 +368,7 @@ public class ParserUtils {
 			tlDateFormat.get().parse(value);
 			return true;
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return false;
 		}
 	}
@@ -382,7 +382,7 @@ public class ParserUtils {
 		try {
 			return tlDateFormat.get().parse(value);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return null;
 		}		
 	}
@@ -396,7 +396,7 @@ public class ParserUtils {
 		try {
 			return tlDateFormatWithMS.get().parse(value);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return null;
 		}		
 	}
@@ -420,7 +420,7 @@ public class ParserUtils {
 			tlDateFormatES.get().parse(value);
 			return true;
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return false;
 		}
 	}
@@ -434,7 +434,7 @@ public class ParserUtils {
 		try {
 			return tlDateFormatES.get().parse(value);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return null;
 		}		
 	}
@@ -491,7 +491,7 @@ public class ParserUtils {
 			cal.set(Calendar.MILLISECOND, 0);
 			return cal.getTime();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return null;
 		}
 	}
@@ -513,7 +513,7 @@ public class ParserUtils {
 			cal.set(Calendar.MILLISECOND, 0);
 			return cal.getTime();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return null;
 		}
 	}
@@ -535,7 +535,7 @@ public class ParserUtils {
 			cal.set(Calendar.MILLISECOND, 0);
 			return cal.getTime();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return null;
 		}
 	}
@@ -723,7 +723,7 @@ public class ParserUtils {
     	    	try {
     	    		return parseDecimalGrouping(value);
     	    	}
-    	    	catch (Throwable ex) {
+    	    	catch (Exception ex) {
     	    		return parseDecimalWithComma(value);
     	    	}  
     		}
@@ -731,7 +731,7 @@ public class ParserUtils {
     	    	try {
     	    		return parseDecimalWithComma(value);
     	    	}
-    	    	catch (Throwable ex) {
+    	    	catch (Exception ex) {
     	    		return parseDecimal(value);
     	    	}    			
     		}
@@ -740,7 +740,7 @@ public class ParserUtils {
 	    	try {
 	    		return parseDecimalWithComma(value);
 	    	}
-	    	catch (Throwable ex) {
+	    	catch (Exception ex) {
 	    		return parseDecimal(value);
 	    	}    			    		
     	}
@@ -750,7 +750,7 @@ public class ParserUtils {
     	    	try {
     	    		return parseDecimalWithComma(value);
     	    	}
-    	    	catch (Throwable ex) {
+    	    	catch (Exception ex) {
     	    		return parseDecimal(value);
     	    	}    			    		
     		}
@@ -761,7 +761,7 @@ public class ParserUtils {
     	    	try {
     	    		return parseDecimal(value);
     	    	}
-    	    	catch (Throwable ex) {
+    	    	catch (Exception ex) {
     	    		return parseDecimalWithComma(value);
     	    	}    			    		    			
     		}
@@ -770,7 +770,7 @@ public class ParserUtils {
 	    		// we will assume it's a grouping separator
 	    		return parseDecimalWithComma(value);
 	    	}
-	    	catch (Throwable ex) {
+	    	catch (Exception ex) {
 	    		return parseDecimal(value);
 	    	}    			    		
     	}

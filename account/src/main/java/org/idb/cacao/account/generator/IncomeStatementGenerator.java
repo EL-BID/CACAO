@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -53,7 +54,7 @@ public class IncomeStatementGenerator implements CustomDataGenerator {
 	private int providedYear;
 
 	public IncomeStatementGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
-			throws Exception {
+			throws GeneralException {
 		
 		if (records>=0 && records!=1)
 			throw new UnsupportedOperationException("When generating data for template '"+template.getName()

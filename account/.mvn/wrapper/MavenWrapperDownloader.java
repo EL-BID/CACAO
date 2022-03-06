@@ -94,7 +94,7 @@ public class MavenWrapperDownloader {
         }
     }
 
-    private static void downloadFileFromURL(String urlString, File destination) throws Exception {
+    private static void downloadFileFromURL(String urlString, File destination) throws GeneralException {
         if (System.getenv("MVNW_USERNAME") != null && System.getenv("MVNW_PASSWORD") != null) {
             String username = System.getenv("MVNW_USERNAME");
             char[] password = System.getenv("MVNW_PASSWORD").toCharArray();

@@ -47,7 +47,7 @@ public class GeneralLedgerValidationsTests {
 	 * Validates an arbitrary General Ledger that should be OK
 	 */
 	@Test
-	public void validateOKLedger() throws Exception {
+	public void validateOKLedger() throws ParseException {
 		
 		// Prepare the test case scenario
 		
@@ -79,7 +79,7 @@ public class GeneralLedgerValidationsTests {
 	 * Validates an arbitrary General Ledger that should be considered unbalanced
 	 */
 	@Test
-	public void validateUnbalancedLedger() throws Exception {
+	public void validateUnbalancedLedger() throws ParseException {
 		
 		// Prepare the test case scenario
 		
@@ -114,7 +114,7 @@ public class GeneralLedgerValidationsTests {
 	 * Validates an arbitrary General Ledger that should be considered unbalanced
 	 */
 	@Test
-	public void validateUnbalancedLedger2() throws Exception {
+	public void validateUnbalancedLedger2() throws ParseException {
 		
 		// Prepare the test case scenario
 		

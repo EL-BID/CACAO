@@ -111,7 +111,7 @@ public class ResourceMonitorService implements Runnable {
 		try {
 			scheduled = service.scheduleWithFixedDelay(this, 0, delayMinutes, TimeUnit.MINUTES);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.WARNING, "Error while starting ResourceMonitorService", ex);
 		}
 	}
@@ -121,7 +121,7 @@ public class ResourceMonitorService implements Runnable {
 			try {
 				scheduled.cancel(/*mayInterruptIfRunning*/false);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.WARNING, "Error while stopping ResourceMonitorService", ex);
 			}
 		}
@@ -135,7 +135,7 @@ public class ResourceMonitorService implements Runnable {
 			
 			systemMetricsRepository.save(metrics);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.WARNING, "Error while performing resource monitor task", ex);
 		}
 	}
@@ -157,7 +157,7 @@ public class ResourceMonitorService implements Runnable {
 			metrics.setDiskTemporaryFilesFreeBytes(free_space);
 			metrics.setDiskTemporaryFilesUsedBytes(total_space - free_space);
 			metrics.setRestarted(firstReport.getAndSet(false));
-		} catch (Throwable ex) { }
+		} catch (Exception ex) { }
 		return metrics;
 	}
 	
@@ -169,7 +169,7 @@ public class ResourceMonitorService implements Runnable {
 			metrics.setMemoryFreeBytes(freePhysicalMemorySize.longValue());
 			metrics.setMemoryUsedBytes(totalPhysicalMemorySize.longValue()-freePhysicalMemorySize.longValue());
 		}
-		catch (Throwable ex) {			
+		catch (Exception ex) {			
 		}
 	}
 	

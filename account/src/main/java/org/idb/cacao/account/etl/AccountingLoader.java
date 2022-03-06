@@ -60,6 +60,7 @@ import org.idb.cacao.api.DomainLanguage;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ETLContext.LoadDataStrategy;
 import org.idb.cacao.api.ETLContext.TaxpayerRepository;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.ValidatedDataFieldNames;
@@ -473,7 +474,7 @@ public class AccountingLoader {
 							}
 							return accountInfo;
 						}
-						catch (Throwable ex) {
+						catch (RuntimeException e) {
 							return Optional.empty();
 						}
 					}
@@ -490,14 +491,14 @@ public class AccountingLoader {
 			.expireAfterWrite(10, TimeUnit.MINUTES)
 			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
 				@Override
-				public Optional<Map<String,Object>> load(String taxPayerId) throws Exception {
+				public Optional<Map<String,Object>> load(String taxPayerId) throws GeneralException {
 					if (taxPayerId==null || repository==null)
 						return Optional.empty();
 					else {
 						try {
 							return repository.getTaxPayerData(taxPayerId).map(IndexNamesUtils::normalizeAllKeysForES);
 						}
-						catch (Throwable ex) {
+						catch (RuntimeException e) {
 							return Optional.empty();
 						}
 					}
@@ -654,8 +655,8 @@ public class AccountingLoader {
 
 				try {
 					context.getLoadDataStrategy().delete(index, taxPayerId, taxPeriodNumber);
-				} catch (Throwable ex) {
-					log.log(Level.SEVERE, "Error while deleting previous published data at "+index+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
+				} catch (Exception e) {
+					log.log(Level.SEVERE, "Error while deleting previous published data at "+index+" regarding "+taxPayerId+" and period "+taxPeriodNumber, e);
 				}
 
 			}
@@ -778,8 +779,8 @@ public class AccountingLoader {
 				try {
 					loader.commit();
 				}
-				catch (Throwable ex) {
-					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
+				catch (RuntimeException e) {
+					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, e);
 					success = false;
 				}
 				loader.close();
@@ -799,9 +800,9 @@ public class AccountingLoader {
 			return success;
 			
 		}
-		catch (Throwable ex) {
+		catch (Exception e) {
 			String fileId = (context==null || context.getDocumentUploaded()==null) ? null : context.getDocumentUploaded().getFileId();
-			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, ex);
+			log.log(Level.SEVERE, "Error while performing ETL regarding file "+fileId, e);
 			return false;
 		}
 	}

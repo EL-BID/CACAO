@@ -281,7 +281,7 @@ public class SystemUIController {
 		try {
 			es_cluster_health = ESUtils.getClusterStatus(elasticsearchClient);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.WARNING, "Error while retrieving ElasticSearch cluster health information", ex);
 			es_cluster_health = null;
 		}
@@ -352,7 +352,7 @@ public class SystemUIController {
 				es_indices.addChild(new MenuItem(tabular_html.toString()).chkForHTMLContents(true));
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.WARNING, "Error while retrieving ElasticSearch summary about all the indices", ex);
 			es_indices.addChild(new MenuItem(text("sysinfo.no.info")).withActive(false));
 		}
@@ -410,7 +410,7 @@ public class SystemUIController {
 
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.WARNING, "Error while retrieving Kafka summary", ex);
 			kafka_info.addChild(new MenuItem(text("sysinfo.no.info")).withActive(false));			
 		}

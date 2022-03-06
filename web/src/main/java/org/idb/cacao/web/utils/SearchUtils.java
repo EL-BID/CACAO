@@ -601,7 +601,7 @@ public class SearchUtils {
 		try {
 			p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return;
 		}
 		for (Object enum_value:enum_type.getEnumConstants()) {
@@ -618,7 +618,7 @@ public class SearchUtils {
 					try {
 						s = messageSource.getMessage(s, null, LocaleContextHolder.getLocale());
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						s = null;
 					}
 					if (s!=null && p.matcher(s).find()) {
@@ -656,7 +656,7 @@ public class SearchUtils {
 		try {
 			return StreamSupport.stream(repository.findAll().spliterator(),false);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			
 			if (ErrorUtils.isErrorWindowTooLarge(ex)) {
 				
