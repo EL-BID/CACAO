@@ -80,9 +80,9 @@ public enum ValueTreatment implements Function<Double,Double> {
 			return v;
 		switch (this) {
 		case ROUND:
-			return Double.valueOf(Math.round(((Number)v).doubleValue()));
+			return Double.valueOf(Math.round((v).doubleValue()));
 		case TRUNCATE:
-			return Math.floor(((Number)v).doubleValue());
+			return Math.floor((v).doubleValue());
 		default: // NONE
 			return v;
 		}
@@ -92,6 +92,9 @@ public enum ValueTreatment implements Function<Double,Double> {
 	 * Formats the decimal value according to localized information.
 	 */
 	public String format(Number v, org.thymeleaf.expression.Numbers numbersFormat) {
+		
+		final String DEFAULT = "DEFAULT";
+		
 		if (v==null)
 			return null;
 		if ((v instanceof Double) && (Double.isNaN((Double)v) || Double.isInfinite((Double)v)))
@@ -100,11 +103,11 @@ public enum ValueTreatment implements Function<Double,Double> {
 			return null;
 		switch (this) {
 		case ROUND:
-			return numbersFormat.formatInteger(Double.valueOf(Math.round(((Number)v).doubleValue())), /*minIntegerDigits*/1, /*thousandsPointType*/"DEFAULT");
+			return numbersFormat.formatInteger(Double.valueOf(Math.round((v).doubleValue())), /*minIntegerDigits*/1, /*thousandsPointType*/DEFAULT);
 		case TRUNCATE:
-			return numbersFormat.formatInteger(Math.floor(((Number)v).doubleValue()), /*minIntegerDigits*/1, /*thousandsPointType*/"DEFAULT");
+			return numbersFormat.formatInteger(Math.floor((v).doubleValue()), /*minIntegerDigits*/1, /*thousandsPointType*/DEFAULT);
 		default: // NONE
-			return numbersFormat.formatDecimal(v, /*minIntegerDigits*/1, /*thousandsPointType*/"DEFAULT", /*decimalDigits*/2, /*decimalPointType*/"DEFAULT");
+			return numbersFormat.formatDecimal(v, /*minIntegerDigits*/1, /*thousandsPointType*/DEFAULT, /*decimalDigits*/2, /*decimalPointType*/DEFAULT);
 		}		
 	}
 }

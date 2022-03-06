@@ -48,6 +48,7 @@ import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.Utils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -88,27 +89,27 @@ public class DocumentStoreService {
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
     			.query(QueryBuilders.idsQuery().addIds(doc.getId()));   
     	searchRequest.source(searchSourceBuilder);
-    	final SearchResponse resp;
+    	final SearchResponse sresp;
 		try {
-			resp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (IOException ex) {
 			if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex))
 				return; // no match
 			log.log(Level.SEVERE, ex, () -> "Error while fetching document details about document "+doc.getId()+" "+template);
 			throw new GeneralException(messageSource.getMessage("general_error_msg1", null, LocaleContextHolder.getLocale()));
 		}
-		if (resp!=null) 
+		if (sresp!=null) 
 		{
-	    	log.log(Level.FINE, () -> "User "+auth.getName()+" requested details about document "+doc.getId()+" "+template+" and got "+resp.getHits().getTotalHits().value+" response in "+resp.getTook());
+	    	log.log(Level.FINE, () -> "User "+auth.getName()+" requested details about document "+doc.getId()+" "+template+" and got "+Utils.getTotalHits(sresp)+" response in "+sresp.getTook());
 	    	
-	    	if (resp.isTimedOut() || Boolean.TRUE.equals(resp.isTerminatedEarly())) {
+	    	if (sresp.isTimedOut() || Boolean.TRUE.equals(sresp.isTerminatedEarly())) {
 	    		throw new GeneralException(messageSource.getMessage("timed_out", null, LocaleContextHolder.getLocale()));
 	    	}
-	    	else if (resp.getHits().getTotalHits().value==0) {
+	    	else if (Utils.getTotalHits(sresp)==0) {
 	    		throw new GeneralException(messageSource.getMessage("doc_not_found", null, LocaleContextHolder.getLocale()));
 	    	}
 	    	else {
-	    		for (SearchHit hit:resp.getHits()) {
+	    		for (SearchHit hit:sresp.getHits()) {
 	    			Map<String,Object> source = hit.getSourceAsMap();
 	    			consumer.accept(source);
 	    		}
@@ -163,7 +164,7 @@ public class DocumentStoreService {
 			throw new RuntimeException(ex);
 		}
 		
-    	return sresp.getHits().getTotalHits().value!=0;
+    	return Utils.getTotalHits(sresp)!=0;
 	}
 
 	/**
@@ -211,7 +212,7 @@ public class DocumentStoreService {
 			throw new RuntimeException(ex);
 		}
 		
-    	return sresp.getHits().getTotalHits().value!=0;
+    	return Utils.getTotalHits(sresp)!=0;
 	}
 
 	/**
@@ -260,7 +261,7 @@ public class DocumentStoreService {
 			throw new RuntimeException(ex);
 		}
 		
-    	if (sresp.getHits().getTotalHits().value==0) {
+    	if (Utils.getTotalHits(sresp)==0) {
     		return null;	// No match
     	}
     	else {
@@ -328,7 +329,7 @@ public class DocumentStoreService {
 		
 		Map<String,Map<String,Integer>> statistics = new TreeMap<>();
     	
-    	if (sresp.getHits().getTotalHits().value==0) {
+    	if (Utils.getTotalHits(sresp)==0) {
     		return Collections.emptyMap();	// No taxpayers have uploaded files for the past months
     	}
     	else {

@@ -162,7 +162,7 @@ public class ShareholdingLoader {
 			if (custom_share_type_dt.size()==1)
 				share_type_dt = custom_share_type_dt.get(0);
 			else if (custom_share_type_dt.size()>1)
-				share_type_dt = custom_share_type_dt.stream().sorted(Comparator.comparing(DomainTable::getDomainTableCreateTime).reversed()).findFirst().get();
+				share_type_dt = custom_share_type_dt.stream().sorted(Comparator.comparing(DomainTable::getDomainTableCreateTime).reversed()).findFirst().orElse(custom_share_type_dt.get(0));
 			else
 				share_type_dt = AccountBuiltInDomainTables.SHARE_TYPE;
 

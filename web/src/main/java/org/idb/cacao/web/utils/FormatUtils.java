@@ -40,17 +40,17 @@ public class FormatUtils {
 	/**
 	 * General purpose formatter for numbers with 2 fraction digits
 	 */
-	public static NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
+	private static NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
 	
 	/**
 	 * General purpose formatter for numbers with no fraction digits
 	 */
-	public static NumberFormat quantityFormat = NumberFormat.getNumberInstance(locale);
+	private static NumberFormat quantityFormat = NumberFormat.getNumberInstance(locale);
 	
 	/**
 	 * General purpose formatter for numbers that represents a percentage value
 	 */
-	public static NumberFormat percentageFormat = NumberFormat.getPercentInstance(locale);
+	private static NumberFormat percentageFormat = NumberFormat.getPercentInstance(locale);
 	
 	static { 
 		numberFormat.setMaximumFractionDigits(2);
@@ -65,6 +65,18 @@ public class FormatUtils {
 		percentageFormat.setMinimumFractionDigits(2);
 		percentageFormat.setRoundingMode(RoundingMode.CEILING);
 		percentageFormat.setGroupingUsed(true);
+	}
+	
+	public static NumberFormat getNumberFormat() {
+		return FormatUtils.numberFormat;
+	}
+	
+	public static NumberFormat getQuantityFormat() {
+		return FormatUtils.quantityFormat;
+	}
+	
+	public static NumberFormat getPercentageFormat() {
+		return FormatUtils.percentageFormat;
 	}
 	
 }

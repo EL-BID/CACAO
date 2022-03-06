@@ -1475,7 +1475,9 @@ public class AdminService {
 					ESUtils.deleteIndex(service.elasticsearchClient, indexName);
 					deletedIndices++;
 				}
-				catch (Exception ex) { }
+				catch (Exception ex) {
+					log.log(Level.INFO, ex.getMessage(), ex);
+				}
 			}
 			report.append("Deleted ").append(deletedIndices).append(" indices containing ").append(deletedDocuments).append(" validated data of uploaded files.\n");
 		}

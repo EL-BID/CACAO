@@ -277,7 +277,9 @@ public class UserService {
 			Optional<Integer> page, 
 			Optional<Integer> size) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messages), User.class, elasticsearchClient, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
+			if ( filters.isPresent() )
+				return SearchUtils.doSearch(filters.get().wiredTo(messages), User.class, elasticsearchClient, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
+			return null;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -519,6 +521,7 @@ public class UserService {
 	 * Returns the URI for access to Dashboards. If the user has a specific taxpayer ID, he will be redirected
 	 * to a private SPACE at Kibana that corresponds to his ID. Otherwise, returns the link to the 'default space'.
 	 */
+	@Transactional
 	public String getDashboardsURI() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		User user = (auth==null) ? null : getUser(auth);

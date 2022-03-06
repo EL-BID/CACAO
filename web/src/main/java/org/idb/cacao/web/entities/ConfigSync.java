@@ -178,4 +178,9 @@ public class ConfigSync implements Serializable, Cloneable {
 		}
 		return false;
 	}
+
+	@Override
+	protected Object clone() throws CloneNotSupportedException {
+		return super.clone();
+	}
 }

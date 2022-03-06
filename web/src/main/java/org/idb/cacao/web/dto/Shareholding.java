@@ -76,7 +76,7 @@ public class Shareholding implements Comparable<Shareholding> {
 	}
 	
 	public String getShareAmountAsString() {
-		return FormatUtils.numberFormat.format(shareAmount);
+		return FormatUtils.getNumberFormat().format(shareAmount);
 	}
 
 	public void setShareAmount(double shareAmount) {
@@ -104,7 +104,7 @@ public class Shareholding implements Comparable<Shareholding> {
 	}
 	
 	public String getSharePercentageAsString() {
-		return FormatUtils.percentageFormat.format(sharePercentage/100);
+		return FormatUtils.getPercentageFormat().format(sharePercentage/100);
 	}
 
 	public void setSharePercentage(double sharePercentage) {
@@ -116,7 +116,7 @@ public class Shareholding implements Comparable<Shareholding> {
 	}
 	
 	public String getShareQuantityAsString() {
-		return FormatUtils.numberFormat.format(shareQuantity);
+		return FormatUtils.getNumberFormat().format(shareQuantity);
 	}
 
 	public void setShareQuantity(double shareQuantity) {

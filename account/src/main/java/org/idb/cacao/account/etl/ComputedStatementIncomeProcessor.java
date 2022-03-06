@@ -194,7 +194,7 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 		if (custom_sci_dt.size()==1)
 			sci_dt = custom_sci_dt.get(0);
 		else if (custom_sci_dt.size()>1)
-			sci_dt = custom_sci_dt.stream().sorted(Comparator.comparing(DomainTable::getDomainTableCreateTime).reversed()).findFirst().get();
+			sci_dt = custom_sci_dt.stream().sorted(Comparator.comparing(DomainTable::getDomainTableCreateTime).reversed()).findFirst().orElse(sci_dt = custom_sci_dt.get(0));
 		else
 			sci_dt = AccountBuiltInDomainTables.ACCOUNT_SCI;
 		

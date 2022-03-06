@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.utils.generators;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -37,7 +37,7 @@ public class FileGenerators {
 	
 	// Registers all built-in FileFormat implementations
 	static {
-		allFormats = new HashMap<>();
+		allFormats = new EnumMap<>(DocumentFormat.class);
 		registerFileGenerator(DocumentFormat.XLS, ExcelGenerator::new);
 	}
 	

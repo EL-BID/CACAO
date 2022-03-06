@@ -24,7 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -146,8 +144,8 @@ public class PDFParser extends FileParserAdapter {
 		try {
 			
 			final PDFParser parser = this;
-			final int size = allFieldsValues.isEmpty() ? 0 : getSize(allFieldsValues.values());
-							
+			final int size = allFieldsValues.isEmpty() ? 0 : 
+				allFieldsValues.values().stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst().orElse(0);							
 			
 			return new DataIterator() {
 				
@@ -177,13 +175,6 @@ public class PDFParser extends FileParserAdapter {
 		}
 		
 		return null;
-	}
-
-	private int getSize(Collection<List<Object>> allValues) {		
-		Optional<Integer> value = allValues.stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst();
-		if ( value.isPresent() )
-			return value.get();
-		return 0;
 	}
 
 	/**

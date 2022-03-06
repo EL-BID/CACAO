@@ -155,7 +155,7 @@ public class FileValidatedConsumerService {
 			
 			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
 					doc.getTemplateVersion());
-			if (template == null || !template.isPresent()) {
+			if (!template.isPresent()) {
 				throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version "
 						+ doc.getTemplateVersion() + " wasn't found in database.");
 			}
@@ -181,7 +181,7 @@ public class FileValidatedConsumerService {
 			// Check for domain-specific validations related to a built-in archetype
 			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
 				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());
-				if (archetype != null && archetype.isPresent()) {
+				if (archetype.isPresent()) {
 					
 					should_perform_general_etl = false; // prevents 'two ETL's over the same document
 					

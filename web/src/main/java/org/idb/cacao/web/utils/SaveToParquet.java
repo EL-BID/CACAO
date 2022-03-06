@@ -266,11 +266,11 @@ public class SaveToParquet implements Closeable {
 	public static NanoTime toNanoTime(java.util.Date d) {
 		Instant timestamp = (d instanceof java.sql.Date) ? Instant.ofEpochMilli(new java.util.Date(d.getTime()).toInstant().toEpochMilli()) 
 				: Instant.ofEpochMilli(d.toInstant().toEpochMilli());
-		ZonedDateTime date_time = timestamp.atZone(ZoneId.systemDefault());
-		long julian_day = date_time.getLong(java.time.temporal.JulianFields.JULIAN_DAY);
-		long time_in_seconds = (date_time.getHour()*60+date_time.getMinute())*60+date_time.getSecond();
-		long nanos = date_time.getNano();
-		return new NanoTime((int)julian_day, time_in_seconds * 1_000_000_000L + nanos);
+		ZonedDateTime dateTime = timestamp.atZone(ZoneId.systemDefault());
+		long julianDay = dateTime.getLong(java.time.temporal.JulianFields.JULIAN_DAY);
+		long timeInSeconds = (dateTime.getHour()*60L+dateTime.getMinute())*60L+dateTime.getSecond();
+		long nanos = dateTime.getNano();
+		return new NanoTime((int)julianDay, timeInSeconds * 1_000_000_000L + nanos);
 	}
 
 }

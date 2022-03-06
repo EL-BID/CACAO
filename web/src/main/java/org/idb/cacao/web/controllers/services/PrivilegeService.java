@@ -20,7 +20,7 @@
 package org.idb.cacao.web.controllers.services;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +48,9 @@ public class PrivilegeService {
 	@Autowired
 	private Environment env;
 
-	private volatile Map<UserProfile,Set<SystemPrivilege>> map_user_profiles_to_privileges;
+	private Map<UserProfile,Set<SystemPrivilege>> map_user_profiles_to_privileges;
 
-	private volatile Map<SystemPrivilege,Set<UserProfile>> map_privileges_to_user_profiles;
+	private Map<SystemPrivilege,Set<UserProfile>> map_privileges_to_user_profiles;
 	
 	/**
 	 * Returns system privileges associated to user profile
@@ -98,31 +98,27 @@ public class PrivilegeService {
 
 	/**
 	 * Populates internal maps with information provided with application properties
-	 */
-	private void assertInternalMaps() {
+	 */	
+	private synchronized void assertInternalMaps() {
 		if (map_user_profiles_to_privileges==null) {
-			synchronized (this) {
-				if (map_user_profiles_to_privileges==null) {
-					Map<UserProfile,Set<SystemPrivilege>> temp_map_user_profiles_to_privileges = new HashMap<>();
-					Map<SystemPrivilege,Set<UserProfile>> temp_map_privileges_to_user_profiles = new HashMap<>();
-					
-					for (SystemPrivilege privilege: SystemPrivilege.values()) {
-						String property = getEnvProperty(privilege);
-						Set<UserProfile> user_profiles = parseUserProfileNames(property);
-						temp_map_privileges_to_user_profiles.put(privilege, user_profiles);
-						for (UserProfile profile: user_profiles) {
-							temp_map_user_profiles_to_privileges.computeIfAbsent(profile, k->new TreeSet<>()).add(privilege);
-						}
-					}
-
-					for (UserProfile profile: UserProfile.values()) {
-						temp_map_user_profiles_to_privileges.computeIfAbsent(profile, k->new TreeSet<>());
-					}
-
-					this.map_user_profiles_to_privileges = temp_map_user_profiles_to_privileges;
-					this.map_privileges_to_user_profiles = temp_map_privileges_to_user_profiles;
+			Map<UserProfile,Set<SystemPrivilege>> tempMapUserProfilesToPrivileges = new EnumMap<>(UserProfile.class);
+			Map<SystemPrivilege,Set<UserProfile>> tempMapPrivilegesToUserProfiles = new EnumMap<>(SystemPrivilege.class);
+			
+			for (SystemPrivilege privilege: SystemPrivilege.values()) {
+				String property = getEnvProperty(privilege);
+				Set<UserProfile> userProfiles = parseUserProfileNames(property);
+				tempMapPrivilegesToUserProfiles.put(privilege, userProfiles);
+				for (UserProfile profile: userProfiles) {
+					tempMapUserProfilesToPrivileges.computeIfAbsent(profile, k->new TreeSet<>()).add(privilege);
 				}
 			}
+
+			for (UserProfile profile: UserProfile.values()) {
+				tempMapUserProfilesToPrivileges.computeIfAbsent(profile, k->new TreeSet<>());
+			}
+
+			this.map_user_profiles_to_privileges = tempMapUserProfilesToPrivileges;
+			this.map_privileges_to_user_profiles = tempMapPrivilegesToUserProfiles;
 		}
 	}
 	

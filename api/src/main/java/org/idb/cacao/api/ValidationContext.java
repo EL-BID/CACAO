@@ -19,14 +19,19 @@
  *******************************************************************************/
 package org.idb.cacao.api;
 
-import static org.idb.cacao.api.utils.ParserUtils.*;
+import static org.idb.cacao.api.utils.ParserUtils.isDMY;
+import static org.idb.cacao.api.utils.ParserUtils.isMDY;
+import static org.idb.cacao.api.utils.ParserUtils.isYMD;
+import static org.idb.cacao.api.utils.ParserUtils.parseDMY;
+import static org.idb.cacao.api.utils.ParserUtils.parseMDY;
+import static org.idb.cacao.api.utils.ParserUtils.parseTimestamp;
+import static org.idb.cacao.api.utils.ParserUtils.parseTimestampES;
+import static org.idb.cacao.api.utils.ParserUtils.parseTimestampWithMS;
+import static org.idb.cacao.api.utils.ParserUtils.parseYMD;
 
 import java.nio.file.Path;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -41,6 +46,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.utils.ParserUtils;
 import org.springframework.context.MessageSource;
 
 /**
@@ -51,74 +57,6 @@ import org.springframework.context.MessageSource;
  *
  */
 public class ValidationContext {
-
-    /**
-     * Date format that conforms to ISO 8601
-     */
-    public static final ThreadLocal<SimpleDateFormat> ISO_8601_DATE = new ThreadLocal<SimpleDateFormat>() {
-
-		@Override
-		protected SimpleDateFormat initialValue() {
-			return new SimpleDateFormat("yyyy-MM-dd");
-		}
-    	
-    };
-	
-    /**
-     * Timestamp format that conforms to ISO 8601
-     */
-    public static final ThreadLocal<SimpleDateFormat> ISO_8601_TIMESTAMP = new ThreadLocal<SimpleDateFormat>() {
-
-		@Override
-		protected SimpleDateFormat initialValue() {
-			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		}
-    	
-    };
-
-    /**
-     * Number format using dot as decimal separator and no grouping separator
-     */
-    private static final ThreadLocal<DecimalFormat> tlDecimalFormat = new ThreadLocal<DecimalFormat>() {
-    	  
-		@Override
-		protected DecimalFormat initialValue() {
-			DecimalFormatSymbols sym = new DecimalFormatSymbols();
-			sym.setDecimalSeparator('.');
-			return new DecimalFormat("######.#############", sym);
-		}
-
-    };
-    
-    /**
-     * Number format using dot as decimal separator and comma as grouping separator
-     */
-    private static final ThreadLocal<DecimalFormat> tlDecimalGroupingFormat = new ThreadLocal<DecimalFormat>() {
-    	  
-		@Override
-		protected DecimalFormat initialValue() {
-			DecimalFormatSymbols sym = new DecimalFormatSymbols();
-			sym.setDecimalSeparator('.');
-			sym.setGroupingSeparator(',');
-			return new DecimalFormat("###,###.#############", sym);
-		}
-
-    };
-
-    /**
-     * Number format using comma as decimal separator and dot as grouping separator
-     */
-    private static final ThreadLocal<DecimalFormat> tlDecimalCommaFormat = new ThreadLocal<DecimalFormat>() {
-    	  
-		@Override
-		protected DecimalFormat initialValue() {
-			DecimalFormatSymbols sym = new DecimalFormatSymbols();
-			sym.setDecimalSeparator(',');
-			sym.setGroupingSeparator('.');
-			return new DecimalFormat("###,###.#############", sym);
-		}
-
-    };
 
 	/**
 	 * Reference to the incoming file
@@ -573,19 +511,19 @@ public class ValidationContext {
     public static Number parseDecimal(String value) throws ParseException {
     	if (value==null || value.trim().length()==0)
     		return null;
-    	return tlDecimalFormat.get().parse(value);
+    	return ParserUtils.parseDecimal(value);
     }
 
     public static Number parseDecimalGrouping(String value) throws ParseException {
     	if (value==null || value.trim().length()==0)
     		return null;
-    	return tlDecimalGroupingFormat.get().parse(value);
+    	return ParserUtils.parseDecimalGrouping(value);
     }
 
     public static Number parseDecimalWithComma(String value) throws ParseException {
     	if (value==null || value.trim().length()==0)
     		return null;
-    	return tlDecimalCommaFormat.get().parse(value);
+    	return ParserUtils.parseDecimalWithComma(value);
     }
 
 	/**

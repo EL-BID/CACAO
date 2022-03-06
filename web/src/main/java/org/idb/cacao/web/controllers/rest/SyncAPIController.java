@@ -205,7 +205,7 @@ public class SyncAPIController {
 	private FileSystemStorageService fileSystemStorageService;
 	
 	@Autowired
-	private Collection<Repository<?, ?>> all_repositories;
+	private Collection<Repository<?, ?>> allRepositories;
 	
 	@Autowired
 	private SyncCommitHistoryRepository syncHistoryRepository;
@@ -234,7 +234,7 @@ public class SyncAPIController {
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") 
 			@RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) 
-			@RequestParam("end") Optional<Long> opt_end,
+			@RequestParam("end") Optional<Long> optEnd,
 			HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		
@@ -246,7 +246,7 @@ public class SyncAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
 
-    	final long end = opt_end.orElseGet(System::currentTimeMillis);
+    	final long end = optEnd.orElseGet(System::currentTimeMillis);
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 		
 		if (!isSyncPublisherEnabled()) {
@@ -321,8 +321,8 @@ public class SyncAPIController {
 					return;
 				}
 				Path p = file.toPath();
-				String entry_name = p.subpath(p.getNameCount()-4, p.getNameCount()).toString();	// keep three level subdirs names (year/month/day)
-				ZipEntry ze = new ZipEntry(entry_name);
+				String entryName = p.subpath(p.getNameCount()-4, p.getNameCount()).toString();	// keep three level subdirs names (year/month/day)
+				ZipEntry ze = new ZipEntry(entryName);
 				
 				if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>timestamp)
 					actual_start_timestamp.set(timestamp);
@@ -339,18 +339,18 @@ public class SyncAPIController {
 				}
 			});
 		
-		SyncDto sync_info = new SyncDto();
-		sync_info.setRequestedStart(new Date(start));
-		sync_info.setRequestedEnd(new Date(end));
-		sync_info.setCount(counter.longValue());
+		SyncDto syncInfo = new SyncDto();
+		syncInfo.setRequestedStart(new Date(start));
+		syncInfo.setRequestedEnd(new Date(end));
+		syncInfo.setCount(counter.longValue());
 		if (actual_start_timestamp.longValue()>0)
-			sync_info.setActualStart(new Date(actual_start_timestamp.longValue()));
+			syncInfo.setActualStart(new Date(actual_start_timestamp.longValue()));
 		if (actual_end_timestamp.longValue()>0)
-			sync_info.setActualEnd(new Date(actual_end_timestamp.longValue()));
+			syncInfo.setActualEnd(new Date(actual_end_timestamp.longValue()));
 		if (pending_timestamp.longValue()>0) {
-			sync_info.setNextStart(new Date(pending_timestamp.longValue()));
+			syncInfo.setNextStart(new Date(pending_timestamp.longValue()));
 		}
-		saveSyncDto(sync_info, zip_out);
+		saveSyncDto(syncInfo, zip_out);
 		
 		return counter.longValue();
 	}
@@ -385,13 +385,13 @@ public class SyncAPIController {
     		throw new InvalidParameter("type="+type);
     	}
     	
-    	Class<?> repository_class = findSyncRepository(type);
-    	if (repository_class==null) {
+    	Class<?> repositoryClass = findSyncRepository(type);
+    	if (repositoryClass==null) {
     		throw new InvalidParameter("type="+type);
     	}
     	
     	final long end = opt_end.orElseGet(System::currentTimeMillis);
-		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
+		final String remoteIpAddr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		if (!isSyncPublisherEnabled()) {
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for "+type+" records starting from timestamp "+start
@@ -399,18 +399,18 @@ public class SyncAPIController {
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestamp(new Date(end))
 					+") IP ADDRESS: "
-					+remote_ip_addr
+					+remoteIpAddr
 					+". But it's DISABLED at configuration!");
 			throw new GeneralException("SYNC service is disabled!");
 		}
 
-		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
+		if (!matchSyncPublisherFilterHost(remoteIpAddr)) {
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for "+type+" records starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestamp(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestamp(new Date(end))
 					+") IP ADDRESS: "
-					+remote_ip_addr
+					+remoteIpAddr
 					+". But has been REJECTED by the IP address filter!");
 			throw new InsufficientPrivilege();			
 		}
@@ -420,25 +420,25 @@ public class SyncAPIController {
 				+") and ending at timestamp "+end
 				+" ("+ParserUtils.formatTimestamp(new Date(end))
 				+") IP ADDRESS: "
-				+remote_ip_addr				
+				+remoteIpAddr				
 				+" LIMIT: "+((opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST));
 
     	final String streaming_out_filename = (type.toLowerCase())+"_"+start.toString()+".zip";
 		StreamingResponseBody responseBody = outputStream -> {
 			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
-			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncCopyBaseRecords(repository_class, start, end, zip_out,
+			ZipOutputStream zipOut = new ZipOutputStream(checksum);
+			long copiedFiles = syncCopyBaseRecords(repositoryClass, start, end, zipOut,
 					(opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST);
-			zip_out.flush();
-			zip_out.finish();
+			zipOut.flush();
+			zipOut.finish();
 			response.flushBuffer();
 			log.log(Level.INFO, "User "+user.getLogin()+" sync request for "+type+" records starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestamp(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestamp(new Date(end))
 					+") IP ADDRESS: "
-					+remote_ip_addr+
-					" FINISHED! Copied "+copied_files+" files");
+					+remoteIpAddr+
+					" FINISHED! Copied "+copiedFiles+" files");
 
 		};
 		return ResponseEntity.ok()
@@ -451,120 +451,120 @@ public class SyncAPIController {
 	 * Copies all records of some type stored in database submitted between two timestamps
 	 */
 	@SuppressWarnings("unchecked")
-	public long syncCopyBaseRecords(Class<?> repository_class,
-			long start, long end, ZipOutputStream zip_out,
+	public long syncCopyBaseRecords(Class<?> repositoryClass,
+			long start, long end, ZipOutputStream zipOut,
 			long limit) throws IOException {
 		
 		// Previous validations
 		
-		Class<?> entity = ReflectUtils.getParameterType(repository_class);
+		Class<?> entity = ReflectUtils.getParameterType(repositoryClass);
 		if (entity==null) {
-			log.log(Level.WARNING, "Could not find entity class related to '"+repository_class+"'!");
+			log.log(Level.WARNING, "Could not find entity class related to '"+repositoryClass+"'!");
 			return 0L;
 		}
-		Synchronizable sync_anon = repository_class.getAnnotation(Synchronizable.class);
-		if (sync_anon==null) {
-			log.log(Level.WARNING, "Could not find 'Synchronizable' annotation in '"+repository_class+"'!");
+		Synchronizable syncAnon = repositoryClass.getAnnotation(Synchronizable.class);
+		if (syncAnon==null) {
+			log.log(Level.WARNING, "Could not find 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;			
 		}
-		String timestamp_field = sync_anon.timestamp();
-		if (timestamp_field==null || timestamp_field.trim().length()==0) {
-			log.log(Level.WARNING, "Missing 'timestamp' field in 'Synchronizable' annotation in '"+repository_class+"'!");
+		String timestampField = syncAnon.timestamp();
+		if (timestampField==null || timestampField.trim().length()==0) {
+			log.log(Level.WARNING, "Missing 'timestamp' field in 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;						
 		}
-		Class<?> timestamp_field_type = ReflectUtils.getMemberType(entity, timestamp_field);
-		if (timestamp_field_type==null) {
-			log.log(Level.WARNING, "Not found '"+timestamp_field+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
+		Class<?> timestampFieldType = ReflectUtils.getMemberType(entity, timestampField);
+		if (timestampFieldType==null) {
+			log.log(Level.WARNING, "Not found '"+timestampField+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;									
 		}
-		final Function<Object,Object> timestamp_field_getter = ReflectUtils.getMemberGetter(entity, timestamp_field);
-		if (timestamp_field_getter==null) {
-			log.log(Level.WARNING, "Not found '"+timestamp_field+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
+		final Function<Object,Object> timestampFieldGetter = ReflectUtils.getMemberGetter(entity, timestampField);
+		if (timestampFieldGetter==null) {
+			log.log(Level.WARNING, "Not found '"+timestampField+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;									
 		}
-		if (!Date.class.isAssignableFrom(timestamp_field_type) && !OffsetDateTime.class.isAssignableFrom(timestamp_field_type)) {
-			log.log(Level.WARNING, "Wrong type for '"+timestamp_field+"' field in '"+entity.getName()+"' class ("+timestamp_field_type.getName()+"). This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
+		if (!Date.class.isAssignableFrom(timestampFieldType) && !OffsetDateTime.class.isAssignableFrom(timestampFieldType)) {
+			log.log(Level.WARNING, "Wrong type for '"+timestampField+"' field in '"+entity.getName()+"' class ("+timestampFieldType.getName()+"). This field name was informed in 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;												
 		}
 
-		String id_field = sync_anon.id();
-		if (id_field==null || id_field.trim().length()==0) {
-			log.log(Level.WARNING, "Missing 'id' field in 'Synchronizable' annotation in '"+repository_class+"'!");
+		String idField = syncAnon.id();
+		if (idField==null || idField.trim().length()==0) {
+			log.log(Level.WARNING, "Missing 'id' field in 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;						
 		}
-		final Function<Object,Object> id_field_getter = ReflectUtils.getMemberGetter(entity, id_field);
-		if (id_field_getter==null) {
-			log.log(Level.WARNING, "Not found '"+id_field+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repository_class+"'!");
+		final Function<Object,Object> idFieldGetter = ReflectUtils.getMemberGetter(entity, idField);
+		if (idFieldGetter==null) {
+			log.log(Level.WARNING, "Not found '"+idField+"' field in '"+entity.getName()+"' class. This field name was informed in 'Synchronizable' annotation in '"+repositoryClass+"'!");
 			return 0L;									
 		}
 
-    	final String entity_simple_name = entity.getSimpleName().toLowerCase();
+    	final String entitySimpleName = entity.getSimpleName().toLowerCase();
     	
-    	final String[] ignorableFieldNames = sync_anon.dontSync();
+    	final String[] ignorableFieldNames = syncAnon.dontSync();
     	final BiConsumer<Object,Object> ignorableFieldSetters[] = (ignorableFieldNames==null || ignorableFieldNames.length==0) ? null
     			: Arrays.stream(ignorableFieldNames).map(name->ReflectUtils.getMemberSetter(entity, name)).filter(f->f!=null).toArray(BiConsumer[]::new);
     	
 		// Build and run the query to match the time constraints
 		
-		Stream<?> query_results;
+		Stream<?> queryResults;
 		
 		if (isESDocument(entity)) {
-			query_results = queryESEntity(entity, timestamp_field, start, end, limit);
+			queryResults = queryESEntity(entity, timestampField, start, end, limit);
 		}
 		else {
 			log.log(Level.WARNING, "Class '"+entity.getName()+"' is not an Entity and neither a Document!");
 			return 0L;
 		}
 		
-		SyncData sync_data = new SyncData(entity_simple_name,
-				id_field_getter,
-				timestamp_field_getter,
+		SyncData syncData = new SyncData(entitySimpleName,
+				idFieldGetter,
+				timestampFieldGetter,
 				ignorableFieldSetters,
-				zip_out,
+				zipOut,
 				isFullDebugEnabled(),
 				limit);
 		
 		try {
 			
-			sync_data.iterateResults(query_results, /*checkLimit*/true);
+			syncData.iterateResults(queryResults, /*checkLimit*/true);
 			
 		}
 		finally {
-			query_results.close();
+			queryResults.close();
 		}
 
 		// If the requested start timestamp is 0L, we will also consider all those instances that have no timestamp information
 		if (start==0L) {
-			Stream<?> query_more_results = null;
+			Stream<?> queryMoreResults = null;
 			try {
-				query_more_results = queryESEntityWithNullTimestamp(entity, timestamp_field, limit);
+				queryMoreResults = queryESEntityWithNullTimestamp(entity, timestampField, limit);
 
-				sync_data.iterateResults(query_more_results, /*checkLimit*/false);
+				syncData.iterateResults(queryMoreResults, /*checkLimit*/false);
 				
 			}
 			catch (Exception ex) {
 				log.log(Level.WARNING, "Error while searching for "+entity.getSimpleName()+" instances with no timestamp information", ex);
 			}
 			finally {
-				if (query_more_results!=null)
-					query_more_results.close();
+				if (queryMoreResults!=null)
+					queryMoreResults.close();
 			}
 		}
 
-		SyncDto sync_info = new SyncDto();
-		sync_info.setRequestedStart(new Date(start));
-		sync_info.setRequestedEnd(new Date(end));
-		sync_info.setCount(sync_data.counter.longValue());
-		if (sync_data.actual_start_timestamp.longValue()>0)
-			sync_info.setActualStart(new Date(sync_data.actual_start_timestamp.longValue()));
-		if (sync_data.actual_end_timestamp.longValue()>0)
-			sync_info.setActualEnd(new Date(sync_data.actual_end_timestamp.longValue()));
-		if (sync_data.pending_timestamp.longValue()>0) {
-			sync_info.setNextStart(new Date(sync_data.pending_timestamp.longValue()));
+		SyncDto syncInfo = new SyncDto();
+		syncInfo.setRequestedStart(new Date(start));
+		syncInfo.setRequestedEnd(new Date(end));
+		syncInfo.setCount(syncData.counter.longValue());
+		if (syncData.actualStartTimestamp.longValue()>0)
+			syncInfo.setActualStart(new Date(syncData.actualStartTimestamp.longValue()));
+		if (syncData.actualEndTimestamp.longValue()>0)
+			syncInfo.setActualEnd(new Date(syncData.actualEndTimestamp.longValue()));
+		if (syncData.pendingTimestamp.longValue()>0) {
+			syncInfo.setNextStart(new Date(syncData.pendingTimestamp.longValue()));
 		}
-		saveSyncDto(sync_info, zip_out);
+		saveSyncDto(syncInfo, zipOut);
 
-		return sync_data.counter.longValue();
+		return syncData.counter.longValue();
 	}
 	
 	/**
@@ -578,115 +578,115 @@ public class SyncAPIController {
 	 */
 	private static class SyncData {
     	private final LongAdder counter;    	
-    	private final AtomicLong actual_start_timestamp;
-    	private final AtomicLong actual_end_timestamp;
-    	private final AtomicLong pending_timestamp;
-    	private final String entity_simple_name;
-    	private final Function<Object,Object> id_field_getter;
-    	private final Function<Object,Object> timestamp_field_getter;
+    	private final AtomicLong actualStartTimestamp;
+    	private final AtomicLong actualEndTimestamp;
+    	private final AtomicLong pendingTimestamp;
+    	private final String entitySimpleName;
+    	private final Function<Object,Object> idFieldGetter;
+    	private final Function<Object,Object> timestampFieldGetter;
     	private final BiConsumer<Object,Object> ignorableFieldSetters[];
 		private final ObjectMapper mapper;
-		private final ZipOutputStream zip_out;
-		private final Set<String> included_entries;
-		private final boolean full_debug_info;
+		private final ZipOutputStream zipOut;
+		private final Set<String> includedEntries;
+		private final boolean fullDebugInfo;
 		private final long limit;
 
-		SyncData(String entity_simple_name,
-				Function<Object,Object> id_field_getter,
-				Function<Object,Object> timestamp_field_getter,
+		SyncData(String entitySimpleName,
+				Function<Object,Object> idFieldGetter,
+				Function<Object,Object> timestampFieldGetter,
 				BiConsumer<Object,Object> ignorableFieldSetters[],
-				ZipOutputStream zip_out,
-				boolean full_debug_info,
+				ZipOutputStream zipOut,
+				boolean fullDebugInfo,
 				long limit) {
 			
 	    	counter = new LongAdder();
 	    	
-			actual_start_timestamp = new AtomicLong();
-			actual_end_timestamp = new AtomicLong();
-			pending_timestamp = new AtomicLong();
+			actualStartTimestamp = new AtomicLong();
+			actualEndTimestamp = new AtomicLong();
+			pendingTimestamp = new AtomicLong();
 			
 			mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
 			mapper.registerModule(new JavaTimeModule());
 			
-			this.entity_simple_name = entity_simple_name;
-			this.id_field_getter = id_field_getter;
-			this.timestamp_field_getter = timestamp_field_getter;
+			this.entitySimpleName = entitySimpleName;
+			this.idFieldGetter = idFieldGetter;
+			this.timestampFieldGetter = timestampFieldGetter;
 			this.ignorableFieldSetters = ignorableFieldSetters;
-			this.zip_out = zip_out;
-			this.included_entries = new HashSet<>();
-			this.full_debug_info = full_debug_info;
+			this.zipOut = zipOut;
+			this.includedEntries = new HashSet<>();
+			this.fullDebugInfo = fullDebugInfo;
 			this.limit = limit;
 			
 		}
 
-		void iterateResults(final Stream<?> query_results, final boolean checkLimit) {
-			Iterator<?> iterator = query_results.iterator();
-			Date prev_timestamp = null;
+		void iterateResults(final Stream<?> queryResults, final boolean checkLimit) {
+			Iterator<?> iterator = queryResults.iterator();
+			Date prevTimestamp = null;
 			while (iterator.hasNext()) {
 				
 				Object record = iterator.next();
 				
-	    		Object id = id_field_getter.apply(record);
+	    		Object id = idFieldGetter.apply(record);
 	    		if (id==null) {
-	    			if (full_debug_info) {
-	    				log.log(Level.INFO, "SYNC iterating results of "+entity_simple_name+" found record with no id!");
+	    			if (fullDebugInfo) {
+	    				log.log(Level.INFO, "SYNC iterating results of "+entitySimpleName+" found record with no id!");
 	    			}
 	    			continue;
 	    		}
 	    		
-				String entry_name = entity_simple_name+File.separator+id;
-				if (included_entries.contains(entry_name)) {
+				String entryName = entitySimpleName+File.separator+id;
+				if (includedEntries.contains(entryName)) {
 					// avoid duplicates
-	    			if (full_debug_info) {
-	    				log.log(Level.INFO, "SYNC iterating results of "+entity_simple_name+" found record with duplicate id: "+id);
+	    			if (fullDebugInfo) {
+	    				log.log(Level.INFO, "SYNC iterating results of "+entitySimpleName+" found record with duplicate id: "+id);
 	    			}
 					continue; 
 				}
-				included_entries.add(entry_name); 
+				includedEntries.add(entryName); 
 
-	    		Object timestamp_obj = timestamp_field_getter.apply(record);
-	    		Date timestamp = ValidationContext.toDate(timestamp_obj);
+	    		Object timestampObj = timestampFieldGetter.apply(record);
+	    		Date timestamp = ValidationContext.toDate(timestampObj);
 				if (checkLimit && counter.longValue()+1>=limit) {
-					if (prev_timestamp!=null && prev_timestamp.equals(timestamp)) {
+					if (prevTimestamp!=null && prevTimestamp.equals(timestamp)) {
 						// If we reached the limit, but the timestamp is still the same as before, we
 						// need to keep going on. Otherwise we won't be able to continue later from this point in another request.						
 					}
 					else {
 						if (timestamp!=null) {
-							pending_timestamp.set(timestamp.getTime());
+							pendingTimestamp.set(timestamp.getTime());
 						}
-		    			if (full_debug_info) {
-		    				log.log(Level.INFO, "SYNC iterating results of "+entity_simple_name+" reached the records limit of: "+limit+", current count is "+counter.intValue()+", last timestamp: "+ParserUtils.formatTimestamp(timestamp));
+		    			if (fullDebugInfo) {
+		    				log.log(Level.INFO, "SYNC iterating results of "+entitySimpleName+" reached the records limit of: "+limit+", current count is "+counter.intValue()+", last timestamp: "+ParserUtils.formatTimestamp(timestamp));
 		    			}
 						return;
 					}
 				}
 
-				ZipEntry ze = new ZipEntry(entry_name);
+				ZipEntry ze = new ZipEntry(entryName);
 	    		
 	    		if (timestamp!=null) {
 	    			long t = timestamp.getTime();
-					if (actual_start_timestamp.longValue()==0 || actual_start_timestamp.longValue()>t)
-						actual_start_timestamp.set(t);
-					if (actual_end_timestamp.longValue()==0 || actual_end_timestamp.longValue()<t)
-						actual_end_timestamp.set(t);
+					if (actualStartTimestamp.longValue()==0 || actualStartTimestamp.longValue()>t)
+						actualStartTimestamp.set(t);
+					if (actualEndTimestamp.longValue()==0 || actualEndTimestamp.longValue()<t)
+						actualEndTimestamp.set(t);
 					ze.setTime(t);
 	    		}
 	    		
 				try {
-					zip_out.putNextEntry(ze);
+					zipOut.putNextEntry(ze);
 					if (record!=null && ignorableFieldSetters!=null && ignorableFieldSetters.length>0) {
 						for (BiConsumer<Object, Object> setter: ignorableFieldSetters) {
 							setter.accept(record, null); // clears all fields that we should not copy
 						}
 					}
 					String json = mapper.writeValueAsString(record);
-					IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zip_out);
+					IOUtils.copy(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), zipOut);
 					counter.increment();
 				} catch (IOException e) {
-	    			if (full_debug_info) {
-	    				log.log(Level.INFO, "SYNC iterating results of "+entity_simple_name+" got exception on instance with ID "+id, e);
+	    			if (fullDebugInfo) {
+	    				log.log(Level.INFO, "SYNC iterating results of "+entitySimpleName+" got exception on instance with ID "+id, e);
 	    			}
 					if (ErrorUtils.isErrorThreadInterrupted(e))
 						break;
@@ -694,7 +694,7 @@ public class SyncAPIController {
 				}
 				
 				if (timestamp!=null)
-					prev_timestamp = timestamp;
+					prevTimestamp = timestamp;
 			}
 		}
 	}
@@ -776,7 +776,7 @@ public class SyncAPIController {
 			if (alt_name!=null)
 				lookup_names.add(alt_name);
 			
-			for (Repository<?,?> repo: all_repositories) {
+			for (Repository<?,?> repo: allRepositories) {
 				Class<?> found_interface = ReflectUtils.getInterfaceWithName(repo.getClass(), lookup_names);
 				if (found_interface!=null) {
 					Synchronizable sync_anon = found_interface.getAnnotation(Synchronizable.class);
@@ -806,7 +806,7 @@ public class SyncAPIController {
 	@GetMapping(value = "/sync/validated/{template}/{version}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	@ApiOperation("Downloads recently validated documents stored in database for synchronization purpose with other CACAO Server.")
 	public ResponseEntity<StreamingResponseBody> getValidatedDocuments(
-			@ApiParam("The 'template' indicates the template name associated to the index where the documents are stored. Optionally admits the index name corresponding to the validated documents.") @PathVariable("template") String template_name,
+			@ApiParam("The 'template' indicates the template name associated to the index where the documents are stored. Optionally admits the index name corresponding to the validated documents.") @PathVariable("template") String templateName,
 			@ApiParam("The 'version' indicates the template version.") @PathVariable("version") String version,
 			@ApiParam("The 'start' parameter is the 'unix epoch' of starting instant.") @RequestParam("start") Long start,
 			@ApiParam(value="The 'end' parameter is the 'unix epoch' of end instant.",required=false) @RequestParam("end") Optional<Long> opt_end,
@@ -823,51 +823,51 @@ public class SyncAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	if (template_name==null || template_name.trim().length()==0) {
-    		throw new InvalidParameter("template="+template_name);
+    	if (templateName==null || templateName.trim().length()==0) {
+    		throw new InvalidParameter("template="+templateName);
     	}
     	
-    	final String index_name;
+    	final String indexName;
     	
-    	if (template_name.startsWith(IndexNamesUtils.VALIDATED_DATA_INDEX_PREFIX)
-    		&& !template_name.contains(" ")
-    		&& template_name.contains("_v_")
-    		&& template_name.equals(IndexNamesUtils.formatIndexName(template_name))) {
+    	if (templateName.startsWith(IndexNamesUtils.VALIDATED_DATA_INDEX_PREFIX)
+    		&& !templateName.contains(" ")
+    		&& templateName.contains("_v_")
+    		&& templateName.equals(IndexNamesUtils.formatIndexName(templateName))) {
     		
     		// If the provided 'template_name' looks like an index name, let's treat it this way
-    		index_name = template_name;
+    		indexName = templateName;
     	}
     	else {
     	
 	    	final DocumentTemplate template;
 	    	
 	    	if (version!=null && version.trim().length()>0) {
-	        	Optional<DocumentTemplate> template_version = templateRepository.findByNameAndVersion(template_name, version);
-	    		if (template_version==null || !template_version.isPresent()) {
-	    			throw new InvalidParameter("template="+template_name+", version="+version);				
+	        	Optional<DocumentTemplate> templateVersion = templateRepository.findByNameAndVersion(templateName, version);
+	    		if (!templateVersion.isPresent()) {
+	    			throw new InvalidParameter("template="+templateName+", version="+version);				
 	    		}    	
-	    		template = template_version.get();
+	    		template = templateVersion.get();
 	    	}
 	    	else {
-	    		List<DocumentTemplate> template_versions = templateRepository.findByName(template_name);
-	    		if (template_versions==null || template_versions.isEmpty()) {
-	    			throw new InvalidParameter("template="+template_name);				
+	    		List<DocumentTemplate> templateVersions = templateRepository.findByName(templateName);
+	    		if (templateVersions==null || templateVersions.isEmpty()) {
+	    			throw new InvalidParameter("template="+templateName);				
 	    		}    		
-	    		if (template_versions.size()>1) {
+	    		if (templateVersions.size()>1) {
 	    			// if we have more than one possible choice, let's give higher priority to most recent ones
-	    			template_versions = template_versions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
+	    			templateVersions = templateVersions.stream().sorted(DocumentTemplate.TIMESTAMP_COMPARATOR).collect(Collectors.toList());
 	    		}
-	    		template = template_versions.get(0);
+	    		template = templateVersions.get(0);
 	    	}
 			
-			index_name = IndexNamesUtils.formatIndexNameForValidatedData(template);			
+			indexName = IndexNamesUtils.formatIndexNameForValidatedData(template);			
     	}
 
     	final long end = opt_end.orElseGet(System::currentTimeMillis);
 		final String remote_ip_addr = (request!=null && request.getRemoteAddr()!=null && request.getRemoteAddr().trim().length()>0) ? request.getRemoteAddr() : null;
 
 		if (!isSyncPublisherEnabled()) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+templateName+" documents starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
@@ -878,7 +878,7 @@ public class SyncAPIController {
 		}
 
 		if (!matchSyncPublisherFilterHost(remote_ip_addr)) {
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+templateName+" documents starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
@@ -888,7 +888,7 @@ public class SyncAPIController {
 			throw new InsufficientPrivilege();			
 		}
 
-		log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
+		log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+templateName+" documents starting from timestamp "+start
 				+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 				+") "
 				+(opt_line_start.isPresent()?("and line_start ("+opt_line_start.get()+") "):"")
@@ -898,11 +898,11 @@ public class SyncAPIController {
 				+remote_ip_addr
 				+" LIMIT: "+((opt_limit.isPresent()) ? opt_limit.get() : MAX_RESULTS_PER_REQUEST));
 
-    	final String streaming_out_filename = index_name+"_"+start.toString()+".zip";
+    	final String streaming_out_filename = indexName+"_"+start.toString()+".zip";
 		StreamingResponseBody responseBody = outputStream -> {
 			CheckedOutputStream checksum = new CheckedOutputStream(outputStream, new CRC32());
 			ZipOutputStream zip_out = new ZipOutputStream(checksum);
-			long copied_files = syncIndexedData(index_name, /*timestampFieldName*/ValidatedDataFieldNames.TIMESTAMP.getFieldName(),
+			long copied_files = syncIndexedData(indexName, /*timestampFieldName*/ValidatedDataFieldNames.TIMESTAMP.getFieldName(),
 					start, end,
 					ValidatedDataFieldNames.LINE.getFieldName(),
 					(opt_line_start.isPresent()) ? opt_line_start.get() : 0,
@@ -912,7 +912,7 @@ public class SyncAPIController {
 			zip_out.flush();
 			zip_out.finish();
 			response.flushBuffer();
-			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+template_name+" documents starting from timestamp "+start
+			log.log(Level.INFO, "User "+user.getLogin()+" sync request for stored "+templateName+" documents starting from timestamp "+start
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(start))
 					+") and ending at timestamp "+end
 					+" ("+ParserUtils.formatTimestampWithMS(new Date(end))
@@ -1704,6 +1704,7 @@ public class SyncAPIController {
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value="/sync/history", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing history of synchronization operations using pagination")
+	@Transactional
 	public PaginationData<SyncCommitHistory> getSyncHistory(Model model, 
 			@RequestParam("endpoint") Optional<String> endpoint,
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -1723,8 +1724,8 @@ public class SyncAPIController {
 		Page<SyncCommitHistory> commits;
 		if (endpoint!=null && endpoint.isPresent()) {
 			if (filters.isPresent() && !filters.get().isEmpty()) {
-				Optional<AdvancedSearch> filters_with_endpoint = Optional.of(filters.get().clone().withFilter("endpoint", endpoint.get()));
-				commits = searchCommitHistory(filters_with_endpoint, page, size, sortBy, sortOrder);
+				Optional<AdvancedSearch> filtersWithEndpoint = Optional.of(filters.get().clone().withFilter("endpoint", endpoint.get()));
+				commits = searchCommitHistory(filtersWithEndpoint, page, size, sortBy, sortOrder);
 			} else {
 				commits = searchPage(() -> syncHistoryRepository
 						.findByEndPoint(endpoint.get(), PageRequest.of(currentPage - 1, pageSize, Sort.by(direction, sortBy.orElse("timeRun")))));
@@ -1738,14 +1739,14 @@ public class SyncAPIController {
 						.findAll(PageRequest.of(currentPage - 1, pageSize, Sort.by(sortBy.orElse("timeRun")).descending())));
 			}
 		}
-		PaginationData<SyncCommitHistory> result = new PaginationData<>(commits.getTotalPages(), commits.getContent());
-		return result;
+		return new PaginationData<>(commits.getTotalPages(), commits.getContent());
 	}
 
 	@JsonView(Views.Public.class)
 	@Secured({"ROLE_SYNC_OPS"})
 	@GetMapping(value="/sync/milestone", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing current stats of synchronizable resources using pagination")
+	@Transactional
 	public PaginationData<SyncCommitMilestone> getSyncMilestone(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
@@ -1782,9 +1783,11 @@ public class SyncAPIController {
 			Optional<String> sortBy,
 			Optional<String> sortOrder) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, 
+			if ( filters.isPresent() )
+				return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitHistory.class, elasticsearchClient, page, size, 
 					Optional.of(sortBy.orElse("timeRun")), 
 					Optional.of(sortOrder.orElse("desc").equals("asc") ? SortOrder.ASC : SortOrder.DESC));
+			return null;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -1801,9 +1804,11 @@ public class SyncAPIController {
 			Optional<String> sortBy,
 			Optional<String> sortOrder) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitMilestone.class, elasticsearchClient, page, size, 
+			if ( filters.isPresent() )
+				return SearchUtils.doSearch(filters.get().wiredTo(messageSource), SyncCommitMilestone.class, elasticsearchClient, page, size, 
 					Optional.of(sortBy.orElse("endPoint")), 
 					Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC));
+			return null;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

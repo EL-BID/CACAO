@@ -22,6 +22,7 @@ package org.idb.cacao.web.dto;
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.math3.util.Precision;
 
@@ -45,7 +46,7 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 	
 	private double value;
 	
-	private transient List<Outlier> outliers;
+	private List<Outlier> outliers;
 
 	private List<Outlier> normalizedOutliers;
 	
@@ -198,5 +199,23 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 		
 		return statementOrder.compareToIgnoreCase(other.statementOrder);
 	}
-	
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(statementName, statementOrder);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AnalysisItem other = (AnalysisItem) obj;
+		return Objects.equals(statementName, other.statementName)
+				&& Objects.equals(statementOrder, other.statementOrder);
+	}
+		
 }

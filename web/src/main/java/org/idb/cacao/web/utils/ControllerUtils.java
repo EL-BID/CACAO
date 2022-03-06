@@ -91,8 +91,6 @@ public class ControllerUtils {
 	
 	public static boolean isLogged() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		return false;
     	if (auth instanceof AnonymousAuthenticationToken) 
     		return false;
     	return true;
@@ -100,8 +98,6 @@ public class ControllerUtils {
 	
 	public static boolean isSystemAdmin() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		return false;
     	if (auth instanceof AnonymousAuthenticationToken) 
     		return false;
     	Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
@@ -281,7 +277,8 @@ public class ControllerUtils {
 	    		model.addAttribute("logged_area", Boolean.TRUE);
 	    	}
     	}
-	    catch (Exception ex) { }
+	    catch (Exception ex) {	    	
+	    }
     }
 
     /**

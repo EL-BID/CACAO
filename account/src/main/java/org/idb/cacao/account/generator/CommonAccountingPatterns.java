@@ -98,7 +98,7 @@ public enum CommonAccountingPatterns {
 			);
 		}
 		else if (debits==1) {
-			Entry debit = Arrays.stream(entries).filter(Entry::isDebit).findAny().get();
+			Entry debit = Arrays.stream(entries).filter(Entry::isDebit).findAny().orElse(new Entry(null,true,0));
 			double logNormalMed = Math.log(debit.getValue());
 			double logNormalVar = Math.min(logNormalMed-1, 6.0);
 			double amount = r.nextRandomLogNormal(logNormalMed, logNormalVar).doubleValue();
@@ -126,7 +126,7 @@ public enum CommonAccountingPatterns {
 			return new_entries;
 		}
 		else if (credits==1) {
-			Entry credit = Arrays.stream(entries).filter(Entry::isCredit).findAny().get();
+			Entry credit = Arrays.stream(entries).filter(Entry::isCredit).findAny().orElse(new Entry(null,false,0));
 			double logNormalMed = Math.log(credit.getValue());
 			double logNormalVar = Math.min(logNormalMed-1, 6.0);
 			double amount = r.nextRandomLogNormal(logNormalMed, logNormalVar).doubleValue();

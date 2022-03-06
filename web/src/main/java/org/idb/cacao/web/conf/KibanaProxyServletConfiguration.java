@@ -159,23 +159,23 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 	public static class KibanaProxy extends org.mitre.dsmiley.httpproxy.ProxyServlet {
 		private static final long serialVersionUID = 1L;
 		
-		private boolean sslVerifyHost;
-		private boolean authenticationEnabled;
-		private UserService userService;
-		private String kibanaSuperUser;
-		private char[] esname;
-		private char[] espass;
+		private static boolean sslVerifyHost;
+		private static boolean authenticationEnabled;
+		private static UserService userService;
+		private static String kibanaSuperUser;
+		private static char[] esname;
+		private static char[] espass;
 		private final Map<String, CheckedUserStatus> checkedUserStatusMap;
 
 		public KibanaProxy(Environment propertyResolver, ApplicationContext app) {
 			this.checkedUserStatusMap = new ConcurrentHashMap<>();
-			this.sslVerifyHost = !"false".equalsIgnoreCase(propertyResolver.getProperty("es.ssl.verifyhost"));
-			this.userService = app.getBean(UserService.class);
+			KibanaProxy.sslVerifyHost = !"false".equalsIgnoreCase(propertyResolver.getProperty("es.ssl.verifyhost"));
+			KibanaProxy.userService = app.getBean(UserService.class);
 			if (ControllerUtils.isJUnitTest()) {
 				log.log(Level.INFO, "Skipping KibanaProxy initialization because it's running in a JUnit test case");
 				return;
 			}
-			String es_username = propertyResolver.getProperty("es.user");
+			String esUsername = propertyResolver.getProperty("es.user");
 			ElasticSearchService service = app.getBean(ElasticSearchService.class);
 			try {
 				service.assertStandardSpaces();
@@ -183,20 +183,20 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 			catch (Exception ex) {
 				log.log(Level.SEVERE, "Error configuring Kibana Spaces", ex);						
 			}
-			if (es_username!=null && es_username.trim().length()>0) {
+			if (esUsername!=null && esUsername.trim().length()>0) {
 				try {
 					service.assertStandardRoles();
-					this.kibanaSuperUser = propertyResolver.getProperty("kibana.superuser");
+					KibanaProxy.kibanaSuperUser = propertyResolver.getProperty("kibana.superuser");
 					if (kibanaSuperUser!=null && kibanaSuperUser.trim().length()>0) {
-						esname = es_username.toCharArray();
+						KibanaProxy.esname = esUsername.toCharArray();
 						String p = propertyResolver.getProperty("es.password");
-						espass = (p!=null) ? p.toCharArray() : null;
+						KibanaProxy.espass = (p!=null) ? p.toCharArray() : null;
 					}
-					authenticationEnabled = true;
+					KibanaProxy.authenticationEnabled = true;
 				}
 				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error initializing KibanaProxy", ex);
-					authenticationEnabled = false; // leave authentication process for Kibana itself (will prompt user for login and password)
+					KibanaProxy.authenticationEnabled = false; // leave authentication process for Kibana itself (will prompt user for login and password)
 				}
 			}
 		}
@@ -256,7 +256,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 				servletRequest.setAttribute("kibana.proxy.username", checkedUserStatus.username);
 				servletRequest.setAttribute("kibana.proxy.usertoken", checkedUserStatus.usertoken);				
 			}
-			else if (authenticationEnabled) {
+			else if (KibanaProxy.authenticationEnabled) {
 				// If the authentication at Kibana is enforced and if 'checkUserAccountForKibanaAccess' resulted
 				// in no user token, then we assume this user is not authorized for this service.
 				servletResponse.setStatus(HttpStatus.SC_UNAUTHORIZED); // 401
@@ -291,13 +291,13 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 				
 				checkedUserStatus = new CheckedUserStatus();
 				
-				boolean is_super_user = (authenticationEnabled 
+				boolean isSuperUser = (authenticationEnabled 
 						&& kibanaSuperUser!=null && kibanaSuperUser.equalsIgnoreCase(user.getLogin())
 						&& esname!=null && espass!=null);
 
 				// If the user is a super user, use the service account
 				
-				if (is_super_user) {
+				if (isSuperUser) {
 					
 					checkedUserStatus.username = new String(esname);
 					checkedUserStatus.usertoken = new String(espass);					
@@ -308,7 +308,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 
 					// If the user is capable of writing dashboards, there should exist a personal 'space' dedicated to the user besides the 'public' ones
 					if ((user.getKibanaSpace()==null || user.getKibanaSpace().trim().length()==0)
-						&& (is_super_user || userService.hasDashboardWriteAccess(user))) {
+						&& (isSuperUser || userService.hasDashboardWriteAccess(user))) {
 						// Create a Kibana Space for private user access if the user has write access
 						try {
 							userService.createSpaceForPrivateDashboards(user, /*createCompanionRole*/authenticationEnabled);

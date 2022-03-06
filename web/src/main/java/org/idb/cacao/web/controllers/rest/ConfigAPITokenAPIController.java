@@ -80,11 +80,11 @@ public class ConfigAPITokenAPIController {
     	User user = userService.getUser(auth);
     	if (user==null)
     		throw new UserNotFoundException();
-    	String encrypted_api_token = user.getApiToken();
-    	if (encrypted_api_token==null || encrypted_api_token.trim().length()==0)    		
+    	String encryptedApiToken = user.getApiToken();
+    	if (encryptedApiToken==null || encryptedApiToken.trim().length()==0)    		
     		return ResponseEntity.ok().body(Collections.singletonMap("token",""));
-    	String api_token = keystoreService.decrypt(KeyStoreService.PREFIX_MAIL, encrypted_api_token);
-    	return ResponseEntity.ok().body(Collections.singletonMap("token",api_token));
+    	String apiToken = keystoreService.decrypt(KeyStoreService.PREFIX_MAIL, encryptedApiToken);
+    	return ResponseEntity.ok().body(Collections.singletonMap("token",apiToken));
 	}
 
 	/**
@@ -124,12 +124,12 @@ public class ConfigAPITokenAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	String api_token;
-		api_token = UUID.randomUUID().toString();
-		String encrypted_api_token = keystoreService.encrypt(KeyStoreService.PREFIX_MAIL, api_token);
-		user.setApiToken(encrypted_api_token);
+    	String apiToken;
+		apiToken = UUID.randomUUID().toString();
+		String encryptedApiToken = keystoreService.encrypt(KeyStoreService.PREFIX_MAIL, apiToken);
+		user.setApiToken(encryptedApiToken);
 		userRepository.saveWithTimestamp(user);
     	
-    	return ResponseEntity.ok().body(Collections.singletonMap("token",api_token));
+    	return ResponseEntity.ok().body(Collections.singletonMap("token",apiToken));
 	}
 }

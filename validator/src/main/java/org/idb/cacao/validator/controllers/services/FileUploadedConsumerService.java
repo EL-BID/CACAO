@@ -161,7 +161,7 @@ public class FileUploadedConsumerService {
 
 			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
 					doc.getTemplateVersion());
-			if (template == null || !template.isPresent()) {
+			if (!template.isPresent()) {
 				doc = setSituation(doc, DocumentSituation.INVALID);
 				validations.addLogError("{doc.error.template.not.found}");
 				saveValidationMessages(validationContext);
@@ -436,7 +436,7 @@ public class FileUploadedConsumerService {
 			// Check for domain-specific validations related to a built-in archetype
 			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
 				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());
-				if (archetype != null && archetype.isPresent()) {
+				if (archetype.isPresent()) {
 
 					boolean ok = archetype.get().validateDocumentUploaded(validationContext);
 					if (!ok) {

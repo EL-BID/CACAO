@@ -118,13 +118,13 @@ public class FieldsConventionsService {
 	/**
 	 * Object used for formatting decimal numbers according to the system standards
 	 */
-	private volatile Numbers numbersFormat;
+	private Numbers numbersFormat;
 
 	/**
 	 * Returns an object used to convert java.util.Date to a string representing the same timestamp according to localized
 	 * date/time format.
 	 */
-	private final ThreadLocal<SimpleDateFormat> sdfDisplay = new ThreadLocal<SimpleDateFormat>() {
+	protected final ThreadLocal<SimpleDateFormat> sdfDisplay = new ThreadLocal<SimpleDateFormat>() {
 		@Override
 		protected SimpleDateFormat initialValue() {
 			return new SimpleDateFormat(messageSource.getMessage("timestamp.format", null, LocaleContextHolder.getLocale()));
@@ -135,7 +135,7 @@ public class FieldsConventionsService {
 	 * Returns an object used to convert floating point number to a string representing the same number according to localized
 	 * format.
 	 */
-    private final ThreadLocal<DecimalFormat> decimalDisplay = new ThreadLocal<DecimalFormat>() {    	  
+	protected final ThreadLocal<DecimalFormat> decimalDisplay = new ThreadLocal<DecimalFormat>() {    	  
 		@Override
 		protected DecimalFormat initialValue() {
 			DecimalFormatSymbols sym = new DecimalFormatSymbols();
@@ -175,9 +175,9 @@ public class FieldsConventionsService {
 		if (value instanceof Date)
 			return sdfDisplay.get().format((Date)value);
 		if (value instanceof Double)
-			return decimalDisplay.get().format((Double)value);
+			return decimalDisplay.get().format(value);
 		if (value instanceof Float)
-			return decimalDisplay.get().format((Float)value);
+			return decimalDisplay.get().format(value);
 		return String.valueOf(value);
 	}
 	
@@ -203,15 +203,15 @@ public class FieldsConventionsService {
 		monthDesc =
 		Normalizer.normalize(monthDesc, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", ""); // e.g.: Março => Marco
 		
-		Pattern[] full_months_patterns = getDefaultCalendarMonthsPatterns();
-		for (int i=0; i<full_months_patterns.length; i++) {
-			Pattern p = full_months_patterns[i];
+		Pattern[] fullMonthsPatterns = getDefaultCalendarMonthsPatterns();
+		for (int i=0; i<fullMonthsPatterns.length; i++) {
+			Pattern p = fullMonthsPatterns[i];
 			if (p.matcher(monthDesc).find())
 				return i+1;
 		}
-		Pattern[] short_months_patterns = getDefaultCalendarMonthsShortPatterns();
-		for (int i=0; i<short_months_patterns.length; i++) {
-			Pattern p = short_months_patterns[i];
+		Pattern[] shortMonthsPatterns = getDefaultCalendarMonthsShortPatterns();
+		for (int i=0; i<shortMonthsPatterns.length; i++) {
+			Pattern p = shortMonthsPatterns[i];
 			if (p.matcher(monthDesc).find())
 				return i+1;
 		}
@@ -224,8 +224,8 @@ public class FieldsConventionsService {
 	public String[] getDefaultCalendarMonths() {
 		if (defaultCalendarMonths!=null)
 			return defaultCalendarMonths;
-		String months_names = messageSource.getMessage("calendar_months", null, getDocsLocale());
-		defaultCalendarMonths = Arrays.stream(months_names.split(",")).map(String::trim).toArray(String[]::new);
+		String monthsNames = messageSource.getMessage("calendar_months", null, getDocsLocale());
+		defaultCalendarMonths = Arrays.stream(monthsNames.split(",")).map(String::trim).toArray(String[]::new);
 		return defaultCalendarMonths;
 	}
 	
@@ -235,8 +235,8 @@ public class FieldsConventionsService {
 	public String[] getDefaultCalendarMonthsShort() {
 		if (defaultCalendarMonthsShort!=null)
 			return defaultCalendarMonthsShort;
-		String months_short_names = messageSource.getMessage("calendar_monthsShort", null, getDocsLocale());
-		defaultCalendarMonthsShort = Arrays.stream(months_short_names.split(",")).map(String::trim).toArray(String[]::new);
+		String monthsShortNames = messageSource.getMessage("calendar_monthsShort", null, getDocsLocale());
+		defaultCalendarMonthsShort = Arrays.stream(monthsShortNames.split(",")).map(String::trim).toArray(String[]::new);
 		return defaultCalendarMonthsShort;
 	}
 	
@@ -284,8 +284,8 @@ public class FieldsConventionsService {
 	public String[] getDefaultCalendarSemesters() {
 		if (defaultCalendarSemesters!=null)
 			return defaultCalendarSemesters;
-		String semesters_names = messageSource.getMessage("semesters", null, getDocsLocale());
-		defaultCalendarSemesters = Arrays.stream(semesters_names.split(",")).map(String::trim).toArray(String[]::new);
+		String semestersNames = messageSource.getMessage("semesters", null, getDocsLocale());
+		defaultCalendarSemesters = Arrays.stream(semestersNames.split(",")).map(String::trim).toArray(String[]::new);
 		return defaultCalendarSemesters;
 	}
 
@@ -398,8 +398,8 @@ public class FieldsConventionsService {
 			if (entry.getValue() instanceof Map) {
 				List<MenuItem> children = new ArrayList<>();
 				@SuppressWarnings("unchecked")
-				Map<String,Object> inner_struct = (Map<String,Object>)entry.getValue();
-				convertDocumentFieldIntoMenuItens(inner_struct,children,filterByItemName,fieldName);
+				Map<String,Object> innerStruct = (Map<String,Object>)entry.getValue();
+				convertDocumentFieldIntoMenuItens(innerStruct,children,filterByItemName,fieldName);
 				if (children.size()>1)
 					Collections.sort(children);
 				item.setChildren(children);
@@ -409,17 +409,16 @@ public class FieldsConventionsService {
 					output.remove(item);
 				}
 			}
-			else if (entry.getValue()!=null && (entry.getValue() instanceof Collection)) {
+			else if (entry.getValue() instanceof Collection) {
 				List<MenuItem> children = new ArrayList<>();			
-				Collection<?> inner_list = (Collection<?>)entry.getValue();
-				for (Object value:inner_list) {
+				Collection<?> innerList = (Collection<?>)entry.getValue();
+				for (Object value:innerList) {
 					if (value instanceof Map) {
 						@SuppressWarnings("unchecked")
-						Map<String,Object> inner_struct = (Map<String,Object>)value;
-						convertDocumentFieldIntoMenuItens(inner_struct,children,filterByItemName,fieldName);
+						Map<String,Object> innerStruct = (Map<String,Object>)value;
+						convertDocumentFieldIntoMenuItens(innerStruct,children,filterByItemName,fieldName);
 					}
-					else if (value!=null) {
-						if (filterByItemName==null || filterByItemName.test(fieldName))
+					else if (value!=null && (filterByItemName==null || filterByItemName.test(fieldName)) ) {
 							children.add(new MenuItem(formatValue(value)));
 					}
 				}
@@ -432,16 +431,16 @@ public class FieldsConventionsService {
 			}
 			else if (entry.getValue()!=null && (entry.getValue().getClass().isArray())) {
 				List<MenuItem> children = new ArrayList<>();
-				Object inner_array = entry.getValue();
-				int size = Array.getLength(inner_array);
+				Object innerArray = entry.getValue();
+				int size = Array.getLength(innerArray);
 				for (int i=0;i<size;i++) {
-					Object value = Array.get(inner_array, i);
+					Object value = Array.get(innerArray, i);
 					if (value==null)
 						continue;
 					if (value instanceof Map) {
 						@SuppressWarnings("unchecked")
-						Map<String,Object> inner_struct = (Map<String,Object>)value;
-						convertDocumentFieldIntoMenuItens(inner_struct,children,filterByItemName,fieldName);
+						Map<String,Object> innerStruct = (Map<String,Object>)value;
+						convertDocumentFieldIntoMenuItens(innerStruct,children,filterByItemName,fieldName);
 					}
 					else if (value!=null) {
 						if (filterByItemName==null || filterByItemName.test(fieldName))
@@ -473,10 +472,10 @@ public class FieldsConventionsService {
 	/**
 	 * Given a hierarchy of values 'parsed_contents', returns the standard field names (i.e.: concatenating group names into field names)
 	 */
-	public DocumentTemplate convertDocumentFields(Map<String,Object> parsed_contents) {
-		DocumentTemplate parsed_contents_canonical_representation = new DocumentTemplate();
-		convertDocumentFields(parsed_contents, "", parsed_contents_canonical_representation);
-		return parsed_contents_canonical_representation;
+	public DocumentTemplate convertDocumentFields(Map<String,Object> parsedContents) {
+		DocumentTemplate parsedContentsCanonicalRepresentation = new DocumentTemplate();
+		convertDocumentFields(parsedContents, "", parsedContentsCanonicalRepresentation);
+		return parsedContentsCanonicalRepresentation;
 	}
 
 	/**
@@ -490,18 +489,18 @@ public class FieldsConventionsService {
 				continue; // ignore fields with names that are too long
 			if (entry.getValue() instanceof Map) {
 				@SuppressWarnings("unchecked")
-				Map<String,Object> inner_struct = (Map<String,Object>)entry.getValue();
-				convertDocumentFields(inner_struct,fieldName,output);
+				Map<String,Object> innerStruct = (Map<String,Object>)entry.getValue();
+				convertDocumentFields(innerStruct,fieldName,output);
 			}
-			else if (entry.getValue()!=null && (entry.getValue() instanceof Collection)) {
-				Collection<?> inner_list = (Collection<?>)entry.getValue();
+			else if (entry.getValue() instanceof Collection) {
+				Collection<?> innerList = (Collection<?>)entry.getValue();
 				int i = 0;
-				for (Object value:inner_list) {
+				for (Object value:innerList) {
 					String fieldNameIdx = fieldName+"["+(i+1)+"]";
 					if (value instanceof Map) {
 						@SuppressWarnings("unchecked")
-						Map<String,Object> inner_struct = (Map<String,Object>)value;
-						convertDocumentFields(inner_struct,fieldNameIdx,output);
+						Map<String,Object> innerStruct = (Map<String,Object>)value;
+						convertDocumentFields(innerStruct,fieldNameIdx,output);
 					}
 					else if (value!=null) {
 						output.addField(fieldNameIdx);
@@ -510,17 +509,17 @@ public class FieldsConventionsService {
 				}
 			}
 			else if (entry.getValue()!=null && (entry.getValue().getClass().isArray())) {
-				Object inner_array = entry.getValue();
-				int size = Array.getLength(inner_array);
+				Object innerArray = entry.getValue();
+				int size = Array.getLength(innerArray);
 				for (int i=0;i<size;i++) {
 					String fieldNameIdx = fieldName+"["+(i+1)+"]";
-					Object value = Array.get(inner_array, i);
+					Object value = Array.get(innerArray, i);
 					if (value==null)
 						continue;
 					if (value instanceof Map) {
 						@SuppressWarnings("unchecked")
-						Map<String,Object> inner_struct = (Map<String,Object>)value;
-						convertDocumentFields(inner_struct,fieldNameIdx,output);
+						Map<String,Object> innerStruct = (Map<String,Object>)value;
+						convertDocumentFields(innerStruct,fieldNameIdx,output);
 					}
 					else if (value!=null) {
 						output.addField(fieldNameIdx);

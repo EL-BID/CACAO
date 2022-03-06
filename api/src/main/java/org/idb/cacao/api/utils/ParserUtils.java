@@ -75,6 +75,30 @@ public class ParserUtils {
     public static final int MAX_FIELD_NAME_LENGTH = 200;
     
     /**
+     * Date format that conforms to ISO 8601
+     */
+    public static final ThreadLocal<SimpleDateFormat> ISO_8601_DATE = new ThreadLocal<SimpleDateFormat>() {
+
+		@Override
+		protected SimpleDateFormat initialValue() {
+			return new SimpleDateFormat("yyyy-MM-dd");
+		}
+    	
+    };
+	
+    /**
+     * Timestamp format that conforms to ISO 8601
+     */
+    public static final ThreadLocal<SimpleDateFormat> ISO_8601_TIMESTAMP = new ThreadLocal<SimpleDateFormat>() {
+
+		@Override
+		protected SimpleDateFormat initialValue() {
+			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		}
+    	
+    };
+    
+    /**
      * Timestamp format that conforms to ISO 8601
      */
     private static final ThreadLocal<SimpleDateFormat> tlDateFormat = new ThreadLocal<SimpleDateFormat>() {
@@ -209,6 +233,23 @@ public class ParserUtils {
 			return Pattern.compile("^(\\d{4})[/\\\\\\-\\s]+([A-Z]{3,})[/\\\\\\-\\s]+(\\d{1,2})$", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 		}
 	};
+	
+	public void removeThreadLocal() {
+		ISO_8601_DATE.remove();
+		ISO_8601_TIMESTAMP.remove();
+		tlDateFormat.remove();
+		tlDateFormatWithMS.remove();
+		tlDateFormatES.remove();
+		tlDecimalFormat.remove();
+		tlDecimalGroupingFormat.remove();
+		tlDecimalCommaFormat.remove();
+		tlDateFormatMonth.remove();
+		tlDateTimeFormatMonth.remove();
+		flexible_date.remove();
+		flexible_date2.remove();
+		flexible_date4.remove();
+		flexible_date6.remove();
+	}
 
 	/**
 	 * E.g.: 2010-01-01

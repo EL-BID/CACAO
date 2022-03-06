@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.KeyPair;
@@ -102,9 +103,9 @@ public class KeyStoreService {
 				log.log(Level.SEVERE, "Could not find resource informed in '"+prefix+".ssl.key-store' application property: "+keystore_file);
 				return null;
 			}
-			try {
+			try ( InputStream in = url.openStream() ) {
 				KeyStore keystore = KeyStore.getInstance("pkcs12", "SunJSSE");
-				keystore.load(url.openStream(), keystore_password.toCharArray());
+				keystore.load(in, keystore_password.toCharArray());
 				this.keystore = keystore;
 				return keystore;
 			}

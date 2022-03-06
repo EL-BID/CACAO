@@ -53,7 +53,7 @@ public class CommunicationService {
 	/**
 	 * Maximum results returned when querying users that matches a given audience criteria
 	 */
-	public static int MAX_USERS_PER_REQUEST = 10_000;
+	private static int MAX_USERS_PER_REQUEST = 10_000;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -71,34 +71,34 @@ public class CommunicationService {
 		if (audience==null || audience.trim().length()==0)
 			return Collections.emptySet();
 		if (audience.contains(",")) {
-			Set<User> all_targeted_users = new TreeSet<>();
-			String[] multiple_audience = audience.split(",");
-			for (String part_audience: multiple_audience) {
-				Set<User> part_users = getUsersAudience(part_audience.trim());
-				if (part_users!=null && !part_users.isEmpty())
-					all_targeted_users.addAll(part_users);
+			Set<User> allTargetedUsers = new TreeSet<>();
+			String[] multipleAudience = audience.split(",");
+			for (String part_audience: multipleAudience) {
+				Set<User> partUsers = getUsersAudience(part_audience.trim());
+				if (partUsers!=null && !partUsers.isEmpty())
+					allTargetedUsers.addAll(partUsers);
 			}
-			return all_targeted_users;
+			return allTargetedUsers;
 		}
 		else {
 			audience = audience.trim();
-			Set<User> all_targeted_users = new TreeSet<>();
-			Page<User> user_audience_by_name = userRepository.findByName(audience, PageRequest.of(0, 10_000));
-			if (user_audience_by_name!=null && user_audience_by_name.hasContent())
-				all_targeted_users.addAll(user_audience_by_name.getContent());
-			User user_audience_by_login = userRepository.findByLoginIgnoreCase(audience);
-			if (user_audience_by_login!=null)
-				all_targeted_users.add(user_audience_by_login);
-			Page<User> users_audience = userRepository.findByTaxpayerId(audience, PageRequest.of(0, MAX_USERS_PER_REQUEST));
-			if (!users_audience.isEmpty())
-				all_targeted_users.addAll(users_audience.getContent());
-			UserProfile audience_as_profile = UserProfile.parse(audience);
-			if (audience_as_profile!=null) {
-				users_audience = userRepository.findByProfile(audience_as_profile, PageRequest.of(0, MAX_USERS_PER_REQUEST));
-				if (!users_audience.isEmpty())
-					all_targeted_users.addAll(users_audience.getContent());
+			Set<User> allTargetedUsers = new TreeSet<>();
+			Page<User> userAudienceByName = userRepository.findByName(audience, PageRequest.of(0, 10_000));
+			if (userAudienceByName!=null && userAudienceByName.hasContent())
+				allTargetedUsers.addAll(userAudienceByName.getContent());
+			User userAudienceByLogin = userRepository.findByLoginIgnoreCase(audience);
+			if (userAudienceByLogin!=null)
+				allTargetedUsers.add(userAudienceByLogin);
+			Page<User> usersAudience = userRepository.findByTaxpayerId(audience, PageRequest.of(0, MAX_USERS_PER_REQUEST));
+			if (!usersAudience.isEmpty())
+				allTargetedUsers.addAll(usersAudience.getContent());
+			UserProfile audienceAsProfile = UserProfile.parse(audience);
+			if (audienceAsProfile!=null) {
+				usersAudience = userRepository.findByProfile(audienceAsProfile, PageRequest.of(0, MAX_USERS_PER_REQUEST));
+				if (!usersAudience.isEmpty())
+					allTargetedUsers.addAll(usersAudience.getContent());
 			}
-			return all_targeted_users;
+			return allTargetedUsers;
 		}
 	}
 
@@ -109,19 +109,16 @@ public class CommunicationService {
 		if (audience==null || audience.trim().length()==0 || user==null)
 			return false;
 		if (audience.contains(",")) {
-			String[] multiple_audience = audience.split(",");
-			for (String part_audience: multiple_audience) {
+			String[] multipleAudience = audience.split(",");
+			for (String part_audience: multipleAudience) {
 				if (isTargetAudience(part_audience.trim(), user))
 					return true;
 			}
 			return false;
 		}
 		else {
-			if (user.getLogin()!=null && user.getLogin().equalsIgnoreCase(audience))
-				return true;
-			if (user.getName()!=null && user.getName().equalsIgnoreCase(audience))
-				return true;
-			if (user.getTaxpayerId()!=null && user.getTaxpayerId().equalsIgnoreCase(audience))
+			if (user.getLogin()!=null && ( user.getLogin().equalsIgnoreCase(audience) || 
+					user.getName().equalsIgnoreCase(audience)|| user.getTaxpayerId().equalsIgnoreCase(audience)) )
 				return true;
 			if (user.getProfile()!=null && (user.getProfile().getRole().equalsIgnoreCase(audience)
 					|| user.getProfile().name().equalsIgnoreCase(audience)))
@@ -139,8 +136,8 @@ public class CommunicationService {
 		if (targetProfile==null)
 			return;
 		
-		Page<User> users_with_profile = userRepository.findByProfile(targetProfile, PageRequest.of(0, 10_000));
-		if (users_with_profile==null || users_with_profile.isEmpty())
+		Page<User> usersWithProfile = userRepository.findByProfile(targetProfile, PageRequest.of(0, 10_000));
+		if (usersWithProfile==null || usersWithProfile.isEmpty())
 			return;
 		
 		if (email.isPresent()) {
@@ -149,19 +146,19 @@ public class CommunicationService {
             	log.log(Level.WARNING, "Supposed to send e-mail to users, but the SMTP configuration is missing!");
             }
             else {
-    			for (User user_audience: users_with_profile) {
+    			for (User user_audience: usersWithProfile) {
     				try {
-	        			log.log(Level.FINE, "Sending e-mail message to user "+user_audience.getName());
-	                    final SimpleMailMessage email_msg = new SimpleMailMessage();
-	                    email_msg.setSubject(title);
-	                    email_msg.setText(email.get());
-	                    email_msg.setTo(user_audience.getLogin());
-	                    email_msg.setFrom(config.getSupportEmail());
+	        			log.log(Level.FINE, String.format("Sending e-mail message to user %s",user_audience.getName()));
+	                    final SimpleMailMessage emailMsg = new SimpleMailMessage();
+	                    emailMsg.setSubject(title);
+	                    emailMsg.setText(email.get());
+	                    emailMsg.setTo(user_audience.getLogin());
+	                    emailMsg.setFrom(config.getSupportEmail());
 	
-	                    mailSender.send(email_msg);
+	                    mailSender.send(emailMsg);
     				}
     				catch (Exception ex) {
-    					log.log(Level.WARNING, "Error while sending e-mail to user "+user_audience.getLogin(), ex);
+    					log.log(Level.WARNING, String.format("Error while sending e-mail to user %s", user_audience.getLogin()), ex);
     				}
     			}
             }

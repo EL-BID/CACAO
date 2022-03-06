@@ -46,6 +46,7 @@ import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ScrollUtils;
+import org.idb.cacao.api.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -111,7 +112,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
     	SearchResponse resp = null;
 		try {
 			resp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-			return resp.getHits().getTotalHits().value>0;
+			return Utils.getTotalHits(resp)>0;
 		} catch (IOException ex) {
 			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
 				return false; // no match
@@ -164,7 +165,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
     	SearchResponse resp = null;
 		try {
 			resp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-			if (resp.getHits().getTotalHits().value>0) {
+			if (Utils.getTotalHits(resp)>0) {
 				return Optional.of(resp.getHits().getHits()[0].getSourceAsMap());
 			}
 			else {

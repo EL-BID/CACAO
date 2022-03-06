@@ -94,15 +94,15 @@ public class DashboardsAPIController {
 	@PostMapping(value = "/dashboard-copy/{space_id}/{dashboard_id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Make a copy of a dashboard from one Kibana Space to other Kibana Spaces",response=GenericResponse.class)
 	public ResponseEntity<GenericResponse> copyKibanaDashboard(
-			@PathVariable("space_id") String space_id,
-			@PathVariable("dashboard_id") String dashboard_id,
+			@PathVariable("space_id") String spaceId,
+			@PathVariable("dashboard_id") String dashboardId,
 			@RequestBody DashboardCopy dashboardCopy)
 	{
-		if (space_id==null || space_id.trim().length()==0) {
+		if (spaceId==null || spaceId.trim().length()==0) {
 			return ResponseEntity.badRequest().body(new GenericResponse(messages.getMessage("error.missingField", new Object[] {"space_id"}, LocaleContextHolder.getLocale())));
 		}
 
-		if (dashboard_id==null || dashboard_id.trim().length()==0) {
+		if (dashboardId==null || dashboardId.trim().length()==0) {
 			return ResponseEntity.badRequest().body(new GenericResponse(messages.getMessage("error.missingField", new Object[] {"dashboard_id"}, LocaleContextHolder.getLocale())));
 		}
 
@@ -121,27 +121,27 @@ public class DashboardsAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	boolean is_super_user = userService.hasKibanaUserUserAccess(user);
-    	if (!is_super_user && !userService.hasDashboardWriteAccess(user))
+    	boolean isSuperUser = userService.hasKibanaUserUserAccess(user);
+    	if (!isSuperUser && !userService.hasDashboardWriteAccess(user))
 			return ResponseEntity.badRequest().body(new GenericResponse(messages.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale())));
     	
-    	Set<ESStandardRoles> standard_roles = ESStandardRoles.getStandardRoles(user.getProfile());
+    	Set<ESStandardRoles> standardRoles = ESStandardRoles.getStandardRoles(user.getProfile());
 
     	// Check access to both source and target spaces
     	
-		if (!is_super_user) {
+		if (!isSuperUser) {
 			
 			String txid = (user.getTaxpayerId()==null || user.getTaxpayerId().trim().length()==0) ? null
 					: user.getTaxpayerId().replaceAll("\\D", ""); // removes all non-numeric digits
-			String personal_space_id = (txid==null || txid.length()==0) ? null : "user-"+txid;
+			String personalSpaceId = (txid==null || txid.length()==0) ? null : "user-"+txid;
 
-			if (!(personal_space_id!=null && String.CASE_INSENSITIVE_ORDER.compare(personal_space_id, space_id)==0)
-					&& !standard_roles.stream().anyMatch(r->r.hasDashboardPrivilege() && r.matchResource(space_id))) {
+			if (!(personalSpaceId!=null && String.CASE_INSENSITIVE_ORDER.compare(personalSpaceId, spaceId)==0)
+					&& !standardRoles.stream().noneMatch(r->r.hasDashboardPrivilege() && r.matchResource(spaceId))) {
 				return ResponseEntity.badRequest().body(new GenericResponse(messages.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale())));				
 			}
 			for (String target: dashboardCopy.getTarget()) {
-				if (!(personal_space_id!=null && String.CASE_INSENSITIVE_ORDER.compare(personal_space_id, target)==0)
-						&& !standard_roles.stream().anyMatch(r->r.hasDashboardPrivilege() && r.matchResource(target))) {
+				if (!(personalSpaceId!=null && String.CASE_INSENSITIVE_ORDER.compare(personalSpaceId, target)==0)
+						&& !standardRoles.stream().noneMatch(r->r.hasDashboardPrivilege() && r.matchResource(target))) {
 					return ResponseEntity.badRequest().body(new GenericResponse(messages.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale())));				
 				}				
 			}
@@ -153,24 +153,24 @@ public class DashboardsAPIController {
 		
 		for (String target: dashboardCopy.getTarget()) {
 			
-			if (String.CASE_INSENSITIVE_ORDER.compare(space_id, target)==0)
+			if (String.CASE_INSENSITIVE_ORDER.compare(spaceId, target)==0)
 				continue; // do not copy to itself
 
 			boolean success;
 			try {
-				success = ESUtils.copyKibanaSavedObjects(env, restTemplate, space_id, target, "dashboard", new String[] { dashboard_id });
+				success = ESUtils.copyKibanaSavedObjects(env, restTemplate, spaceId, target, "dashboard", new String[] { dashboardId });
 			} catch (Exception ex) {
 				success = false;
-				log.log(Level.SEVERE, "Error copying dashboard "+dashboard_id+" from "+space_id+" to "+target, ex);
+				log.log(Level.SEVERE, "Error copying dashboard "+dashboardId+" from "+spaceId+" to "+target, ex);
 				errors = true;
 			}
 			
 			if (success) {
 				try {
-					ESUtils.copyTransitiveDependencies(env, restTemplate, space_id, target, "dashboard", dashboard_id, /*max_iterations*/5);
+					ESUtils.copyTransitiveDependencies(env, restTemplate, spaceId, target, "dashboard", dashboardId, /*max_iterations*/5);
 				}
 				catch (Exception ex) {
-					log.log(Level.SEVERE, "Error copying transitive dependencies for dashboard "+dashboard_id+" from "+space_id+" to "+target, ex);
+					log.log(Level.SEVERE, "Error copying transitive dependencies for dashboard "+dashboardId+" from "+spaceId+" to "+target, ex);
 					errors = true;
 				}
 			}

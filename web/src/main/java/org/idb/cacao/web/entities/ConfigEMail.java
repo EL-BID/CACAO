@@ -186,7 +186,12 @@ public class ConfigEMail implements Serializable, Cloneable {
 		this.timeout = timeout;
 	}
 
-	public static enum EmailProtocol {
+	@Override
+	protected Object clone() throws CloneNotSupportedException {
+		return super.clone();
+	}
+
+	public enum EmailProtocol {
 		
 		SMTP("smtp"),
 		SMTPS("smtps");

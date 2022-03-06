@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.api.ValidationContext;
+import static org.idb.cacao.api.utils.ParserUtils.ISO_8601_DATE;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -34,7 +35,6 @@ import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.idb.cacao.api.ValidationContext.*;
 import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAMES.*;
 
 @RunWith(JUnitPlatform.class)

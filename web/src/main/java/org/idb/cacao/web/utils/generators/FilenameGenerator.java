@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -172,6 +173,33 @@ public class FilenameGenerator {
 		public boolean matches(String txt) {
 			return pattern.matcher(txt).find();
 		}
+		
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + Objects.hash(regex);
+			return result;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			RegexGen other = (RegexGen) obj;
+			if (!getEnclosingInstance().equals(other.getEnclosingInstance()))
+				return false;
+			return Objects.equals(regex, other.regex);
+		}
+		
+		private FilenameGenerator getEnclosingInstance() {
+			return FilenameGenerator.this;
+		}
+		
 	}
 
 }

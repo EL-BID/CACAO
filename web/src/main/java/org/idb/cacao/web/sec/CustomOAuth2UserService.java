@@ -21,6 +21,7 @@ package org.idb.cacao.web.sec;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,7 +80,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
 		// Delegate to the default implementation for loading a user
 		OidcUser oidcUser = delegate.loadUser(userRequest);
 		
-		String full_name = oidcUser.getFullName();
+		String fullName = oidcUser.getFullName();
 		String email = oidcUser.getEmail();
 		
 		if (email==null) {
@@ -97,9 +98,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
 			);
 		}
 		
-		if (user == null && full_name!=null && full_name.trim().length()>0 && email!=null && email.trim().length()>0) {
+		if (user == null && fullName!=null && fullName.trim().length()>0 && email!=null && email.trim().length()>0) {
 			if ("true".equalsIgnoreCase(env.getProperty("auto.create.users"))) {
-				user = userService.createUser(email, full_name, userRequest);
+				user = userService.createUser(email, fullName, userRequest);
 			}
 		}
 		
@@ -130,5 +131,30 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
 		public String getName() {
 			return user.getName();
 		}
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = super.hashCode();
+			result = prime * result + getEnclosingInstance().hashCode();
+			result = prime * result + Objects.hash(user);
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (!super.equals(obj))
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			CustomOidcUser other = (CustomOidcUser) obj;
+			if (!getEnclosingInstance().equals(other.getEnclosingInstance()))
+				return false;
+			return Objects.equals(user, other.user);
+		}
+		private CustomOAuth2UserService getEnclosingInstance() {
+			return CustomOAuth2UserService.this;
+		}		
 	}
+	
 }

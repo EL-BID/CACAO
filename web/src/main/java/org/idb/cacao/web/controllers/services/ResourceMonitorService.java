@@ -82,7 +82,7 @@ public class ResourceMonitorService implements Runnable {
 	
 	private int delayMinutes = DEFAULT_DELAY_MINUTES;
 	
-	private volatile ScheduledFuture<?> scheduled;
+	private ScheduledFuture<?> scheduled;
 	
 	public ResourceMonitorService() {
 		service = new ScheduledThreadPoolExecutor(1,new ThreadFactory(){

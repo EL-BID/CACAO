@@ -21,6 +21,7 @@ package org.idb.cacao.web.dto;
 
 import java.time.YearMonth;
 import java.util.Map;
+import java.util.Objects;
 
 public class CustomerVsSupplier implements Comparable<CustomerVsSupplier> {
 	
@@ -135,4 +136,21 @@ public class CustomerVsSupplier implements Comparable<CustomerVsSupplier> {
 		return difference < other.difference ? -1 : 1;
 	}
 
+	@Override
+	public int hashCode() {
+		return Objects.hash(customerId, customerName, month);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		CustomerVsSupplier other = (CustomerVsSupplier) obj;
+		return Objects.equals(customerId, other.customerId) && Objects.equals(customerName, other.customerName)
+				&& Objects.equals(month, other.month);
+	}	
 }

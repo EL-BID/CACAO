@@ -291,7 +291,9 @@ public class DomainTableService {
 			Optional<Integer> page, 
 			Optional<Integer> size) {
 		try {
-			return SearchUtils.doSearch(filters.get().wiredTo(messages), DomainTable.class, elasticsearchClient, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
+			if ( filters.isPresent() )
+				return SearchUtils.doSearch(filters.get().wiredTo(messages), DomainTable.class, elasticsearchClient, page, size, Optional.of("name"), Optional.of(SortOrder.ASC));
+			return null;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -72,6 +73,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.hibernate.jpa.QueryHints;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.ParserUtils;
+import org.idb.cacao.api.utils.Utils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.dto.TabulatorFilter;
 import org.springframework.context.MessageSource;
@@ -99,25 +101,25 @@ public class SearchUtils {
 	
 	public static final int DEFAULT_PAGE_SIZE = 5;
 	
-	public static Optional<AdvancedSearch> fromJSON(Optional<String> as_json) {
-		if (as_json==null || !as_json.isPresent())
+	public static Optional<AdvancedSearch> fromJSON(Optional<String> asJson) {
+		if (asJson==null || !asJson.isPresent())
 			return Optional.empty();
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		try {
-			return Optional.ofNullable(mapper.readValue(as_json.get(), AdvancedSearch.class));
+			return Optional.ofNullable(mapper.readValue(asJson.get(), AdvancedSearch.class));
 		} catch (JsonProcessingException e) {
 			return Optional.empty();
 		}
 	}
 
-	public static Optional<AdvancedSearch> fromTabulatorJSON(Optional<String> as_json) {
-		if (as_json==null || !as_json.isPresent())
+	public static Optional<AdvancedSearch> fromTabulatorJSON(Optional<String> asJson) {
+		if (asJson==null || !asJson.isPresent())
 			return Optional.empty();
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		try {
-			TabulatorFilter[] filters = mapper.readValue(as_json.get(), TabulatorFilter[].class);
+			TabulatorFilter[] filters = mapper.readValue(asJson.get(), TabulatorFilter[].class);
 			AdvancedSearch search = new AdvancedSearch();
 			Arrays.stream(filters)
 			  .forEach(filter -> search.addFilter( filter.getQueryFilter()));
@@ -153,11 +155,11 @@ public class SearchUtils {
 			final Optional<String> sortBy,
 			final Optional<SortOrder> sortOrder) throws IOException {
 		
-		Document an_doc = entity.getAnnotation(Document.class);
-		if (an_doc==null)
+		Document anDoc = entity.getAnnotation(Document.class);
+		if (anDoc==null)
 			return Page.empty();
 		
-		String indexName = an_doc.indexName();
+		String indexName = anDoc.indexName();
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
 		
@@ -213,10 +215,10 @@ public class SearchUtils {
     	searchRequest.source(searchSourceBuilder);
     	SearchResponse sresp = null;    	
 		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		long totalCount = sresp.getHits().getTotalHits().value;
-		int page_hits = sresp.getHits().getHits().length;
+		long totalCount = Utils.getTotalHits(sresp);
+		int pageHits = sresp.getHits().getHits().length;
 		int pageNumber = (page.isPresent()) ? page.get() : 1;
-		int pageSize = Math.max(DEFAULT_PAGE_SIZE, (size.isPresent()) ? size.get() : page_hits);
+		int pageSize = Math.max(DEFAULT_PAGE_SIZE, (size.isPresent()) ? size.get() : pageHits);
 		
 		List<Map<String,Object>> results = new ArrayList<>(sresp.getHits().getHits().length);
 		for (SearchHit hit : sresp.getHits()) {
@@ -313,7 +315,7 @@ public class SearchUtils {
 	/**
 	 * Add filters programmed in 'field' object into 'query_builder' object
 	 */
-	public static void addFilter(AdvancedSearch.QueryFilter field, Consumer<QueryBuilder> query_builder, final Class<?> entity) {
+	public static void addFilter(AdvancedSearch.QueryFilter field, Consumer<QueryBuilder> queryBuilder, final Class<?> entity) {
 		if (field.isEmpty()) {
 			return;
 		}
@@ -321,33 +323,33 @@ public class SearchUtils {
 			String argument = ((AdvancedSearch.QueryFilterTerm)field).getArgument();
 			if (argument!=null && argument.indexOf(' ')>0) {
 				if (field.getName().endsWith(".keyword")) {
-					query_builder.accept(new TermQueryBuilder(field.getName(), argument));
+					queryBuilder.accept(new TermQueryBuilder(field.getName(), argument));
 				}
 				else {
-					List<String> multiple_terms = Arrays.stream(argument.split("\\s+")).filter(a->a.length()>0).collect(Collectors.toList());
-					if (multiple_terms.isEmpty())
+					List<String> multipleTerms = Arrays.stream(argument.split("\\s+")).filter(a->a.length()>0).collect(Collectors.toList());
+					if (multipleTerms.isEmpty())
 						return;
-					if (multiple_terms.size()==1) {
-						String v = multiple_terms.get(0);
+					if (multipleTerms.size()==1) {
+						String v = multipleTerms.get(0);
 						if (v!=null)
 							v = v.toLowerCase();
-						query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
+						queryBuilder.accept(new WildcardQueryBuilder(field.getName(), v));
 					}
 					else {
 						BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-						for (String sub_term: multiple_terms) {
+						for (String sub_term: multipleTerms) {
 							if (sub_term!=null)
 								sub_term = sub_term.toLowerCase();
 							subquery = subquery.must(new WildcardQueryBuilder(field.getName(), sub_term));
 						}
-						query_builder.accept(subquery);
+						queryBuilder.accept(subquery);
 					}
 				}
 			}
 			else {
 				if (argument!=null)
 					argument = argument.toLowerCase();
-				query_builder.accept(new WildcardQueryBuilder(field.getName(), argument));
+				queryBuilder.accept(new WildcardQueryBuilder(field.getName(), argument));
 			}
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterEnum) {
@@ -357,21 +359,21 @@ public class SearchUtils {
 					String v = ((AdvancedSearch.QueryFilterEnum)field).getSelectedConstant(type);
 					if (v!=null)
 						v = v.toLowerCase();
-					query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
+					queryBuilder.accept(new WildcardQueryBuilder(field.getName(), v));
 				}
 			}
 			else {
 				String v = ((AdvancedSearch.QueryFilterEnum)field).getSelectedConstant();
 				if (v!=null)
 					v = v.toLowerCase();
-				query_builder.accept(new WildcardQueryBuilder(field.getName(), v));
+				queryBuilder.accept(new WildcardQueryBuilder(field.getName(), v));
 			}
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterBoolean) {
 			if (((AdvancedSearch.QueryFilterBoolean)field).isArgumentTrue())
-				query_builder.accept(new TermQueryBuilder(field.getName(), true));
+				queryBuilder.accept(new TermQueryBuilder(field.getName(), true));
 			else if (((AdvancedSearch.QueryFilterBoolean)field).isArgumentFalse())
-				query_builder.accept(new TermQueryBuilder(field.getName(), false));	
+				queryBuilder.accept(new TermQueryBuilder(field.getName(), false));	
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterRange) {
 			RangeQueryBuilder b = new RangeQueryBuilder(field.getName());
@@ -379,7 +381,7 @@ public class SearchUtils {
 				b = b.from(((AdvancedSearch.QueryFilterRange)field).getStart(), /*includeLower*/true);
 			if (((AdvancedSearch.QueryFilterRange)field).hasEnd())
 				b = b.to(((AdvancedSearch.QueryFilterRange)field).getEnd(), /*includeUpper*/true);
-			query_builder.accept(b);
+			queryBuilder.accept(b);
 		}    			
 		else if (field instanceof AdvancedSearch.QueryFilterValue) {
 			RangeQueryBuilder b = new RangeQueryBuilder(field.getName());
@@ -387,7 +389,7 @@ public class SearchUtils {
 				b = b.from(((AdvancedSearch.QueryFilterValue)field).getStart(), /*includeLower*/true);
 			if (((AdvancedSearch.QueryFilterValue)field).hasEnd())
 				b = b.to(((AdvancedSearch.QueryFilterValue)field).getEnd(), /*includeUpper*/true);
-			query_builder.accept(b);
+			queryBuilder.accept(b);
 		}    			
 		else if (field instanceof AdvancedSearch.QueryFilterDate) {
 			RangeQueryBuilder b = new RangeQueryBuilder(field.getName());
@@ -395,7 +397,7 @@ public class SearchUtils {
 				b = b.from(ParserUtils.formatTimestampES(ParserUtils.parseTimestamp(((AdvancedSearch.QueryFilterDate)field).getStart())), /*includeLower*/true);
 			if (((AdvancedSearch.QueryFilterDate)field).hasEnd())
 				b = b.to(ParserUtils.formatTimestampES(DateTimeUtils.lastTimeOfDay(ParserUtils.parseTimestamp(((AdvancedSearch.QueryFilterDate)field).getEnd()))), /*includeUpper*/true);
-			query_builder.accept(b);
+			queryBuilder.accept(b);
 		}    		
 		else if (field instanceof AdvancedSearch.QueryFilterList) {
 			BoolQueryBuilder subquery = QueryBuilders.boolQuery();
@@ -403,25 +405,25 @@ public class SearchUtils {
 				subquery = subquery.should(new TermQueryBuilder(field.getName(), argument));
 			}
 			subquery = subquery.minimumShouldMatch(1);
-			query_builder.accept(subquery);
+			queryBuilder.accept(subquery);
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterOr) {
 			List<AdvancedSearch.QueryFilter> alternatives = ((AdvancedSearch.QueryFilterOr)field).getAlternatives();
 			if (alternatives==null || alternatives.isEmpty())
 				return;
-			BoolQueryBuilder nested_query = QueryBuilders.boolQuery();
+			BoolQueryBuilder nestedQuery = QueryBuilders.boolQuery();
 			for (AdvancedSearch.QueryFilter nested: alternatives) {
-				addFilter(nested, nested_query::should, entity);
+				addFilter(nested, nestedQuery::should, entity);
 			}
-			query_builder.accept(nested_query);
+			queryBuilder.accept(nestedQuery);
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterExist) {
-			query_builder.accept(QueryBuilders.existsQuery(field.getName()));
+			queryBuilder.accept(QueryBuilders.existsQuery(field.getName()));
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterDoesNotExist) {
 			BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 			subquery.mustNot(QueryBuilders.existsQuery(field.getName()));
-			query_builder.accept(subquery);			
+			queryBuilder.accept(subquery);			
 		}
 	}
 
@@ -451,13 +453,11 @@ public class SearchUtils {
 		addCriteriaQueries(queryArguments, criteriaBuilder, entity, entityRoot, criteriaQuery::where);
     	
     	if (sortBy.isPresent()) {
-    		switch (sortOrder.orElse(SortOrder.ASC)) {
-    		case ASC:    			
+    		if (sortOrder.orElse(SortOrder.ASC).equals(SortOrder.ASC)) {
     			criteriaQuery = criteriaQuery.orderBy(criteriaBuilder.asc(entityRoot.get(sortBy.get())));
-    			break;
-    		case DESC:
+    		}
+    		else if (sortOrder.orElse(SortOrder.ASC).equals(SortOrder.DESC)) {
     			criteriaQuery = criteriaQuery.orderBy(criteriaBuilder.desc(entityRoot.get(sortBy.get())));
-    			break;
     		}
     	}
     	
@@ -527,13 +527,13 @@ public class SearchUtils {
 			Class<?> type = ReflectUtils.getMemberType(entity, field.getName());
 			if (type!=null && type.isEnum()) {
 				// First search enum constants, and then use this as search constraints
-				In<Object> in_clause = criteriaBuilder.in(entityRoot.get(field.getName()));    					
-				filterEnumConstants(type, adaptToRegex(((AdvancedSearch.QueryFilterTerm)field).getArgument()), field.getMessageSource(), in_clause::value);
-				consumer.accept(in_clause);
+				In<Object> inClause = criteriaBuilder.in(entityRoot.get(field.getName()));    					
+				filterEnumConstants(type, adaptToRegex(((AdvancedSearch.QueryFilterTerm)field).getArgument()), field.getMessageSource(), inClause::value);
+				consumer.accept(inClause);
 			}
 			else {
 				String pattern = adaptToJPALikeExpression(((AdvancedSearch.QueryFilterTerm)field).getArgument());
-				consumer.accept(criteriaBuilder.like(criteriaBuilder.upper(entityRoot.get(field.getName())), pattern.toUpperCase()));
+				consumer.accept(criteriaBuilder.like(criteriaBuilder.upper(entityRoot.get(field.getName())), pattern == null ? "" : pattern.toUpperCase()));
 			}
 		}
 		if (field instanceof AdvancedSearch.QueryFilterEnum) {
@@ -565,11 +565,11 @@ public class SearchUtils {
 				consumer.accept(criteriaBuilder.lessThanOrEqualTo(entityRoot.get(field.getName()), ParserUtils.parseFlexibleDate(((AdvancedSearch.QueryFilterDate)field).getEnd())));
 		}    			
 		else if (field instanceof AdvancedSearch.QueryFilterList) {
-			In<Object> in_clause = criteriaBuilder.in(entityRoot.get(field.getName()));
+			In<Object> inClause = criteriaBuilder.in(entityRoot.get(field.getName()));
 			for (String argument: ((AdvancedSearch.QueryFilterList)field).getArgument()) {
-				in_clause.value(argument);
+				inClause.value(argument);
 			}
-			consumer.accept(in_clause);
+			consumer.accept(inClause);
 		}
 		else if (field instanceof AdvancedSearch.QueryFilterOr) {
 			List<AdvancedSearch.QueryFilter> alternatives = ((AdvancedSearch.QueryFilterOr)field).getAlternatives();
@@ -586,7 +586,7 @@ public class SearchUtils {
 				consumer.accept(criteriaBuilder.or(expressions.get(0), expressions.get(1)));
 			}
 			else if (expressions.size()>2) {
-				consumer.accept(expressions.stream().reduce(criteriaBuilder::or).get());
+				consumer.accept(expressions.stream().reduce(criteriaBuilder::or).orElse(null));
 			}
 		}
 	}
@@ -596,7 +596,7 @@ public class SearchUtils {
 	 * information it has (i.e.: use either the constant name, or the 'toString' returned string, or the 'messageSource' using the 'toString' returned string
 	 * as property name). 
 	 */
-	public static void filterEnumConstants(Class<?> enum_type, String regex, MessageSource messageSource, Consumer<Object> consumer) {
+	public static void filterEnumConstants(Class<?> enumType, String regex, MessageSource messageSource, Consumer<Object> consumer) {
 		Pattern p;
 		try {
 			p = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
@@ -604,7 +604,7 @@ public class SearchUtils {
 		catch (Exception ex) {
 			return;
 		}
-		for (Object enum_value:enum_type.getEnumConstants()) {
+		for (Object enum_value:enumType.getEnumConstants()) {
 			String s = ((Enum<?>)enum_value).name();
 			if (p.matcher(s).find()) {
 				consumer.accept(enum_value);
@@ -667,8 +667,8 @@ public class SearchUtils {
 					throw ex;
 				}
 
-				Document doc_anon = entity.getAnnotation(Document.class);
-				String indexName = doc_anon.indexName();
+				Document docAnon = entity.getAnnotation(Document.class);
+				String indexName = docAnon.indexName();
 
 				return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ConsumeWithScrollAPIIterator<T>(entity, indexName, clientForScrollSearch, /*customizeSearch*/null), Spliterator.ORDERED), false);
 			}
@@ -750,6 +750,9 @@ public class SearchUtils {
 
 		@Override
 		public T next() {
+			if(!hasNext()){
+				throw new NoSuchElementException();
+			}			
 			if (!moved)
 				moveForward();
 			moved = false;

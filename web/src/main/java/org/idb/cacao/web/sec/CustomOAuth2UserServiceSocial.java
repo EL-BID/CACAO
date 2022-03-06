@@ -21,6 +21,7 @@ package org.idb.cacao.web.sec;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -77,7 +78,7 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 		if (oauthUser==null)
 			return null;
 		
-		String full_name = oauthUser.getAttribute(ATTRIBUTE_NAME);
+		String fullName = oauthUser.getAttribute(ATTRIBUTE_NAME);
 		String email = oauthUser.getAttribute(ATTRIBUTE_EMAIL);
 		
 		if (email==null) {
@@ -87,15 +88,15 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 		User user = userRepository.findByLoginIgnoreCaseAndActiveIsTrue(email);
 		
 		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, () -> "OAUTH-LOGIN: fullname:"+full_name
+			log.log(Level.FINEST, () -> "OAUTH-LOGIN: fullname:"+fullName
 			+" email:"+email
 			+" attributes:"+oauthUser.getAttributes()
 			);
 		}
 		
-		if (user == null && full_name!=null && full_name.trim().length()>0 && email!=null && email.trim().length()>0) {
+		if (user == null && fullName!=null && fullName.trim().length()>0 && email.trim().length()>0) {
 			if ("true".equalsIgnoreCase(env.getProperty("auto.create.users"))) {
-				user = userService.createUser(email, full_name, userRequest);
+				user = userService.createUser(email, fullName, userRequest);
 			}
 		}
 		
@@ -126,6 +127,30 @@ public class CustomOAuth2UserServiceSocial extends DefaultOAuth2UserService // O
 		public String getName() {
 			return user.getName();
 		}
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = super.hashCode();
+			result = prime * result + getEnclosingInstance().hashCode();
+			result = prime * result + Objects.hash(user);
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (!super.equals(obj))
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			CustomOAuth2User other = (CustomOAuth2User) obj;
+			if (!getEnclosingInstance().equals(other.getEnclosingInstance()))
+				return false;
+			return Objects.equals(user, other.user);
+		}
+		private CustomOAuth2UserServiceSocial getEnclosingInstance() {
+			return CustomOAuth2UserServiceSocial.this;
+		}		
 	}
 
 }

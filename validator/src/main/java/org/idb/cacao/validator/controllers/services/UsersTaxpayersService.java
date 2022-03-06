@@ -33,6 +33,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.errors.CommonErrors;
 import org.idb.cacao.api.utils.ScrollUtils;
+import org.idb.cacao.api.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -76,7 +77,7 @@ public class UsersTaxpayersService {
 		searchRequest.source(searchSourceBuilder);
 
 		SearchResponse sresp = doSearch(searchRequest);
-		if (sresp == null || sresp.getHits().getTotalHits().value == 0) 
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) 
 			return false; // unknown user
 		
 		Map<String,Object> user_attributes = sresp.getHits().getHits()[0].getSourceAsMap();
@@ -112,7 +113,7 @@ public class UsersTaxpayersService {
 		searchRequest.source(searchSourceBuilder);
 
 		sresp = doSearch(searchRequest);
-		if (sresp != null && sresp.getHits().getTotalHits().value > 0) 
+		if (sresp != null && Utils.getTotalHits(sresp) > 0) 
 			return true; // there is at least one relationship between these two taxpayers
 		
 		 // no relationship between these two taxpayers

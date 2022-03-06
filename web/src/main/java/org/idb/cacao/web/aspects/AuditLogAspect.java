@@ -56,6 +56,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import static org.idb.cacao.api.utils.ParserUtils.ISO_8601_TIMESTAMP;
+
 /**
  * Injects logging features for auditing application usage.<BR>
  * <BR>
@@ -198,7 +200,7 @@ public class AuditLogAspect {
 				}
 			} catch (Exception ex) { } 
 
-			Object args[] = joinPoint.getArgs();
+			Object[] args = joinPoint.getArgs();
 
 			if (args!=null && args.length>0) {
 				String[] parameterNames = ((CodeSignature)joinPoint.getSignature()).getParameterNames();
@@ -231,17 +233,17 @@ public class AuditLogAspect {
 						}
 
 						if (argument instanceof Date) {
-							entry.addParam(parameterName, ValidationContext.ISO_8601_TIMESTAMP.get().format((Date)argument));
+							entry.addParam(parameterName, ISO_8601_TIMESTAMP.get().format((Date)argument));
 							continue;
 						}
 
 						if (argument instanceof OffsetDateTime) {
-							entry.addParam(parameterName, ValidationContext.ISO_8601_TIMESTAMP.get().format(ValidationContext.toDate(argument)));
+							entry.addParam(parameterName, ISO_8601_TIMESTAMP.get().format(ValidationContext.toDate(argument)));
 							continue;
 						}
 
 						if (argument instanceof LocalDate) {
-							entry.addParam(parameterName, ValidationContext.ISO_8601_TIMESTAMP.get().format(ValidationContext.toDate(argument)));
+							entry.addParam(parameterName, ISO_8601_TIMESTAMP.get().format(ValidationContext.toDate(argument)));
 							continue;
 						}
 

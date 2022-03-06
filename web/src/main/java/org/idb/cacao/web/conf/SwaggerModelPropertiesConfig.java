@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.conf;
 
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,6 +31,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.schema.ModelPropertyBuilderPlugin;
@@ -68,23 +70,25 @@ public class SwaggerModelPropertiesConfig implements ModelPropertyBuilderPlugin 
 				// If we don't have the @ApiModelProperty for this model property and
 				// if we have a bean reference to this property, let's check for the
 				// presence of the application specific @AFieldDescriptor
-				AnnotatedField field = context.getBeanPropertyDefinition().get().getField();
-				if (field!=null) {
-					AFieldDescriptor fd = field.getAnnotation(AFieldDescriptor.class);
-					if (fd!=null) {
-						String externalName = fd.externalName();
-						if (externalName!=null) {
-							try {
-								String description = messageSource.getMessage(externalName, null, LocaleContextHolder.getLocale());
-								context.getSpecificationBuilder().description(description);
-							}
-							catch (Exception ex) {
-								// Ignores errors if the decription could not be found at message properties
+				Optional<BeanPropertyDefinition> beanPropertyDefinition = context.getBeanPropertyDefinition();
+				if ( beanPropertyDefinition.isPresent() ) {
+					AnnotatedField field = beanPropertyDefinition.get().getField();
+					if (field!=null) {
+						AFieldDescriptor fd = field.getAnnotation(AFieldDescriptor.class);
+						if (fd!=null) {
+							String externalName = fd.externalName();
+							if (externalName!=null) {
+								try {
+									String description = messageSource.getMessage(externalName, null, LocaleContextHolder.getLocale());
+									context.getSpecificationBuilder().description(description);
+								}
+								catch (Exception ex) {
+									// Ignores errors if the decription could not be found at message properties
+								}
 							}
 						}
 					}
 				}
-				
 			}
 			
         } catch (Exception e) {

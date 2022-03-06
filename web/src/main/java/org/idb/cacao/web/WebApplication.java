@@ -102,10 +102,10 @@ public class WebApplication {
 	 */
 	public static void main(String[] args) {
 		
-		File log_dir = AdminUIController.getLogDir();
-		if (log_dir!=null && !log_dir.exists()) {
-			System.out.println("Creating LOG directory at "+log_dir.getAbsolutePath());
-			log_dir.mkdirs();
+		File logDir = AdminUIController.getLogDir();
+		if (logDir!=null && !logDir.exists()) {
+			System.out.println("Creating LOG directory at "+logDir.getAbsolutePath());
+			logDir.mkdirs();
 		}
 
 		SpringApplication.run(WebApplication.class, args);
@@ -137,6 +137,7 @@ public class WebApplication {
 				setDaemon(true);
 			}
 
+			@Override
 			public void run() {
 				startupCode();
 			}
@@ -202,8 +203,8 @@ public class WebApplication {
 		}
 
 		try {
-			ConfigSync config_sync = configSyncService.getActiveConfig();
-			if (config_sync!=null && !SyncPeriodicity.NONE.equals(config_sync.getPeriodicity())) {
+			ConfigSync configSync = configSyncService.getActiveConfig();
+			if (configSync!=null && !SyncPeriodicity.NONE.equals(configSync.getPeriodicity())) {
 				syncAPIService.scheduleSyncThread();
 			}
 		}

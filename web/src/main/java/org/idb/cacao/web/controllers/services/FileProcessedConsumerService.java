@@ -87,7 +87,7 @@ public class FileProcessedConsumerService {
 			
 			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
 					doc.getTemplateVersion());
-			if (template == null || !template.isPresent()) {
+			if (!template.isPresent()) {
 				throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version "
 						+ doc.getTemplateVersion() + " wasn't found in database.");
 			}
@@ -142,7 +142,6 @@ public class FileProcessedConsumerService {
 				proc.run();
 			}
 			catch (Exception ex) {
-				//TODO Add logging
 				log.log(Level.SEVERE, "Could not rollback", ex);
 			}
 		}

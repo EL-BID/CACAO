@@ -35,7 +35,7 @@ import org.springframework.stereotype.Repository;
 @Synchronizable(timestamp="timestamp",id="id")
 public interface AuditTrailRepository extends ElasticsearchRepository<AuditTrail, String> {
 
-	default public <S extends AuditTrail> S saveWithTimestamp(S entity) {
+	public default <S extends AuditTrail> S saveWithTimestamp(S entity) {
 		entity.setTimestamp(DateTimeUtils.now());
 		return save(entity);
 	}

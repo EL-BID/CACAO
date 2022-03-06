@@ -20,6 +20,7 @@
 package org.idb.cacao.web.sec;
 
 import java.util.Collection;
+import java.util.Objects;
 
 import org.idb.cacao.web.entities.User;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -55,4 +56,24 @@ public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
         return principal;
     }
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + Objects.hash(principal);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ApiKeyAuthenticationToken other = (ApiKeyAuthenticationToken) obj;
+		return Objects.equals(principal, other.principal);
+	}
+    
 }

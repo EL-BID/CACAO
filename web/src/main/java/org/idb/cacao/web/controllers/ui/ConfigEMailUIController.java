@@ -79,9 +79,9 @@ public class ConfigEMailUIController {
         }
         
         if (UNCHANGED_PASSWORD.equals(config.getPassword())) {
-        	ConfigEMail prev_config = configEMailService.getActiveConfig();
-        	if (prev_config!=null)
-        		config.setPassword(prev_config.getPassword());
+        	ConfigEMail prevConfig = configEMailService.getActiveConfig();
+        	if (prevConfig!=null)
+        		config.setPassword(prevConfig.getPassword());
         }
         else if (config.getPassword()!=null && config.getPassword().length()>0) {
         	config.setPassword(configEMailService.encryptPassword(config.getPassword()));

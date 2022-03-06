@@ -44,9 +44,6 @@ public class BalanceSheet implements Serializable {
 	
 	private List<Account> accounts;
 
-	public BalanceSheet() {
-	}
-
 	public String getTaxPayerId() {
 		return taxPayerId;
 	}

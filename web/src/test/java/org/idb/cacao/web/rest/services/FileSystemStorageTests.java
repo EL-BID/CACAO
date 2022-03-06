@@ -74,7 +74,7 @@ class FileSystemStorageTests {
 	}
 	
 	@Test
-	public void loadNonExistent() {
+	void loadNonExistent() {
 		assertThrows(StorageFileNotFoundException.class, () -> service.load("foo.txt"));
 	}
 	
@@ -88,7 +88,7 @@ class FileSystemStorageTests {
 	}
 	
 	@Test
-	public void saveRelativePathNotPermitted() {
+	void saveRelativePathNotPermitted() {
 		String name="../foo.txt";
 		InputStream inputStream = new ByteArrayInputStream("sample".getBytes());
 		assertThrows(StorageException.class, () -> {
@@ -97,7 +97,7 @@ class FileSystemStorageTests {
 	}
 	
 	@Test
-	public void saveAbsolutePathNotPermitted() {
+	void saveAbsolutePathNotPermitted() {
 		String name="/etc/foo.txt";
 		InputStream inputStream = new ByteArrayInputStream("sample".getBytes());
 		assertThrows(StorageException.class, () -> {
@@ -106,10 +106,10 @@ class FileSystemStorageTests {
 	}
 	
 	@Test
-	public void savePermitted() {
+	void savePermitted() {
 		String name="bar/../foo.txt";
 		InputStream inputStream = new ByteArrayInputStream("sample".getBytes());
-		service.store(name, inputStream, true);
+		assertNotNull(service.store(name, inputStream, true));
 	}
 
 }

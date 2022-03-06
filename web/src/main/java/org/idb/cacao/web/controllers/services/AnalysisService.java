@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
-import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
-import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -64,6 +63,7 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
+import org.idb.cacao.api.utils.Utils;
 import org.idb.cacao.web.dto.Account;
 import org.idb.cacao.web.dto.AggregatedAccountingFlow;
 import org.idb.cacao.web.dto.AnalysisData;
@@ -239,7 +239,7 @@ public class AnalysisService {
 
 		List<Account> accounts = new LinkedList<>();
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());
 			return Collections.emptyList(); // No balance sheet found
 		} else {
@@ -336,15 +336,6 @@ public class AnalysisService {
 		accounts.sort(null);
 
 		return accounts;
-	}
-
-	private long getTotalHits(SearchResponse sresp) {
-		if ( sresp == null )
-			return 0;
-		TotalHits hits = sresp.getHits().getTotalHits();		
-		if (hits != null )
-			return hits.value;
-		return 0;
 	}
 
 	/**
@@ -497,7 +488,7 @@ public class AnalysisService {
 
 				accountData.put(prefix, account.getBalance()); // Balance for period
 				accountData.put(prefixVerticalAnalysis, account.getPercentage()); // Vertical analysis for period
-				double balanceBasePeriod = accountData.get("B0") == null ? 0 : Precision.round((double) accountData.get("B0"), 2, BigDecimal.ROUND_HALF_UP);
+				double balanceBasePeriod = accountData.get("B0") == null ? 0 : Precision.round((double) accountData.get("B0"), 2, RoundingMode.HALF_DOWN.ordinal());
 				double percentage = ( balanceBasePeriod == 0d ) ? 0 : (account.getBalance() * 100 / balanceBasePeriod);
 				accountData.put(prefixHorizontalAnalysis, percentage); // Horizontal analysis for period
 
@@ -611,7 +602,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " for year " + year);
 			return null; // No data found
 		} else {
@@ -645,11 +636,11 @@ public class AnalysisService {
 					MedianAbsoluteDeviation deviation = statementNameBucket.getAggregations().get("deviation");
 
 					double sumValue = sum == null ? 0d
-							: Precision.round(sum.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
+							: Precision.round(sum.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
 					double averegaValue = average == null ? 0d
-							: Precision.round(average.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
+							: Precision.round(average.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
 					double deviationValue = deviation == null ? 0d
-							: Precision.round(deviation.value(), 2, BigDecimal.ROUND_HALF_DOWN);
+							: Precision.round(deviation.value(), 2, RoundingMode.HALF_DOWN.ordinal());
 
 					Percentiles percentile = statementNameBucket.getAggregations().get("amount");
 					if (percentile != null) {
@@ -658,11 +649,11 @@ public class AnalysisService {
 							double percent = item.getPercent();
 
 							if (percent == 25) // First quartile
-								analysisItem.setQ1(Precision.round(item.getValue(), 2, BigDecimal.ROUND_HALF_DOWN));
+								analysisItem.setQ1(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
 							else if (percent == 50) // Median
-								analysisItem.setMedian(Precision.round(item.getValue(), 2, BigDecimal.ROUND_HALF_DOWN));
+								analysisItem.setMedian(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
 							else if (percent == 75) // Third quartile
-								analysisItem.setQ3(Precision.round(item.getValue(), 2, BigDecimal.ROUND_HALF_DOWN));
+								analysisItem.setQ3(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
 
 						});
 
@@ -688,7 +679,7 @@ public class AnalysisService {
 			AnalysisData data = new AnalysisData();
 			data.setItems(items);
 			updateScale(data);
-			data.setTotalTaxpayers(FormatUtils.quantityFormat.format(taxpayerIds.size()));
+			data.setTotalTaxpayers(FormatUtils.getQuantityFormat().format(taxpayerIds.size()));
 
 			return data;
 
@@ -737,7 +728,7 @@ public class AnalysisService {
 				else if (value > max)
 					value = normalize(value, item.getMin(), item.getMax(), bigger, true /* superior */);
 
-				value = Precision.round(value, 2, BigDecimal.ROUND_HALF_DOWN);
+				value = Precision.round(value, 2, RoundingMode.HALF_DOWN.ordinal());
 
 				Outlier copy = new Outlier(outlier.getTaxpayerId(),
 						outlier.getTaxpayerName() + " : " + outlier.getValue(), item.getStatementName(),
@@ -763,12 +754,12 @@ public class AnalysisService {
 		if (superior) {
 
 			double viewLimit = (max + 100) * 0.9d;
-			return Precision.round((((value - max) * viewLimit) / (limit - max)), 2, BigDecimal.ROUND_HALF_DOWN);
+			return Precision.round((((value - max) * viewLimit) / (limit - max)), 2, RoundingMode.HALF_DOWN.ordinal());
 
 		}
 
 		double viewLimit = (min - 100) * 0.9d;
-		return Precision.round((((value - min) * viewLimit) / (limit - min)), 2, BigDecimal.ROUND_HALF_DOWN);
+		return Precision.round((((value - min) * viewLimit) / (limit - min)), 2, RoundingMode.HALF_DOWN.ordinal());
 
 	}
 
@@ -797,7 +788,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting outliers", ex);
 		}
 
-		if (sresp != null && getTotalHits(sresp) > 0) {
+		if (sresp != null && Utils.getTotalHits(sresp) > 0) {
 
 			// Let's fill the resulting list with values
 			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");
@@ -818,7 +809,7 @@ public class AnalysisService {
 
 					double value = 0;
 					if (amount != null) {
-						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
+						value = Precision.round(amount.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
 					}
 
 					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(),
@@ -843,7 +834,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting outliers", ex);
 		}
 
-		if (sresp != null && getTotalHits(sresp) > 0) {
+		if (sresp != null && Utils.getTotalHits(sresp) > 0) {
 
 			// Let's fill the resulting list with values
 
@@ -865,7 +856,7 @@ public class AnalysisService {
 
 					double value = 0;
 					if (amount != null) {
-						value = Precision.round(amount.getValue(), 2, BigDecimal.ROUND_HALF_DOWN);
+						value = Precision.round(amount.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
 					}
 
 					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(),
@@ -974,7 +965,7 @@ public class AnalysisService {
 
 		List<String> taxpayers = new LinkedList<>();
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " with value " + qualifierValue);
 			return Collections.emptyList(); // No data found
 		} else {
@@ -1031,7 +1022,7 @@ public class AnalysisService {
 
 		List<String> values = new LinkedList<>();
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier);
 			return Collections.emptyList(); // No data found
 		} else {
@@ -1136,7 +1127,7 @@ public class AnalysisService {
 
 		List<Integer> values = new LinkedList<>();
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, "No data found for years");
 			return new LinkedList<>(); // No data found
 		} else {
@@ -1200,7 +1191,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting flows", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
 			return Collections.emptyList(); // No flows found
 		}
@@ -1288,12 +1279,12 @@ public class AnalysisService {
 
 		if (taxpayerId == null || taxpayerId.isEmpty()) {
 			log.log(Level.INFO, "No valid taxpayer received");
-			return null; // No data found
+			return Collections.emptyList(); // No data found
 		}
 
 		if (year == 0) {
 			log.log(Level.INFO, "No valid year received");
-			return null; // No data found
+			return Collections.emptyList(); // No data found
 		}
 
 		// Search statement income values
@@ -1328,9 +1319,9 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting accounts", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, "No data found");
-			return; // No data found
+			//return; // No data found
 		} else {
 
 			// Add values for statement income items
@@ -1478,7 +1469,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting shareholdings", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No shareholding information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholding found
 		}
@@ -1553,7 +1544,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting shareholders", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No shareholders information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholders found
 		}
@@ -1626,7 +1617,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO, () -> "No revenue net and gross profit information found for taxPayer " + taxpayerId
 					+ " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1682,8 +1673,6 @@ public class AnalysisService {
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
 
-		// We are not interested on individual documents
-		// searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
 
 		// Search results
@@ -1696,7 +1685,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting tax provision", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1818,7 +1807,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting tax provision", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1846,7 +1835,7 @@ public class AnalysisService {
 			instanceValues.put("title", values[0] + ": " + accountName);
 			instance.put("values", instanceValues);
 			
-			yearValues.compute((String)values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
+			yearValues.compute(values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
 			
 			return instance;
 		};
@@ -1858,10 +1847,10 @@ public class AnalysisService {
 		//Remove null itens
 		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());
 		
-		for ( String key : yearValues.keySet() ) {
+		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
 			for ( Map<String, Object> map : instances ) {
-				if ( key.equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", yearValues.get(key));					
+				if ( entry.getKey().equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", entry.getValue());					
 				}
 			}
 		}		
@@ -1920,7 +1909,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1948,7 +1937,7 @@ public class AnalysisService {
 			instanceValues.put("title", values[0] + ": " + customerName);
 			instance.put("values", instanceValues);
 			
-			yearValues.compute((String)values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
+			yearValues.compute(values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
 			
 			return instance;
 		};
@@ -1958,12 +1947,12 @@ public class AnalysisService {
 				function);
 		
 		//Remove null itens
-		instances = instances.stream().filter(instance->instance != null).collect(Collectors.toList());		
+		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());		
 		
-		for ( String key : yearValues.keySet() ) {
+		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
 			for ( Map<String, Object> map : instances ) {
-				if ( key.equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", yearValues.get(key));
+				if ( entry.getKey().equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", entry.getValue());					
 				}
 			}
 		}
@@ -2038,7 +2027,7 @@ public class AnalysisService {
 				log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -2066,7 +2055,7 @@ public class AnalysisService {
 			instanceValues.put("title", values[0] + ": " + supplierName);
 			instance.put("values", instanceValues);
 			
-			yearValues.compute((String)values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));			
+			yearValues.compute(values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));			
 			
 			return instance;
 		};
@@ -2076,12 +2065,12 @@ public class AnalysisService {
 				function);
 		
 		//Remove null itens
-		instances = instances.stream().filter(instance->instance != null).collect(Collectors.toList());		
+		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());		
 
-		for ( String key : yearValues.keySet() ) {
+		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
 			for ( Map<String, Object> map : instances ) {
-				if ( key.equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", yearValues.get(key));
+				if ( entry.getKey().equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", entry.getValue());					
 				}
 			}
 		}		
@@ -2184,7 +2173,7 @@ public class AnalysisService {
 			log.log(Level.SEVERE, "Error getting major customers", ex);
 		}
 
-		if (sresp == null || getTotalHits(sresp) == 0) {
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
 					() -> "No customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found

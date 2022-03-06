@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -249,9 +250,9 @@ public class SyncAPIService {
     /**
      * Keeps reference to 'Future' object created when we scheduled the SYNC task
      */
-    private volatile ScheduledFuture<?> futureSyncScheduled;
+    private ScheduledFuture<?> futureSyncScheduled;
     
-    private volatile PoolingHttpClientConnectionManager poolingConnectionManager;
+    private PoolingHttpClientConnectionManager poolingConnectionManager;
 
 	/**
 	 * Keeps reference for thread running a SYNC process started locally (at subscriber server)
@@ -303,6 +304,7 @@ public class SyncAPIService {
 	 * @param tokenApi Token API registered at master for SYNC requests
 	 * @param resumeFromLastSync Indicates if we should care about the last SYNC milestone to avoid requesting the same data again
 	 */
+	@Transactional
 	public void syncAll(String tokenApi, boolean resumeFromLastSync) {
 		
 		Optional<Long> end = Optional.of(System.currentTimeMillis());
@@ -465,6 +467,7 @@ public class SyncAPIService {
 	 * @param resumeFromLastSync Indicates if we should care about the last SYNC milestone to avoid requesting the same data again
 	 * @param endpoints List of endpoints we will try to resolve for objects
 	 */
+	@Transactional
 	public void syncSome(String tokenApi, boolean resumeFromLastSync, List<String> endpoints) {
 		
 		Optional<Long> end = Optional.of(System.currentTimeMillis());
@@ -664,10 +667,8 @@ public class SyncAPIService {
 			File month_dir = new File(year_dir, matcher_name_entry.group(2));
 			File target_file = new File(month_dir, matcher_name_entry.group(3));
 			if (!target_file.getParentFile().exists())
-				target_file.getParentFile().mkdirs();
-			if (target_file.exists())
-				target_file.delete();
-			Files.copy(input, target_file.toPath());
+				target_file.getParentFile().mkdirs();			
+			Files.copy(input, target_file.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			if (entry.getLastModifiedTime()!=null)
 				target_file.setLastModified(entry.getLastModifiedTime().toMillis());
 			counter.increment();

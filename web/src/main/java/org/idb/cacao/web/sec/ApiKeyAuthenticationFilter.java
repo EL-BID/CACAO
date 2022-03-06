@@ -52,7 +52,7 @@ public class ApiKeyAuthenticationFilter implements Filter {
 	/**
 	 * Authentication method we are supporting here
 	 */
-    static final private String AUTH_METHOD = "api-key";
+	private static final String AUTH_METHOD = "api-key";
     
 	@Autowired
 	private UserRepository userRepository;
@@ -70,22 +70,22 @@ public class ApiKeyAuthenticationFilter implements Filter {
         if(request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
             String apiKey = getApiKey((HttpServletRequest) request);
             if(apiKey != null) {
-            	Optional<User> matching_user = getUserGivenTokenAPI(apiKey);
-                if(matching_user.isPresent()) {
-                	if (!privilegeService.hasPrivilege(matching_user.get().getProfile(), SystemPrivilege.CONFIG_API_TOKEN)) {
+            	Optional<User> matchingUser = getUserGivenTokenAPI(apiKey);
+                if(matchingUser.isPresent()) {
+                	if (!privilegeService.hasPrivilege(matchingUser.get().getProfile(), SystemPrivilege.CONFIG_API_TOKEN)) {
                         HttpServletResponse httpResponse = (HttpServletResponse) response;
                         httpResponse.setStatus(HttpStatus.SC_UNAUTHORIZED); // 401
                         httpResponse.getWriter().write("Use of API Token is prohibited for your user profile");                    
                         return;                		
                 	}
-                	else if (!matching_user.get().isActive()) {
+                	else if (!matchingUser.get().isActive()) {
                         HttpServletResponse httpResponse = (HttpServletResponse) response;
                         httpResponse.setStatus(HttpStatus.SC_UNAUTHORIZED); // 401
                         httpResponse.getWriter().write("User account has been disabled");                    
                         return;                		                		
                 	}
                 	else {
-	                    ApiKeyAuthenticationToken apiToken = new ApiKeyAuthenticationToken(matching_user.get(), privilegeService.getGrantedAuthorities(matching_user.get().getProfile()));
+	                    ApiKeyAuthenticationToken apiToken = new ApiKeyAuthenticationToken(matchingUser.get(), privilegeService.getGrantedAuthorities(matchingUser.get().getProfile()));
 	                    SecurityContextHolder.getContext().setAuthentication(apiToken);
 	                    // Since this is a stateless request to API using access token, we won't need the CSRF filter for this request
 	                    CsrfFilter.skipRequest((HttpServletRequest)request);

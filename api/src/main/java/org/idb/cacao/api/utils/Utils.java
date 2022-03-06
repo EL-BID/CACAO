@@ -17,42 +17,34 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.web.utils;
+package org.idb.cacao.api.utils;
+
+import org.apache.lucene.search.TotalHits;
+import org.elasticsearch.action.search.SearchResponse;
 
 /**
- * Encapsulate a {@link org.elasticsearch.script.Script}
+ * Generic Utilities
  * 
  * @author Rivelino Patrício
  * 
- * @since 07/02/2022
+ * @since 06/03/2022
  *
  */
-public class Script {
-	
-	private org.elasticsearch.script.Script internalScript;
-	
-	private String id;
-	
-	public Script(org.elasticsearch.script.Script script, String id) {
-		super();
-		this.internalScript = script;
-		this.id = id;
-	}
+public class Utils {	
 
-	public org.elasticsearch.script.Script getScript() {
-		return internalScript;
-	}
-
-	public void setScript(org.elasticsearch.script.Script script) {
-		this.internalScript = script;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
+	/**
+	 * Given a {@link SearchResponse} identify and return total hits
+	 *  
+	 * @param sresp	A SearchResponse to 
+	 * @return
+	 */
+	public static long getTotalHits(SearchResponse sresp) {
+		if ( sresp == null || sresp.getHits() == null )
+			return 0;
+		TotalHits hits = sresp.getHits().getTotalHits();		
+		if (hits != null )
+			return hits.value;
+		return 0;
 	}
 
 }

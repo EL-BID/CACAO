@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.account.etl;
 
-import static org.idb.cacao.api.ValidationContext.ISO_8601_DATE;
+import static org.idb.cacao.api.utils.ParserUtils.ISO_8601_DATE;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

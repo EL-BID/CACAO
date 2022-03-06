@@ -247,7 +247,7 @@ public class AnalysisAPIController {
 		String leftSymbol = messageSource.getMessage("currency.symbol.prefix", null, LocaleContextHolder.getLocale());
 		String rightSymbol = messageSource.getMessage("currency.symbol.suffix", null, LocaleContextHolder.getLocale());
 		String currencySymbol = leftSymbol + rightSymbol;
-		String symbolAfter = ( null == leftSymbol || leftSymbol.isEmpty() ) ? "true" : "false";
+		String symbolAfter = leftSymbol.isEmpty() ? "true" : "false";
 		String monthFormat = messageSource.getMessage("month.format", null, LocaleContextHolder.getLocale());
 		DateTimeFormatter simpleFormat = DateTimeFormatter.ofPattern(monthFormat);	
 

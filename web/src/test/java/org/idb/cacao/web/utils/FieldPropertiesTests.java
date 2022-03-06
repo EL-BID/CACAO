@@ -41,11 +41,11 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
  * @since 31/10/2021
  *
  */
-public class FieldPropertiesTests {
+class FieldPropertiesTests {
 
 
 	@Test
-	public void allProperties() throws Exception {
+	void allProperties() throws Exception {
 		
 		Map<String,FieldProperties> allProperties = FieldProperties.toFieldProperties(Item.class);
 		

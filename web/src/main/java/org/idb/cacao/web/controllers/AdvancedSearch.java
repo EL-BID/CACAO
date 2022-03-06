@@ -704,7 +704,7 @@ public class AdvancedSearch implements Cloneable {
 		public QueryFilterEnum(String name, Class<? extends Enum<?>> enumeration, MessageSource messageSource) {
 			super(name);
 			this.enumeration = enumeration;
-			wiredTo(messageSource);
+			super.wiredTo(messageSource);
 		}
 		
 		public String getArgument() {

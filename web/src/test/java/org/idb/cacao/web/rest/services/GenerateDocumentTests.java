@@ -172,7 +172,7 @@ public class GenerateDocumentTests {
 	 * Test the RandomDataGenerator methods
 	 */
 	@Test 
-	public void testRandomDataGenerator() {
+	void testRandomDataGenerator() {
 		
 		// Before running the tests, lets populate with some built-in domain table
 		domainService.assertDomainTablesForAllArchetypes(/*overwrite*/false);
@@ -223,7 +223,7 @@ public class GenerateDocumentTests {
 			boolean b = generator.nextRandomBoolean();
 			generatedBooleans.add(b);
 		}
-		assertTrue(generatedBooleans.size()==2, "Expected two boolean values, but created only this: "+generatedBooleans);
+		assertEquals(2, generatedBooleans.size(), "Expected two boolean values, but created only this: "+generatedBooleans);
 		
 		Set<Integer> generatedIntegers = new HashSet<>();
 		for (int i=0; i<10; i++) {
@@ -252,7 +252,7 @@ public class GenerateDocumentTests {
 	 * Test the ExcelGenerator object
 	 */
 	@Test 
-	public void testExcelGenerator() throws Exception {
+	void testExcelGenerator() throws Exception {
 		
 		// Creates some template for testing
 		DocumentTemplate template = new DocumentTemplate();

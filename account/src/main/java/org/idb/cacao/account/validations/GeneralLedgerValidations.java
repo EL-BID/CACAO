@@ -20,6 +20,7 @@
 package org.idb.cacao.account.validations;
 
 import org.idb.cacao.api.ValidationContext;
+import static org.idb.cacao.api.utils.ParserUtils.ISO_8601_DATE;
 
 import static org.idb.cacao.api.ValidationContext.*;
 import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAMES.*;
