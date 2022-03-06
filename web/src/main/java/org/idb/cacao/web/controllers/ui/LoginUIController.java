@@ -211,6 +211,13 @@ public class LoginUIController {
 				menu.add(
 					new MenuItem(messages.getMessage("dashboards.admin", null, LocaleContextHolder.getLocale()), uri));
 			}
+			
+			if (hasStandardRole(roles, ESStandardRoles.DASHBOARDS_WRITE)) {
+				menu.add(
+					new MenuItem(messages.getMessage("dashboards.copy", null, LocaleContextHolder.getLocale()), 
+						"/dashboards-list"));
+			}
+			
 		}
 		
 		if (hasPrivilege(roles, SystemPrivilege.CONFIG_API_TOKEN)) {

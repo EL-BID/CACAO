@@ -35,11 +35,11 @@ import org.idb.cacao.web.entities.UserProfile;
  */
 public enum ESStandardRoles {
 
-//	DASHBOARDS_READ_TAX("roleDashboardsRead", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_dashboard.read"), /*resources*/Arrays.asList("space:tax-public"), /*allIndicesPrivileges*/Arrays.asList("read"),
-//			/*userProfiles*/UserProfile.QUERIES,UserProfile.AUTHORITY),
-//	
-//	DASHBOARDS_READ_DECLARANT("roleDashboardsReadDeclarant", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_dashboard.read"), /*resources*/Arrays.asList("space:declarant-public"), /*allIndicesPrivileges*/Arrays.asList("read"),
-//			/*userProfiles*/UserProfile.DECLARANT,UserProfile.BANK,UserProfile.QUERIES,UserProfile.AUTHORITY),
+	DASHBOARDS_READ_TAX("roleDashboardsRead", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_dashboard.read"), /*resources*/Arrays.asList("space:tax-public"), /*allIndicesPrivileges*/Arrays.asList("read"),
+			/*userProfiles*/UserProfile.SYSADMIN,UserProfile.MASTER,UserProfile.SUPPORT,UserProfile.AUTHORITY),
+	
+	DASHBOARDS_READ_DECLARANT("roleDashboardsReadDeclarant", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_dashboard.read"), /*resources*/Arrays.asList("space:declarant-public"), /*allIndicesPrivileges*/Arrays.asList("read"),
+			/*userProfiles*/UserProfile.DECLARANT, UserProfile.SYSADMIN,UserProfile.MASTER,UserProfile.SUPPORT,UserProfile.AUTHORITY),
 	
 	DASHBOARDS_WRITE("roleDashboardsWrite", /*application*/"kibana-.kibana", /*privileges*/Arrays.asList("feature_dashboard.all","feature_discover.all","feature_visualize.all"), /*resources*/Arrays.asList("space:default","space:tax-public","space:declarant-public","space:tax-master"), /*allIndicesPrivileges*/Arrays.asList("read"),
 			/*userProfiles*/UserProfile.SYSADMIN,UserProfile.MASTER,UserProfile.SUPPORT,UserProfile.AUTHORITY),
