@@ -155,7 +155,7 @@ public class ControllerUtils {
 	    		}
 	    	}
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		// do not throw exception here
     	}
     	return report.toString();
@@ -183,7 +183,7 @@ public class ControllerUtils {
 	    		report.append("PARAM: "+params);
 	    	}
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		// do not throw exception here
     	}
     	return report.toString();    	
@@ -209,7 +209,7 @@ public class ControllerUtils {
 	    		}
 	    	}
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		// do not throw exception here
     	}
     	return report.toString();    	
@@ -223,7 +223,7 @@ public class ControllerUtils {
     	try {
     		return searchCall.search();
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
     			return Page.empty();
     		}
@@ -251,7 +251,7 @@ public class ControllerUtils {
     	try {
     		return searchCall.search();
     	}
-    	catch (Throwable ex) {
+    	catch (Exception ex) {
     		if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
     			return Optional.empty();
     		}
@@ -281,7 +281,7 @@ public class ControllerUtils {
 	    		model.addAttribute("logged_area", Boolean.TRUE);
 	    	}
     	}
-	    catch (Throwable ex) { }
+	    catch (Exception ex) { }
     }
 
     /**

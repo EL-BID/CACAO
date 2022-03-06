@@ -28,6 +28,7 @@ import java.util.Random;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.archetypes.ShareholdingArchetype;
 import org.idb.cacao.account.elements.ShareType;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -68,7 +69,7 @@ public class ShareholdingGenerator implements CustomDataGenerator {
 	private Random genSeed;
 
 	public ShareholdingGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
-			throws Exception {
+			throws GeneralException {
 		
 		this.records = (records<0) ? DEFAULT_NUMBER_OF_SHAREHOLDING : records;
 

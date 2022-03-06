@@ -373,7 +373,7 @@ public class SanitizationService {
 					DeleteIndexRequest delete_request = new DeleteIndexRequest(cloned_indexName);
 					elasticsearchClient.indices().delete(delete_request, options);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					if (!ErrorUtils.isErrorNoIndexFound(ex)) {
 						log.log(Level.WARNING, "Error while deleting temporary index"+cloned_indexName, ex);
 					}
@@ -402,7 +402,7 @@ public class SanitizationService {
 						ack1 = resizeResponse.isAcknowledged();
 						ack2 = resizeResponse.isShardsAcknowledged();
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						
 						if (ErrorUtils.isErrorIndexReadOnly(ex)) {
 							
@@ -503,7 +503,7 @@ public class SanitizationService {
 				deleteIndexResponse = elasticsearchClient.indices().delete(delete_request, options);
 
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				if (ErrorUtils.isErrorNoIndexFound(ex))
 					continue;
 				log.log(Level.WARNING, "Error while trying to compatibilize index mapping '"+indexName+"'", ex);

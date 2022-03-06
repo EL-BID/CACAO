@@ -55,6 +55,7 @@ import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.ETLContext.LoadDataStrategy;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.springframework.data.util.Pair;
 
@@ -381,8 +382,8 @@ public class MonthlyBalanceSheetProcessor {
 				}
 			});
 		}			
-		catch (Throwable ex) {
-			log.log(Level.SEVERE, "Error reading Opening Balances for template "+ob.getTemplateName()+" "+ob.getTemplateVersion()+" taxpayer "+ob.getTaxPayerId()+" period "+ob.getTaxPeriodNumber(), ex);
+		catch (Exception e) {
+			log.log(Level.SEVERE, "Error reading Opening Balances for template "+ob.getTemplateName()+" "+ob.getTemplateVersion()+" taxpayer "+ob.getTaxPayerId()+" period "+ob.getTaxPeriodNumber(), e);
 		}
 		return accounts;
 	}
@@ -637,7 +638,7 @@ public class MonthlyBalanceSheetProcessor {
 			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
 				final String fieldName = IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.AccountCode.name())+".keyword";
 				@Override
-				public Optional<Map<String,Object>> load(String accountCode) throws Exception {
+				public Optional<Map<String,Object>> load(String accountCode) throws GeneralException {
 					if (accountCode==null)
 						return Optional.empty();
 					else {
@@ -646,7 +647,7 @@ public class MonthlyBalanceSheetProcessor {
 									.map(IndexNamesUtils::normalizeAllKeysForES)
 									.map(AccountingLoader::removeControlFields);
 						}
-						catch (Throwable ex) {
+						catch (Exception e) {
 							return Optional.empty();
 						}
 					}

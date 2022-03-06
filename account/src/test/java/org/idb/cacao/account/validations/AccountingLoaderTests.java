@@ -57,6 +57,7 @@ import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.ValidatedDataFieldNames;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
@@ -706,7 +707,7 @@ public class AccountingLoaderTests {
 		}
 
 		@Override
-		public Collection<DocumentTemplate> getTemplates(String archetype) throws Exception {
+		public Collection<DocumentTemplate> getTemplates(String archetype) throws GeneralException {
 			return templates.stream().filter(t->archetype.equalsIgnoreCase(t.getArchetype())).collect(Collectors.toList());
 		}
 		
@@ -744,7 +745,7 @@ public class AccountingLoaderTests {
 
 		@Override
 		public Collection<DocumentUploaded> getUploads(String templateName, String templateVersion, String taxPayerId,
-				Integer taxPeriodNumber) throws Exception {
+				Integer taxPeriodNumber) throws GeneralException {
 			return uploads.stream().filter(u->templateName.equalsIgnoreCase(u.getTemplateName())
 					&& templateVersion.equalsIgnoreCase(u.getTemplateVersion())
 					&& taxPayerId.equalsIgnoreCase(u.getTaxPayerId())
@@ -753,7 +754,7 @@ public class AccountingLoaderTests {
 		}
 
 		@Override
-		public boolean hasValidation(String templateName, String templateVersion, String fileId) throws Exception {
+		public boolean hasValidation(String templateName, String templateVersion, String fileId) throws GeneralException {
 			return uploads.stream().anyMatch(u->templateName.equalsIgnoreCase(u.getTemplateName())
 					&& templateVersion.equalsIgnoreCase(u.getTemplateVersion())
 					&& fileId.equalsIgnoreCase(u.getFileId()));
@@ -761,7 +762,7 @@ public class AccountingLoaderTests {
 
 		@Override
 		public Stream<Map<String, Object>> getValidatedData(String templateName, String templateVersion, String fileId,
-				Optional<String[]> sortBy, Optional<SortOrder> sortOrder) throws Exception {
+				Optional<String[]> sortBy, Optional<SortOrder> sortOrder) throws GeneralException {
 			DocumentUploaded upload = uploads.stream().filter(u->templateName.equalsIgnoreCase(u.getTemplateName())
 					&& templateVersion.equalsIgnoreCase(u.getTemplateVersion())
 					&& fileId.equalsIgnoreCase(u.getFileId()))
@@ -773,7 +774,7 @@ public class AccountingLoaderTests {
 
 		@Override
 		public Optional<Map<String, Object>> getValidatedData(String templateName, String templateVersion,
-				String fileId, QueryBuilder query) throws Exception {
+				String fileId, QueryBuilder query) throws GeneralException {
 			DocumentUploaded upload = uploads.stream().filter(u->templateName.equalsIgnoreCase(u.getTemplateName())
 					&& templateVersion.equalsIgnoreCase(u.getTemplateVersion())
 					&& fileId.equalsIgnoreCase(u.getFileId()))

@@ -231,7 +231,7 @@ public class FileUploadedConsumerService {
 			try {
 				parser.start();
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				setSituation(doc, DocumentSituation.INVALID);
 				validations.addLogError("{doc.error.parse}");
 				saveValidationMessages(validationContext);
@@ -364,7 +364,7 @@ public class FileUploadedConsumerService {
 				catch (ValidationException ex) {
 					throw ex;
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					setSituation(doc, DocumentSituation.INVALID);
 					String error_msg = (ex.getMessage()==null) ? "" : ex.getMessage().replaceAll("[\\,\\(\\)\\{\\}]", "");
 					validations.addLogError("{error.internal.server("+error_msg+")}");
@@ -687,7 +687,7 @@ public class FileUploadedConsumerService {
 		for (Runnable proc : rollbackProcedures) {
 			try {
 				proc.run();
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				// TODO Add logging
 				log.log(Level.SEVERE, "Could not rollback", ex);
 			}
@@ -713,7 +713,7 @@ public class FileUploadedConsumerService {
 			Pattern p;
 			try {
 				p = Pattern.compile(expr, Pattern.CASE_INSENSITIVE);
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				continue;
 			}
 

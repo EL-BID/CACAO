@@ -242,7 +242,7 @@ public class KeyStoreService {
 				genSelfSigned(file, alias, password);
 			}
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 	}

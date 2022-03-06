@@ -27,6 +27,7 @@ import org.idb.cacao.account.generator.AccountDataGenerator;
 import org.idb.cacao.account.validations.GeneralLedgerValidations;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -244,7 +245,7 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	 */
 	@Override
 	public CustomDataGenerator getCustomGenerator(DocumentTemplate template, DocumentFormat format, long seed,
-			long records) throws Exception {
+			long records) throws GeneralException {
 		if (hasCustomGenerator(template, format))
 			return new AccountDataGenerator(template, format, seed, records);
 		else

@@ -129,7 +129,7 @@ public class ChartOfAccountsValidationsTests {
 	 * Validates an arbitrary Chart of Accounts that should be considered invalid because there are no accounts defined in LIABILITIES category
 	 */
 	@Test
-	public void validateMissingLiabilitiesInChartOfAccounts() throws Exception {
+	public void validateMissingLiabilitiesInChartOfAccounts() throws ParseException {
 		
 		// Prepare the test case scenario
 		
@@ -157,7 +157,7 @@ public class ChartOfAccountsValidationsTests {
 	 * Validates an arbitrary Chart of Accounts that should be considered invalid because there are no accounts defined in EQUITY category
 	 */
 	@Test
-	public void validateMissingEquityInChartOfAccounts() throws Exception {
+	public void validateMissingEquityInChartOfAccounts() throws ParseException {
 		
 		// Prepare the test case scenario
 		
@@ -186,7 +186,7 @@ public class ChartOfAccountsValidationsTests {
 	 * not related to the category
 	 */
 	@Test
-	public void validateMisplacedChartOfAccounts() throws Exception {
+	public void validateMisplacedChartOfAccounts() throws ParseException {
 		
 		// Prepare the test case scenario
 		

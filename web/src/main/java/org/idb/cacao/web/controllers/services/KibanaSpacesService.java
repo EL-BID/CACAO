@@ -19,7 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
@@ -124,7 +123,7 @@ public class KibanaSpacesService {
 							/*keyMapper*/s->s.getTitle(), 
 							/*valueMapper*/Function.identity(), 
 							/*mergeFunction*/(a,b)->a));
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.WARNING, "Failed to get Kibana index patterns for the default space", ex);
 			return;
 		}
@@ -132,7 +131,7 @@ public class KibanaSpacesService {
 		List<KibanaSpace> spaces;
 		try {
 			spaces = ESUtils.getKibanaSpaces(env, restTemplate);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			log.log(Level.WARNING, "Failed to get Kibana spaces", ex);
 			return;
 		}
@@ -142,7 +141,7 @@ public class KibanaSpacesService {
 		try {
 			indices = publishedDataService.getIndicesForPublishedData();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (CommonErrors.isErrorNoIndexFound(ex) || CommonErrors.isErrorNoMappingFoundForColumn(ex))
 				indices = Collections.emptyList();
 			else {
@@ -156,7 +155,7 @@ public class KibanaSpacesService {
 			try {
 				syncKibanaIndexPatternsInternal(index, spaces, map_patterns, collectCreationInfo);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.WARNING, "Failed to synchronize index patterns at Kibana for ElasticSearch index "+index, ex);
 			}
 
@@ -213,7 +212,7 @@ public class KibanaSpacesService {
 										/*keyMapper*/s->s.getTitle(), 
 										/*valueMapper*/Function.identity(), 
 										/*mergeFunction*/(a,b)->a));
-					} catch (Throwable ex) {
+					} catch (Exception ex) {
 						log.log(Level.WARNING, "Failed to get Kibana index patterns for the default space", ex);
 						return;
 					}
@@ -223,7 +222,7 @@ public class KibanaSpacesService {
 				if (spaces==null) {
 					try {
 						spaces = ESUtils.getKibanaSpaces(env, restTemplate);
-					} catch (Throwable ex) {
+					} catch (Exception ex) {
 						log.log(Level.WARNING, "Failed to get Kibana spaces", ex);
 						return;
 					}
@@ -238,7 +237,7 @@ public class KibanaSpacesService {
 						if (ok)
 							count_index_patterns_ok++;
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						log.log(Level.WARNING, "Failed to synchronize index patterns at Kibana for ElasticSearch index "+index+" related to archetype "+archetype, ex);
 					}
 		
@@ -276,7 +275,7 @@ public class KibanaSpacesService {
 								/*keyMapper*/s->s.getTitle(), 
 								/*valueMapper*/Function.identity(), 
 								/*mergeFunction*/(a,b)->a));
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				log.log(Level.WARNING, "Failed to get Kibana index patterns for the default space", ex);
 				return;
 			}
@@ -285,7 +284,7 @@ public class KibanaSpacesService {
 			List<KibanaSpace> spaces;
 			try {
 				spaces = ESUtils.getKibanaSpaces(env, restTemplate);
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				log.log(Level.WARNING, "Failed to get Kibana spaces", ex);
 				return;
 			}
@@ -293,7 +292,7 @@ public class KibanaSpacesService {
 			try {
 				syncKibanaIndexPatternsInternal(index, spaces, map_patterns, /*collectCreationInfo*/null);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.WARNING, "Failed to synchronize index patterns at Kibana for ElasticSearch index "+index, ex);
 			}
 			
@@ -348,7 +347,7 @@ public class KibanaSpacesService {
 		try {
 			count = ESUtils.countDocs(elasticsearchClient, indexName);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (CommonErrors.isErrorNoIndexFound(ex))
 				return false; // index does not exist
 			log.log(Level.WARNING, "Failed to get documents count at index "+indexName, ex);
@@ -372,7 +371,7 @@ public class KibanaSpacesService {
 			if (indexPatternId==null || indexPatternId.trim().length()==0)
 				throw new RuntimeException("The API did not create a new index pattern!");
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			if (ex.getMessage()!=null && ex.getMessage().contains("Duplicate index pattern")) {
 				// Ignore if the index pattern already exists
 				List<KibanaSavedObject> existing_index_patterns;
@@ -403,7 +402,7 @@ public class KibanaSpacesService {
 				try {
 					ESUtils.copyKibanaSavedObjects(env, restTemplate, /*spaceIdSource*/null, /*spaceIdTarget*/space.getId(), "index-pattern", new String[] {indexPatternId});
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.WARNING, "Failed to copy index pattern called '"+indexPatternTitle+"' with id '"+indexPatternId+"' at Kibana default space to the space "+space.getName()+" with id "+space.getId(), ex);						
 				}
 			}
@@ -420,7 +419,7 @@ public class KibanaSpacesService {
 		try {
 			return Integer.parseInt(env.getProperty("docs.min.auto.index.pattern", /*defaultValue*/"1"));
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			return 0;
 		}
 	}

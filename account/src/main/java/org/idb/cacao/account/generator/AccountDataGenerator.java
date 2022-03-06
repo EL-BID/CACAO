@@ -49,6 +49,7 @@ import org.idb.cacao.account.elements.AccountCategory;
 import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.AccountSubcategory;
 import org.idb.cacao.account.etl.PartialEntry;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentFormat;
@@ -198,7 +199,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	private Number supplierId;
 
 	public AccountDataGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
-			throws Exception {
+			throws GeneralException {
 		
 		this.chartOfAccounts = ChartOfAccountsArchetype.NAME.equalsIgnoreCase(template.getArchetype());
 		this.openingBalance = OpeningBalanceArchetype.NAME.equalsIgnoreCase(template.getArchetype());
@@ -287,7 +288,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 
 		if (generalLedger) {
 			if (this.records<2) {
-				throw new Exception("General ledger must have at least 2 records!");
+				throw new GeneralException("General ledger must have at least 2 records!");
 			}
 			taxPayerIdField = template.getField(GeneralLedgerArchetype.FIELDS_NAMES.TaxPayerId.name());
 		}

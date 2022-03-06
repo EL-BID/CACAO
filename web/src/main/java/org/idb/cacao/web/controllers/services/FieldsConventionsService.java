@@ -310,7 +310,7 @@ public class FieldsConventionsService {
 				String option = env.getProperty("tax.value.treatment");
 				taxValueTreatment = ValueTreatment.parse(option);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				taxValueTreatment = ValueTreatment.NONE;
 			}
 		}

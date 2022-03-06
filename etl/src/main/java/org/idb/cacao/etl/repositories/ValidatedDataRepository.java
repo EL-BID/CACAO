@@ -42,6 +42,7 @@ import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.errors.CommonErrors;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ScrollUtils;
@@ -73,7 +74,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 	 * @see org.idb.cacao.api.ETLContext.ValidatedDataRepository#getTemplates(java.lang.String)
 	 */
 	@Override
-	public Collection<DocumentTemplate> getTemplates(String archetype) throws Exception {
+	public Collection<DocumentTemplate> getTemplates(String archetype) throws GeneralException {
 		return documentTemplateRepository.findByArchetype(archetype);
 	}
 
@@ -83,7 +84,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 	 */
 	@Override
 	public Collection<DocumentUploaded> getUploads(String templateName, String templateVersion, String taxPayerId,
-			Integer taxPeriodNumber) throws Exception {
+			Integer taxPeriodNumber) throws GeneralException {
 		
 		Page<DocumentUploaded> uploads =
 		documentUploadedRepository.findByTemplateNameAndTemplateVersionAndTaxPayerIdAndTaxPeriodNumber(templateName, templateVersion, taxPayerId, taxPeriodNumber, PageRequest.of(0, 10_000));
@@ -99,7 +100,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 	 * @see org.idb.cacao.api.ETLContext.ValidatedDataRepository#hasValidation(java.lang.String, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public boolean hasValidation(String templateName, String templateVersion, String fileId) throws Exception {
+	public boolean hasValidation(String templateName, String templateVersion, String fileId) throws IOException {
 		final String index_name = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
     	SearchRequest searchRequest = new SearchRequest(index_name);
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -124,7 +125,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 	 */
 	@Override
 	public Stream<Map<String, Object>> getValidatedData(String templateName, String templateVersion, String fileId, Optional<String[]> sortBy,
-			final Optional<SortOrder> sortOrder) throws Exception {
+			final Optional<SortOrder> sortOrder) throws GeneralException {
 		final String indexName = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
 		
 		return ScrollUtils.findWithScroll(/*entity*/null, indexName, elasticsearchClient, 
@@ -147,7 +148,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 	 */
 	@Override
 	public Optional<Map<String, Object>> getValidatedData(String templateName, String templateVersion, String fileId,
-			QueryBuilder query) throws Exception {
+			QueryBuilder query) throws IOException {
 		final String indexName = IndexNamesUtils.formatIndexNameForValidatedData(templateName, templateVersion);
     	SearchRequest searchRequest = new SearchRequest(indexName);
     	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

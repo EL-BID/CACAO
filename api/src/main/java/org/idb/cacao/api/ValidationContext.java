@@ -450,7 +450,7 @@ public class ValidationContext {
 			try {
 				date = getParsedDateContent(record, fieldName, nestedFieldNames);
 			}
-			catch (Throwable ex) {
+			catch (RuntimeException e) {
 				context.addAlert("{error.invalidField("+fieldName+")}");
 				return null;				
 			}
@@ -465,7 +465,7 @@ public class ValidationContext {
 		try {
 			anyvalue = getParsedContent(record, fieldName, nestedFieldNames);
 		}
-		catch (Throwable ex) {
+		catch (RuntimeException e) {
 			context.addAlert("{error.invalidField("+fieldName+")}");
 			return null;				
 		}
@@ -610,7 +610,7 @@ public class ValidationContext {
 		    	    	try {
 		    	    		return parseDecimalGrouping(txt);
 		    	    	}
-		    	    	catch (Throwable ex) {
+		    	    	catch (Exception ex) {
 		    	    		return parseDecimalWithComma(txt);
 		    	    	}  
 		    		}
@@ -618,7 +618,7 @@ public class ValidationContext {
 		    	    	try {
 		    	    		return parseDecimalWithComma(txt);
 		    	    	}
-		    	    	catch (Throwable ex) {
+		    	    	catch (Exception ex) {
 		    	    		return parseDecimal(txt);
 		    	    	}    			
 		    		}
@@ -627,7 +627,7 @@ public class ValidationContext {
 			    	try {
 			    		return parseDecimalWithComma(txt);
 			    	}
-			    	catch (Throwable ex) {
+			    	catch (Exception ex) {
 			    		return parseDecimal(txt);
 			    	}    			    		
 		    	}
@@ -637,7 +637,7 @@ public class ValidationContext {
 		    	    	try {
 		    	    		return parseDecimalWithComma(txt);
 		    	    	}
-		    	    	catch (Throwable ex) {
+		    	    	catch (Exception ex) {
 		    	    		return parseDecimal(txt);
 		    	    	}    			    		
 		    		}
@@ -648,7 +648,7 @@ public class ValidationContext {
 		    	    	try {
 		    	    		return parseDecimal(txt);
 		    	    	}
-		    	    	catch (Throwable ex) {
+		    	    	catch (Exception ex) {
 		    	    		return parseDecimalWithComma(txt);
 		    	    	}    			    		    			
 		    		}
@@ -657,7 +657,7 @@ public class ValidationContext {
 			    		// we will assume it's a grouping separator
 			    		return parseDecimalWithComma(txt);
 			    	}
-			    	catch (Throwable ex) {
+			    	catch (Exception ex) {
 			    		return parseDecimal(txt);
 			    	}    			    		
 		    	}
@@ -722,7 +722,7 @@ public class ValidationContext {
 		try {
 			patternExpression = Pattern.compile(normalizedExpression, Pattern.CASE_INSENSITIVE);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			patternExpression = null;
 		}
 		

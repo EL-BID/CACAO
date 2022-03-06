@@ -139,7 +139,7 @@ public class FilenameGenerator {
 			try {
 				this.pattern = Pattern.compile(r);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				this.pattern = Pattern.compile(Pattern.quote(r));
 			}
 		}

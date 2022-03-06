@@ -180,7 +180,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 			try {
 				service.assertStandardSpaces();
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.SEVERE, "Error configuring Kibana Spaces", ex);						
 			}
 			if (es_username!=null && es_username.trim().length()>0) {
@@ -194,7 +194,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 					}
 					authenticationEnabled = true;
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error initializing KibanaProxy", ex);
 					authenticationEnabled = false; // leave authentication process for Kibana itself (will prompt user for login and password)
 				}
@@ -211,7 +211,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 					SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
 			        builder.setSSLSocketFactory(sslConnectionFactory);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					log.log(Level.SEVERE, "Error configuring SSL for Proxy", ex);
 				}
 			}
@@ -244,7 +244,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 			try {
 				checkedUserStatus = checkUserAccountForKibanaAccess(user);
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.SEVERE, "Error while checking user account for Kibana access", ex);
 				servletResponse.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR); // 500
 				servletResponse.getWriter().write("Internal server error");                    
@@ -313,7 +313,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 						try {
 							userService.createSpaceForPrivateDashboards(user, /*createCompanionRole*/authenticationEnabled);
 						}
-						catch (Throwable ex) {
+						catch (Exception ex) {
 							log.log(Level.SEVERE, "Error creating Kibana Space for user "+user.getLogin(), ex);						
 						}
 					}

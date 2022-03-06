@@ -46,6 +46,7 @@ import org.elasticsearch.search.aggregations.metrics.Min;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.Periodicity;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,17 +95,17 @@ public class DocumentStoreService {
 			if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex))
 				return; // no match
 			log.log(Level.SEVERE, ex, () -> "Error while fetching document details about document "+doc.getId()+" "+template);
-			throw new Exception(messageSource.getMessage("general_error_msg1", null, LocaleContextHolder.getLocale()));
+			throw new GeneralException(messageSource.getMessage("general_error_msg1", null, LocaleContextHolder.getLocale()));
 		}
 		if (resp!=null) 
 		{
 	    	log.log(Level.FINE, () -> "User "+auth.getName()+" requested details about document "+doc.getId()+" "+template+" and got "+resp.getHits().getTotalHits().value+" response in "+resp.getTook());
 	    	
 	    	if (resp.isTimedOut() || Boolean.TRUE.equals(resp.isTerminatedEarly())) {
-	    		throw new Exception(messageSource.getMessage("timed_out", null, LocaleContextHolder.getLocale()));
+	    		throw new GeneralException(messageSource.getMessage("timed_out", null, LocaleContextHolder.getLocale()));
 	    	}
 	    	else if (resp.getHits().getTotalHits().value==0) {
-	    		throw new Exception(messageSource.getMessage("doc_not_found", null, LocaleContextHolder.getLocale()));
+	    		throw new GeneralException(messageSource.getMessage("doc_not_found", null, LocaleContextHolder.getLocale()));
 	    	}
 	    	else {
 	    		for (SearchHit hit:resp.getHits()) {
@@ -304,7 +305,7 @@ public class DocumentStoreService {
     	SearchResponse sresp;
 		try {
 			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			if (ErrorUtils.isErrorIllegalArgumentFieldsNotOptimized(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
 				searchRequest = searchTaxpayersDeclarationsFirstPeriods(
 						filterTaxpayersIds,

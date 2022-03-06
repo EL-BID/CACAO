@@ -542,7 +542,7 @@ public class SyncAPIController {
 				sync_data.iterateResults(query_more_results, /*checkLimit*/false);
 				
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				log.log(Level.WARNING, "Error while searching for "+entity.getSimpleName()+" instances with no timestamp information", ex);
 			}
 			finally {
@@ -1063,7 +1063,7 @@ public class SyncAPIController {
 						saveToParquet.init();
 						finalization = saveToParquet;
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						if (ErrorUtils.isErrorNoIndexFound(ex) || ErrorUtils.isErrorNoMappingFoundForColumn(ex)) {
 							saveToParquet.setSchemaFromProperties(Collections.singletonMap("id", Collections.singletonMap("type", "text")));
 							saveToParquet.init();
@@ -1145,7 +1145,7 @@ public class SyncAPIController {
 				if (finalization!=null) {
 					try {
 						finalization.close();
-					} catch (Throwable ex) {
+					} catch (Exception ex) {
 						log.log(Level.WARNING, "Error closing temporary file with PARQUET format!", ex);
 					}
 				}
@@ -1157,7 +1157,7 @@ public class SyncAPIController {
 							try (InputStream fileInput = new FileInputStream(tempFile)) {
 								IOUtils.copy(fileInput, zip_out);
 							}
-						} catch (Throwable ex) {
+						} catch (Exception ex) {
 							if (ex.getMessage()!=null && ex.getMessage().contains("Broken pipe")) {
 								// peer has disconnected, do not need to write to LOG
 							}
@@ -1410,7 +1410,7 @@ public class SyncAPIController {
 	    	try {
 	        	sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
 	    	}
-	    	catch (Throwable ex) {
+	    	catch (Exception ex) {
 	    		log.log(Level.SEVERE, "Error while querying data from "+index_name, ex);
 	    		continue;
 	    	}
@@ -1507,7 +1507,7 @@ public class SyncAPIController {
 				// The filter has some form of regex wildcards, so let's treat as such
 				try {
 					return Pattern.compile(filter, Pattern.CASE_INSENSITIVE).matcher(ip_address).find();
-				} catch (Throwable ex) { return false; }
+				} catch (Exception ex) { return false; }
 			}
 			else {
 				// The filter has some simple form of wildcards, so let's add the regex form
@@ -1516,7 +1516,7 @@ public class SyncAPIController {
 							.replace(".","\\.") // treat dots as literals
 							.replace("*", ".*"),// treat wildcards as regex wildcards 
 							Pattern.CASE_INSENSITIVE).matcher(ip_address).find();
-				} catch (Throwable ex) { return false; }				
+				} catch (Exception ex) { return false; }				
 			}
 		}
 		else {
@@ -1643,7 +1643,7 @@ public class SyncAPIController {
 		    			instances_to_change.add(record);
 		    		}
 		    	});
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 				log.log(Level.WARNING, "Error while checking instances of '"+entity.getSimpleName()+"' for 'null' timestamps...", ex);
 			}
 	    	if (!instances_to_change.isEmpty()) {

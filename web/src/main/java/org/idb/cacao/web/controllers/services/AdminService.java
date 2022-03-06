@@ -94,6 +94,7 @@ import org.idb.cacao.api.DocumentSituationHistory;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.errors.CommonErrors;
+import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
@@ -378,7 +379,7 @@ public class AdminService {
 	public Object performOperation(String command) throws Exception {
 		
 		if (command==null || command.trim().length()==0)
-			throw new Exception("No operation!");
+			throw new GeneralException("No operation!");
 		
 		QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(command);
 		String[] commandParts = new String[tokenizer.countTokens()];
@@ -408,7 +409,7 @@ public class AdminService {
 		}
 		catch (ParseException ex)
 		{
-			throw new Exception("Invalid options for command "+op.name(), ex);
+			throw new GeneralException("Invalid options for command "+op.name(), ex);
 		}
 		if (cmdLine==null) {
 			throw new IllegalStateException("Invalid command line options for command "+op.name());
@@ -515,14 +516,14 @@ public class AdminService {
 	 */
 	public static Object copyIndex(AdminService service, CommandLine cmdLine) throws Exception {
 		if (!cmdLine.hasOption("s"))
-			throw new Exception("Missing required command line option 's'!");
+			throw new GeneralException("Missing required command line option 's'!");
 		if (!cmdLine.hasOption("d"))
-			throw new Exception("Missing required command line option 'd'!");
+			throw new GeneralException("Missing required command line option 'd'!");
 		
 		String sourceIndexName = cmdLine.getOptionValue("s");
 		String destinationIndexName = cmdLine.getOptionValue("d");
 		if (sourceIndexName.equals(destinationIndexName)) 
-			throw new Exception("Source index should not be the same as the destination index!");
+			throw new GeneralException("Source index should not be the same as the destination index!");
 
 		// Check if destination already exists
 		boolean destinationExists;
@@ -540,7 +541,7 @@ public class AdminService {
     	}
     	
     	if (destinationExists)
-    		throw new Exception("Destination already exists!");
+    		throw new GeneralException("Destination already exists!");
 
 		// Make the index read only (necessary for 'clone')
 		ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, sourceIndexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/true, /*closeAndReopenIndex*/false);
@@ -764,11 +765,11 @@ public class AdminService {
 	public static Object copyDashboard(AdminService service, CommandLine cmdLine) throws Exception {
 		
 		if (!cmdLine.hasOption("d"))
-			throw new Exception("Missing dashboard ID in command line option 'd'!");
+			throw new GeneralException("Missing dashboard ID in command line option 'd'!");
 		if (!cmdLine.hasOption("s"))
-			throw new Exception("Missing the ID of the SOURCE SPACE in command line option 's'!");
+			throw new GeneralException("Missing the ID of the SOURCE SPACE in command line option 's'!");
 		if (!cmdLine.hasOption("t"))
-			throw new Exception("Missing the ID of the TARGET SPACE in command line option 't'!");
+			throw new GeneralException("Missing the ID of the TARGET SPACE in command line option 't'!");
 		
 		String dashboardId = cmdLine.getOptionValue("d");
 		String sourceSpaceId = cmdLine.getOptionValue("s");
@@ -1628,9 +1629,9 @@ public class AdminService {
 	public static Object copyIndexPattern(AdminService service, CommandLine cmdLine) throws Exception {
 		
 		if (!cmdLine.hasOption("s"))
-			throw new Exception("Missing the ID of the SOURCE SPACE in command line option 's'!");
+			throw new GeneralException("Missing the ID of the SOURCE SPACE in command line option 's'!");
 		if (!cmdLine.hasOption("t"))
-			throw new Exception("Missing the ID of the TARGET SPACE in command line option 't'!");
+			throw new GeneralException("Missing the ID of the TARGET SPACE in command line option 't'!");
 		
 		String indexIdOrName = cmdLine.getOptionValue("i", null);
 		String sourceSpaceId = cmdLine.getOptionValue("s");
@@ -1720,9 +1721,9 @@ public class AdminService {
 	public static Object copyConfig(AdminService service, CommandLine cmdLine) throws Exception {
 
 		if (!cmdLine.hasOption("s"))
-			throw new Exception("Missing the ID of the SOURCE SPACE in command line option 's'!");
+			throw new GeneralException("Missing the ID of the SOURCE SPACE in command line option 's'!");
 		if (!cmdLine.hasOption("t"))
-			throw new Exception("Missing the ID of the TARGET SPACE in command line option 't'!");
+			throw new GeneralException("Missing the ID of the TARGET SPACE in command line option 't'!");
 
 		String sourceSpaceId = cmdLine.getOptionValue("s");
 		String targetSpaceId = cmdLine.getOptionValue("t");

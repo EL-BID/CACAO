@@ -32,6 +32,7 @@ import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.errors.CommonErrors;
 
+
 /**
  * Implementation of a 'data loading strategy' used by the ETL process in order to store
  * the published (denormalized) data.

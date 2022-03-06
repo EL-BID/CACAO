@@ -318,7 +318,7 @@ public class RandomDataGenerator {
 					.distinct()
 					.toArray(String[]::new);
 				}
-				catch (Throwable ex) {
+				catch (Exception ex) {
 					return new String[0];
 				}
 			});
