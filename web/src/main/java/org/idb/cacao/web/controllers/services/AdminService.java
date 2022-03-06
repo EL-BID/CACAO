@@ -573,7 +573,9 @@ public class AdminService {
 			ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, sourceIndexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
 			try {
 				ESUtils.changeBooleanIndexSetting(service.elasticsearchClient, destinationIndexName, ESUtils.SETTING_READ_ONLY, /*setting_value*/false, /*closeAndReopenIndex*/false);
-			} catch (Exception ex2) { }
+			} catch (Exception ex2) {
+				log.log(Level.INFO, ex2.getMessage(), ex2);
+			}
 		}
 		
 		return "SUCCESS";
@@ -878,10 +880,10 @@ public class AdminService {
 	public static Object tables(AdminService service, CommandLine cmdLine) {
 		StringBuilder report = new StringBuilder();
 		
-		report.append(String.format("%-40s\t%-10s\t%s\n", "name", "version", "group"));
+		report.append(String.format("%-40s\t%-10s\t%s%n", "name", "version", "group"));
 		try (Stream<DomainTable> tables = ScrollUtils.findAll(service.domainTableRepository, service.elasticsearchClient, 10).sorted();) {
 			tables.forEach(t->{
-				report.append(String.format("%-40s\t%-10s\t%s\n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
+				report.append(String.format("%-40s\t%-10s\t%s%n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
 			});
 		}
 
@@ -894,10 +896,10 @@ public class AdminService {
 	public static Object templates(AdminService service, CommandLine cmdLine) {
 		StringBuilder report = new StringBuilder();
 
-		report.append(String.format("%-40s\t%-10s\t%s\n", "name", "version", "group"));
+		report.append(String.format("%-40s\t%-10s\t%s%n", "name", "version", "group"));
 		try (Stream<DocumentTemplate> templates = ScrollUtils.findAll(service.templateRepository, service.elasticsearchClient, 10).sorted();) {
 			templates.forEach(t->{
-				report.append(String.format("%-40s\t%-10s\t%s\n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
+				report.append(String.format("%-40s\t%-10s\t%s%n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
 			});
 		}
 
@@ -922,7 +924,7 @@ public class AdminService {
 			template = templatesVersions.stream()
 					.filter(t->t.getInputs()!=null && !t.getInputs().isEmpty())
 					.sorted(Comparator.comparing(DocumentTemplate::getTemplateCreateTime).reversed())
-					.findFirst().get();
+					.findFirst().orElse(templatesVersions.get(0));
 		}
 		else {
 			template = templatesVersions.get(0);
@@ -1300,14 +1302,14 @@ public class AdminService {
 			// Show information about KAFKA consumers
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
-				report.append(String.format("%-10s\t%-20s\t%s\t%s\t%s\n","group","topic","part","offset","metadata"));
+				report.append(String.format("%-10s\t%-20s\t%s\t%s\t%s%n","group","topic","part","offset","metadata"));
 				for (ConsumerGroupListing l:kafkaAdminClient.listConsumerGroups().all().get()) {
 					String groupId = l.groupId();
 					for (Map.Entry<TopicPartition,OffsetAndMetadata> entry:kafkaAdminClient.listConsumerGroupOffsets(groupId).partitionsToOffsetAndMetadata().get().entrySet()) {
 						String topic = entry.getKey().topic();
 						int part = entry.getKey().partition();
 						long offset = entry.getValue().offset();
-						report.append(String.format("%-10s\t%-20s\t%d\t%d\t%s\n", groupId, topic, part, offset, entry.getValue().metadata()));
+						report.append(String.format("%-10s\t%-20s\t%d\t%d\t%s%n", groupId, topic, part, offset, entry.getValue().metadata()));
 					}
 				}
 
@@ -1318,7 +1320,7 @@ public class AdminService {
 			// Show information about KAFKA topics
 			try (AdminClient kafkaAdminClient = service.sysInfoService.getKafkaAdminClient();) {
 			
-				report.append(String.format("%-20s\t%s\t%s\t%s\n","topic","part","offset","timestamp"));
+				report.append(String.format("%-20s\t%s\t%s\t%s%n","topic","part","offset","timestamp"));
 				ListTopicsResult topicsInfo = kafkaAdminClient.listTopics();
 				for (Map.Entry<String,TopicDescription> tp_entry:kafkaAdminClient.describeTopics(topicsInfo.names().get()).all().get().entrySet()) {
 					String topic = tp_entry.getKey();
@@ -1335,13 +1337,13 @@ public class AdminService {
 						long offset = (offsetInfo==null) ? 0 : offsetInfo.offset();
 						long timestamp = (offsetInfo==null) ? 0 : offsetInfo.timestamp();
 						if (timestamp>0)
-							report.append(String.format("%-20s\t%d\t%d\t%s\n",topic, part, offset, ParserUtils.formatTimestampWithMS(new Date(timestamp))));
+							report.append(String.format("%-20s\t%d\t%d\t%s%n",topic, part, offset, ParserUtils.formatTimestampWithMS(new Date(timestamp))));
 						else
-							report.append(String.format("%-20s\t%d\t%d\n",topic, part, offset));
+							report.append(String.format("%-20s\t%d\t%d%n",topic, part, offset));
 						total += offset;
 						
 					} // LOOP over each partition of a topic
-					report.append(String.format("%-20s\t%s\t%d\n",topic, "total", total));
+					report.append(String.format("%-20s\t%s\t%d%n",topic, "total", total));
 					report.append("\n");
 				} // LOOP over each topic
 
@@ -1448,7 +1450,9 @@ public class AdminService {
 						ESUtils.deleteIndex(service.elasticsearchClient, indexName);
 						deletedIndices++;
 					}
-					catch (Exception ex) { }
+					catch (Exception ex) {
+						log.log(Level.INFO, ex.getMessage(), ex);
+					}
 				}
 			}
 			catch (Exception ex) {
