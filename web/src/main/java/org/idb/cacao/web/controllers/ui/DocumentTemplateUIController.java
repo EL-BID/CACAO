@@ -51,6 +51,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * Controller class for all endpoints related to UI regarding document templates.
+ */
 @Controller
 public class DocumentTemplateUIController {
 	private static final String ERROR_INVALID_TEMPLATE_ID = "Invalid template Id:";

@@ -1,0 +1,147 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+	<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<script src="/js/tabulator.min.js"></script>
+	<script src="/js/luxon.min.js"><</script>
+	
+</head>
+<body>
+	<!-- Fix to avoid overlap from the Menu -->
+	<div>
+		<br>
+	</div>
+	<div class="ui container">
+        <div class="ui breadcrumb">
+          <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
+          <div class="divider"> / </div>
+          <div class="active section" th:text="#{dashboards.copy}">Copy Dashboards</div>
+        </div>
+		<h2 class="ui header">
+			<i class="chart area icon"></i>
+			<span class="content" th:text="#{dashboards.copy}">Copy Dashboards</span>
+		</h2>
+       <div id="table" class="ui orange table"></div>       
+	   <div class="ui dimmer middle aligned center aligned" id="dimmer">
+			<div class="ui massive text loader" th:text="#{wait}">Wait</div>
+	   </div>
+	</div>
+	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
+	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
+	<div class="ui modal" id="modal_choose_space">
+	  <div class="image content">
+	    <div class="image"><i class="folder outline icon"></i></div>
+	    <div class="description ui header">
+	    	<p class="dashboard_copy_name"></p>
+	    	<p class="dashboard_copy_space"></p>
+	    	<p th:text="#{choose.target.space}">Choose target space</p>
+	    </div>
+	  </div>
+	  <div class="content">
+	  	<div class="grouped fields">
+           <div class="field" th:each="space : ${spaces}">
+	           <div class="ui checkbox">
+	           	   <input type="checkbox" th:attr="name=${space.id}" name="space_id">
+	           	   <label th:text="${space.name}">Space name</label>
+	           </div>
+	       </div>
+         </div>
+	  </div>
+	  <div class="actions">
+	    <div class="ui approve blue button" th:text="#{continue}">Continue</div>
+	    <div class="ui deny button" th:text="#{cancel}">Cancel</div>
+	  </div>
+	</div>		
+
+<div th:replace="fragments/tabulator_commons"></div>     
+   
+<script th:nonce="${cspNonce}" th:inline="javascript">
+
+let copyIcon = function(cell, formatterParams){ return "<i class='copy outline icon'></i>"};
+let viewIcon = function(cell, formatterParams){ return "<i class='chart area icon'></i>"};
+
+let copyAction = function(e, cell) {
+	  var dashboard_name = cell.getRow().getData().title;
+	  var dashboard_space = cell.getRow().getData().spaceName
+	  var target = [[@{/api/dashboard-copy/}]]+cell.getRow().getData().spaceId+"/"+cell.getRow().getIndex()
+	  var dlg = $('#modal_choose_space');
+	  var dimmer_el = $('#dimmer')
+	  dlg.find('.dashboard_copy_name').html(dashboard_name);
+	  dlg.find('.dashboard_copy_space').html(dashboard_space);
+	  dlg.modal({
+		  closable:false,
+		  onApprove: function(){
+			  var checked_spaces = [];
+			  dlg.find('input:checked').each(function(){checked_spaces.push($(this).attr('name'))})
+			  if (checked_spaces.length>0) {
+				 var req = {
+					target: checked_spaces
+				 };
+				 $.ajax({
+				    url: target,
+				    type: 'POST',
+				    dataType: 'json',
+				    contentType: 'application/json',
+				    data: JSON.stringify(req),
+				    cache: false,    
+					success: function(result) {
+						dimmer_el.dimmer('hide');
+						$('#modal_successful').modal('show')
+						setTimeout(function(){
+							window.location.replace([[@{/dashboards-list}]])
+						}, 2000);
+					},
+					error: function(e) {
+						dimmer_el.dimmer('hide');
+						var msg = e.responseText.replace(/\n/g, "<br />");
+						$('#modal_failed').find('.description').html(msg)
+						$('#modal_failed').modal('show')
+						console.log("ERROR : "+ msg);
+					}
+				});			 
+				dimmer_el.dimmer('show');  
+				  
+			  }
+			  return true;
+		  },
+		  onDeny: function(e){
+			  return true;
+		  }
+	  });
+	  dlg.modal('show');
+}
+
+let viewAction = function(e, cell) {
+	window.location = cell.getRow().getData().url;
+}
+
+let table = new Tabulator('#table', {
+	index: 'id',
+	layout: "fitData", //fit columns to width of table (optional)
+    pagination: true,
+	paginationMode: "local", //enable local pagination
+	paginationSize: tabulatorPaginationSize,
+	paginationSizeSelector: tabulatorPaginationSizeSelector,				
+	langs: tabulatorLanguageSpecs,
+	data: /*[[${dashboards}]]*/,
+    filterMode:"local",
+    sortMode: "local",
+    headerFilterLiveFilterDelay:700,
+    persistence:{
+		columns:true,
+	},
+    persistenceID:"dashboards_persistence",
+	locale:'xx',
+	columns:[ //Define Table Columns
+		{title: /*[[#{dashboard.name}]]*/ "Dashboard Title", field:"title", minWidth: 140, headerFilter: true},
+		{title: /*[[#{dashboard.space}]]*/ "Space", field:"spaceName", minWidth: 140, headerFilter: true },
+		{formatter:copyIcon, width:50, cellClick: copyAction, tooltip : /*[[#{copy}]]*/, headerSort:false},
+		{formatter:viewIcon, width:50, cellClick: viewAction, tooltip : /*[[#{view}]]*/, headerSort:false}
+	]
+});
+</script>
+</body>
+</html>
