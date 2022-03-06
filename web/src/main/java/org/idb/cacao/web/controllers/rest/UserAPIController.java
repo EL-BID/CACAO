@@ -36,6 +36,7 @@ import org.idb.cacao.api.Views;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.PaginationData;
+import org.idb.cacao.web.dto.UserDto;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.UserNotFoundException;
@@ -162,8 +163,8 @@ public class UserAPIController {
 
 	@Secured({"ROLE_USER_WRITE"})
 	@PostMapping(value="/user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Add a new user",response=User.class)
-    public ResponseEntity<Object> addUser(@Valid @RequestBody User user, BindingResult result) {
+	@ApiOperation(value="Add a new user",response=UserDto.class)
+    public ResponseEntity<Object> addUser(@Valid @RequestBody UserDto user, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
@@ -198,68 +199,68 @@ public class UserAPIController {
         	log.log(Level.INFO, String.format("Creating new user %s|%s|%s", user.getName(), user.getLogin(), user.getProfile()));
         }
         
+        User entity = new User();
         try {
-        	userRepository.saveWithTimestamp(user);
+        	user.updateEntity(entity);
+        	userRepository.saveWithTimestamp(entity);
         }
         catch (Exception ex) {
         	log.log(Level.SEVERE,"Create user failed", ex);
         	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
         }
-        return ResponseEntity.ok().body(user);
+        return ResponseEntity.ok().body(new UserDto(entity));
     }
 
 	@Secured({"ROLE_USER_WRITE"})
     @PutMapping(value="/user/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Updates an existing user",response=User.class)
-    public ResponseEntity<Object> updateUser(@PathVariable("id") String id, @Valid @RequestBody User user, BindingResult result) {
+	@ApiOperation(value="Updates an existing user",response=UserDto.class)
+    public ResponseEntity<Object> updateUser(@PathVariable("id") String id, @Valid @RequestBody UserDto user, BindingResult result) {
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
-        Optional<User> userInDatabase = userRepository.findById(id);
-        
-        if ((userInDatabase.isPresent() && UserProfile.SYSADMIN.equals(userInDatabase.get().getProfile()))
-        	|| UserProfile.SYSADMIN.equals(user.getProfile())) {
-        	// Only a SYSADMIN may change the user account of another SYSADMIN
-        	if (!ControllerUtils.isSystemAdmin()) {
-        		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
-        	}
+        Optional<User> existent = userRepository.findById(id);
+        if (!existent.isPresent()) {
+           	return ResponseEntity.notFound().build();
         }
-        
-        final boolean changed_user_profile = userInDatabase.isPresent() && hasChanged(userInDatabase.get().getProfile(), user.getProfile());
 
-        // Keep previous password, token and telegram information
-        if (userInDatabase.isPresent()) {      
-        	user.setPassword(userInDatabase.get().getPassword());
-        	user.setApiToken(userInDatabase.get().getApiToken());
+        
+        // Only a SYSADMIN may change the user account of another SYSADMIN
+        if ((UserProfile.SYSADMIN.equals(existent.get().getProfile())
+        	|| UserProfile.SYSADMIN.equals(user.getProfile())) && (!ControllerUtils.isSystemAdmin())) {
+        		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(messageSource.getMessage("error.accessDenied", null, LocaleContextHolder.getLocale()));
         }
+        
+		User entity = existent.get();
+        final boolean changed_user_profile = hasChanged(entity.getProfile(), user.getProfile());
+
+        user.updateEntity(entity);
         
         if (log.isLoggable(Level.INFO)) {
         	log.log(Level.INFO, String.format("Changing user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
         }
 
-        user.setId(id);
-        userRepository.saveWithTimestamp(user);
+        userRepository.saveWithTimestamp(entity);
         
         if (changed_user_profile
-        		&& user.getKibanaToken()!=null && user.getKibanaToken().trim().length()>0
+        		&& entity.getKibanaToken()!=null && entity.getKibanaToken().trim().length()>0
         		&& userService.hasUserControlForKibanaAccess()) {
         	// If the user profile has changed and if there is a token granting access to this user,
         	// it's necessary to update the user account at ElasticSearch as well.
         	try {
-        		userService.updateUserForKibanaAccess(user);
+        		userService.updateUserForKibanaAccess(entity);
         	}
         	catch (Exception ex) {
         		log.log(Level.SEVERE, String.format("Error while updating user access at Kibana for user account %s", user.getLogin()), ex);
         	}
         }
 
-        return ResponseEntity.ok().body(user);
+        return ResponseEntity.ok().body(new UserDto(entity));
     }
     
 	@Secured({"ROLE_USER_WRITE"})
 	@DeleteMapping(value="/user/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deletes an existing user",response=User.class)
+	@ApiOperation(value="Deletes an existing user",response=UserDto.class)
     public ResponseEntity<Object> deleteUser(@PathVariable("id") String id) {
         User user = userRepository.findById(id).orElse(null);
         if (user==null)
@@ -282,12 +283,12 @@ public class UserAPIController {
         	log.log(Level.SEVERE,"Delete user failed", ex);
         	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
         }
-        return ResponseEntity.ok().body(user);
+        return ResponseEntity.ok().body(new UserDto(user));
     }
 
 	@Secured({"ROLE_USER_WRITE"})
     @GetMapping(value="/user/{id}/activate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Activate an existing user", response=User.class)
+	@ApiOperation(value="Activate an existing user", response=UserDto.class)
     public ResponseEntity<Object> activate(
     		@ApiParam(name = "User ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -307,12 +308,12 @@ public class UserAPIController {
         	log.log(Level.SEVERE,"Activate user failed", ex);
         	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
         }
-        return ResponseEntity.ok().body(user);
+        return ResponseEntity.ok().body(new UserDto(user));
     }
 
 	@Secured({"ROLE_USER_WRITE"})
     @GetMapping(value="/user/{id}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value="Deactivate an existing user", response=User.class)
+	@ApiOperation(value="Deactivate an existing user", response=UserDto.class)
     public ResponseEntity<Object> deactivate(
     		@ApiParam(name = "User ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
     		@PathVariable("id") String id) {
@@ -332,7 +333,7 @@ public class UserAPIController {
         	log.log(Level.SEVERE,"Deactivate user failed", ex);
         	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
         }	
-        return ResponseEntity.ok().body(user);
+        return ResponseEntity.ok().body(new UserDto(user));
     }
 
 	

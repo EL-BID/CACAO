@@ -62,7 +62,7 @@ public class DomainTableUIController {
 
 	@Secured({"ROLE_TAX_DOMAIN_TABLE_WRITE"})
 	@GetMapping("/adddomaintable")
-	public String showAddDomainTable(DomainTable table, Model model) {
+	public String showAddDomainTable(Model model) {
 		model.addAttribute("table", new DomainTable());
 		model.addAttribute("languages", domainTableService.getProvidedLanguages().stream()
 				.map(l -> new NameId(l.name(), messageSource.getMessage(l.toString(), null, LocaleContextHolder.getLocale())))
