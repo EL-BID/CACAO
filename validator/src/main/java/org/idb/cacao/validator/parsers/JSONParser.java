@@ -19,142 +19,43 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.apache.commons.io.input.BOMInputStream;
-import org.idb.cacao.api.errors.InvalidFileException;
 import org.idb.cacao.validator.utils.JSONUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Implements {@link FileParser} interface to parse JSON files. <br>
+ * Implements {@link HirarquicalDocumentParser} interface to parse JSON files. <br>
  * <br>
  * 
- * This parser take advantage of {@link CSVParser} by converting the json file into a csv file and using the csv parser.
  *  
  * @author Leon Silva
  * 
  * @since 15/11/2021
  *
  */
-public class JSONParser extends FileParserAdapter {
-
-	private static final Logger log = Logger.getLogger(JSONParser.class.getName());
-
-	private Iterator<Object[]> entries;
-
-	private TabulatedData tab;
-
-	@SuppressWarnings("unchecked")
+public class JSONParser extends HirarquicalDocumentParser {
 	@Override
-	public void start() {
-		if ( path == null || !path.toFile().exists() ) {
-			return;
+	protected Map<String, Object> contentToMap(String textContent) {
+		Map<String, Object> result;
+		try {
+			result = new ObjectMapper().readValue(textContent, HashMap.class);
+
+			return result;
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
 		}
-
-		try (FileInputStream fis = new FileInputStream(path.toFile());
-				//Skips BOM if it exists
-				BOMInputStream bis = new BOMInputStream(fis);) {
-			
-			String charset = bis.getBOMCharsetName();
-
-			StringBuilder jsonText = new StringBuilder();
-
-			try (Scanner scanner = (charset==null) ? new Scanner(bis) : new Scanner(bis, charset);) {
-
-				while (scanner.hasNextLine()) {
-					String line = scanner.nextLine();
-					if (line.trim().length()==0)
-						continue;
-					jsonText.append(line);
-				}
-			
-			}
-
-			final String json = jsonText.toString();
-			
-			if (!JSONUtils.isJSONValid(json)) {
-				throw new InvalidFileException("Invalid JSON file");
-			}
-
-			final Map<String,Object> result =
-					new ObjectMapper().readValue(json, HashMap.class);
-			
-			ReflexiveConverterToTable flattener = new ReflexiveConverterToTable();
-			flattener.parse(result);
-			List<Object[]> flattenedTable = flattener.getTable();
-			List<String> titles = flattener.getTitles();
 		
-			tab = new TabulatedData(documentInputSpec);
-
-			entries = flattenedTable.iterator();
-			tab.parseColumnNames(titles.toArray());
-
-		} catch (IOException e) {
-			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
-		}
+		return Collections.emptyMap();
 	}
 
 	@Override
-	public DataIterator iterator() {
-		if ( path == null || !path.toFile().exists() ) {
-			return null;
-		}
-
-		if ( entries == null ) {
-			start();
-		}
-
-		if ( entries == null )
-			return null;
-
-		try {			
-			
-			return new DataIterator() {
-				
-				@Override
-				public Map<String, Object> next() {
-					Object[] parts = entries.next();
-					
-					if ( parts != null ) {					
-						
-						return tab.parseLine(parts);
-					}
-					return null;
-				}
-				
-				@Override
-				public boolean hasNext() {					
-					return entries.hasNext();
-				}
-				
-				@Override
-				public void close() {
-									
-				}
-			}; 
-			
-		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
-		}
-		
-		return null;
-	}
-
-	@Override
-	public void close() {
-		
-		entries = null;
-		
+	protected Boolean validateFile(String textContent) {
+		return JSONUtils.isJSONValid(textContent);
 	}
 
 }
