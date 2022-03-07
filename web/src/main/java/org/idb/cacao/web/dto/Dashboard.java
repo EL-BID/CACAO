@@ -21,6 +21,8 @@ package org.idb.cacao.web.dto;
 
 import java.util.Objects;
 
+import org.idb.cacao.api.utils.StringUtils;
+
 /**
  * Data Transfer Object for dashboard management<BR>
  * View: dashboards_list.html<BR>
@@ -87,24 +89,12 @@ public class Dashboard implements Comparable<Dashboard> {
 
 	@Override
 	public int compareTo(Dashboard o) {
-		if (title!=o.title) {
-			if (title==null)
-				return -1;
-			if (o.title==null)
-				return 1;
-			int c = String.CASE_INSENSITIVE_ORDER.compare(title, o.title);
-			if (c!=0)
-				return c;
-		}
-		if (spaceName!=o.spaceName) {
-			if (spaceName==null)
-				return -1;
-			if (o.spaceName==null)
-				return 1;
-			int c = String.CASE_INSENSITIVE_ORDER.compare(spaceName, o.spaceName);
-			if (c!=0)
-				return c;
-		}
+		int c = StringUtils.compareCaseInsensitive(title, o.title);
+		if (c != 0)
+			return c;
+		c = StringUtils.compareCaseInsensitive(spaceName, o.spaceName);
+		if (c != 0)
+			return c;
 		return 0;
 	}
 

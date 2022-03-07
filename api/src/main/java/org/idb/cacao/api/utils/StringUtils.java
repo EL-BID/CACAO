@@ -24,6 +24,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.regex.Pattern;
 
@@ -115,4 +116,25 @@ public class StringUtils {
 		return new DecimalFormat("###,###.#############", sym).format(number.doubleValue());
 
 	}
+	
+	/**
+	 * Compares two objects safeguarding from null values
+	 */
+    public static <T> int compare(T a, T b, Comparator<? super T> c) {
+    	if (a == b)
+    		return 0;
+    	else if (a == null)
+    		return -1;
+    	else if (b == null)
+    		return 1;
+    	else
+    		return c.compare(a, b);
+    }
+
+	/**
+	 * Compares two strings safeguarding from null values
+	 */
+    public static int compareCaseInsensitive(String a, String b) {
+    	return compare(a, b, String.CASE_INSENSITIVE_ORDER);
+    }
 }
