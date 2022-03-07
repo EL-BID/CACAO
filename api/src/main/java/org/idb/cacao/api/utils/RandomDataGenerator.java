@@ -455,7 +455,7 @@ public class RandomDataGenerator {
 	 * Random generator for the purpose of data generation
 	 */
 	public static Random newRandom(long seed) {
-		Random rnd = newRandom(seed);
+		Random rnd = newRandom();
 		rnd.setSeed(seed);
 		return rnd;
 	}
