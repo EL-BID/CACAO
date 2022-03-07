@@ -51,6 +51,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.jayway.jsonpath.JsonPath;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
@@ -233,5 +234,52 @@ class UserAPIControllerTests {
         
         assertEqualsSaved(id, user2);
 	}
+	
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	void testActivateUser() throws Exception {
+		Random random = new Random(TestDataGenerator.generateSeed("ACTIVATE"));
+		
+		UserDto user = save(TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, t -> t.setActive(false)));
+		
+		MockHttpServletResponse response = mvc.perform(
+                get("/api/user/" + user.getId() + "/activate")
+                	.with(csrf())
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andReturn()
+            .getResponse();
+		
+		assertEquals(HttpStatus.OK.value(),response.getStatus());
+		String id = JsonPath.read(response.getContentAsString(), "$.id");
+        assertNotNull(id);
+        user.setActive(true);
+        assertEqualsSaved(id, user);
+	}
+	
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	void testDeactivateUser() throws Exception {
+		Random random = new Random(TestDataGenerator.generateSeed("DEACTIVATE"));
+		
+		UserDto user = save(TestDataGenerator.generateUser(random.nextLong(), "mydomain.com", UserProfile.DECLARANT, t -> t.setActive(true)));
+		
+		MockHttpServletResponse response = mvc.perform(
+                get("/api/user/" + user.getId() + "/deactivate")
+                	.with(csrf())
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andReturn()
+            .getResponse();
+		
+		assertEquals(HttpStatus.OK.value(),response.getStatus());
+		String id = JsonPath.read(response.getContentAsString(), "$.id");
+        assertNotNull(id);
+        user.setActive(false);
+        assertEqualsSaved(id, user);
+        
+	}
+
+
 
 }
