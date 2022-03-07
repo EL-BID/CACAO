@@ -57,10 +57,10 @@ public class XMLParser extends FileParserAdapter {
 			return;
 		}
 
-		try {
-			FileInputStream fis = new FileInputStream(path.toFile());
-			//Skips BOM if it exists
-			BOMInputStream bis = new BOMInputStream(fis);
+		try (FileInputStream fis = new FileInputStream(path.toFile());
+				//Skips BOM if it exists
+				BOMInputStream bis = new BOMInputStream(fis);) {
+
 			String charset = bis.getBOMCharsetName();
 
 			StringBuilder xmlText = new StringBuilder();
