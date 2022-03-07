@@ -24,8 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.idb.cacao.api.Periodicity;
@@ -42,57 +40,28 @@ public class DocumentTemplateDto implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * ID's are being generated automatically.
-	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
-	 */
 	private String id;
 	
-	/**
-	 * The TemplateArchetype from where this DocumentTemplate was generated
-	 */
 	private String archetype;
 
-	/**
-	 * Name of this template. Name and version must be unique in the system (for DocumentTemplates).
-	 */
 	@NotBlank
-	@NotNull
-	@NotEmpty
 	@Size(min=2, max=120)
 	private String name;
 
-	/**
-	 * Optional group of this template. All templates belonging to the same group are considered
-	 * together for validation and ETL purpose.
-	 */
 	private String group;
 
-	/**
-	 * Version of this template (in case it's necessary to keep a history of
-	 * different versions of the same template over time). Name and version must be unique in the system (for DocumentTemplates).
-	 */
 	@NotBlank
-	@NotNull
-	@NotEmpty
 	@Size(min=1, max=20)
 	private String version;
 	
 	private Periodicity periodicity;
 
-	/**
-	 * If this template is part of a group of templates, informs this is a required file (the other
-	 * ones without this indication are considered optional)
-	 */
 	private Boolean required;
 	
 	private List<DocumentField> fields;
 	
 	private List<DocumentInput> inputs;
 	
-	/**
-	 * Indicates this document template is available for sending documents.
-	 */
 	private Boolean active;
 	
 	public DocumentTemplateDto() {
@@ -143,120 +112,78 @@ public class DocumentTemplateDto implements Serializable {
 		return active;
 	}
 
-	public void setActive(Boolean active) {
-		this.active = active;
-	}
-
-	/**
-	 * Unique identifier of this template (20 character long, URL-safe, base 64 encoded GUID)
-	 */
 	public String getId() {
 		return id;
 	}
 
-	/**
-	 * Unique identifier of this template (20 character long, URL-safe, base 64 encoded GUID)
-	 */
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	/**
-	 * The TemplateArchetype from where this DocumentTemplate was generated
-	 */
 	public String getArchetype() {
 		return archetype;
 	}
-
-	/**
-	 * The TemplateArchetype from where this DocumentTemplate was generated
-	 */
-	public void setArchetype(String archetype) {
-		this.archetype = archetype;
-	}
-
-	/**
-	 * Name of this template
-	 */
+	
 	public String getName() {
 		return name;
 	}
-
-	/**
-	 * Name of this template
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	/**
-	 * Optional group of this template. All templates belonging to the same group are considered
-	 * together for validation and ETL purpose.
-	 */
+	
 	public String getGroup() {
 		return group;
 	}
-
-	/**
-	 * Optional group of this template. All templates belonging to the same group are considered
-	 * together for validation and ETL purpose.
-	 */
-	public void setGroup(String group) {
-		this.group = group;
-	}
-
-	/**
-	 * Version of this template (in case it's necessary to keep a history of
-	 * different versions of the same template over time)
-	 */
+	
 	public String getVersion() {
 		return version;
 	}
-
-	/**
-	 * Version of this template (in case it's necessary to keep a history of
-	 * different versions of the same template over time)
-	 */
-	public void setVersion(String version) {
-		this.version = version;
-	}
-
+	
 	public Periodicity getPeriodicity() {
 		if (periodicity==null)
 			return Periodicity.UNKNOWN;
 		return periodicity;
+	}
+	
+	public Boolean getRequired() {
+		return required;
+	}
+	
+	public List<DocumentField> getFields() {
+		return fields;
+	}
+	
+	public List<DocumentInput> getInputs() {
+		return inputs;
+	}
+	
+	public void setActive(Boolean active) {
+		this.active = active;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public void setArchetype(String archetype) {
+		this.archetype = archetype;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setGroup(String group) {
+		this.group = group;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 	public void setPeriodicity(Periodicity periodicity) {
 		this.periodicity = periodicity;
 	}
 
-	/**
-	 * If this template is part of a group of templates, informs this is a required file (the other
-	 * ones without this indication are considered optional)
-	 */
-	public Boolean getRequired() {
-		return required;
-	}
-
-	/**
-	 * If this template is part of a group of templates, informs this is a required file (the other
-	 * ones without this indication are considered optional)
-	 */
 	public void setRequired(Boolean required) {
 		this.required = required;
 	}
 
-	public List<DocumentField> getFields() {
-		return fields;
-	}
-	
 	public void setFields(List<DocumentField> fields) {
 		this.fields = fields;
-	}
-	
-	public List<DocumentInput> getInputs() {
-		return inputs;
 	}
 	
 	public void setInputs(List<DocumentInput> inputs) {

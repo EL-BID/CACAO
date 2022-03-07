@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,10 +27,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.api.Views;
 import org.idb.cacao.api.utils.DateTimeUtils;

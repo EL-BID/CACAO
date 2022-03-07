@@ -46,8 +46,8 @@ public class UserDto implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * ID's are being generated automatically.
-	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
+	 * ID's are being generated automatically. PS: Elasticsearch generates by
+	 * default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
 	 */
 	@JsonView(Views.Public.class)
 	@AFieldDescriptor(externalName = "doc.id")
@@ -60,9 +60,9 @@ public class UserDto implements Serializable {
 	@NotBlank
 	@NotNull
 	@NotEmpty
-	@Size(max=60)
+	@Size(max = 60)
 	@Email
-	@AFieldDescriptor(externalName = "user.login", audit=true)
+	@AFieldDescriptor(externalName = "user.login", audit = true)
 	private String login;
 
 	/**
@@ -72,29 +72,29 @@ public class UserDto implements Serializable {
 	@NotBlank
 	@NotNull
 	@NotEmpty
-	@Size(min=4, max=120)
-	@AFieldDescriptor(externalName = "user.name", audit=true)
+	@Size(min = 4, max = 120)
+	@AFieldDescriptor(externalName = "user.name", audit = true)
 	private String name;
-	
+
 	@JsonView(Views.Public.class)
 	@NotNull
 	@AFieldDescriptor(externalName = "user.profile")
-	private UserProfile profile;	
+	private UserProfile profile;
 
-	@Size(max=60)
+	@Size(max = 60)
 	@AFieldDescriptor(externalName = "user.password")
-    private String password;
-	
+	private String password;
+
 	@AFieldDescriptor(externalName = "user.password.confirm")
 	private String confirmPassword;
-	
+
 	@JsonView(Views.Public.class)
 	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxpayerId;
-	
+
 	@JsonView(Views.Public.class)
-	private boolean active=true;
-	
+	private boolean active = true;
+
 	public UserDto() {
 	}
 
@@ -106,7 +106,7 @@ public class UserDto implements Serializable {
 		this.taxpayerId = user.getTaxpayerId();
 		this.active = user.isActive();
 	}
-	
+
 	public void updateEntity(User entity) {
 		entity.setName(name);
 		entity.setLogin(login);
@@ -114,115 +114,76 @@ public class UserDto implements Serializable {
 		entity.setTaxpayerId(taxpayerId);
 		entity.setActive(active);
 	}
-	
-	/**
-	 * {@link #id}
-	 */
+
 	public String getId() {
 		return id;
 	}
 
-	/**
-	 * {@link #id}
-	 */
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	/**
-	 * {@link #login}
-	 */
 	public String getLogin() {
 		return login;
 	}
 
-	/**
-	 * {@link #login}
-	 */
-	public void setLogin(String login) {
-		this.login = login;
-	}
-
-	/**
-	 * {@link #password}
-	 */
 	public String getPassword() {
 		return password;
 	}
 
-	/**
-	 * {@link #password}
-	 */
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	/**
-	 * {@link #name}
-	 */
 	public String getName() {
 		return name;
-	}
-
-	/**
-	 * {@link #name}
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-	
-	public UserProfile getProfile() {
-		if (profile==null)
-			return UserProfile.DECLARANT;
-		return profile;
-	}
-
-	public void setProfile(UserProfile profile) {
-		this.profile = profile;
 	}
 
 	public String getTaxpayerId() {
 		return taxpayerId;
 	}
+	
+	public String getConfirmPassword() {
+		return confirmPassword;
+	}
+	
+	public boolean isActive() {
+		return active;
+	}
+	
+	public UserProfile getProfile() {
+		if (profile == null)
+			return UserProfile.DECLARANT;
+		return profile;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	public void setLogin(String login) {
+		this.login = login;
+	}
+	
+	public void setPassword(String password) {
+		this.password = password;
+	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public void setProfile(UserProfile profile) {
+		this.profile = profile;
+	}
 
 	public void setTaxpayerId(String taxpayerId) {
 		this.taxpayerId = taxpayerId;
 	}
-	
+
 	public int hashCode() {
-		return 17 + 37 * (login==null?0:login.hashCode());
-	}
-	
-	public boolean equals(Object o) {
-		if (this==o)
-			return true;
-		if (!(o instanceof UserDto))
-			return false;
-		UserDto ref = (UserDto)o;
-		if (login!=ref.login) {
-			if (login==null || ref.login==null)
-				return false;
-			if (!login.equals(ref.login))
-				return false;
-		}
-		return true;
+		return 17 + 37 * (login == null ? 0 : login.hashCode());
 	}
 
-    @Override
-    public String toString() {
-        return name;
-    }
-
-	public String getConfirmPassword() {
-		return confirmPassword;
+	@Override
+	public String toString() {
+		return name;
 	}
 
 	public void setConfirmPassword(String confirmPassword) {
 		this.confirmPassword = confirmPassword;
-	}
-
-	public boolean isActive() {
-		return active;
 	}
 
 	public void setActive(boolean active) {

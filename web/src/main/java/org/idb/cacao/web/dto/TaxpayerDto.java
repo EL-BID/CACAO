@@ -167,11 +167,6 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		this.taxPayerId = taxPayerId;
 	}
 	
-	public TaxpayerDto withTaxPayerId(String taxPayerId) {
-		setTaxPayerId(taxPayerId);
-		return this;
-	}
-
 	public String getName() {
 		return name;
 	}
@@ -180,11 +175,6 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		this.name = name;
 	}
 	
-	public TaxpayerDto withName(String name) {
-		setName(name);
-		return this;
-	}
-
 	public String getAddress() {
 		return address;
 	}
@@ -193,22 +183,12 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		this.address = address;
 	}
 	
-	public TaxpayerDto withAddress(String address) {
-		setAddress(address);
-		return this;
-	}
-
 	public String getZipCode() {
 		return zipCode;
 	}
 
 	public void setZipCode(String zipCode) {
 		this.zipCode = zipCode;
-	}
-	
-	public TaxpayerDto withZipCode(String zipCode) {
-		setZipCode(zipCode);
-		return this;
 	}
 	
 	public String getQualifier1() {
@@ -219,22 +199,12 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		this.qualifier1 = qualifier1;
 	}
 	
-	public TaxpayerDto withQualifier1(String qualifier1) {
-		setQualifier1(qualifier1);
-		return this;
-	}
-
 	public String getQualifier2() {
 		return qualifier2;
 	}
 
 	public void setQualifier2(String qualifier2) {
 		this.qualifier2 = qualifier2;
-	}
-
-	public TaxpayerDto withQualifier2(String qualifier2) {
-		setQualifier2(qualifier2);
-		return this;
 	}
 
 	public String getQualifier3() {
@@ -245,11 +215,6 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		this.qualifier3 = qualifier3;
 	}
 
-	public TaxpayerDto withQualifier3(String qualifier3) {
-		setQualifier3(qualifier3);
-		return this;
-	}
-
 	public String getQualifier4() {
 		return qualifier4;
 	}
@@ -258,22 +223,12 @@ public class TaxpayerDto implements Serializable, Cloneable {
 		this.qualifier4 = qualifier4;
 	}
 
-	public TaxpayerDto withQualifier4(String qualifier4) {
-		setQualifier4(qualifier4);
-		return this;
-	}
-
 	public String getQualifier5() {
 		return qualifier5;
 	}
 
 	public void setQualifier5(String qualifier5) {
 		this.qualifier5 = qualifier5;
-	}
-
-	public TaxpayerDto withQualifier5(String qualifier5) {
-		setQualifier5(qualifier5);
-		return this;
 	}
 
 	@Override
