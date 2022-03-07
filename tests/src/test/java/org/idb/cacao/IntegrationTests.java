@@ -21,14 +21,15 @@ package org.idb.cacao;
 
 import static org.junit.Assert.assertTrue;
 
-
-import org.idb.cacao.web.WebApplication;
-import org.junit.Test;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+
+import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.annotation.DirtiesContext;
@@ -36,36 +37,57 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-/**
- * Unit test for simple App.
- */
+
+
+@AutoConfigureJsonTesters
 @RunWith(JUnitPlatform.class)
+@AutoConfigureMockMvc
 @DirtiesContext(classMode = ClassMode.AFTER_CLASS)
-@SpringBootTest( webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest( webEnvironment = WebEnvironment.DEFINED_PORT, classes = {org.idb.cacao.web.WebApplication.class})
 public class IntegrationTests {
     
     private static final String ELASTICSEARCH_VERSION = "7.14.1";
+    
+    private static final Integer ELASTICSEARCH_PORT = 9200;
 
-    private static ElasticsearchContainer esContainer = new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + ELASTICSEARCH_VERSION);
+    // ES Container
+    private static ElasticsearchContainer esContainer = 
+        new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + ELASTICSEARCH_VERSION)
+            .withEnv("discovery.type", "single-node")
+            .withExposedPorts(ELASTICSEARCH_PORT);
+
 
     @BeforeAll
     public static void beforeAll() {
         esContainer.setWaitStrategy(Wait.forHttp("/"));
         esContainer.start();
         esContainer.getExposedPorts().forEach(port -> System.setProperty("es.port", String.valueOf(port)));
+
+        int containerPort = esContainer.getMappedPort(ELASTICSEARCH_PORT);
+
+        SpringApplicationBuilder cacaoWeb = 
+            new SpringApplicationBuilder(org.idb.cacao.web.WebApplication.class).
+            properties("es.port=" + containerPort);
+
+        cacaoWeb.run("server.port=8888");
+
+        SpringApplicationBuilder cacaoValidator = 
+            new SpringApplicationBuilder(org.idb.cacao.validator.Application.class).properties("es.port=" + containerPort);
+        
+        cacaoValidator.run("server.port=8081");
+
     }
 
 	@AfterAll
 	public static void afterClass() {
 		if (esContainer !=null)
             esContainer.stop();
+
 	}
 
     @Test
     public void esShouldBeUpAndRunning() {
         assertTrue(esContainer.isRunning());
     }
-
-
 
 }
