@@ -7,10 +7,6 @@ services:
       context: ./es
     environment:
       - PORT=9200
-      - node.name=es01
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
     ulimits:
       memlock:
         soft: -1
@@ -20,12 +16,9 @@ services:
       - "9300:9300"
     volumes:
       - es-data:/usr/share/elasticsearch/data-sn
+      - ./conf/es-dev.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
     restart: always
-    healthcheck:
-        test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-        interval: 30s
-        timeout: 30s
-        retries: 3
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

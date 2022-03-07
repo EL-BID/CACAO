@@ -1,0 +1,13 @@
+node.name: "${NODE_NAME:es01}"
+discovery.type: single-node
+bootstrap.memory_lock: true
+network.host: "${NODE_NAME:es01}"
+xpack.security.enabled: "${SEC_ENABLED:false}"
+xpack.security.http.ssl.enabled: "${SEC_SSL:false}"
+xpack.security.transport.ssl.enabled: "${SEC_SSL:false}"
+xpack.security.http.ssl.key: "${SEC_SSL_KEY:}"
+xpack.security.http.ssl.certificate: "${SEC_SSL_CERT:}"
+xpack.security.http.ssl.certificate_authorities: "${SEC_SSL_CA:}"
+xpack.security.transport.ssl.key: "${SEC_SSL_KEY:}"
+xpack.security.transport.ssl.certificate: "${SEC_SSL_CERT:}"
+xpack.security.transport.ssl.certificate_authorities: "${SEC_SSL_CA:}"
