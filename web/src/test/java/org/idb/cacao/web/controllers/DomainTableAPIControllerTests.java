@@ -55,6 +55,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @AutoConfigureJsonTesters
@@ -107,8 +108,8 @@ class DomainTableAPIControllerTests {
             		saved.getEntry(t.getKey(), t.getLanguage()).getDescription()));
 	}
 	
-	private DomainTableDto createSampleDomainTable() {
-		return new DomainTableDto(null, "Domain test", "test", "0.1", false,
+	private DomainTableDto createSampleDomainTable(String name) {
+		return new DomainTableDto(null, name, "test", "0.1", false,
 				new DomainEntry("D", DomainLanguage.ENGLISH, "Debit"),
 				new DomainEntry("C", DomainLanguage.ENGLISH, "Credit"),
 				new DomainEntry("D", DomainLanguage.SPANISH, "Débito"),
@@ -122,7 +123,12 @@ class DomainTableAPIControllerTests {
 	}
 	
 	/*
-	private void searchDomainTable(String term, String expected) throws Exception {
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	public void searchDomainTable() throws Exception {
+		String expected = "Test Domain Search";
+		save(createSampleDomainTable(expected));
+		String term="Test";
 		MockHttpServletResponse response = mvc.perform(
                 get("/api/domaintable-search")
                 	.with(csrf())
@@ -139,8 +145,8 @@ class DomainTableAPIControllerTests {
 
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
-	private void activateDomainTable() throws Exception {
-		DomainTableDto domain = createSampleDomainTable();
+	public void activateDomainTable() throws Exception {
+		DomainTableDto domain = createSampleDomainTable("Test Domain Activate");
 		domain.setActive(false);
 		domain = save(domain);
 		String id = domain.getId();
@@ -159,7 +165,7 @@ class DomainTableAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void deactivateDomainTable() throws Exception {
-		DomainTableDto domain = createSampleDomainTable();
+		DomainTableDto domain = createSampleDomainTable("Test Domain deactivate");
 		domain.setActive(true);
 		domain = save(domain);
 		String id = domain.getId();
@@ -178,7 +184,7 @@ class DomainTableAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testCreateDomainTable() throws Exception {
-		DomainTableDto domain = createSampleDomainTable();
+		DomainTableDto domain = createSampleDomainTable("Test Domain Create");
 		MockHttpServletResponse response = mvc.perform(
                 post("/api/domaintable")
                 	.with(csrf())
@@ -202,7 +208,7 @@ class DomainTableAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testCreateExistingDomainTable() throws Exception {
-		DomainTableDto domain = save(createSampleDomainTable());
+		DomainTableDto domain = save(createSampleDomainTable("Test Domain Create Existing"));
 		MockHttpServletResponse response = mvc.perform(
                 post("/api/domaintable")
                 	.with(csrf())
@@ -221,7 +227,7 @@ class DomainTableAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testEditDomainTable() throws Exception, IOException {
-		DomainTableDto domain = save(createSampleDomainTable());
+		DomainTableDto domain = save(createSampleDomainTable("Test Domain Edit"));
         domain.setVersion("0.2");
         domain.setActive(true);
         domain.setEntries(domain.getEntriesOfLanguage(DomainLanguage.ENGLISH));
