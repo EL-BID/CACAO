@@ -8,6 +8,7 @@ services:
     environment:
       - PORT=9200
       - node.name=es01
+      - network.bind=0.0.0.0
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
