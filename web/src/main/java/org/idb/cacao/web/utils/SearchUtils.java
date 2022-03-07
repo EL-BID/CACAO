@@ -102,7 +102,7 @@ public class SearchUtils {
 	public static final int DEFAULT_PAGE_SIZE = 5;
 	
 	public static Optional<AdvancedSearch> fromJSON(Optional<String> asJson) {
-		if (asJson==null || !asJson.isPresent())
+		if (!asJson.isPresent())
 			return Optional.empty();
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -114,7 +114,7 @@ public class SearchUtils {
 	}
 
 	public static Optional<AdvancedSearch> fromTabulatorJSON(Optional<String> asJson) {
-		if (asJson==null || !asJson.isPresent())
+		if (!asJson.isPresent())
 			return Optional.empty();
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

@@ -42,6 +42,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.idb.cacao.api.Periodicity;
+import org.idb.cacao.api.utils.StringUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -563,35 +564,17 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 
 	@Override
 	public int compareTo(DocumentTemplate o) {
-		if (name!=o.name) {
-			if (name==null)
-				return -1;
-			if (o.name==null)
-				return 1;
-			int comp = String.CASE_INSENSITIVE_ORDER.compare(name, o.name);
-			if (comp!=0)
-				return comp;
-		}
+		int c = StringUtils.compareCaseInsensitive(name, o.name);
+		if (c != 0)
+			return c;
 
-		if (group!=o.group) {
-			if (group==null)
-				return -1;
-			if (o.group==null)
-				return 1;
-			int comp = String.CASE_INSENSITIVE_ORDER.compare(group, o.group);
-			if (comp!=0)
-				return comp;
-		}
-		
-		if (version!=o.version) {
-			if (version==null)
-				return -1;
-			if (o.version==null)
-				return 1;
-			int comp = String.CASE_INSENSITIVE_ORDER.compare(version, o.version);
-			if (comp!=0)
-				return comp;
-		}
+		c = StringUtils.compareCaseInsensitive(group, o.group);
+		if (c != 0)
+			return c;
+
+		c = StringUtils.compareCaseInsensitive(version, o.version);
+		if (c != 0)
+			return c;
 		
 		return 0;
 	}

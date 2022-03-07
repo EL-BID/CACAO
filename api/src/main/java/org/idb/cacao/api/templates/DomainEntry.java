@@ -33,6 +33,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.idb.cacao.api.DomainLanguage;
+import org.idb.cacao.api.utils.StringUtils;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
@@ -242,23 +243,19 @@ public class DomainEntry implements Serializable, Cloneable, Comparable<DomainEn
 
 	@Override
 	public int compareTo(DomainEntry o) {
-		if (key==null)
-			return -1;
-		if (o.key==null)
-			return 1;
-		int comp = String.CASE_INSENSITIVE_ORDER.compare(key, o.key);
-		if (comp!=0)
-			return comp;
+		int c = StringUtils.compareCaseInsensitive(key, o.key);
+		if (c != 0)
+			return c;
 
 		if (language==null)
 			return -1;
 		if (o.language==null)
 			return 1;
-		comp = language.compareTo(o.language);
-		if (comp!=0)
-			return comp;
+		c = language.compareTo(o.language);
+		if (c!=0)
+			return c;
 		
-		return comp;
+		return 0;
 	}
 	
 }

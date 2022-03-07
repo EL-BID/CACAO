@@ -38,6 +38,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.idb.cacao.api.utils.StringUtils;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
@@ -222,11 +223,7 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 
 	@Override
 	public int compareTo(DocumentInput o) {
-		if (inputName==null)
-			return -1;
-		if (o.inputName==null)
-			return 1;
-		return String.CASE_INSENSITIVE_ORDER.compare(inputName, o.inputName);
+		return StringUtils.compareCaseInsensitive(inputName, o.inputName);
 	}
 
 	/**

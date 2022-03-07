@@ -86,6 +86,10 @@ public class ElasticsearchMockClient {
 		this.map_indices = new HashMap<>();
 		init();
 	}
+	
+	public void clearAllIndices() {
+		map_indices.clear();
+	}
 
 	public static Integer findRandomPort() throws IOException {
 		try (ServerSocket socket = new ServerSocket(0)) {

@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
+import org.idb.cacao.api.utils.StringUtils;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.InnerField;
 import org.springframework.data.elasticsearch.annotations.MultiField;
@@ -503,11 +504,7 @@ public class DocumentField implements Serializable, Cloneable, Comparable<Docume
 
 	@Override
 	public int compareTo(DocumentField o) {
-		if (fieldName==null)
-			return -1;
-		if (o.fieldName==null)
-			return 1;
-		return String.CASE_INSENSITIVE_ORDER.compare(fieldName, o.fieldName);
+		return StringUtils.compareCaseInsensitive(fieldName, o.fieldName);
 	}
 
 }
