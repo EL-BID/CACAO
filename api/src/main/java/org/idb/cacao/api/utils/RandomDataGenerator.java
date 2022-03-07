@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
@@ -111,11 +114,11 @@ public class RandomDataGenerator {
 	}
 
 	public RandomDataGenerator() {
-		this(new Random());
+		this(newRandom());
 	}
 
 	public RandomDataGenerator(long seed) {
-		this(new Random(seed));
+		this(newRandom(seed));
 	}
 	
 	public RandomDataGenerator(Random random) {
@@ -434,4 +437,27 @@ public class RandomDataGenerator {
 			}
 		}
 	}
+
+	/**
+	 * Random generator for the purpose of data generation
+	 */
+	public static Random newRandom() {
+		SecureRandom rnd;
+		try {
+			rnd = SecureRandom.getInstance("SHA1PRNG", "SUN");
+		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+			rnd = new SecureRandom();
+		}
+		return rnd;
+	}
+	
+	/**
+	 * Random generator for the purpose of data generation
+	 */
+	public static Random newRandom(long seed) {
+		Random rnd = newRandom(seed);
+		rnd.setSeed(seed);
+		return rnd;
+	}
+
 }

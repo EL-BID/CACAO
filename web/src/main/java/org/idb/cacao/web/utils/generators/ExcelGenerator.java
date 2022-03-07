@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -317,7 +316,7 @@ public class ExcelGenerator implements FileGenerator {
 
 		mapFieldNamesToColumnPositions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 		
-		randomGenerator = new RandomDataGenerator(new Random(seed));
+		randomGenerator = new RandomDataGenerator(seed);
 		randomGenerator.setDomainTableRepository(domainTableRepository);
 		if (fixedYear!=null)
 			randomGenerator.reseedBasedOnYear(fixedYear.intValue());

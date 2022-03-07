@@ -128,7 +128,7 @@ public class ShareholdingGenerator implements CustomDataGenerator {
 	 */
 	@Override
 	public void setOverallSeed(long overallSeed, int docsTotal, int docIndex) {
-		genSeed = new Random(overallSeed);
+		genSeed = newRandom(overallSeed);
 		
 		// advance forward in 'genSeed' according to 'docIndex' 
 		for (int i=0; i<docIndex && i<docsTotal-records; i++) {

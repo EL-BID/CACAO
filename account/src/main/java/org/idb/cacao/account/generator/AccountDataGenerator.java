@@ -453,8 +453,8 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	 */
 	private Set<Number> generateOthersTaxpayersIds(int number) {
 		if (genSeed==null)
-			genSeed = new Random(randomDataGenerator.getRandomGenerator().nextLong());
-		Random rSkipIds = new Random(randomDataGenerator.getRandomGenerator().nextLong());
+			genSeed = newRandom(randomDataGenerator.getRandomGenerator().nextLong());
+		Random rSkipIds = newRandom(randomDataGenerator.getRandomGenerator().nextLong());
 		Set<Number> generated = new TreeSet<>();
 		while (generated.size()<number) {
 			long doc_seed = genSeed.nextLong();
@@ -509,7 +509,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	 */
 	@Override
 	public void setOverallSeed(long overallSeed, int docsTotal, int docIndex) {
-		genSeed = new Random(overallSeed);
+		genSeed = newRandom(overallSeed);
 		
 		// advance forward in 'genSeed' according to 'docIndex' 
 		for (int i=0; i<docIndex && i<docsTotal-records; i++) {
@@ -1083,6 +1083,5 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	private static double roundDecimals(double amount) {
 		return Math.round(amount * 100.0) / 100.0; // round to 2 decimals
 	}
-
 
 }
