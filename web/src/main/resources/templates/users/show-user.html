@@ -40,9 +40,10 @@
                       <label th:text="#{user.profile}" style="margin-bottom: 0px; text-transform: uppercase;">Profile</label>
                       <input type="text" th:value="#{${user.profile}}" class="form-control" readonly>
                     </div>
-                    <div class="field" id="showTaxpayer" th:style="${user.profile.name().equals('DECLARANT') ? 'display:block' : 'display: none'}">
+                    <div class="field" id="showTaxpayer">
                       <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label>
-                      <input type="text" th:value="|${user.taxpayerId} - ${taxpayerName}|" class="form-control" readonly> 
+                      <input th:if="${user.taxpayerId!=null&&!user.taxpayerId.isEmpty()}" type="text" th:value="|${user.taxpayerId} - ${taxpayerName}|" class="form-control" readonly> 
+                      <input th:if="${user.taxpayerId==null||user.taxpayerId.isEmpty()}" type="text" class="form-control" readonly>
                     </div>
                     <div class="row">
                       <input type="button" class="ui blue button" th:value="#{edit}" value="Edit" id="editUser" sec:authorize="hasRole('ROLE_USER_WRITE')"> 

@@ -61,7 +61,7 @@
                           th:value="${i.name()}" th:text="#{${i}}"></option>
                       </select>  
                     </div>
-                    <div class="field" id="showTaxpayer" th:style="${user.profile.name().equals('DECLARANT') ? 'display:block' : 'display: none'}">
+                    <div class="field" id="showTaxpayer">
                       <label th:text="#{taxpayer.id}" style="margin-bottom: 0px; text-transform: uppercase;">Taxpayer ID</label> 
                       <div class="ui search selection dropdown" id="selectTaxpayer">
                           <input type="hidden" th:field="*{taxpayerId}" id="taxpayerId">
@@ -84,11 +84,7 @@
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 $('#cancel').click( () => window.location.replace( [[@{/users/{id}(id=${user.id})}]] ))
-$('#selectProfile').dropdown({
-    onChange: function(value, text) {
-        $('#showTaxpayer').toggle(value=='DECLARANT')
-    }
-})
+$('#selectProfile').dropdown()
 
 $('#selectTaxpayer').dropdown({
     apiSettings: {
