@@ -17,23 +17,19 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.etl.repositories;
+package org.idb.cacao.web.entities;
 
-import org.idb.cacao.etl.entities.ETLSystemMetrics;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import org.springframework.stereotype.Repository;
+import org.idb.cacao.api.SystemMetrics;
+import org.springframework.data.elasticsearch.annotations.Document;
 
 /**
- * DAO for SystemMetrics objects
- * 
+ * Metrics collected from the running system and provided by ResourceMonitorService
  * @author Gustavo Figueiredo
  *
  */
-@Repository
-public interface SystemMetricsRepository extends ElasticsearchRepository<ETLSystemMetrics, String> {
+@Document(indexName="cacao_webmetrics")
+public class WebSystemMetrics extends SystemMetrics {
 
-	Page<ETLSystemMetrics> findByHost(String host, Pageable pageable);
+	private static final long serialVersionUID = 1L;
 
 }

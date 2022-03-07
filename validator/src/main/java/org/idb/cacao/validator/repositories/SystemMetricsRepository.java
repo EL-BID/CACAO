@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.validator.repositories;
 
-import org.idb.cacao.validator.entities.SystemMetrics;
+import org.idb.cacao.validator.entities.ValidatorSystemMetrics;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
@@ -32,8 +32,8 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
-public interface SystemMetricsRepository extends ElasticsearchRepository<SystemMetrics, String> {
+public interface SystemMetricsRepository extends ElasticsearchRepository<ValidatorSystemMetrics, String> {
 
-	Page<SystemMetrics> findByHost(String host, Pageable pageable);
+	Page<ValidatorSystemMetrics> findByHost(String host, Pageable pageable);
 
 }
