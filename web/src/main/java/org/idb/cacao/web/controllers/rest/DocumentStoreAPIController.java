@@ -341,7 +341,6 @@ public class DocumentStoreAPIController {
 							new Object[] { filezip.getOriginalFilename() }, LocaleContextHolder.getLocale())));
 		}
 
-		// TODO: retornar a situação de todos arquivos
 		return ResponseEntity.ok(results.get(0));
 	}
 
@@ -418,7 +417,6 @@ public class DocumentStoreAPIController {
 			}
 
 		}
-		// TODO: Retornar a situação de cada arquivo
 		return ResponseEntity.ok(results.get(0));
 	}
 

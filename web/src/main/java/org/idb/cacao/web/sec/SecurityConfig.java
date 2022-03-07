@@ -156,9 +156,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         		// ALLOW ERROR PAGE
         		"/error*", "/emailError*", 
         		
-        		// ALLOW PUBLIC API
-        		// TODO:
-        		
         		// ALLOW FIRST PAGE
         		"/", "/index*", "/login*", "/privacy*", "/terms*", "/license*",
         		"/institutional*","/usermanual*",  

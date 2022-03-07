@@ -128,9 +128,6 @@ public class LoginUIController {
 	}
 
 	public List<MenuItem> getHomeMenuItens(Collection<? extends GrantedAuthority> roles) {
-		// FIXME:
-		//if (roles == null || roles.isEmpty())
-		//	return Collections.emptyList();
 
 		List<MenuItem> menu = new LinkedList<>();
 
