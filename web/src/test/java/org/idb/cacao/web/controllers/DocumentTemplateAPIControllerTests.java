@@ -19,15 +19,19 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers;
 
+import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
-import org.idb.cacao.api.DomainLanguage;
-import org.idb.cacao.api.templates.DomainEntry;
-import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.Periodicity;
+import org.idb.cacao.api.templates.DocumentField;
+import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldMapping;
+import org.idb.cacao.api.templates.FieldType;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
-import org.idb.cacao.web.dto.DomainTableDto;
-import org.idb.cacao.web.repositories.DomainTableRepository;
+import org.idb.cacao.web.dto.DocumentTemplateDto;
+import org.idb.cacao.web.repositories.DocumentTemplateRepository;
+import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +44,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -55,6 +60,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Optional;
 
 @AutoConfigureJsonTesters
@@ -62,7 +68,7 @@ import java.util.Optional;
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 @SpringBootTest( webEnvironment = WebEnvironment.RANDOM_PORT)
-class DomainTableAPIControllerTests {
+class DocumentTemplateAPIControllerTests {
 
 	private static ElasticsearchMockClient mockElastic;
 
@@ -70,10 +76,12 @@ class DomainTableAPIControllerTests {
 	private MockMvc mvc;
 	
 	@Autowired
-	private DomainTableRepository domainTableRepository;
+	private DocumentTemplateRepository documentTemplateRepository;
 	
 	@Autowired
-	private JacksonTester<DomainTableDto> json;
+	private JacksonTester<DocumentTemplateDto> json;
+	
+	@Autowired MessageSource messageSource;
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -93,123 +101,121 @@ class DomainTableAPIControllerTests {
 	void setUp() throws Exception {
 	}
 
-	private void assertEqualsSaved(String id, DomainTableDto domain) {
-		Optional<DomainTable> existent = domainTableRepository.findById(id);
+	private void assertEqualsSaved(String id, DocumentTemplateDto template) {
+		Optional<DocumentTemplate> existent = documentTemplateRepository.findById(id);
 		assertTrue(existent.isPresent());
-		DomainTable saved = existent.get();
-		assertEquals(domain.getName(), saved.getName());
-        assertEquals(domain.getGroup(), saved.getGroup());
-        assertEquals(domain.getVersion(), saved.getVersion());
-        assertEquals(domain.getNumEntries(), saved.getNumEntries());
-        assertEquals(domain.getActive(), saved.getActive());
-        domain.getEntries().stream()
-            .forEach(t -> assertEquals(t.getDescription(), 
-            		saved.getEntry(t.getKey(), t.getLanguage()).getDescription()));
+		DocumentTemplate saved = existent.get();
+		assertEquals(template.getName(), saved.getName());
+        assertEquals(template.getGroup(), saved.getGroup());
+        assertEquals(template.getVersion(), saved.getVersion());
+        assertEquals(template.getArchetype(), saved.getArchetype());
+        assertEquals(template.getPeriodicity(), saved.getPeriodicity());
+        assertEquals(template.getRequired(), saved.getRequired());
+        assertEquals(template.getActive(), saved.getActive());
+        if(template.getFields()!=null)
+        	template.getFields().stream()
+            	.forEach(t -> assertEquals(t,saved.getField(t.getFieldName())));
+        if(template.getInputs()!=null)
+        	template.getInputs().stream()
+        		.forEach(t -> assertEquals(t,saved.getInput(t.getInputName())));
 	}
 	
-	private DomainTableDto createSampleDomainTable() {
-		return new DomainTableDto(null, "Domain test", "test", "0.1", false,
-				new DomainEntry("D", DomainLanguage.ENGLISH, "Debit"),
-				new DomainEntry("C", DomainLanguage.ENGLISH, "Credit"),
-				new DomainEntry("D", DomainLanguage.SPANISH, "Débito"),
-				new DomainEntry("C", DomainLanguage.SPANISH, "Crédito"));
+	private DocumentTemplateDto createSampleTemplate() {
+		return new DocumentTemplateDto(null, null, "TEST", "TEST GROUP", "1.0", Periodicity.YEARLY, 
+			true, true, 
+			new DocumentField()
+			.withFieldName(TaxPayerId.name())
+			.withFieldType(FieldType.CHARACTER)
+			.withFieldMapping(FieldMapping.TAXPAYER_ID)
+			.withDescription("Taxpayer Identification Number")
+			.withMaxLength(128)
+			.withRequired(true)
+			.withFileUniqueness(true)
+			.withPersonalData(true));
 	}
 	
-	private DomainTableDto save(DomainTableDto domain) {
-		DomainTable entity = new DomainTable();
-		domain.updateEntity(entity);
-		return new DomainTableDto(domainTableRepository.saveWithTimestamp(entity));
+	private DocumentTemplateDto save(DocumentTemplateDto template) {
+		DocumentTemplate entity = new DocumentTemplate();
+		template.updateEntity(entity);
+		return new DocumentTemplateDto(documentTemplateRepository.saveWithTimestamp(entity));
 	}
 	
-	/*
-	private void searchDomainTable(String term, String expected) throws Exception {
-		MockHttpServletResponse response = mvc.perform(
-                get("/api/domaintable-search")
-                	.with(csrf())
-                	.param("term", term)
-                    .accept(MediaType.APPLICATION_JSON)
-            )
-            .andReturn()
-            .getResponse();
-		assertEquals(response.getStatus(), HttpStatus.OK.value());
-		List<String> opcoes = JsonPath.read(response.getContentAsString(), "$[*]");
-		opcoes.contains(expected);
-	}
-	*/
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	void testHandleCreateDocumentTemplate() throws Exception {
+		for(DocumentTemplate entity: CreateDocumentTemplatesSamples.getSampleTemplates(messageSource, Locale.getDefault())) {
+			DocumentTemplateDto template = new DocumentTemplateDto(entity);
+			
+			MockHttpServletResponse response = mvc.perform(
+	                post("/api/template")
+	                	.with(csrf())
+	                    .accept(MediaType.APPLICATION_JSON)
+	                    .contentType(MediaType.APPLICATION_JSON)
+	                    .content(
+	                        json.write(template).getJson()
+	                    )
+	            )
+	            .andReturn()
+	            .getResponse();
+			
+			assertEquals(HttpStatus.OK.value(), response.getStatus());
+			String id = JsonPath.read(response.getContentAsString(), "$.id");
+
+	        assertNotNull(id);
+	        
+	        assertEqualsSaved(id, template);
+        }
+    }
 
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
-	private void activateDomainTable() throws Exception {
-		DomainTableDto domain = createSampleDomainTable();
-		domain.setActive(false);
-		domain = save(domain);
-		String id = domain.getId();
+	public void activateTemplate() throws Exception {
+		DocumentTemplateDto template = createSampleTemplate();
+		template.setActive(false);
+		template = save(template);
+		String id = template.getId();
 		MockHttpServletResponse response = mvc.perform(
-                get("/api/domaintable/" + id + "/activate")
+                get("/api/template/" + id + "/activate")
                 	.with(csrf())
                     .accept(MediaType.APPLICATION_JSON)
             )
             .andReturn()
             .getResponse();
-		assertEquals(response.getStatus(), HttpStatus.OK.value());
-		domain.setActive(true);
-		assertEqualsSaved(id, domain);
+		assertEquals(HttpStatus.OK.value(), response.getStatus());
+		template.setActive(true);
+		assertEqualsSaved(template.getId(), template);
 	}
 
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void deactivateDomainTable() throws Exception {
-		DomainTableDto domain = createSampleDomainTable();
-		domain.setActive(true);
-		domain = save(domain);
-		String id = domain.getId();
+		DocumentTemplateDto template = createSampleTemplate();
+		template.setActive(true);
+		template = save(template);
+		String id = template.getId();
 		MockHttpServletResponse response = mvc.perform(
-                get("/api/domaintable/" + id + "/deactivate")
+                get("/api/template/" + id + "/deactivate")
                 	.with(csrf())
                     .accept(MediaType.APPLICATION_JSON)
             )
             .andReturn()
             .getResponse();
-		assertEquals(response.getStatus(), HttpStatus.OK.value());
-		domain.setActive(false);
-		assertEqualsSaved(id, domain);
+		assertEquals(HttpStatus.OK.value(), response.getStatus());
+		template.setActive(false);
+		assertEqualsSaved(template.getId(), template);
 	}
 
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
-	public void testCreateDomainTable() throws Exception {
-		DomainTableDto domain = createSampleDomainTable();
+	public void testCreateExistingTemplate() throws Exception {
+		DocumentTemplateDto template = save(createSampleTemplate());
 		MockHttpServletResponse response = mvc.perform(
-                post("/api/domaintable")
+                post("/api/template")
                 	.with(csrf())
                     .accept(MediaType.APPLICATION_JSON)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
-                        json.write(domain).getJson()
-                    )
-            )
-            .andReturn()
-            .getResponse();
-		
-		assertEquals(response.getStatus(), HttpStatus.OK.value());
-		String id = JsonPath.read(response.getContentAsString(), "$.id");
-		
-        assertNotNull(id);
-        
-        assertEqualsSaved(id, domain);
-	}
-
-	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
-	@Test
-	public void testCreateExistingDomainTable() throws Exception {
-		DomainTableDto domain = save(createSampleDomainTable());
-		MockHttpServletResponse response = mvc.perform(
-                post("/api/domaintable")
-                	.with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        json.write(domain).getJson()
+                        json.write(template).getJson()
                     )
             )
             .andReturn()
@@ -220,27 +226,26 @@ class DomainTableAPIControllerTests {
 	
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
-	public void testEditDomainTable() throws Exception, IOException {
-		DomainTableDto domain = save(createSampleDomainTable());
-        domain.setVersion("0.2");
-        domain.setActive(true);
-        domain.setEntries(domain.getEntriesOfLanguage(DomainLanguage.ENGLISH));
-        String id = domain.getId();
+	public void testEditTemplate() throws Exception, IOException {
+		DocumentTemplateDto template = save(createSampleTemplate());
+        template.setVersion("0.2");
+        template.setActive(true);
+        String id = template.getId();
 
 		MockHttpServletResponse response = mvc.perform(
-                put("/api/domaintable/" + id)
+                put("/api/template/" + id)
                 	.with(csrf())
                     .accept(MediaType.APPLICATION_JSON)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
-                        json.write(domain).getJson()
+                        json.write(template).getJson()
                     )
             )
             .andReturn()
             .getResponse();
 		
-		assertEquals(response.getStatus(), HttpStatus.OK.value());
-		assertEqualsSaved(id, domain);
+		assertEquals(HttpStatus.OK.value(), response.getStatus());
+		assertEqualsSaved(id, template);
 	}
 
 }

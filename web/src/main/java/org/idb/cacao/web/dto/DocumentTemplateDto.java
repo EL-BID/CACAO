@@ -20,6 +20,7 @@
 package org.idb.cacao.web.dto;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.validation.constraints.NotBlank;
@@ -95,6 +96,20 @@ public class DocumentTemplateDto implements Serializable {
 	private Boolean active;
 	
 	public DocumentTemplateDto() {
+	}
+	
+	public DocumentTemplateDto(String id, String archetype, String name, String group,
+			String version, Periodicity periodicity, boolean required, boolean active,
+			DocumentField... fields) {
+		this.id = id;
+		this.archetype = archetype;
+		this.name = name;
+		this.group = group;
+		this.version = version;
+		this.periodicity = periodicity;
+		this.required = required;
+		this.active = active;
+		this.fields = Arrays.asList(fields);
 	}
 	
 	public DocumentTemplateDto(DocumentTemplate template) {
