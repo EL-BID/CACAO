@@ -21,7 +21,9 @@ package org.idb.cacao.api.templates;
 
 import java.io.Closeable;
 import java.util.Map;
+import java.util.Random;
 
+import org.idb.cacao.api.utils.RandomDataGenerator;
 import org.idb.cacao.api.utils.RandomDataGenerator.DomainTableRepository;
 
 /**
@@ -87,4 +89,11 @@ public interface CustomDataGenerator extends Closeable {
 	 * @param docIndex The number of documents already generated in this process
 	 */
 	default public void setOverallSeed(long overallSeed, int docsTotal, int docIndex) { }
+
+	/**
+	 * Random generator for the purpose of data generation
+	 */
+	default public Random newRandom(long seed) {
+		return RandomDataGenerator.newRandom(seed);
+	}
 }

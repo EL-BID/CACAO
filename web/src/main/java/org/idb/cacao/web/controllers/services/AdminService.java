@@ -952,7 +952,7 @@ public class AdminService {
         ExecutorService executor = (limitDocs>1) ? Executors.newFixedThreadPool(threads) : null;
 
 		// Let's use this for generating SEED per document
-		Random genSeed = new Random(seed);
+		Random genSeed = RandomDataGenerator.newRandom(seed);
 		
 		User userLogged = (auth==null) ? null : userService.getUser(auth);
 		

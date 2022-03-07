@@ -39,7 +39,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .authorizeRequests()
             .antMatchers(
 
-           		// TODO: FIX THIS (SHOULD NOT ALLOW ACCESS TO ALL API)
         		"/api/**") 
             
             .permitAll()

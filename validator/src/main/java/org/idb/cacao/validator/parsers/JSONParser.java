@@ -47,7 +47,7 @@ public class JSONParser extends HirarquicalDocumentParser {
 
 			return result;
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		
 		return Collections.emptyMap();

@@ -20,13 +20,16 @@
 package org.idb.cacao.web.sec;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.idb.cacao.web.conf.KibanaProxyServletConfiguration;
 import org.idb.cacao.web.utils.LoginUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -54,6 +57,7 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * All configurations related to security and login
@@ -95,6 +99,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Autowired
     DefaultOAuth2UserService oidcUserServiceSocial;
+    
+    /**
+     * Configurable endpoint for Kibana pages proxied by this web application
+     */
+    @Value("${kibana.endpoint}")
+    private String kibanaEndpoint;
 
     /**
      * Process an authentication request
@@ -122,7 +132,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
         .csrf()
         	// ignore Kibana-related endpoints since they are managed by Kibana
-        	.ignoringAntMatchers("/kibana/**")
+        	.ignoringRequestMatchers(kibanaRequestMatcher())
         	.and()
         .addFilterBefore(apiAuthenticationFilter(), CsrfFilter.class)      
         .addFilterBefore(new CSPNonceFilter(), HeaderWriterFilter.class)
@@ -155,9 +165,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         		
         		// ALLOW ERROR PAGE
         		"/error*", "/emailError*", 
-        		
-        		// ALLOW PUBLIC API
-        		// TODO:
         		
         		// ALLOW FIRST PAGE
         		"/", "/index*", "/login*", "/privacy*", "/terms*", "/license*",
@@ -257,4 +264,25 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		return userDetailsService;
 	}
 
+	/**
+	 * Returns a RequestMatcher designated to allow access to the proxied Kibana endpoints. Kibana itself offers defense
+	 * against CSRF attacks - @see https://www.elastic.co/guide/en/kibana/current/security-best-practices.html#_cross_site_request_forgery_csrfxsrf
+	 */
+	private RequestMatcher kibanaRequestMatcher() {
+		
+		String kibanaEndpointExpression = Optional.ofNullable(this.kibanaEndpoint).orElse(KibanaProxyServletConfiguration.DEFAULT_KIBANA_ENDPOINT);
+		if (kibanaEndpointExpression.trim().length()==0 || "/".equalsIgnoreCase(kibanaEndpointExpression.trim())) {
+			// If we have not defined a kibana endpoint, let's return an 'admits nothing' RequestMatcher so that there won't be any exceptions
+			// for CSRF
+			return (r)->false;
+		}
+				
+		if (!kibanaEndpointExpression.startsWith("/"))
+			kibanaEndpointExpression = "/" + kibanaEndpointExpression;
+		if (!kibanaEndpointExpression.endsWith("/"))
+			kibanaEndpointExpression += "/";
+		kibanaEndpointExpression += "**";
+		
+		return new AntPathRequestMatcher(kibanaEndpointExpression);
+	}
 }

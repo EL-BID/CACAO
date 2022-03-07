@@ -223,7 +223,6 @@ public class FileUploadedConsumerService {
 			parser.setPath(filePath);
 			parser.setDocumentInputSpec(docInputExpected);
 			parser.setDocumentTemplate(template.get());
-			// TODO: more setup ???
 			
 			long timestamp = System.currentTimeMillis();
 
