@@ -24,7 +24,6 @@ import java.io.Serializable;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
@@ -40,20 +39,14 @@ import com.fasterxml.jackson.annotation.JsonView;
  * @author Luis Kauer
  *
  */
-public class InterpersonalDto implements Serializable, Cloneable {
+public class InterpersonalDto implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * ID's are being generated automatically.
-	 * PS: Elasticsearch generates by default 20 character long ID's, that are both URL-safe, base 64 encoded GUID
-	 */
 	@JsonView(Views.Authority.class)
 	private String id;
 
 	@NotBlank
-	@NotNull
-	@NotEmpty
 	@Size(min=6, max=20)
 	@JsonView(Views.Authority.class)
 	private String personId1;
@@ -62,8 +55,6 @@ public class InterpersonalDto implements Serializable, Cloneable {
 	private boolean active=true;
 	
 	@NotBlank
-	@NotNull
-	@NotEmpty
 	@Size(min=6, max=20)
 	@JsonView(Views.Authority.class)
 	private String personId2;
@@ -99,82 +90,39 @@ public class InterpersonalDto implements Serializable, Cloneable {
 		return id;
 	}
 
-	public void setId(String id) {
-		this.id = id;
-	}
-
 	public boolean isActive() {
 		return active;
-	}
-
-	public void setActive(boolean active) {
-		this.active = active;
 	}
 
 	public String getPersonId1() {
 		return personId1;
 	}
 
-	public void setPersonId1(String personId1) {
-		this.personId1 = personId1;
-	}
-
 	public String getPersonId2() {
 		return personId2;
 	}
 
+	public RelationshipType getRelationshipType() {
+		return relationshipType;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+	
+	public void setPersonId1(String personId1) {
+		this.personId1 = personId1;
+	}
+	
 	public void setPersonId2(String personId2) {
 		this.personId2 = personId2;
 	}
 
-	/**
-	 * Relationship type: what 'person1' *is* for 'person2'
-	 */
-	public RelationshipType getRelationshipType() {
-		return relationshipType;
-	}
-
-	/**
-	 * Relationship type: what 'person1' *is* for 'person2'
-	 */
 	public void setRelationshipType(RelationshipType relationshipType) {
 		this.relationshipType = relationshipType;
-	}
-
-	public int hashCode() {
-		return 17 + 37 * (id==null?0:id.hashCode());
-	}
-	
-	public boolean equals(Object o) {
-		if (this==o)
-			return true;
-		if (!(o instanceof InterpersonalDto))
-			return false;
-		InterpersonalDto ref = (InterpersonalDto)o;
-		if (id!=ref.id) {
-			if (id==null || ref.id==null)
-				return false;
-			if (!id.equals(ref.id))
-				return false;
-		}
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		if (personId1!=null && personId1.trim().length()>0)
-			sb.append(personId1);
-		if (relationshipType!=null) {
-			sb.append(" is ");
-			sb.append(relationshipType);
-			sb.append(" of ");
-		}
-		if (personId2!=null && personId2.trim().length()>0) {
-			if (sb.length()>0)
-				sb.append(" ");
-			sb.append(personId2);
-		}
-		return sb.toString();
 	}
 }
