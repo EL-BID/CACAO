@@ -39,6 +39,7 @@ import javax.validation.constraints.Size;
 
 import org.idb.cacao.api.AFieldDescriptor;
 import org.idb.cacao.api.Views;
+import org.idb.cacao.api.utils.StringUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -367,15 +368,9 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 	public int compareTo(User o) {
 		if (this==o)
 			return 0;
-		if (login!=o.login) {
-			if (login==null)
-				return -1;
-			if (o.login==null)
-				return 1;
-			int comp = login.compareToIgnoreCase(o.login);
-			if (comp!=0)
-				return comp;
-		}
+		int c = StringUtils.compareCaseInsensitive(login, o.login);
+		if (c != 0)
+			return c;
 		return 0;
 	}
 

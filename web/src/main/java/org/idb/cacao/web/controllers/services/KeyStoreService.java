@@ -260,7 +260,7 @@ public class KeyStoreService {
 		final int days_validity = 3650;
 		final String signatureAlgorithm = "sha512WithRSA";
 		final X500Name subjectDN = new X500Name("CN=" + domainName + ", OU=None, O=None L=None, C=None");
-		final BigInteger serialNumber = BigInteger.valueOf(Math.abs(new SecureRandom().nextInt()));
+		final BigInteger serialNumber = BigInteger.valueOf(new SecureRandom().nextInt(Integer.MAX_VALUE));
 		final Date validityStartDate = new Date(System.currentTimeMillis());
 		final Date validityEndDate = new Date(System.currentTimeMillis() + (1000L * 60 * 60 * 24 * days_validity));
 		

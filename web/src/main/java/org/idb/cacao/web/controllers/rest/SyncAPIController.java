@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
@@ -502,7 +503,7 @@ public class SyncAPIController {
     	
     	final String[] ignorableFieldNames = syncAnon.dontSync();
     	final BiConsumer<Object,Object> ignorableFieldSetters[] = (ignorableFieldNames==null || ignorableFieldNames.length==0) ? null
-    			: Arrays.stream(ignorableFieldNames).map(name->ReflectUtils.getMemberSetter(entity, name)).filter(f->f!=null).toArray(BiConsumer[]::new);
+    			: Arrays.stream(ignorableFieldNames).map(name->ReflectUtils.getMemberSetter(entity, name)).filter(Objects::nonNull).toArray(BiConsumer[]::new);
     	
 		// Build and run the query to match the time constraints
 		
@@ -1722,7 +1723,7 @@ public class SyncAPIController {
 		Sort.Direction direction = sortOrder.orElse("desc").equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
 		Page<SyncCommitHistory> commits;
-		if (endpoint!=null && endpoint.isPresent()) {
+		if (endpoint.isPresent()) {
 			if (filters.isPresent() && !filters.get().isEmpty()) {
 				Optional<AdvancedSearch> filtersWithEndpoint = Optional.of(filters.get().clone().withFilter("endpoint", endpoint.get()));
 				commits = searchCommitHistory(filtersWithEndpoint, page, size, sortBy, sortOrder);

@@ -174,7 +174,7 @@ public class AdminUIController {
 				long t2 = f2.lastModified();
 				if (t1<t2) return 1;
 				if (t1>t2) return -1;
-				return -f1.getName().compareTo(f2.getName());
+				return f2.getName().compareTo(f1.getName());
 			}
 		});
 		

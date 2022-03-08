@@ -173,10 +173,6 @@ public class UserDto implements Serializable {
 		this.taxpayerId = taxpayerId;
 	}
 
-	public int hashCode() {
-		return 17 + 37 * (login == null ? 0 : login.hashCode());
-	}
-
 	@Override
 	public String toString() {
 		return name;

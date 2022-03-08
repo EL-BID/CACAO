@@ -503,6 +503,9 @@ public class SanitizationService {
 				deleteIndexResponse = elasticsearchClient.indices().delete(delete_request, options);
 
 			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
 			catch (Exception ex) {
 				if (ErrorUtils.isErrorNoIndexFound(ex))
 					continue;

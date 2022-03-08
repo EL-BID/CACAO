@@ -99,6 +99,11 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 	private Environment propertyResolver;
 	
 	private ApplicationContext applicationContext;
+	
+	/**
+	 * Synchronization object per user login
+	 */
+	private static final ConcurrentHashMap<String, Object> SYNC_OBJECT_PER_LOGIN = new ConcurrentHashMap<>();
 
 	/**
 	 * Maps the endpoint '/kibana' in this web application to the corresponding endpoint at Kibana user interface
@@ -279,7 +284,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 				// Avoid too much redundant validations at a short period of time 
 				return checkedUserStatus;
 			}
-			synchronized (user.getLogin().intern()) {
+			synchronized (SYNC_OBJECT_PER_LOGIN.computeIfAbsent(user.getLogin(),k->new Object())) {
 				// Repeat the same temporal check again (due to possible concurrent requests from the same user)
 				checkedUserStatus = checkedUserStatusMap.get(user.getId());
 				if (checkedUserStatus!=null && (System.currentTimeMillis()-checkedUserStatus.timestamp)<SMALL_TIME_ELAPSED_AVOID_REDUNDANT_CHECK_USER_PROFILE) {

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -88,6 +89,21 @@ public class KibanaSpacesService {
 	private final Set<String> checkedIndices;
 
     private RestTemplate restTemplate;
+
+	/**
+	 * Synchronization object per archetype
+	 */
+	private static final ConcurrentHashMap<String, Object> SYNC_OBJECT_PER_ARCHETYPE = new ConcurrentHashMap<>();
+
+	/**
+	 * Synchronization object per index
+	 */
+	private static final ConcurrentHashMap<String, Object> SYNC_OBJECT_PER_INDEX = new ConcurrentHashMap<>();
+
+	/**
+	 * Synchronization object per index pattern
+	 */
+	private static final ConcurrentHashMap<String, Object> SYNC_OBJECT_PER_INDEX_PATTERN = new ConcurrentHashMap<>();
 
 	@Autowired
 	public KibanaSpacesService(RestTemplateBuilder builder) {
@@ -181,7 +197,7 @@ public class KibanaSpacesService {
 			if (archetype==null || archetype.length()==0)
 				continue;
 			
-			synchronized (archetype.intern()) {
+			synchronized (SYNC_OBJECT_PER_ARCHETYPE.computeIfAbsent(archetype,k->new Object())) {
 		
 				// If we've already checked all index patterns related to this archetype name,
 				// let's skip
@@ -261,7 +277,7 @@ public class KibanaSpacesService {
 	 */	
 	public void syncKibanaIndexPatternForGenericTemplate(boolean avoidRedundantChecks, String index) {
 
-		synchronized (index.intern()) {
+		synchronized (SYNC_OBJECT_PER_INDEX.computeIfAbsent(index,k->new Object())) {
 
 			if (avoidRedundantChecks && checkedIndices.contains(index))
 				return;
@@ -315,7 +331,7 @@ public class KibanaSpacesService {
 
 		final String indexPatternTitle = indexName+"*";
 
-		synchronized (indexPatternTitle.intern()) {
+		synchronized (SYNC_OBJECT_PER_INDEX_PATTERN.computeIfAbsent(indexPatternTitle,k->new Object())) {
 			
 			if (checkedIndices.contains(indexName))
 				return true;

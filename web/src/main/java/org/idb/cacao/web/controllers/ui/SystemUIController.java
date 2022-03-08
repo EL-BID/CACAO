@@ -410,6 +410,9 @@ public class SystemUIController {
 
 			}
 		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		}
 		catch (Exception ex) {
 			log.log(Level.WARNING, "Error while retrieving Kafka summary", ex);
 			kafka_info.addChild(new MenuItem(text("sysinfo.no.info")).withActive(false));			

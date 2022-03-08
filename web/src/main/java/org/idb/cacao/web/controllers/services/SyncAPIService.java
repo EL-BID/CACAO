@@ -669,8 +669,12 @@ public class SyncAPIService {
 			if (!target_file.getParentFile().exists())
 				target_file.getParentFile().mkdirs();			
 			Files.copy(input, target_file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			if (entry.getLastModifiedTime()!=null)
-				target_file.setLastModified(entry.getLastModifiedTime().toMillis());
+			if (entry.getLastModifiedTime()!=null) {
+				boolean modified = target_file.setLastModified(entry.getLastModifiedTime().toMillis());
+				if (!modified) {
+					log.log(Level.FINEST, "Could not change timestamp for ("+entry_name+") received from "+SyncContexts.ORIGINAL_FILES.getEndpoint());					
+				}
+			}
 			counter.increment();
 			sum_bytes.add(target_file.length());
 		});
@@ -1256,7 +1260,7 @@ public class SyncAPIService {
 		
 		final String master = config.getMaster();
 		String uri = "https://"+master+endPoint+"?start="+start;
-		if (end!=null && end.isPresent())
+		if (end.isPresent())
 			uri +="&end="+end.get();
 		if (limit>0)
 			uri += "&limit="+limit;
@@ -1374,7 +1378,7 @@ public class SyncAPIService {
 					try {
 						// Update SYNC repository with milestone to avoid replay the same SYNC again
 						OffsetDateTime lastTimeEnd = (sync_info.get()!=null && sync_info.get().hasMore()) ? 
-								sync_info.get().getActualEnd().toInstant().atOffset(ZoneOffset.UTC) : (end!=null && end.isPresent()) ? 
+								sync_info.get().getActualEnd().toInstant().atOffset(ZoneOffset.UTC) : (end.isPresent()) ? 
 										new Date(end.get().longValue()).toInstant().atOffset(ZoneOffset.UTC) : lastTimeRun;
 						saveSyncMilestone(master, endPoint, lastTimeRun, lastTimeStart, lastTimeEnd, count_incoming_objects.longValue(), successful);
 					}
@@ -1391,7 +1395,7 @@ public class SyncAPIService {
 				uri = "https://"+master+endPoint+"?start="+sync_info.get().getNextStart().getTime();
 				if (sync_info.get().getNextLineStart()!=null && sync_info.get().getNextLineStart().longValue()>0)
 					uri += "&line_start="+sync_info.get().getNextLineStart();
-				if (end!=null && end.isPresent())
+				if (end.isPresent())
 					uri +="&end="+end.get();
 				if (limit>0)
 					uri += "&limit="+limit;
