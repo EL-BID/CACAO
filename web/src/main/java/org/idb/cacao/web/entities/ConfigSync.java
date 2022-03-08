@@ -23,6 +23,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Keywo
 import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -164,17 +165,11 @@ public class ConfigSync implements Serializable, Cloneable {
 			return false;
 		if (!c1.getPeriodicity().equals(c2.getPeriodicity()))
 			return true;
-		if (c1.getHourOfDay()!=c2.getHourOfDay()) {
-			if (c1.getHourOfDay()==null || c2.getHourOfDay()==null)
-				return true;
-			if (!c1.getHourOfDay().equals(c2.getHourOfDay()))
-				return true;
+		if (!Objects.equals(c1.getHourOfDay(),c2.getHourOfDay())) {
+			return true;
 		}
-		if (c1.getDayOfWeek()!=c2.getDayOfWeek()) {
-			if (c1.getDayOfWeek()==null || c2.getDayOfWeek()==null)
-				return true;
-			if (!c1.getDayOfWeek().equals(c2.getDayOfWeek()))
-				return true;			
+		if (!Objects.equals(c1.getDayOfWeek(),c2.getDayOfWeek())) {
+			return true;
 		}
 		return false;
 	}

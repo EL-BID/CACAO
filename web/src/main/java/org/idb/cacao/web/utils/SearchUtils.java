@@ -130,7 +130,7 @@ public class SearchUtils {
 	}
 	
 	public static Optional<String> toJSON(Optional<AdvancedSearch> queryArguments) {
-		if (queryArguments==null || !queryArguments.isPresent())
+		if (!queryArguments.isPresent())
 			return Optional.empty();
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -828,7 +828,7 @@ public class SearchUtils {
 	 * containing only those filters. The original filters set may be modified by this method as well.
 	 */
 	public static Optional<AdvancedSearch> splitFilters(Optional<AdvancedSearch> filters, String... filterNames) {
-		if (filters==null || !filters.isPresent())
+		if (!filters.isPresent())
 			return Optional.empty();
 		
 		if (filterNames==null || filterNames.length==0)

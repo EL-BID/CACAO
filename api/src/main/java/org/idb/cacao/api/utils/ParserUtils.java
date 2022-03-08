@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -359,26 +360,30 @@ public class ParserUtils {
 		}
 	}
 
+	/**
+	 * Check if two strings are different. This is a case sensitive comparison.<BR>
+	 * NULL is treated as the same as an empty string.
+	 */
 	public static boolean hasChanged(String s1, String s2) {
-		if (s1==s2)
+		if (Objects.equals(s1, s2))
 			return false;
-		s1 = (s1==null) ? "" : s1;
-		s2 = (s2==null) ? "" : s2;
-		return !s1.equals(s2);
+		if (s1==null && "".equals(s2))
+			return false;
+		return (s2!=null || !"".equals(s1));
 	}
 
+	/**
+	 * Check if two strings are different comparing just the initial 'limitFirstCharsInComparison' characters. This is a case sensitive comparison.<BR>
+	 * NULL is treated as the same as an empty string.
+	 */
 	public static boolean hasChanged(String s1, String s2, int limitFirstCharsInComparison) {
-		if (s1==s2)
-			return false;
-		s1 = (s1==null) ? "" : s1;
-		s2 = (s2==null) ? "" : s2;
 		if (limitFirstCharsInComparison>0) {
-			if (s1.length()>limitFirstCharsInComparison)
+			if (s1!=null && s1.length()>limitFirstCharsInComparison)
 				s1 = s1.substring(0, limitFirstCharsInComparison);
-			if (s2.length()>limitFirstCharsInComparison)
+			if (s2!=null && s2.length()>limitFirstCharsInComparison)
 				s2 = s2.substring(0, limitFirstCharsInComparison);
 		}
-		return !s1.equals(s2);
+		return hasChanged(s1, s2);
 	}
 
     /**

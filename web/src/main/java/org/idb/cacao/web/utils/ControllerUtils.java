@@ -290,7 +290,7 @@ public class ControllerUtils {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		User user = (auth==null) ? null : UserUtils.getUser(auth);
 		if (user!=null) {
-			if (pageSize!=null && pageSize.isPresent()) {
+			if (pageSize.isPresent()) {
 				user.setPageSize(pageSize.get());
 				return pageSize.get();
 			}
@@ -298,7 +298,7 @@ public class ControllerUtils {
 			if (psize!=null)
 				return Math.min(MAX_PAGE_SIZE, Math.max(psize, MIN_PAGE_SIZE));
 		}
-		if (pageSize!=null && pageSize.isPresent()) {
+		if (pageSize.isPresent()) {
 			return pageSize.get();
 		}
 		return Integer.parseInt(env.getProperty("default.page.size"));

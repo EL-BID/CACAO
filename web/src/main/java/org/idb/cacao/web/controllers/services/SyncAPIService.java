@@ -1809,7 +1809,7 @@ public class SyncAPIService {
 				try {
 					this.wait();
 				} catch (InterruptedException e) {
-					break;
+					Thread.currentThread().interrupt();
 				}
 			}
 		}
@@ -1818,7 +1818,7 @@ public class SyncAPIService {
 				try {
 					this.wait();
 				} catch (InterruptedException e) {
-					break;
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

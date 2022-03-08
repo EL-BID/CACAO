@@ -157,7 +157,7 @@ public class SaveToParquet implements Closeable {
 	    try {
 			writer = outputFormat.getRecordWriter(jc, outputFile, CodecConfig.getParquetCompressionCodec(configuration));
 		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+			Thread.currentThread().interrupt();
 		}
 
 		TaskID id = new TaskID(new JobID(),TaskType.MAP, 0);
@@ -212,7 +212,7 @@ public class SaveToParquet implements Closeable {
 		try {
 			writer.write(null, parquet_record);
 		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+			Thread.currentThread().interrupt();
 		}
 	}
 	
@@ -225,7 +225,7 @@ public class SaveToParquet implements Closeable {
 			try {
 				writer.close(taskContext);
 			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 	}

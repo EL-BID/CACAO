@@ -1129,7 +1129,7 @@ public class AdminService {
 					if (!ok)
 						log.log(Level.WARNING, () -> "Too much time waiting for termination of generation of "+limitDocs+" documents of template "+template.getName());
 				} catch (InterruptedException e) {
-		        	log.log(Level.WARNING,"Interrupted data generation", e);
+					Thread.currentThread().interrupt();
 				}
 			}
 

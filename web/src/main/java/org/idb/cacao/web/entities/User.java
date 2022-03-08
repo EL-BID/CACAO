@@ -26,6 +26,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -351,11 +352,8 @@ public class User implements Serializable, Cloneable, Comparable<User> {
 		if (!(o instanceof User))
 			return false;
 		User ref = (User)o;
-		if (login!=ref.login) {
-			if (login==null || ref.login==null)
-				return false;
-			if (!login.equals(ref.login))
-				return false;
+		if (!Objects.equals(login, ref.login)) {
+			return false;
 		}
 		return true;
 	}
