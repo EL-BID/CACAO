@@ -26,13 +26,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.idb.cacao.web.GenericResponse;
+import org.idb.cacao.web.controllers.services.InternalHttpRequestsService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.DashboardCopy;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.utils.ESUtils;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -79,11 +79,11 @@ public class DashboardsAPIController {
     private RestTemplate restTemplate;
 
 	@Autowired
-	public DashboardsAPIController(RestTemplateBuilder builder) {
+	public DashboardsAPIController(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 	}
 

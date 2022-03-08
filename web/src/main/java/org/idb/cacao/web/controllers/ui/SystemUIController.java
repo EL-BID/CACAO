@@ -45,10 +45,10 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.idb.cacao.api.ComponentSystemInformation;
 import org.idb.cacao.api.utils.StringUtils;
+import org.idb.cacao.web.controllers.services.InternalHttpRequestsService;
 import org.idb.cacao.web.controllers.services.ResourceMonitorService;
 import org.idb.cacao.web.dto.MenuItem;
 import org.idb.cacao.web.utils.ESUtils;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.client.ServiceInstance;
@@ -92,11 +92,11 @@ public class SystemUIController {
     private DiscoveryClient discoveryClient;
 
 	@Autowired
-	public SystemUIController(RestTemplateBuilder builder) {
+	public SystemUIController(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 	}
 

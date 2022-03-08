@@ -125,7 +125,6 @@ import org.idb.cacao.web.repositories.TaxpayerRepository;
 import org.idb.cacao.web.utils.CreateDocumentTemplatesSamples;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.idb.cacao.web.utils.generators.FileGenerator;
 import org.idb.cacao.web.utils.generators.FileGenerators;
 import org.idb.cacao.web.utils.generators.SampleCompanySizes;
@@ -355,11 +354,11 @@ public class AdminService {
 	}
 	
 	@Autowired
-	public AdminService(RestTemplateBuilder builder) {
+	public AdminService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 	}
 

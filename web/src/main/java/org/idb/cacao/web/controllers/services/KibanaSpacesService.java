@@ -43,7 +43,6 @@ import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ESUtils.KibanaIndexPattern;
 import org.idb.cacao.web.utils.ESUtils.KibanaSavedObject;
 import org.idb.cacao.web.utils.ESUtils.KibanaSpace;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
@@ -106,11 +105,11 @@ public class KibanaSpacesService {
 	private static final ConcurrentHashMap<String, Object> SYNC_OBJECT_PER_INDEX_PATTERN = new ConcurrentHashMap<>();
 
 	@Autowired
-	public KibanaSpacesService(RestTemplateBuilder builder) {
+	public KibanaSpacesService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 		this.checkedArchetypes = Collections.synchronizedSet(new HashSet<>());
 		this.checkedIndices = Collections.synchronizedSet(new HashSet<>());

@@ -52,7 +52,6 @@ import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.MissingParameter;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ESUtils.KibanaSpace;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,11 +120,11 @@ public class UserService {
 
     private RestTemplate restTemplate;
     
-    public UserService(RestTemplateBuilder builder) {
+    public UserService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 	}
 

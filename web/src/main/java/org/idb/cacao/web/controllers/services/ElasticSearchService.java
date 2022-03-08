@@ -38,7 +38,6 @@ import org.elasticsearch.client.security.user.privileges.Role;
 import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ESUtils.KibanaSpace;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.MessageSource;
@@ -82,11 +81,11 @@ public class ElasticSearchService {
     };
 
 	@Autowired
-	public ElasticSearchService(RestTemplateBuilder builder) {
+	public ElasticSearchService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 	}
 	

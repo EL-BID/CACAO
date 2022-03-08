@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.idb.cacao.web.controllers.services.InternalHttpRequestsService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.Dashboard;
 import org.idb.cacao.web.dto.Space;
@@ -38,7 +39,6 @@ import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ESUtils.KibanaSavedObject;
 import org.idb.cacao.web.utils.ESUtils.KibanaSpace;
-import org.idb.cacao.web.utils.HttpUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -71,11 +71,11 @@ public class DashboardsUIController {
     private RestTemplate restTemplate;
 
 	@Autowired
-	public DashboardsUIController(RestTemplateBuilder builder) {
+	public DashboardsUIController(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
 				.setReadTimeout(Duration.ofMinutes(5))
-				.requestFactory(HttpUtils::getTrustAllHttpRequestFactory)
+				.requestFactory(requestFactory)
 				.build();
 	}
 
