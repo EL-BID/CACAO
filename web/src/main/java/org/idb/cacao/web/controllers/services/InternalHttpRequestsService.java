@@ -19,11 +19,17 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.services;
 
+import java.security.cert.X509Certificate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
+import javax.net.ssl.SSLException;
+
+import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.idb.cacao.web.utils.HttpUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +41,21 @@ import org.springframework.stereotype.Service;
 public class InternalHttpRequestsService implements Supplier<ClientHttpRequestFactory> {
 
 	private static final Logger log = Logger.getLogger(InternalHttpRequestsService.class.getName());
+	
+	private Pattern patternForSSLTrustServer;
+	
+	private DefaultHostnameVerifier verifier;
+	
+	public InternalHttpRequestsService(@Value("${ssl.trust.server}") String expressionForSSLTrustServer) {
+		try {
+			patternForSSLTrustServer = Pattern.compile(expressionForSSLTrustServer, Pattern.CASE_INSENSITIVE);
+		}
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error while compiling the regular expression configured at property 'ssl.trust.server'", ex);
+			patternForSSLTrustServer = null;
+		}
+		verifier = new DefaultHostnameVerifier();
+	}
 
 	@Override
 	public ClientHttpRequestFactory get() {
@@ -42,23 +63,31 @@ public class InternalHttpRequestsService implements Supplier<ClientHttpRequestFa
 	}
 	
 	public boolean chkClientCerts(java.security.cert.X509Certificate[] certs, String peerHostName) {
-		if (log.isLoggable(Level.WARNING) ) {
+		if (log.isLoggable(Level.FINE) ) {
 			printCerts("Client", certs, peerHostName);
 		}
-		return true;
+		if (patternForSSLTrustServer==null)
+			return false; // reject all request if we have a problem with 'ssl.trust.server' configuration
+		if (peerHostName==null)
+			return false; // reject all request that does not identify the peer hostname
+		return verifyCertHost(peerHostName, certs[0]) && patternForSSLTrustServer.matcher(peerHostName).find();
 	}
 	
 	public boolean chkServerCerts(java.security.cert.X509Certificate[] certs, String peerHostName) {
-		if (log.isLoggable(Level.WARNING) ) {
+		if (log.isLoggable(Level.FINE) ) {
 			printCerts("Server", certs, peerHostName);
 		}		
-		return true;
+		if (patternForSSLTrustServer==null)
+			return false; // reject all request if we have a problem with 'ssl.trust.server' configuration 
+		if (peerHostName==null)
+			return false; // reject all request that does not identify the peer hostname
+		return verifyCertHost(peerHostName, certs[0]) && patternForSSLTrustServer.matcher(peerHostName).find();
 	}
 
 	public static void printCerts(String label, java.security.cert.X509Certificate[] certs, String peerHostName) {
 		if (certs==null || certs.length==0) {
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, String.format("Peer %s requested %s certificates: NONE", peerHostName, label));
+			if (log.isLoggable(Level.FINE))
+				log.log(Level.FINE, String.format("Peer %s requested %s certificates: NONE", peerHostName, label));
 		}
 		else {
 			StringBuilder report = new StringBuilder();
@@ -67,8 +96,17 @@ public class InternalHttpRequestsService implements Supplier<ClientHttpRequestFa
 				report.append("\tSUBJECT:").append(cert.getSubjectX500Principal().getName())
 				.append("\tISSUER:").append(cert.getIssuerX500Principal().getName()).append("\n");
 			}
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, report.toString());			
+			if (log.isLoggable(Level.FINE))
+				log.log(Level.FINE, report.toString());			
 		}
+	}
+	
+	public boolean verifyCertHost(final String host, final X509Certificate cert) {
+		try {
+			verifier.verify(host, cert);
+			return true;
+		} catch (SSLException e) {
+			return false;
+		}		
 	}
 }
