@@ -24,6 +24,7 @@ import javax.validation.Valid;
 import org.idb.cacao.web.GenericResponse;
 import org.idb.cacao.web.controllers.services.ConfigSyncService;
 import org.idb.cacao.web.controllers.services.SyncAPIService;
+import org.idb.cacao.web.dto.ConfigSyncDto;
 import org.idb.cacao.web.entities.ConfigSync;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +69,7 @@ public class ConfigSyncUIController {
 	@Secured("ROLE_SYNC_OPS")
     @PutMapping("/config-sync")
     @ResponseBody
-    public GenericResponse updateSync(@Valid @RequestBody ConfigSync config, BindingResult result) {
+    public GenericResponse updateSync(@Valid @RequestBody ConfigSyncDto config, BindingResult result) {
     	
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrorsAsGenericResponse(result);
@@ -84,9 +85,12 @@ public class ConfigSyncUIController {
         	config.setApiToken(configSyncService.encryptToken(config.getApiToken()));
         }
 
-        configSyncService.setActiveConfig(config);
+        ConfigSync entity = new ConfigSync();
+        config.updateEntity(entity);
         
-        if (ConfigSync.hasChangedScheduleInfo(prevConfig, config)) {
+        configSyncService.setActiveConfig(entity);
+        
+        if (ConfigSync.hasChangedScheduleInfo(prevConfig, entity)) {
         	syncAPIService.scheduleSyncThread();
         }
         

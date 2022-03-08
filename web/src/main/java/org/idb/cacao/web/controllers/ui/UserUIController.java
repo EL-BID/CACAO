@@ -81,12 +81,13 @@ public class UserUIController {
 
 	@Secured({ "ROLE_USER_WRITE" })
 	@GetMapping("/users/add")
-	public String showAddUser(User user, Model model) {
+	public String showAddUser(Model model) {
 		ConfigEMail configEmail = configEmailService.getActiveConfig();
 		if (configEmail != null && configEmail.getSupportEmail() != null
 				&& configEmail.getSupportEmail().trim().length() > 0) {
 			model.addAttribute("omit_password", true);
 		}
+		model.addAttribute("user", new User());
 		return "users/add-user";
 	}
 

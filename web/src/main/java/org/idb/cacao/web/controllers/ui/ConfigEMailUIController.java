@@ -26,6 +26,7 @@ import javax.validation.Valid;
 import org.idb.cacao.web.GenericResponse;
 import org.idb.cacao.web.controllers.services.ConfigEMailService;
 import org.idb.cacao.web.controllers.services.IConfigEMailService;
+import org.idb.cacao.web.dto.ConfigEMailDto;
 import org.idb.cacao.web.entities.ConfigEMail;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +73,7 @@ public class ConfigEMailUIController {
 	@Secured("ROLE_CONFIG_SYSTEM_MAIL")
     @PutMapping("/config-email")
     @ResponseBody
-    public GenericResponse updateEMail(@Valid @RequestBody ConfigEMail config, BindingResult result) {
+    public GenericResponse updateEMail(@Valid @RequestBody ConfigEMailDto config, BindingResult result) {
     	
         if (result.hasErrors()) {
         	return ControllerUtils.returnErrorsAsGenericResponse(result);
@@ -87,9 +88,11 @@ public class ConfigEMailUIController {
         	config.setPassword(configEMailService.encryptPassword(config.getPassword()));
         }
         
-        configEMailService.setActiveConfig(config);
+        ConfigEMail entity = new ConfigEMail();
+        config.updateEntity(entity);
+        configEMailService.setActiveConfig(entity);
         
-        configureMailSender((JavaMailSenderImpl)mailSender, configEMailService, config);
+        configureMailSender((JavaMailSenderImpl)mailSender, configEMailService, entity);
         
         return new GenericResponse("OK");
     }
