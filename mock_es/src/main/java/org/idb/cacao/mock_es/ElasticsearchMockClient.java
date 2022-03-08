@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.logging.LogManager;
 
 /**
  * This is a 'mocked' ElasticSearch client. It may be used for unit testing
@@ -66,17 +64,6 @@ public class ElasticsearchMockClient {
 	// Setup LOG level for MockServer
 	static {
 		ConfigurationProperties.logLevel(MOCK_SERVER_LOG_LEVEL);
-		String loggingConfiguration = "" + "handlers=org.mockserver.logging.StandardOutConsoleHandler\n"
-				+ "org.mockserver.logging.StandardOutConsoleHandler.level=" + MOCK_SERVER_LOG_LEVEL + "\n"
-				+ "org.mockserver.logging.StandardOutConsoleHandler.formatter=java.util.logging.SimpleFormatter\n"
-				+ "java.util.logging.SimpleFormatter.format=%1$tF %1$tT  %3$s  %4$s  %5$s %6$s%n\n" + ".level="
-				+ MOCK_SERVER_LOG_LEVEL + "\n" + "io.netty.handler.ssl.SslHandler.level=" + MOCK_SERVER_LOG_LEVEL;
-		try {
-			LogManager.getLogManager()
-					.readConfiguration(new ByteArrayInputStream(loggingConfiguration.getBytes(StandardCharsets.UTF_8)));
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
 	}
 
 	private final Map<String, MockedIndex> map_indices;
@@ -602,4 +589,5 @@ public class ElasticsearchMockClient {
 				.replaceAll("\\.keyword$", "")    // something like "name.keyword" becomes "name"
 				.replaceAll("\\^[\\d\\.]+$", ""); // something like "fieldname^1.0" becomes "fieldname"
 	}
+
 }

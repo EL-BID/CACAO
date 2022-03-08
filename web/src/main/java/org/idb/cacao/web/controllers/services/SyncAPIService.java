@@ -105,6 +105,7 @@ import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.KeepAliveStrategy;
 import org.idb.cacao.web.utils.LoadFromParquet;
 import org.idb.cacao.web.utils.ReflectUtils;
+import org.idb.cacao.web.utils.ZipConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -208,7 +209,9 @@ public class SyncAPIService {
 	private static final int DEFAULT_KEEP_ALIVE_TIMEOUT_MS = 10_000;
 	
 	private static final int MAX_POOLING_SIZE_FOR_CONCURRENT_REQUESTS = 20;
-
+	
+	private static final int MARGIN_FOR_THRESHOLD_OVER_ZIP_ENTRIES = 1000;
+	
     @Autowired
     private MessageSource messages;
 
@@ -244,6 +247,9 @@ public class SyncAPIService {
 
 	@Value("${spring.elasticsearch.rest.connection-timeout}")
 	private String elasticSearchConnectionTimeout;
+
+	@Value("${storage.parquet.files.temporary.dir}")
+	private String storageParquetFilesTemporaryDirName;
 
     private RestTemplate restTemplate;
     
@@ -1245,7 +1251,7 @@ public class SyncAPIService {
 	/**
 	 * Process the SYNC request. Automatically resume partial responses. Returns the number of bytes received (considering compression in transfer).
 	 */
-	private long syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end, long limit, LongAdder bytesReceived,
+	private long syncSomething(String tokenApi, String endPoint, long start, Optional<Long> end, int limit, LongAdder bytesReceived,
 			boolean parquet,
 			ConsumeSyncContentsInterface consumer) {
 		
@@ -1276,6 +1282,8 @@ public class SyncAPIService {
 		final LongAdder count_incoming_objects_overall = new LongAdder();
 		final LongAdder count_bytes_overall = new LongAdder();
 		
+		final int thresholdEntries = ( (limit>0) ? limit : MAX_RESULTS_PER_REQUEST ) + MARGIN_FOR_THRESHOLD_OVER_ZIP_ENTRIES;
+		
 		do {
 			
 			has_more = false; // resets the flag if we are repeating SYNC
@@ -1302,23 +1310,21 @@ public class SyncAPIService {
 					CountingInputStream counting_input = new CountingInputStream(file_input);
 					CheckedInputStream chk_input = new CheckedInputStream(counting_input, new Adler32());
 					ZipInputStream zip_input = new ZipInputStream(chk_input);
-					
+
 					try {
-						ZipEntry ze;
-						while (((ze = zip_input.getNextEntry()) != null)) {
-							
+						
+						ZipConsumer.ConsumeContents consumeZipContents = (ze, input)->{
 							// If entry corresponds to SyncDto, read and store this information (there should be only one per ZIP file)
 							if (SyncDto.DEFAULT_FILENAME.equals(ze.getName())) {
 								sync_info.set(readSyncDto(zip_input));
-								continue;
+								return;
 							}
 							
 							// If entry corresponds to Parquet file, read and store this information accordingly
 							if (parquet && SyncAPIController.DATA_PARQUET_FILENAME.equals(ze.getName())) {
 								
 								readParquetFileContents(zip_input, consumer, count_incoming_objects, count_incoming_objects_overall);
-								continue;
-								
+								return;								
 							}
 							else {
 								
@@ -1328,9 +1334,14 @@ public class SyncAPIService {
 								count_incoming_objects.increment();
 								count_incoming_objects_overall.increment();
 								
-							}
-							
-						} // LOOP through zip contents
+							}							
+						};
+						
+						ZipConsumer zipConsumer = new ZipConsumer(zip_input::getNextEntry, zip_input, consumeZipContents)
+								.threadholdEntries(thresholdEntries);
+						
+						zipConsumer.run();
+
 					} catch (IOException ex) {
 						if (ErrorUtils.isErrorStreamClosed(ex)) {
 							// ignore this error silently
@@ -1846,13 +1857,22 @@ public class SyncAPIService {
 	/**
 	 * Read SYNC data stored as Parquet file format
 	 */
-	public static void readParquetFileContents(
+	public void readParquetFileContents(
 			InputStream input,
 			ConsumeSyncContentsInterface consumer,
 			LongAdder... counters) throws IOException {
 		
 		// If SYNC_PARQUET_USE_TEMPORARY_FILE is TRUE, we have to save the incoming data at a temporary file in order to read it		
-		final File tempFile = (SYNC_PARQUET_USE_TEMPORARY_FILE) ? java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile() : null;
+		final File tempFile;
+		if (SYNC_PARQUET_USE_TEMPORARY_FILE) {
+			File tempDir = new File(storageParquetFilesTemporaryDirName);
+			if (!tempDir.exists())
+				tempDir.mkdirs();					
+			tempFile = File.createTempFile("SYNC", ".TMP", tempDir);
+		}
+		else {
+			tempFile = null;
+		}
 		
 		LoadFromParquet loadParquet = null;
 

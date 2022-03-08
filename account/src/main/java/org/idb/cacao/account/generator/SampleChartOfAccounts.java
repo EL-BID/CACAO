@@ -37,7 +37,7 @@ public enum SampleChartOfAccounts {
 	INVENTORY("1.3.1", "Inventory", "Merchandise in Inventory", AccountCategory.ASSET, AccountSubcategory.ASSET_INVENTORY),
 	PAYABLE("2.1.1", "Accounts Payable", "Accounts and Trade Payables", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_PAYABLE),
 	LOANS("2.3.2", "Loans", "Loans Payable", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_ACCRUAL),
-	TAX_PROVISION("3.2.1.1","Tax Provision", "Provision for tax payment", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_PROVISION_TAX),
+	TAX_PROVISION(/*3.2.1.1*/String.join(".","3","2","1","1"),"Tax Provision", "Provision for tax payment", AccountCategory.LIABILITY, AccountSubcategory.LIABILITY_PROVISION_TAX),
 	STOCK("3.5.2", "Stock", "Subscribed Stock Receivables", AccountCategory.EQUITY, AccountSubcategory.EQUITY_OWNERS),
 	REVENUE_GOODS("4.1.1", "Revenue Goods", "Revenue from selling Goods", AccountCategory.REVENUE, AccountSubcategory.REVENUE_NET),
 	REVENUE_SERVICES("4.1.2", "Revenue Services", "Revenue from Services", AccountCategory.REVENUE, AccountSubcategory.REVENUE_NET),

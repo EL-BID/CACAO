@@ -41,7 +41,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.servlet.http.HttpServletRequest;
@@ -86,7 +85,9 @@ import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
+import org.idb.cacao.web.utils.ZipConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.ByteArrayResource;
@@ -181,7 +182,13 @@ public class DocumentStoreAPIController {
 
 	@Autowired
 	private MessagesService messagesService;
-
+	
+	/**
+	 * Maximum number of entries it expects to find in incoming ZIP file
+	 */
+	@Value("${max.entries.per.uploaded.zip}")
+	private int maxEntriesPerUploadedZip;
+	
 	/**
 	 * Endpoint for uploading a document to be parsed
 	 */
@@ -322,15 +329,20 @@ public class DocumentStoreAPIController {
 
 		final List<Map<String, String>> results = new ArrayList<>();
 
+
 		try (ZipInputStream zipStream = new ZipInputStream(filezip.getInputStream())) {
-			ZipEntry ze;
-
-			while ((ze = zipStream.getNextEntry()) != null) {
-
+			
+			ZipConsumer.ConsumeContents consumeZipContents = (ze, input)->{
 				Map<String, String> result = uploadFile(ze.getName(), zipStream, /* closeInputStream */false, templateName,
 						/* template version */ null, remoteIpAddr, user);
-				results.add(result);
-			}
+				results.add(result);				
+			};
+
+			ZipConsumer zipConsumer = new ZipConsumer(zipStream::getNextEntry, zipStream, consumeZipContents)
+					.threadholdEntries(maxEntriesPerUploadedZip);
+			
+			zipConsumer.run();
+
 		} catch (GeneralException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Collections.singletonMap("error", ex.getMessage()));

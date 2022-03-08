@@ -115,6 +115,7 @@ import org.idb.cacao.web.utils.ReflectUtils;
 import org.idb.cacao.web.utils.SaveToParquet;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -219,6 +220,9 @@ public class SyncAPIController {
 
 	@Autowired
 	private DocumentTemplateRepository templateRepository;
+	
+	@Value("${storage.parquet.files.temporary.dir}")
+	private String storageParquetFilesTemporaryDirName;
 	
 	private static final Map<String, Class<?>> map_repositories_classes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 	
@@ -1046,7 +1050,10 @@ public class SyncAPIController {
 				if (parquet) {
 					// We need a temporary local file to store Parquet data. Later we will move it to the zip file after we finish.
 					saveToParquet = new SaveToParquet();
-					tempFile = java.nio.file.Files.createTempFile("SYNC", ".TMP").toFile();
+					File tempDir = new File(storageParquetFilesTemporaryDirName);
+					if (!tempDir.exists())
+						tempDir.mkdirs();					
+					tempFile = File.createTempFile("SYNC", ".TMP", tempDir);
 					saveToParquet.setOutputFile(tempFile);
 					try {
 						Map<String,Object> mappings = ESUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
