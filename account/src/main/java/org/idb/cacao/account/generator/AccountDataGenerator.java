@@ -42,7 +42,7 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.collections4.ListUtils;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
 import org.idb.cacao.account.elements.AccountCategory;
@@ -201,7 +201,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	public AccountDataGenerator(DocumentTemplate template, DocumentFormat format, long seed, long records) 
 			throws GeneralException {
 		
-		this.chartOfAccounts = ChartOfAccountsArchetype.NAME.equalsIgnoreCase(template.getArchetype());
+		this.chartOfAccounts = AccountingGroupArchetype.NAME.equalsIgnoreCase(template.getArchetype());
 		this.openingBalance = OpeningBalanceArchetype.NAME.equalsIgnoreCase(template.getArchetype());
 		this.generalLedger = GeneralLedgerArchetype.NAME.equalsIgnoreCase(template.getArchetype());
 
@@ -276,10 +276,10 @@ public class AccountDataGenerator implements CustomDataGenerator {
 		}
 		
 		if (chartOfAccounts) {
-			DocumentField account_category_field_map = template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name());
+			DocumentField account_category_field_map = template.getField(AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name());
 			String account_category_domain_table_name = (account_category_field_map==null) ? null : account_category_field_map.getDomainTableName();
 			standard = AccountBuiltInDomainTables.getAccountStandardRelatedToDomainTable(account_category_domain_table_name);
-			taxPayerIdField = template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name());
+			taxPayerIdField = template.getField(AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name());
 		}
 		
 		if (openingBalance) {
@@ -563,13 +563,13 @@ public class AccountDataGenerator implements CustomDataGenerator {
 		
 		SampleChartOfAccounts account = SampleChartOfAccounts.values()[recordsCreated];
 		
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), year);
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), account.getAccountCode());
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), account.getCategory().getNumber(standard));
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), account.getSubcategory().getNumber(standard));
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.AccountName.name(), account.getAccountName());
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), account.getAccountDescription());
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), year);
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), account.getAccountCode());
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), account.getCategory().getNumber(standard));
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), account.getSubcategory().getNumber(standard));
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.AccountName.name(), account.getAccountName());
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), account.getAccountDescription());
 		
 	}
 

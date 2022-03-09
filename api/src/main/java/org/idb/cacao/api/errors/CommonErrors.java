@@ -20,6 +20,7 @@
 package org.idb.cacao.api.errors;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.elasticsearch.ElasticsearchStatusException;
@@ -188,6 +189,43 @@ public class CommonErrors {
 		doESWriteOpWithRetries(runnable, DEFAULT_DELAY_MS_BETWEEN_RETRIES, DEFAULT_MAX_RETRIES);
 	}
 
+	/**
+	 * Any method returning object that also throws checked exceptions
+	 */
+	@FunctionalInterface
+	public static interface MethodThrowing<T extends Exception> {
+		public Object run() throws Throwable;
+	}
+
+	/**
+	 * Call some write operation on ElasticSearch. Returns the outcome of the operation. Check for exceptions. May try again the same routine several times in case of temporary runtime failure (e.g.: too many requests).
+	 * Use some defaults for maximum retries and delay between retries.
+	 */
+	public static <T extends Exception> Object doESMethodWithRetries(MethodThrowing<T> method) throws Exception {
+    	// Holds the returned object from the 'save' method
+    	AtomicReference<Object> returnedObject = new AtomicReference<>();
+    	
+    	// Try to run the intercepted method and look for particular class of errors (e.g.: 'Rejected Exception')
+    	// Will try again after some delay in case of error. The maximum number of retries and the delay between retries
+    	// are configured statically at CommonErrors.
+    	CommonErrors.doESWriteOpWithRetries(()->{
+    		
+    		try {
+	    		Object ret = method.run();
+	    		returnedObject.set(ret);
+    		}
+    		catch (Exception|Error ex) {
+    			throw ex; // handled by 'CommonErrors.doESWriteOpWithRetries'
+    		}
+    		catch (Throwable ex) {
+    			throw new RuntimeException(ex); // handled by 'CommonErrors.doESWriteOpWithRetries'
+    		}
+    		
+    	});
+    	
+    	return returnedObject.get();
+	}
+	
 	/**
 	 * Returns TRUE if the error is something like 'Result window is too large ...'
 	 */

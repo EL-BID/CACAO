@@ -93,85 +93,85 @@ public class ConfigEMailDto implements Serializable {
 		config.setTls(tls);
 		config.setTimeout(timeout);
 	}
-	
-	public long getId() {
-		return id;
-	}
 
 	public void setId(long id) {
 		this.id = id;
 	}
 
-	public String getSupportEmail() {
-		return supportEmail;
+	public long getId() {
+		return id;
 	}
 
 	public void setSupportEmail(String supportEmail) {
 		this.supportEmail = supportEmail;
 	}
 
-	public String getHost() {
-		return host;
+	public String getSupportEmail() {
+		return supportEmail;
 	}
 
 	public void setHost(String host) {
 		this.host = host;
 	}
 
-	public int getPort() {
-		return port;
+	public String getHost() {
+		return host;
 	}
 
 	public void setPort(int port) {
 		this.port = port;
 	}
 
-	public EmailProtocol getProtocol() {
-		return protocol;
+	public int getPort() {
+		return port;
 	}
 
 	public void setProtocol(EmailProtocol protocol) {
 		this.protocol = protocol;
 	}
 
-	public String getUsername() {
-		return username;
+	public EmailProtocol getProtocol() {
+		return protocol;
 	}
 
 	public void setUsername(String username) {
 		this.username = username;
 	}
 
-	public String getPassword() {
-		return password;
+	public String getUsername() {
+		return username;
 	}
 
 	public void setPassword(String password) {
 		this.password = password;
 	}
 
-	public boolean isAuth() {
-		return auth;
+	public String getPassword() {
+		return password;
 	}
 
 	public void setAuth(boolean auth) {
 		this.auth = auth;
 	}
 
-	public boolean isTls() {
-		return tls;
+	public boolean isAuth() {
+		return auth;
 	}
 
 	public void setTls(boolean tls) {
 		this.tls = tls;
 	}
 
-	public int getTimeout() {
-		return timeout;
+	public boolean isTls() {
+		return tls;
 	}
 
 	public void setTimeout(int timeout) {
 		this.timeout = timeout;
+	}
+
+	public int getTimeout() {
+		return timeout;
 	}
 
 }

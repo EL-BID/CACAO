@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.templates.CustomDataGenerator;
@@ -122,8 +122,8 @@ public class IncomeStatementGenerator implements CustomDataGenerator {
 
 		Map<String, Object> record = new HashMap<>();
 
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
-		record.put(ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), year);
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), taxpayerId.toString());
+		record.put(AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), year);
 
 		Number rev_net = roundDecimals(randomDataGenerator.nextRandomLogNormal(12.0, 6.0));		
 		record.put("RevenueNet", rev_net);			

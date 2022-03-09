@@ -37,7 +37,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype.FIELDS_NAMES;
 
 /**
  * Built-in domain tables related to accounting. These are 'in-memory replicas'. The application

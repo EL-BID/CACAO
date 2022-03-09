@@ -17,50 +17,59 @@
  *
  * This software uses third-party components, distributed accordingly to their own licenses.
  *******************************************************************************/
-package org.idb.cacao.validator;
+package org.idb.cacao.api;
 
-import org.idb.cacao.api.CommonApplication;
-import org.idb.cacao.validator.controllers.services.ResourceMonitorService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.boot.web.servlet.ServletComponentScan;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.event.EventListener;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.idb.cacao.api.utils.ResourceMonitor;
 import org.springframework.core.env.Environment;
 
 /**
- * SpringBoot WebApplication entry point.
- * 
- * @author Gustavo Figueiredo
- *
+ * Common application definitions for CACAO micro-services
  */
-@SpringBootApplication
-@ServletComponentScan
-@ComponentScan(basePackages = {"org.idb.cacao.validator","org.idb.cacao.api.storage"})
-public class Application extends CommonApplication {
+public class CommonApplication {
 
-	/**
-	 * This is the entrypoint for the entire web application
-	 */
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
+	static final Logger log = Logger.getLogger(CommonApplication.class.getName());
+
+	protected Environment env;
 	
-	@Autowired
-	public Application(Environment env, ResourceMonitorService validatorMonitorService) {
-		super(env, validatorMonitorService);
+	protected ResourceMonitor<? extends SystemMetrics> resourceMonitorService;
+	
+	public CommonApplication(Environment env, ResourceMonitor<? extends SystemMetrics> resourceMonitorService) {
+		this.env = env;
+		this.resourceMonitorService = resourceMonitorService;
 	}
 
 	/**
 	 * Initialization code for the web application
 	 */
-	@EventListener(ApplicationReadyEvent.class)
-	public void doSomethingAfterValidatorStartup() {
+	public void runStartupCodeAsync() {
 		
-		runStartupCodeAsync();
+	    new Thread("StartupThread") {
+	    	{	setDaemon(true); }
+	    	
+	    	@Override
+	    	public void run() {
+    			startupCode();
+	    	}
+	    }.start();
+	}
+
+	/**
+	 * Do some initialization here
+	 */
+	public void startupCode() {
 		
+		try {
+			if ("true".equalsIgnoreCase(env.getProperty("resource.monitor"))) {
+				resourceMonitorService.start();
+			}
+		}
+		catch (Exception ex) {
+			log.log(Level.SEVERE, "Error during initialization", ex);
+		}
+
 	}
 
 }

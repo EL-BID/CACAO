@@ -19,8 +19,6 @@
  *******************************************************************************/
 package org.idb.cacao.validator.aspects;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -61,27 +59,7 @@ public class DAOExceptionRetryAspect {
     @Around("pointCutForCrudRepositorySaveMethod()")
     public Object aroundCrudRepositorySaveMethod(ProceedingJoinPoint joinPoint) throws Throwable {
     	
-    	// Holds the returned object from the 'save' method
-    	AtomicReference<Object> returnedObject = new AtomicReference<>();
+    	return CommonErrors.doESMethodWithRetries(joinPoint::proceed);
     	
-    	// Try to run the intercepted method and look for particular class of errors (e.g.: 'Rejected Exception')
-    	// Will try again after some delay in case of error. The maximum number of retries and the delay between retries
-    	// are configured statically at CommonErrors.
-    	CommonErrors.doESWriteOpWithRetries(()->{
-    		
-    		try {
-	    		Object ret = joinPoint.proceed();
-	    		returnedObject.set(ret);
-    		}
-    		catch (Exception|Error ex) {
-    			throw ex; // handled by 'CommonErrors.doESWriteOpWithRetries'
-    		}
-    		catch (Throwable ex) {
-    			throw new RuntimeException(ex); // handled by 'CommonErrors.doESWriteOpWithRetries'
-    		}
-    		
-    	});
-    	
-    	return returnedObject.get();
     }	
 }

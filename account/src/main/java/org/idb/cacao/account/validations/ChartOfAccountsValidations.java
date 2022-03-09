@@ -30,7 +30,7 @@ import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
 
 import static org.idb.cacao.api.ValidationContext.*;
-import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.*;
+import static org.idb.cacao.account.archetypes.AccountingGroupArchetype.FIELDS_NAMES.*;
 import static org.idb.cacao.account.elements.AccountCategory.*;
 
 /**

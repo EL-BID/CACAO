@@ -43,7 +43,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
 import org.idb.cacao.account.elements.DailyAccountingFlow;
@@ -87,7 +87,7 @@ public class AccountingLoaderTests {
 		ETLContext etlContext = new ETLContext();
 		
 		InMemoryValidatedDataRepository inMemoryValidatedDataRepository = new InMemoryValidatedDataRepository();
-		inMemoryValidatedDataRepository.addTemplateFromArchetype(new ChartOfAccountsArchetype());
+		inMemoryValidatedDataRepository.addTemplateFromArchetype(new AccountingGroupArchetype());
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new GeneralLedgerArchetype());
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new OpeningBalanceArchetype());
 		
@@ -95,31 +95,31 @@ public class AccountingLoaderTests {
 		inMemoryDomainTableRepository.addBuiltIn();
 		etlContext.setDomainTableRepository(inMemoryDomainTableRepository);
 		
-		DocumentUploaded coa = inMemoryValidatedDataRepository.addUpload(/*templateName*/ChartOfAccountsArchetype.NAME,/*templateVersion*/"1.0", 
+		DocumentUploaded coa = inMemoryValidatedDataRepository.addUpload(/*templateName*/AccountingGroupArchetype.NAME,/*templateVersion*/"1.0", 
 				/*taxPayerId*/"1234", /*taxPeriodNumber*/2021, /*fileId*/UUID.randomUUID().toString());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "1.00.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Cash and Cash Equivalents",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_CASH.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "1.00.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Cash and Cash Equivalents",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_CASH.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "1.10.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Inventory",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_INVENTORY.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "1.10.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Inventory",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_INVENTORY.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "3.00.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Owners Equity",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), EQUITY.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), EQUITY_OWNERS.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "3.00.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Owners Equity",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), EQUITY.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), EQUITY_OWNERS.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		
 		DocumentUploaded gl = inMemoryValidatedDataRepository.addUpload(/*templateName*/GeneralLedgerArchetype.NAME,/*templateVersion*/"1.0", 
@@ -197,10 +197,10 @@ public class AccountingLoaderTests {
 		assertEquals("JOHN SMITH LLC", record.get(IndexNamesUtils.formatFieldName("TaxpayerName")));
 		assertEquals("Elm Street 24th", record.get(IndexNamesUtils.formatFieldName("TaxpayerAddress")));
 		assertEquals("Small business", record.get(IndexNamesUtils.formatFieldName("TaxpayerQualifier1")));
-		assertEquals("Cash and Cash Equivalents", record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name())));
-		assertEquals(ASSET.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())));
+		assertEquals("Cash and Cash Equivalents", record.get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name())));
+		assertEquals(ASSET.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name())));
 		assertEquals(ASSET.toString(), record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountCategoryName.name())));
-		assertEquals(ASSET_CASH.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())));
+		assertEquals(ASSET_CASH.getIfrsNumber(), record.get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name())));
 		assertEquals(ASSET_CASH.toString(), record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.AccountSubcategoryName.name())));
 		assertEquals(9900.0, record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.Balance.name())));
 		assertEquals("D", record.get(IndexNamesUtils.formatFieldName(AccountingFieldNames.BalanceDebitCredit.name())));
@@ -213,7 +213,7 @@ public class AccountingLoaderTests {
 		
 		List<Map<String,Object>> balance_sheets_cash =
 		inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).stream()
-			.filter(sheet->"1.00.00".equals(sheet.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name()))))
+			.filter(sheet->"1.00.00".equals(sheet.get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name()))))
 			.collect(Collectors.toList());
 		assertEquals(12, balance_sheets_cash.size());
 		assertEquals(10_000.0, balance_sheets_cash.get(0).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
@@ -225,7 +225,7 @@ public class AccountingLoaderTests {
 
 		List<Map<String,Object>> balance_sheets_inventory =
 		inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).stream()
-			.filter(sheet->"1.10.00".equals(sheet.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name()))))
+			.filter(sheet->"1.10.00".equals(sheet.get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name()))))
 			.collect(Collectors.toList());
 		assertEquals(12, balance_sheets_inventory.size());
 		assertEquals(0.0, balance_sheets_inventory.get(0).get(IndexNamesUtils.formatFieldName(OpeningBalanceArchetype.FIELDS_NAMES.InitialBalance.name())));
@@ -237,7 +237,7 @@ public class AccountingLoaderTests {
 		
 		List<Map<String,Object>> balance_sheets_equity =
 		inMemoryLoadStrategy.getRecords(AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET).stream()
-			.filter(sheet->"3.00.00".equals(sheet.get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name()))))
+			.filter(sheet->"3.00.00".equals(sheet.get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name()))))
 			.collect(Collectors.toList());
 		assertEquals(12, balance_sheets_equity.size());
 		for (int i=0; i<12; i++) {
@@ -271,7 +271,7 @@ public class AccountingLoaderTests {
 		ETLContext etlContext = new ETLContext();
 		
 		InMemoryValidatedDataRepository inMemoryValidatedDataRepository = new InMemoryValidatedDataRepository();
-		inMemoryValidatedDataRepository.addTemplateFromArchetype(new ChartOfAccountsArchetype());
+		inMemoryValidatedDataRepository.addTemplateFromArchetype(new AccountingGroupArchetype());
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new GeneralLedgerArchetype());
 		inMemoryValidatedDataRepository.addTemplateFromArchetype(new OpeningBalanceArchetype());
 		
@@ -279,47 +279,47 @@ public class AccountingLoaderTests {
 		inMemoryDomainTableRepository.addBuiltIn();
 		etlContext.setDomainTableRepository(inMemoryDomainTableRepository);
 		
-		DocumentUploaded coa = inMemoryValidatedDataRepository.addUpload(/*templateName*/ChartOfAccountsArchetype.NAME,/*templateVersion*/"1.0", 
+		DocumentUploaded coa = inMemoryValidatedDataRepository.addUpload(/*templateName*/AccountingGroupArchetype.NAME,/*templateVersion*/"1.0", 
 				/*taxPayerId*/"1234", /*taxPeriodNumber*/2021, /*fileId*/UUID.randomUUID().toString());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "1.00.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Cash and Cash Equivalents",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_CASH.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "1.00.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Cash and Cash Equivalents",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_CASH.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "1.10.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Inventory",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_INVENTORY.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "1.10.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Inventory",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), ASSET.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), ASSET_INVENTORY.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "3.00.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Owners Equity",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), EQUITY.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), EQUITY_OWNERS.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "3.00.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Owners Equity",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), EQUITY.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), EQUITY_OWNERS.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "5.00.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Cost of Sales",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), EXPENSE.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), EXPENSE_COST.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "5.00.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Cost of Sales",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), EXPENSE.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), EXPENSE_COST.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		inMemoryValidatedDataRepository.addData(coa, 
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name(), "4.00.00",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountDescription.name(), "Revenue from Services",
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name(), REVENUE.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name(), REVENUE_NET.getIfrsNumber(),
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
-			ChartOfAccountsArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name(), "4.00.00",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountDescription.name(), "Revenue from Services",
+			AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name(), REVENUE.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name(), REVENUE_NET.getIfrsNumber(),
+			AccountingGroupArchetype.FIELDS_NAMES.TaxPayerId.name(), "1234",
+			AccountingGroupArchetype.FIELDS_NAMES.TaxYear.name(), 2021,
 			ValidatedDataFieldNames.FILE_ID.name(), coa.getFileId());
 		
 		DocumentUploaded gl = inMemoryValidatedDataRepository.addUpload(/*templateName*/GeneralLedgerArchetype.NAME,/*templateVersion*/"1.0", 

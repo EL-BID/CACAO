@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.account.etl;
 
-import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory;
+import static org.idb.cacao.account.archetypes.AccountingGroupArchetype.FIELDS_NAMES.AccountCategory;
 
 import java.time.Month;
 import java.time.OffsetDateTime;
@@ -48,7 +48,7 @@ import java.util.stream.Stream;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.search.sort.SortOrder;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
 import org.idb.cacao.account.elements.AccountStandard;
@@ -426,7 +426,7 @@ public class AccountingLoader {
 			.maximumSize(1000)
 			.expireAfterWrite(10, TimeUnit.MINUTES)
 			.build(new CacheLoader<String, Optional<Map<String,Object>>>(){
-				final String fieldName = IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCode.name())+".keyword";
+				final String fieldName = IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCode.name())+".keyword";
 				@Override
 				public Optional<Map<String,Object>> load(String accountCode) throws Exception {
 					if (accountCode==null)
@@ -437,7 +437,7 @@ public class AccountingLoader {
 									.map(IndexNamesUtils::normalizeAllKeysForES)
 									.map(AccountingLoader::removeControlFields);
 							if (accountInfo.isPresent() && category_domain_table.isPresent()) {
-								String category = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name())));
+								String category = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name())));
 								if (category!=null) {
 									List<DomainEntry> entry_multi_lingual = category_domain_table.get().getEntryAllLanguages(category);
 									if (entry_multi_lingual!=null && !entry_multi_lingual.isEmpty()) {
@@ -455,7 +455,7 @@ public class AccountingLoader {
 								}
 							}
 							if (accountInfo.isPresent() && subcategory_domain_table.isPresent()) {
-								String subcategory = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())));
+								String subcategory = ValidationContext.toString(accountInfo.get().get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name())));
 								if (subcategory!=null) {
 									List<DomainEntry> entry_multi_lingual = subcategory_domain_table.get().getEntryAllLanguages(subcategory);
 									if (entry_multi_lingual!=null && !entry_multi_lingual.isEmpty()) {
@@ -515,7 +515,7 @@ public class AccountingLoader {
 				
 			// Check for the presence of all required data
 			
-			Collection<DocumentTemplate> templatesForCoA = context.getValidatedDataRepository().getTemplates(ChartOfAccountsArchetype.NAME);
+			Collection<DocumentTemplate> templatesForCoA = context.getValidatedDataRepository().getTemplates(AccountingGroupArchetype.NAME);
 			if (templatesForCoA.isEmpty()) {
 				context.addAlert(context.getDocumentUploaded(), "{error.missingTemplate({accounting.chart.accounts})}");
 				return false;
@@ -557,8 +557,8 @@ public class AccountingLoader {
 			DocumentTemplate coa_template =
 					templatesForCoA.stream().filter(t->coa.getTemplateName().equalsIgnoreCase(t.getName()) && coa.getTemplateVersion().equalsIgnoreCase(t.getVersion()))
 					.findFirst().orElseGet(DocumentTemplate::new);
-			DocumentField category_field = (coa_template==null) ? null : coa_template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name());
-			DocumentField subcategory_field = (coa_template==null) ? null : coa_template.getField(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name());
+			DocumentField category_field = (coa_template==null) ? null : coa_template.getField(AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name());
+			DocumentField subcategory_field = (coa_template==null) ? null : coa_template.getField(AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name());
 			Optional<DomainTable> category_domain_table = (category_field==null) ? Optional.empty() : context.getDomainTableRepository().findByNameAndVersion(category_field.getDomainTableName(), category_field.getDomainTableVersion());
 			Optional<DomainTable> subcategory_domain_table = (subcategory_field==null) ? Optional.empty() : context.getDomainTableRepository().findByNameAndVersion(subcategory_field.getDomainTableName(), subcategory_field.getDomainTableVersion());
 			

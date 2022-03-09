@@ -23,19 +23,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.idb.cacao.account.etl.AccountingLoader;
-import org.idb.cacao.account.generator.AccountDataGenerator;
 import org.idb.cacao.account.validations.GeneralLedgerValidations;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
-import org.idb.cacao.api.errors.GeneralException;
-import org.idb.cacao.api.templates.CustomDataGenerator;
 import org.idb.cacao.api.templates.DocumentField;
-import org.idb.cacao.api.templates.DocumentFormat;
-import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
-import org.idb.cacao.api.templates.TemplateArchetype;
 
 import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAMES.*;
 
@@ -45,18 +39,9 @@ import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAM
  * @author Gustavo Figueiredo
  *
  */
-public class GeneralLedgerArchetype implements TemplateArchetype {
+public class GeneralLedgerArchetype extends CommonAccountingArchetype {
 	
 	public static final String NAME = "accounting.general.ledger";
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.api.templates.TemplateArchetype#getPluginName()
-	 */
-	@Override
-	public String getPluginName() {
-		return "CACAO Accounting Plug-in";
-	}
 
 	/*
 	 * (non-Javadoc)
@@ -65,15 +50,6 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	@Override
 	public String getName() {
 		return NAME;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.api.templates.TemplateArchetype#getSuggestedGroup()
-	 */
-	@Override
-	public String getSuggestedGroup() {
-		return "Accounting";
 	}
 
 	/*
@@ -212,44 +188,6 @@ public class GeneralLedgerArchetype implements TemplateArchetype {
 	@Override
 	public boolean performETL(ETLContext context) {
 		return AccountingLoader.performETL(context);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRelatedPublishedDataIndices()
-	 */
-	@Override
-	public List<String> getRelatedPublishedDataIndices() {
-		return Arrays.asList(AccountingLoader.INDEX_PUBLISHED_ACCOUNTING_FLOW,
-				AccountingLoader.INDEX_PUBLISHED_BALANCE_SHEET,
-				AccountingLoader.INDEX_PUBLISHED_GENERAL_LEDGER,
-				AccountingLoader.INDEX_PUBLISHED_COMPUTED_STATEMENT_INCOME,
-				AccountingLoader.INDEX_PUBLISHED_CUSTOMERS,
-				AccountingLoader.INDEX_PUBLISHED_SUPPLIERS);
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.api.templates.TemplateArchetype#hasCustomGenerator(org.idb.cacao.api.templates.DocumentTemplate, org.idb.cacao.api.templates.DocumentFormat)
-	 */
-	@Override
-	public boolean hasCustomGenerator(DocumentTemplate template, DocumentFormat format) {
-		return ChartOfAccountsArchetype.NAME.equalsIgnoreCase(template.getArchetype())
-			|| OpeningBalanceArchetype.NAME.equalsIgnoreCase(template.getArchetype())
-			|| GeneralLedgerArchetype.NAME.equalsIgnoreCase(template.getArchetype());
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.idb.cacao.api.templates.TemplateArchetype#getCustomGenerator(org.idb.cacao.api.templates.DocumentTemplate, org.idb.cacao.api.templates.DocumentFormat, long, long)
-	 */
-	@Override
-	public CustomDataGenerator getCustomGenerator(DocumentTemplate template, DocumentFormat format, long seed,
-			long records) throws GeneralException {
-		if (hasCustomGenerator(template, format))
-			return new AccountDataGenerator(template, format, seed, records);
-		else
-			return null;
 	}
 
 }

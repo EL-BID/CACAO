@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.Random;
 
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
 import org.idb.cacao.account.generator.AccountDataGenerator;
@@ -38,8 +38,8 @@ public class AccountDataGeneratorTests {
 	public void testGenChartOfAccounts() throws Exception {
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
-		template.setArchetype(ChartOfAccountsArchetype.NAME);
+		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setArchetype(AccountingGroupArchetype.NAME);
     	long seed = "TEST".hashCode();
 
 		AccountDataGenerator gen = new AccountDataGenerator(template, DocumentFormat.XLS, seed, /*records*/-1);

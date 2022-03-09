@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.elasticsearch.action.index.IndexRequest;
-import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
+import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.AccountSubcategory;
@@ -248,7 +248,7 @@ public class CustomersSuppliersProcessor {
 				Optional<Map<String, Object>> accountInformation = lookupChartOfAccounts.getUnchecked(code);
 				if (!accountInformation.isPresent())
 					return CustomerSupplierIndication.NONE;
-				String subcategory = ValidationContext.toString(accountInformation.get().get(IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name())));
+				String subcategory = ValidationContext.toString(accountInformation.get().get(IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name())));
 				if (subcategory==null)
 					return CustomerSupplierIndication.NONE;
 				return indicationPerSubCategory.getOrDefault(subcategory, CustomerSupplierIndication.NONE);

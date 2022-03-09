@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 
+import org.idb.cacao.api.CommonApplication;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.web.controllers.rest.SyncAPIController;
 import org.idb.cacao.web.controllers.services.ConfigSyncService;
@@ -60,7 +61,7 @@ import org.springframework.kafka.test.EmbeddedKafkaBroker;
 @ServletComponentScan
 @EnableCaching
 @ComponentScan(basePackages = {"org.idb.cacao.web","org.idb.cacao.api.storage"})
-public class WebApplication {
+public class WebApplication extends CommonApplication {
 
 	static final Logger log = Logger.getLogger(WebApplication.class.getName());
 
@@ -70,9 +71,6 @@ public class WebApplication {
 	@Autowired
 	private KeyStoreService keyStoreService;
 
-	@Autowired
-	private ResourceMonitorService resourceMonitorService;
-	
 	@Autowired
 	private SyncAPIController syncAPIController;
 	
@@ -92,9 +90,6 @@ public class WebApplication {
 	private KibanaSpacesService kibanaSpacesService;
 
 	@Autowired
-	private Environment env;
-	
-	@Autowired
 	private FileSystemStorageService fileSystemStorageService;
 
 	/**
@@ -109,6 +104,11 @@ public class WebApplication {
 		}
 
 		SpringApplication.run(WebApplication.class, args);
+	}
+	
+	@Autowired
+	public WebApplication(Environment env, ResourceMonitorService webMonitorService) {
+		super(env, webMonitorService);		
 	}
 
 	/**
@@ -130,23 +130,16 @@ public class WebApplication {
 	 * Initialization code for the web application after SpringBoot initialization
 	 */
 	@EventListener(ApplicationReadyEvent.class)
-	public void doSomethingAfterStartup() {
+	public void doSomethingAfterWebStartup() {
 
-		new Thread("StartupThread") {
-			{
-				setDaemon(true);
-			}
-
-			@Override
-			public void run() {
-				startupCode();
-			}
-		}.start();
+		runStartupCodeAsync();
+		
 	}
 
 	/**
 	 * Do some initialization here
 	 */
+	@Override
 	public void startupCode() {
 		userService.assertInitialSetup();		
 		
@@ -167,14 +160,7 @@ public class WebApplication {
 			log.log(Level.SEVERE, "Error during initialization", ex);
 		}
 
-		try {
-			if ("true".equalsIgnoreCase(env.getProperty("resource.monitor"))) {
-				resourceMonitorService.start();
-			}
-		}
-		catch (Exception ex) {
-			log.log(Level.SEVERE, "Error during initialization", ex);
-		}
+		super.startupCode();
 
 		try {
 			boolean overwrite = "true".equalsIgnoreCase(env.getProperty("built-in.domain.tables.overwrite"));

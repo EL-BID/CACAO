@@ -19,9 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.etl;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.idb.cacao.api.CommonApplication;
 import org.idb.cacao.etl.controllers.services.ResourceMonitorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -41,15 +39,7 @@ import org.springframework.core.env.Environment;
 @SpringBootApplication
 @ServletComponentScan
 @ComponentScan(basePackages = {"org.idb.cacao.etl","org.idb.cacao.api.storage"})
-public class Application {
-
-	static final Logger log = Logger.getLogger(Application.class.getName());
-
-	@Autowired
-	private ResourceMonitorService resourceMonitorService;
-	
-	@Autowired
-	private Environment env;
+public class Application extends CommonApplication {
 
 	/**
 	 * This is the entrypoint for the entire web application
@@ -58,33 +48,18 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 	}
 
+	@Autowired
+	public Application(Environment env, ResourceMonitorService etlMonitorService) {
+		super(env, etlMonitorService);
+	}
+
 	/**
 	 * Initialization code for the web application
 	 */
 	@EventListener(ApplicationReadyEvent.class)
-	public void doSomethingAfterStartup() {
+	public void doSomethingAfterETLStartup() {
 		
-	    new Thread("StartupThread") {
-	    	{	setDaemon(true); }
-	    	public void run() {
-    			startupCode();
-	    	}
-	    }.start();
-	}
-
-	/**
-	 * Do some initialization here
-	 */
-	public void startupCode() {
+		runStartupCodeAsync();
 		
-		try {
-			if ("true".equalsIgnoreCase(env.getProperty("resource.monitor"))) {
-				resourceMonitorService.start();
-			}
-		}
-		catch (Exception ex) {
-			log.log(Level.SEVERE, "Error during initialization", ex);
-		}
-
 	}
 }

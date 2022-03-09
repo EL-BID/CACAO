@@ -68,20 +68,24 @@ public class ConfigSyncDto implements Serializable {
 		config.setDayOfWeek(dayOfWeek);
 	}
 	
+	public void setId(long id) {
+		this.id = id;
+	}
+
 	public long getId() {
 		return id;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setMaster(String master) {
+		this.master = master;
 	}
 
 	public String getMaster() {
 		return master;
 	}
 
-	public void setMaster(String master) {
-		this.master = master;
+	public void setPeriodicity(SyncPeriodicity periodicity) {
+		this.periodicity = periodicity;
 	}
 
 	public SyncPeriodicity getPeriodicity() {
@@ -90,23 +94,12 @@ public class ConfigSyncDto implements Serializable {
 		return periodicity;
 	}
 
-	public void setPeriodicity(SyncPeriodicity periodicity) {
-		this.periodicity = periodicity;
-	}
-
-	public String getApiToken() {
-		return apiToken;
-	}
-
 	public void setApiToken(String apiToken) {
 		this.apiToken = apiToken;
 	}
 
-	/**
-	 * Hour of day is only considered when periodicity = SyncPeriodicity.DAILY or periodicity = SyncPeriodicity.WEEKLY
-	 */
-	public Integer getHourOfDay() {
-		return hourOfDay;
+	public String getApiToken() {
+		return apiToken;
 	}
 
 	/**
@@ -117,10 +110,10 @@ public class ConfigSyncDto implements Serializable {
 	}
 
 	/**
-	 * Day of week is only considered when periodicity = SyncPeriodicity.WEEKLY
+	 * Hour of day is only considered when periodicity = SyncPeriodicity.DAILY or periodicity = SyncPeriodicity.WEEKLY
 	 */
-	public DayOfWeek getDayOfWeek() {
-		return dayOfWeek;
+	public Integer getHourOfDay() {
+		return hourOfDay;
 	}
 
 	/**
@@ -129,4 +122,12 @@ public class ConfigSyncDto implements Serializable {
 	public void setDayOfWeek(DayOfWeek dayOfWeek) {
 		this.dayOfWeek = dayOfWeek;
 	}
+	
+	/**
+	 * Day of week is only considered when periodicity = SyncPeriodicity.WEEKLY
+	 */
+	public DayOfWeek getDayOfWeek() {
+		return dayOfWeek;
+	}
+
 }
