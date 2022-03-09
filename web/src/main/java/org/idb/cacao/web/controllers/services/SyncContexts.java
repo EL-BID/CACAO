@@ -42,6 +42,11 @@ public enum SyncContexts {
 	private final String endpoint;
 	private final boolean requestPath;
 	
+	/**
+	 * Special value used as 'endpoint' meaning that 'all contexts' are implied (i.e.: it should SYNC on every context available)
+	 */
+	public static final String ALL_ENDPOINTS = "ALL";
+	
 	SyncContexts(String endpoint, boolean requestPath) {
 		this.endpoint = endpoint;
 		this.requestPath = requestPath;
@@ -105,6 +110,8 @@ public enum SyncContexts {
 	public static boolean hasContext(Collection<String> names, SyncContexts lookFor) {
 		if (names==null || names.isEmpty() || lookFor==null)
 			return false;
+		if (names.size()==1 && ALL_ENDPOINTS.equals(names.iterator().next()))
+			return true;
 		for (String name: names) {
 			if (lookFor.name().equalsIgnoreCase(name) || lookFor.getEndpoint().equalsIgnoreCase(name))
 				return true;
@@ -115,6 +122,8 @@ public enum SyncContexts {
 	public static boolean hasContext(Collection<String> names, SyncContexts lookFor, String requestParameter) {
 		if (names==null || names.isEmpty() || lookFor==null)
 			return false;
+		if (names.size()==1 && ALL_ENDPOINTS.equals(names.iterator().next()))
+			return true;
 		for (String name: names) {
 			if (String.join(".",lookFor.name(), requestParameter).equalsIgnoreCase(name) || lookFor.getEndpoint(requestParameter).equalsIgnoreCase(name))
 				return true;

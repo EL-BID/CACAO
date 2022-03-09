@@ -1841,22 +1841,7 @@ public class AnalysisService {
 		};
 
 		// Get information
-		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
-				function);
-		
-		//Remove null itens
-		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());
-		
-		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
-			for ( Map<String, Object> map : instances ) {
-				if ( entry.getKey().equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", entry.getValue());					
-				}
-			}
-		}		
-		
-		return instances;
-
+		return getInstances(sresp,groupBy,function,yearValues);
 	}
 
 	/**
@@ -1870,8 +1855,39 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getCustomers(String taxpayerId, int year) {
 
+		return filterByTaxpayerIdAndYearDoingAggregation(taxpayerId, year, CUSTOMERS_INDEX, "customers",
+				"customer_id", "customer_id.keyword",
+				"customer_name", "customer_name.keyword");
+
+	}
+
+	/**
+	 * Search and return major suppliers for a specified taxpayer and year
+	 * 
+	 * @param taxpayerId Taxpayer to search for
+	 * @param year       A year to search for
+	 * 
+	 * @return A {@link List} of {@link Map} with major suppliers for a taxpayer and
+	 *         specified year and previous periods
+	 */
+	private List<Map<String, Object>> getSuppliers(String taxpayerId, int year) {
+		
+		return filterByTaxpayerIdAndYearDoingAggregation(taxpayerId, year, SUPPLIERS_INDEX, "suppliers",
+				"supplier_id", "supplier_id.keyword",
+				"supplier_name", "supplier_name.keyword");
+		
+	}
+	
+	/**
+	 * Search with some filters (over taxpayer id and year), doing some aggregations, and returns the data.
+	 */
+	private List<Map<String, Object>> filterByTaxpayerIdAndYearDoingAggregation(String taxpayerId, int year,
+			String index, String tag,
+			String groupByName1, String groupByField1, 
+			String groupByName2, String groupByField2) {
+
 		// Index to search in
-		SearchRequest searchRequest = new SearchRequest(CUSTOMERS_INDEX);
+		SearchRequest searchRequest = new SearchRequest(index);
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		// Filter by taxpayer
@@ -1888,8 +1904,8 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = AggregationBuilders.terms("year").size(10_000).field("year")
-				.subAggregation(AggregationBuilders.terms("customer_id").size(10_000).field("customer_id.keyword")
-				.subAggregation(AggregationBuilders.terms("customer_name").size(10_000).field("customer_name.keyword"))
+				.subAggregation(AggregationBuilders.terms(groupByName1).size(10_000).field(groupByField1)
+				.subAggregation(AggregationBuilders.terms(groupByName2).size(10_000).field(groupByField2))
 						.subAggregation(sum).subAggregation(paging));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
@@ -1906,59 +1922,44 @@ public class AnalysisService {
 		} catch (Exception ex) {
 			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
 					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting major customers", ex);
+				log.log(Level.SEVERE, "Error getting major "+tag, ex);
 		}
 
 		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
 			log.log(Level.INFO,
-					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No major "+tag+" information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
-		String[] groupBy = { "year", "customer_id" };
+		String[] groupBy = { "year", groupByName1 };
 		Map<String,Double> yearValues = new HashMap<>();
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			String customerName = getStringValueForAgg(agg,"customer_name");
-			if ( customerName == null )
+			String secondAggregation = getStringValueForAgg(agg,groupByName2);
+			if ( secondAggregation == null )
 				return null;			
 			Sum amount = agg.get("amount");
-			
+
 			if ( amount.getValue() <= 0 )
-				return null;			
+				return null;
 			
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
 			Map<String, Object> instanceValues = new HashMap<>();
-			instanceValues.put("customer_id", values[1]);
-			instanceValues.put("customer_name", customerName);			
+			instanceValues.put(groupByName1, values[1]);
+			instanceValues.put(groupByName2, secondAggregation);			
 			instanceValues.put("value", amount.getValue());
-			instanceValues.put("title", values[0] + ": " + customerName);
+			instanceValues.put("title", values[0] + ": " + secondAggregation);
 			instance.put("values", instanceValues);
 			
-			yearValues.compute(values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));
+			yearValues.compute(values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));			
 			
 			return instance;
 		};
 
 		// Get information
-		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
-				function);
-		
-		//Remove null itens
-		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());		
-		
-		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
-			for ( Map<String, Object> map : instances ) {
-				if ( entry.getKey().equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", entry.getValue());					
-				}
-			}
-		}
-		
-		return instances;
-
+		return getInstances(sresp,groupBy,function,yearValues);
 	}
 
 	/**
@@ -1975,108 +1976,6 @@ public class AnalysisService {
 				return buckets.get(0).getKeyAsString();				
 		}
 		return null;
-	}
-
-	/**
-	 * Search and return major suppliers for a specified taxpayer and year
-	 * 
-	 * @param taxpayerId Taxpayer to search for
-	 * @param year       A year to search for
-	 * 
-	 * @return A {@link List} of {@link Map} with major suppliers for a taxpayer and
-	 *         specified year and previous periods
-	 */
-	private List<Map<String, Object>> getSuppliers(String taxpayerId, int year) {
-
-		// Index to search in
-		SearchRequest searchRequest = new SearchRequest(SUPPLIERS_INDEX);
-
-		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
-
-		// Filter by year
-		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
-
-		AggregationBuilder sum = AggregationBuilders.sum("amount").field("amount");
-		
-		BucketSortPipelineAggregationBuilder paging = PipelineAggregatorBuilders
-				.bucketSort("paging", Arrays.asList(new FieldSortBuilder("amount").order(SortOrder.DESC))).from(0)
-				.size(5);		
-
-		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = AggregationBuilders.terms("year").size(10_000).field("year")
-				.subAggregation(AggregationBuilders.terms("supplier_id").size(10_000).field("supplier_id.keyword")
-				.subAggregation(AggregationBuilders.terms("supplier_name").size(10_000).field("supplier_name.keyword"))
-						.subAggregation(sum).subAggregation(paging));
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
-
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-		searchRequest.source(searchSourceBuilder);
-
-		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting major customers", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
-			log.log(Level.INFO,
-					() -> "No major customers information found for taxPayer " + taxpayerId + " for period " + year);
-			return Collections.emptyList(); // No data found
-		}
-
-		String[] groupBy = { "year", "supplier_id" };
-		Map<String,Double> yearValues = new HashMap<>();
-
-		// Retrieve information from result
-		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			String supplierName = getStringValueForAgg(agg,"supplier_name");
-			if ( supplierName == null )
-				return null;			
-			Sum amount = agg.get("amount");
-
-			if ( amount.getValue() <= 0 )
-				return null;
-			
-			Map<String, Object> instance = new HashMap<>();
-			instance.put("year", values[0]);
-			Map<String, Object> instanceValues = new HashMap<>();
-			instanceValues.put("supplier_id", values[1]);
-			instanceValues.put("supplier_name", supplierName);			
-			instanceValues.put("value", amount.getValue());
-			instanceValues.put("title", values[0] + ": " + supplierName);
-			instance.put("values", instanceValues);
-			
-			yearValues.compute(values[0], (k,v) -> v == null ? amount.getValue() : (v+=amount.getValue()));			
-			
-			return instance;
-		};
-
-		// Get information
-		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
-				function);
-		
-		//Remove null itens
-		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());		
-
-		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
-			for ( Map<String, Object> map : instances ) {
-				if ( entry.getKey().equals(map.get("year").toString()) ) {
-					map.putIfAbsent("yearValue", entry.getValue());					
-				}
-			}
-		}		
-		
-		return instances;
-
 	}
 
 	private int getPastPeriods() {
@@ -2194,5 +2093,35 @@ public class AnalysisService {
 		// Get customers/suppliers information
 		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 		
+	}
+	
+	/**
+	 * Transform the response from a ElasticSearch's query into a list of records, each record represented by a map of key/value
+	 * pairs
+	 * @param sresp Response from ElasticSearch's query
+	 * @param groupBy Group by criteria (just the names of the fields)
+	 * @param function Function for converting each aggregated response into a record
+	 * @param yearValues Map of aggregated value per year to be included in each record as a new value 'yearValue'. This will try to match by the implicit 'year' field of each record.
+	 */
+	public static List<Map<String, Object>> getInstances(SearchResponse sresp, String[] groupBy,
+			BiFunction<Aggregations, String[], Map<String, Object>> function,
+			Map<String,Double> yearValues) {
+		
+		List<Map<String, Object>> instances = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy,
+				function);
+		
+		//Remove null itens
+		instances = instances.stream().filter(Objects::nonNull).collect(Collectors.toList());		
+
+		for ( Map.Entry<String,Double> entry : yearValues.entrySet() ) {
+			for ( Map<String, Object> map : instances ) {
+				if ( entry.getKey().equals(map.get("year").toString()) ) {
+					map.putIfAbsent("yearValue", entry.getValue());					
+				}
+			}
+		}		
+		
+		return instances;
+
 	}
 }
