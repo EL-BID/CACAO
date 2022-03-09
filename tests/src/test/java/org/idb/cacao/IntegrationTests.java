@@ -89,9 +89,9 @@ public class IntegrationTests {
             properties("es.host=127.0.0.1")
             .properties("ssl.trust.server=" + esContainer.getHost())
             .properties(
-                "es.ssl=true",
+                "es.ssl=false",
                 "es.ssl.verifyhost=false",
-                "spring.elasticsearch.rest.connection-timeout=10000",
+                "spring.elasticsearch.rest.connection-timeout=5m",
                 "cacao.user.language=en_US",
                 "cacao.user.country=US",
                 "i18n.locale=en_US",
