@@ -24,16 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -43,13 +38,10 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Root;
 
-import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchPhrasePrefixQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
@@ -58,7 +50,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.WildcardQueryBuilder;
-import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -73,6 +64,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.hibernate.jpa.QueryHints;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.ParserUtils;
+import org.idb.cacao.api.utils.ReflectUtils;
 import org.idb.cacao.api.utils.Utils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.dto.TabulatorFilter;
@@ -82,8 +74,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.util.CloseableIterator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -647,182 +637,6 @@ public class SearchUtils {
 		return expression.replace("*", ".*");
 	}
 
-	/**
-	 * Returns a Stream for all data from a repository. In case of 'window too large' error, will 'paginate'
-	 * through all the results.
-	 */
-	public static <T, ID> Stream<T> findAll(PagingAndSortingRepository<T, ID> repository, RestHighLevelClient clientForScrollSearch) {
-		
-		try {
-			return StreamSupport.stream(repository.findAll().spliterator(),false);
-		}
-		catch (Exception ex) {
-			
-			if (ErrorUtils.isErrorWindowTooLarge(ex)) {
-				
-				Class<?> entity = ReflectUtils.getParameterType(repository.getClass());
-				if (entity==null) {
-					// Could not find entity class related to repository, so we cant' use 'ConsumeWithScrollAPIIterator'
-					// Throws the first error
-					throw ex;
-				}
-
-				Document docAnon = entity.getAnnotation(Document.class);
-				String indexName = docAnon.indexName();
-
-				return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ConsumeWithScrollAPIIterator<T>(entity, indexName, clientForScrollSearch, /*customizeSearch*/null), Spliterator.ORDERED), false);
-			}
-			
-			throw ex;
-			
-		}
-		
-	}
-	
-	/**
-	 * Returns a Stream for all data from a repository. It uses 'scroll' functionality of ElasticSearch API for ensuring all data is iterated.<BR>
-	 * You may inform optional 'customizeSearch' parameter to provide extra customization to your search (e.g.: providing some filters).
-	 */
-	public static <T> Stream<T> findWithScroll(Class<T> entity, String indexName, RestHighLevelClient clientForScrollSearch,
-			Consumer<SearchSourceBuilder> customizeSearch) {
-		
-		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ConsumeWithScrollAPIIterator<T>(entity, indexName, clientForScrollSearch, customizeSearch), 
-				Spliterator.ORDERED), false);
-		
-	}
-	
-	/**
-	 * An 'iterator' that consumes all records using the SCROLL API (more efficient than searching through pages)
-	 * @author Gustavo Figueiredo
-	 */
-	private static class ConsumeWithScrollAPIIterator<T> implements CloseableIterator<T> {
-		private final Scroll scroll;
-		private final RestHighLevelClient client;
-		private final Class<?> entity;
-		private SearchResponse searchResponse;
-		private ObjectMapper mapper;
-		
-		private T next;
-		private boolean moved;
-		private boolean finished;
-		private String scrollId;
-		private SearchHit[] searchHits;
-		private int searchHitsIndex;
-
-		ConsumeWithScrollAPIIterator(Class<?> entity, String indexName, RestHighLevelClient client,
-				Consumer<SearchSourceBuilder> customizeSearch) {
-			this.scroll = new Scroll(TimeValue.timeValueMinutes(1L));
-			this.client = client;
-			SearchRequest searchRequest = new SearchRequest(indexName);
-			searchRequest.scroll(scroll);
-			SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-			if (customizeSearch!=null)
-				customizeSearch.accept(searchSourceBuilder);
-			searchRequest.source(searchSourceBuilder);
-			try {
-				this.searchResponse = ESUtils.searchIgnoringNoMapError(client, searchRequest, indexName);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-			this.mapper = new ObjectMapper();
-			this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-			this.mapper.registerModule(new JavaTimeModule());
-			this.entity = entity;
-			
-			if (searchResponse==null) {
-				this.moved = true;
-				this.finished = true;
-				this.next = null;
-			}
-			else {
-				this.scrollId = searchResponse.getScrollId();
-				this.searchHits = searchResponse.getHits().getHits();
-				this.searchHitsIndex = 0;
-			}
-		}
-
-		@Override
-		public boolean hasNext() {
-			if (!moved)
-				moveForward();
-			return next!=null;
-		}
-
-		@Override
-		public T next() {
-			if(!hasNext()){
-				throw new NoSuchElementException();
-			}			
-			if (!moved)
-				moveForward();
-			moved = false;
-			return next;
-		}
-		
-		@Override
-		public void close() {
-			ClearScrollRequest clearScrollRequest = new ClearScrollRequest(); 
-			clearScrollRequest.addScrollId(scrollId);
-			try {
-				client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-			} catch (IOException e) {
-				// !!!
-			}
-		}
-
-		private void moveForward() {
-			next = null;
-			if (!finished) {
-				if (searchHits==null || searchHits.length==0) {
-					finished = true;
-				}
-				else if (searchHitsIndex < searchHits.length) {
-					next = treatResponse(searchHits[searchHitsIndex++]);
-				}
-				else {
-					searchHitsIndex = 0;
-				    SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId); 
-				    scrollRequest.scroll(scroll);
-				    try {
-						searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
-					} catch (IOException e) {
-						if (ErrorUtils.isErrorThreadInterrupted(e)) {
-							finished = true;
-							moved = true;
-							return;
-						}
-						throw new RuntimeException(e);
-					} catch (Throwable e) {
-						if (e.getCause() instanceof InterruptedException) {
-							finished = true;
-							moved = true;
-							return;
-						}
-						else {
-							throw e;
-						}
-					}
-				    scrollId = searchResponse.getScrollId();
-				    searchHits = searchResponse.getHits().getHits();
-				    moveForward();
-				    return;
-				}
-			}
-			moved = true;
-		}
-		
-		@SuppressWarnings("unchecked")
-		private T treatResponse(SearchHit hit) {
-			Map<String, Object> map = hit.getSourceAsMap();
-			map.put("id", hit.getId());
-			map.remove("_class");
-			if (entity==null || Map.class==entity)
-				return (T)map;
-			else
-				return (T)mapper.convertValue(map, entity);
-		}
-	}
-	
 	/**
 	 * Given a set of filters and some filter names, remove them from the original filters set and returns a new filter set
 	 * containing only those filters. The original filters set may be modified by this method as well.

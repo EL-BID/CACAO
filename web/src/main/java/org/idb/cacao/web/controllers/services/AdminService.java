@@ -107,6 +107,7 @@ import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.MappingUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.api.utils.RandomDataGenerator;
 import org.idb.cacao.api.utils.ScrollUtils;
@@ -527,7 +528,7 @@ public class AdminService {
 		// Check if destination already exists
 		boolean destinationExists;
     	try {
-    		ESUtils.hasMappings(service.elasticsearchClient, destinationIndexName);
+    		MappingUtils.hasMappings(service.elasticsearchClient, destinationIndexName);
     		
     		// the index may exist and have no mapping
     		// if there was now exception thrown, we know there was an index

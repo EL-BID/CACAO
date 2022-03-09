@@ -48,9 +48,10 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.ScrollableHitSource;
+import org.idb.cacao.api.utils.MappingUtils;
+import org.idb.cacao.api.utils.ReflectUtils;
 import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
-import org.idb.cacao.web.utils.ReflectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.core.convert.MappingElasticsearchConverter;
@@ -317,7 +318,7 @@ public class SanitizationService {
 			
 			try {
 				// Get current mapping
-				Map<String, Object> curr_mapping = ESUtils.getMapping(elasticsearchClient, indexName).getSourceAsMap();
+				Map<String, Object> curr_mapping = MappingUtils.getMapping(elasticsearchClient, indexName).getSourceAsMap();
 				
 				// Get expected mapping
 				String expected_mapping_as_json = map_builder.buildPropertyMapping(entity);

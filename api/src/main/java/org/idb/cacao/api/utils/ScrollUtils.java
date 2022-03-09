@@ -20,8 +20,6 @@
 package org.idb.cacao.api.utils;
 
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
@@ -30,15 +28,12 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
@@ -72,9 +67,9 @@ public class ScrollUtils {
 		}
 		catch (Exception ex) {
 			
-			if (isErrorWindowTooLarge(ex)) {
+			if (CommonErrors.isErrorWindowTooLarge(ex)) {
 				
-				Class<?> entity = getParameterType(repository.getClass());
+				Class<?> entity = ReflectUtils.getParameterType(repository.getClass());
 				if (entity==null) {
 					// Could not find entity class related to repository, so we cant' use 'ConsumeWithScrollAPIIterator'
 					// Throws the first error
@@ -133,49 +128,6 @@ public class ScrollUtils {
 	}
 
 	/**
-	 * Returns current mappings for a given index
-	 */
-	public static MappingMetadata getMapping(RestHighLevelClient client, String indexName) throws IOException {
-		GetMappingsRequest request = new GetMappingsRequest(); 
-		request.indices(indexName);
-		return client.indices().getMapping(request, RequestOptions.DEFAULT).mappings().get(indexName);
-	}
-
-	/**
-	 * Returns TRUE if there are any mappings for the index
-	 */
-	public static boolean hasMappings(RestHighLevelClient client, String indexName) throws IOException {
-		MappingMetadata mappings = getMapping(client, indexName);
-		return !mappings.sourceAsMap().isEmpty();
-	}
-
-	/**
-	 * Do a search in ElasticSearch but avoid propagating errors related to lack of indexed objects
-	 * @return Returns the response of the search, or returns NULL if encountered an error due to lack of mapping or index.
-	 */
-	public static SearchResponse searchIgnoringNoMapError(final RestHighLevelClient elasticsearchClient, final SearchRequest searchRequest, final String indexName) throws IOException {
-    	SearchResponse sresp = null;
-    	try {
-    		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-    	}
-    	catch (Exception ex) {
-    		if (CommonErrors.isErrorNoMappingFoundForColumn(ex)) {
-    			if (!hasMappings(elasticsearchClient, indexName))
-    				return null;
-    			else
-    				throw ex;
-    		}
-    		else if (CommonErrors.isErrorNoIndexFound(ex)) {
-    			return null;
-    		}
-    		else {
-    			throw ex;
-    		}
-    	}
-    	return sresp;
-	}
-
-	/**
 	 * An 'iterator' that consumes all records using the SCROLL API (more efficient than searching through pages)
 	 * @author Gustavo Figueiredo
 	 */
@@ -206,7 +158,7 @@ public class ScrollUtils {
 				customizeSearch.accept(searchSourceBuilder);
 			searchRequest.source(searchSourceBuilder);
 			try {
-				this.searchResponse = searchIgnoringNoMapError(client, searchRequest, indexName);
+				this.searchResponse = MappingUtils.searchIgnoringNoMapError(client, searchRequest, indexName);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -314,57 +266,5 @@ public class ScrollUtils {
 				return (T)mapper.convertValue(map, entity);
 		}
 	}
-
-	/**
-	 * Returns TRUE if the error is something like 'Result window is too large ...'
-	 */
-	private static boolean isErrorWindowTooLarge(Throwable ex) {
-		if (ex!=null && ex.getMessage()!=null && ex.getMessage().contains("Result window is too large"))
-			return true;
-		if (ex!=null && ex.getCause()!=null && ex.getCause()!=ex)
-			return isErrorWindowTooLarge(ex.getCause());
-		if (ex instanceof ElasticsearchStatusException) {
-			Throwable[] suppressed = ((ElasticsearchStatusException)ex).getSuppressed();
-			if (suppressed!=null && suppressed.length>0) {
-				for (Throwable sup:suppressed) {
-					if (isErrorWindowTooLarge(sup))
-						return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Given some class, returns the parameterized type of its superclass, and repeat
-	 * this search in superclasses hierarchy, util it finds one. Returns NULL if found none. 
-	 */
-	private static Class<?> getParameterType(Class<?> some_class) {
-		Class<?> cl = some_class;
-		while (cl!=null) {
-			Type[] ginterfaces = cl.getGenericInterfaces();
-			if (ginterfaces!=null && ginterfaces.length>0) {
-				for (Type i:ginterfaces) {
-					if (i instanceof ParameterizedType) {
-						return (Class<?>)((ParameterizedType)i).getActualTypeArguments()[0];
-					}
-				}
-			}
-			if (cl.getGenericSuperclass() instanceof ParameterizedType) {
-				return (Class<?>)((ParameterizedType)cl.getGenericSuperclass()).getActualTypeArguments()[0];
-			}
-			Class<?> [] interfaces = cl.getInterfaces();
-			if (interfaces!=null && interfaces.length>0) {
-				for (Class<?> i:interfaces) {
-					Class<?> ptype = getParameterType(i);
-					if (ptype!=null)
-						return ptype;
-				}
-			}
-			cl = cl.getSuperclass();
-		}
-		return null;
-	}
-
 
 }

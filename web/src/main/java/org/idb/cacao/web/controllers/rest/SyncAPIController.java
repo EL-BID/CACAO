@@ -88,7 +88,10 @@ import org.idb.cacao.api.errors.GeneralException;
 import org.idb.cacao.api.storage.FileSystemStorageService;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.MappingUtils;
 import org.idb.cacao.api.utils.ParserUtils;
+import org.idb.cacao.api.utils.ReflectUtils;
+import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.ConfigSyncService;
@@ -109,9 +112,7 @@ import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.SyncCommitHistoryRepository;
 import org.idb.cacao.web.repositories.SyncCommitMilestoneRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
-import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
-import org.idb.cacao.web.utils.ReflectUtils;
 import org.idb.cacao.web.utils.SaveToParquet;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -733,7 +734,7 @@ public class SyncAPIController {
     	// several records created at the same time (e.g. thousands of records with the same timestamp).
     	// For this reason, we also need to use 'SCROLL' for doing this search.
     	
-    	return SearchUtils.findWithScroll(entity, indexName, elasticsearchClient, searchSourceBuilder->{
+    	return ScrollUtils.findWithScroll(entity, indexName, elasticsearchClient, searchSourceBuilder->{
     		searchSourceBuilder.query(query);
             searchSourceBuilder.sort(timestamp_field, SortOrder.ASC);
             if (limit<=MAX_RESULTS_PER_REQUEST)
@@ -751,7 +752,7 @@ public class SyncAPIController {
 		Document doc_anon = entity.getAnnotation(Document.class);
 		String indexName = doc_anon.indexName();
 		
-		return SearchUtils.findWithScroll(entity, indexName, elasticsearchClient, searchSourceBuilder->{
+		return ScrollUtils.findWithScroll(entity, indexName, elasticsearchClient, searchSourceBuilder->{
 	    	BoolQueryBuilder query = QueryBuilders.boolQuery();
 	    	query = query.mustNot(QueryBuilders.existsQuery(timestamp_field));
 	    	searchSourceBuilder.query(query); 
@@ -987,7 +988,7 @@ public class SyncAPIController {
 	        
 	    	SearchRequest searchRequest = new SearchRequest(index_name);
 	    	searchRequest.source(searchSourceBuilder);
-	    	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
+	    	SearchResponse sresp = MappingUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
 
 	        if (log.isLoggable(Level.FINE))
 	        	log.log(Level.FINE, "Index: "+index_name+", Search: "+searchSourceBuilder.toString()+", Replied hits: "+sresp.getHits().getHits().length+" total: "+sresp.getHits().getTotalHits().value);
@@ -1011,7 +1012,7 @@ public class SyncAPIController {
 			// If we have a lot of records to return, do a SCROLL
 			
 			final BoolQueryBuilder QUERY = query;
-			stream = (Stream<Map<?,?>>)(Stream)SearchUtils.findWithScroll(/*entity*/Map.class, index_name, elasticsearchClient, 
+			stream = (Stream<Map<?,?>>)(Stream)ScrollUtils.findWithScroll(/*entity*/Map.class, index_name, elasticsearchClient, 
 				/*customizeSearch*/searchSourceBuilder->{
 					searchSourceBuilder.query(QUERY);
 			        if (lineFieldName!=null) {
@@ -1056,7 +1057,7 @@ public class SyncAPIController {
 					tempFile = File.createTempFile("SYNC", ".TMP", tempDir);
 					saveToParquet.setOutputFile(tempFile);
 					try {
-						Map<String,Object> mappings = ESUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
+						Map<String,Object> mappings = MappingUtils.getMapping(elasticsearchClient, index_name).getSourceAsMap();
 						Map<Object,Object> properties = (Map<Object,Object>)mappings.get("properties");
 						if (properties==null) {
 							properties = new TreeMap<>();
@@ -1416,7 +1417,7 @@ public class SyncAPIController {
 	    	searchRequest.source(searchSourceBuilder);
 	    	SearchResponse sresp = null;
 	    	try {
-	        	sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
+	        	sresp = MappingUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);    	
 	    	}
 	    	catch (Exception ex) {
 	    		log.log(Level.SEVERE, "Error while querying data from "+index_name, ex);
@@ -1677,7 +1678,7 @@ public class SyncAPIController {
 	        searchSourceBuilder.size(SyncAPIController.MAX_RESULTS_PER_REQUEST);
 
 	    	searchRequest.source(searchSourceBuilder);
-	    	SearchResponse sresp = ESUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);
+	    	SearchResponse sresp = MappingUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, index_name);
 	    	if (sresp==null) {
 	    		continue;
 	    	}

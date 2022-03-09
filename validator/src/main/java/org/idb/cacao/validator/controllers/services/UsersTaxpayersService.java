@@ -32,7 +32,7 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.errors.CommonErrors;
-import org.idb.cacao.api.utils.ScrollUtils;
+import org.idb.cacao.api.utils.MappingUtils;
 import org.idb.cacao.api.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -125,7 +125,7 @@ public class UsersTaxpayersService {
 		final AtomicReference<SearchResponse> response = new AtomicReference<>();
 		final AtomicInteger retries = new AtomicInteger();
 		CommonErrors.doWithRetries(()->{
-			response.set(ScrollUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, /*indexName*/searchRequest.indices()[0]));
+			response.set(MappingUtils.searchIgnoringNoMapError(elasticsearchClient, searchRequest, /*indexName*/searchRequest.indices()[0]));
 		}, 
 		CommonErrors.DEFAULT_DELAY_MS_BETWEEN_RETRIES, 
 		/*tryAgain*/(ex)->retries.incrementAndGet()<=CommonErrors.DEFAULT_MAX_RETRIES 

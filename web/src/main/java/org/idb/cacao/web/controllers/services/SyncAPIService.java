@@ -87,6 +87,8 @@ import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.MappingUtils;
+import org.idb.cacao.api.utils.ReflectUtils;
 import org.idb.cacao.api.utils.ScrollUtils;
 import org.idb.cacao.web.Synchronizable;
 import org.idb.cacao.web.controllers.rest.SyncAPIController;
@@ -104,7 +106,6 @@ import org.idb.cacao.web.utils.ESUtils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.idb.cacao.web.utils.KeepAliveStrategy;
 import org.idb.cacao.web.utils.LoadFromParquet;
-import org.idb.cacao.web.utils.ReflectUtils;
 import org.idb.cacao.web.utils.ZipConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -879,7 +880,7 @@ public class SyncAPIService {
         try {
         	boolean has_indice;
         	try {
-        		ESUtils.hasMappings(elasticsearchClient, index_name);
+        		MappingUtils.hasMappings(elasticsearchClient, index_name);
         		has_indice = true; // the index may exist and have no mapping
         	}
         	catch (Exception ex) {
@@ -1017,7 +1018,7 @@ public class SyncAPIService {
         try {
         	boolean has_indice;
         	try {
-        		ESUtils.hasMappings(elasticsearchClient, indexname);
+        		MappingUtils.hasMappings(elasticsearchClient, indexname);
         		has_indice = true; // the index may exist and have no mapping
         	}
         	catch (Exception ex) {

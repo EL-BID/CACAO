@@ -187,4 +187,24 @@ public class CommonErrors {
 	public static <T extends Exception> void doESWriteOpWithRetries(RunnableThrowing<T> runnable) throws Exception {
 		doESWriteOpWithRetries(runnable, DEFAULT_DELAY_MS_BETWEEN_RETRIES, DEFAULT_MAX_RETRIES);
 	}
+
+	/**
+	 * Returns TRUE if the error is something like 'Result window is too large ...'
+	 */
+	public static boolean isErrorWindowTooLarge(Throwable ex) {
+		if (ex!=null && ex.getMessage()!=null && ex.getMessage().contains("Result window is too large"))
+			return true;
+		if (ex!=null && ex.getCause()!=null && ex.getCause()!=ex)
+			return isErrorWindowTooLarge(ex.getCause());
+		if (ex instanceof ElasticsearchStatusException) {
+			Throwable[] suppressed = ((ElasticsearchStatusException)ex).getSuppressed();
+			if (suppressed!=null && suppressed.length>0) {
+				for (Throwable sup:suppressed) {
+					if (isErrorWindowTooLarge(sup))
+						return true;
+				}
+			}
+		}
+		return false;
+	}
 }

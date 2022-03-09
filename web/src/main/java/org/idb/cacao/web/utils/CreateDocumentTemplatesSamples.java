@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.text.CaseUtils;
-import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
@@ -97,53 +96,6 @@ public class CreateDocumentTemplatesSamples {
 		new OpeningBalanceArchetype().getRequiredFields().forEach(docTemplate::addField);
 		addInputsOpeningBalance(docTemplate);
 
-		// Lalur
-		docTemplate = new DocumentTemplate();
-		docTemplate.setName("Lalur");
-		docTemplate.setGroup("Accounting");
-		docTemplate.setPeriodicity(Periodicity.YEARLY);
-		docTemplate.setRequired(false);
-		docTemplate.setVersion("1.0");
-		docTemplate.setActive(true);
-
-		toRet.add(docTemplate);
-		int fieldIndex = 1;
-		List<DocumentField> fields = Arrays.asList(
-				new DocumentField().withFieldName("TaxPayerId").withFieldType(FieldType.CHARACTER)
-						.withId(fieldIndex++)
-						.withFieldMapping(FieldMapping.TAXPAYER_ID).withDescription("Taxpayer Identification Number")
-						.withMaxLength(128).withRequired(true)
-						.withFileUniqueness(true)
-						.withPersonalData(true),
-				new DocumentField().withFieldName("TaxYear").withFieldType(FieldType.INTEGER)
-						.withId(fieldIndex++)
-						.withFieldMapping(FieldMapping.TAX_YEAR)
-						.withDescription("Fiscal year of this financial reporting").withRequired(true)
-						.withFileUniqueness(true),
-				new DocumentField().withFieldName("AccountCode").withFieldType(FieldType.CHARACTER)
-						.withId(fieldIndex++)
-						.withDescription("Account code (reference to Chart of Account)").withMaxLength(256)
-						.withRequired(true),
-				new DocumentField().withFieldName("InitialDate").withFieldType(FieldType.DATE)
-						.withId(fieldIndex++)
-						.withDescription("The final date of the period when this account was created")
-						.withRequired(true),
-				new DocumentField().withFieldName("FinalDate").withFieldType(FieldType.DATE)
-						.withId(fieldIndex++)
-						.withDescription("The date until this balance can be used").withRequired(true),
-				new DocumentField().withFieldName("FinalBalance").withFieldType(FieldType.DECIMAL)
-						.withId(fieldIndex++)
-						.withDescription("The monetary amount of final balance for this account").withRequired(true),
-				new DocumentField().withFieldName("DebitCredit").withFieldType(FieldType.DOMAIN)
-						.withId(fieldIndex++)
-						.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
-						.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
-						.withDescription("This is an indication of whether this balance is debit or credit")
-						.withMaxLength(32).withRequired(true));
-
-		docTemplate.setFields(fields);
-		addInputsLalur(docTemplate);
-
 		// Income Statement
 		docTemplate = new DocumentTemplate();
 		docTemplate.setName("Income Statement");
@@ -155,8 +107,8 @@ public class CreateDocumentTemplatesSamples {
 		docTemplate.setActive(true);
 
 		toRet.add(docTemplate);
-		fieldIndex = 1;
-		fields = new ArrayList<>();
+		int fieldIndex = 1;
+		List<DocumentField> fields = new ArrayList<>();
 		fields.add(new DocumentField().withFieldName("TaxPayerId").withFieldType(FieldType.CHARACTER)
 				.withId(fieldIndex++)
 				.withFieldMapping(FieldMapping.TAXPAYER_ID).withDescription("Taxpayer Identification Number")
@@ -223,79 +175,44 @@ public class CreateDocumentTemplatesSamples {
 		}
 		return mappings;
 	}
-
+	
 	/**
-	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
-	 *
-	 * @param docTemplate
+	 * Configure the DocumentTemplate with multiple DocumentInput related to common formats
 	 */
-	private static void addInputsLalur(DocumentTemplate docTemplate) {
-
+	public static void addInputsCommonFormats(DocumentTemplate docTemplate, String inputSufix) {
+		
 		if (docTemplate == null)
 			return;
 
-		DocumentInput input = new DocumentInput("CSV Lalur");
+		DocumentInput input = new DocumentInput("CSV "+inputSufix);
 		input.setFormat(DocumentFormat.CSV);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("XLS Lalur");
+		input = new DocumentInput("XLS "+inputSufix);
 		input.setFormat(DocumentFormat.XLS);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("PDF Lalur");
-		input.setFormat(DocumentFormat.PDF);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("JSON Lalur");
+		input = new DocumentInput("JSON "+inputSufix);
 		input.setFormat(DocumentFormat.JSON);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-	}
-
-	/**
-	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
-	 *
-	 * @param docTemplate
-	 */
-	private static void addInputsOpeningBalance(DocumentTemplate docTemplate) {
-
-		if (docTemplate == null)
-			return;
-
-		DocumentInput input = new DocumentInput("CSV Opening Balance");
-		input.setFormat(DocumentFormat.CSV);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("XLS Opening Balance");
-		input.setFormat(DocumentFormat.XLS);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("PDF Opening Balance");
+		input = new DocumentInput("PDF "+inputSufix);
 		input.setFormat(DocumentFormat.PDF);
 		docTemplate.addInput(input);
 
 		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("DOC Opening Balance");
+		input = new DocumentInput("DOC "+inputSufix);
 		input.setFormat(DocumentFormat.DOC);
 		docTemplate.addInput(input);
 
@@ -309,37 +226,25 @@ public class CreateDocumentTemplatesSamples {
 	 *
 	 * @param docTemplate
 	 */
+	private static void addInputsOpeningBalance(DocumentTemplate docTemplate) {
+		
+		addInputsCommonFormats(docTemplate, "Opening Balance");
+
+	}
+
+	/**
+	 * Add sample {@link DocumentInput} for a given {@link DocumentTemplate}
+	 *
+	 * @param docTemplate
+	 */
 	private static void addInputsChartOfAccounts(DocumentTemplate docTemplate) {
 
 		if (docTemplate == null)
 			return;
 
-		DocumentInput input = new DocumentInput("CSV Chart Of Accounts");
-		input.setFormat(DocumentFormat.CSV);
-		docTemplate.addInput(input);
+		addInputsCommonFormats(docTemplate, "Chart Of Accounts");
 
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("XLS Chart Of Accounts");
-		input.setFormat(DocumentFormat.XLS);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("JSON Chart Of Accounts");
-		input.setFormat(DocumentFormat.JSON);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("PDF Chart Of Accounts");
-		input.setFormat(DocumentFormat.PDF);
-		docTemplate.addInput(input);
-
-		input = new DocumentInput("XML Chart Of Accounts");
+		DocumentInput input = new DocumentInput("XML Chart Of Accounts");
 		input.setFormat(DocumentFormat.XML);
 		docTemplate.addInput(input);
 
@@ -365,13 +270,6 @@ public class CreateDocumentTemplatesSamples {
 		input.setFields(mappings);
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
-		input = new DocumentInput("DOC Chart Of Accounts");
-		input.setFormat(DocumentFormat.DOC);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
 	}
 
 	/**
@@ -381,36 +279,8 @@ public class CreateDocumentTemplatesSamples {
 	 */
 	private static void addInputsGeneralLedger(DocumentTemplate docTemplate) {
 
-		if (docTemplate == null)
-			return;
+		addInputsCommonFormats(docTemplate, "Journal");
 
-		DocumentInput input = new DocumentInput("CSV Journal");
-		input.setFormat(DocumentFormat.CSV);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("XLS Journal");
-		input.setFormat(DocumentFormat.XLS);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("PDF Journal");
-		input.setFormat(DocumentFormat.PDF);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("DOC Journal");
-		input.setFormat(DocumentFormat.DOC);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
 	}
 	
 	/**
@@ -493,35 +363,7 @@ public class CreateDocumentTemplatesSamples {
 	 */
 	private static void addShareholding(DocumentTemplate docTemplate) {
 
-		if (docTemplate == null)
-			return;
+		addInputsCommonFormats(docTemplate, "Shareholding");
 
-		DocumentInput input = new DocumentInput("CSV Shareholding");
-		input.setFormat(DocumentFormat.CSV);
-		docTemplate.addInput(input);
-		
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("XLS Shareholding");
-		input.setFormat(DocumentFormat.XLS);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("PDF Shareholding");
-		input.setFormat(DocumentFormat.PDF);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
-
-		input = new DocumentInput("DOC Shareholding");
-		input.setFormat(DocumentFormat.DOC);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
 	}
 }
