@@ -19,7 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.account.validations;
 
-import static org.idb.cacao.account.archetypes.AccountingGroupArchetype.FIELDS_NAMES.*;
+import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,7 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
+import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ public class ChartOfAccountsValidationsTests {
 		ValidationContext context = new ValidationContext();
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
 		context.setDocumentTemplate(template);
 		
 		List<Map<String, Object>> records = new LinkedList<>();
@@ -80,7 +80,7 @@ public class ChartOfAccountsValidationsTests {
 		ValidationContext context = new ValidationContext();
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
 		context.setDocumentTemplate(template);
 		
 		List<Map<String, Object>> records = new LinkedList<>();
@@ -109,7 +109,7 @@ public class ChartOfAccountsValidationsTests {
 		ValidationContext context = new ValidationContext();
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
 		context.setDocumentTemplate(template);
 		
 		List<Map<String, Object>> records = new LinkedList<>();
@@ -136,7 +136,7 @@ public class ChartOfAccountsValidationsTests {
 		ValidationContext context = new ValidationContext();
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
 		context.setDocumentTemplate(template);
 		
 		List<Map<String, Object>> records = new LinkedList<>();
@@ -164,7 +164,7 @@ public class ChartOfAccountsValidationsTests {
 		ValidationContext context = new ValidationContext();
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
 		context.setDocumentTemplate(template);
 		
 		List<Map<String, Object>> records = new LinkedList<>();
@@ -193,7 +193,7 @@ public class ChartOfAccountsValidationsTests {
 		ValidationContext context = new ValidationContext();
 		
 		DocumentTemplate template = new DocumentTemplate();
-		template.setFields(new AccountingGroupArchetype().getRequiredFields());
+		template.setFields(new ChartOfAccountsArchetype().getRequiredFields());
 		context.setDocumentTemplate(template);
 		
 		List<Map<String, Object>> records = new LinkedList<>();

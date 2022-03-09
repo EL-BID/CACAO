@@ -33,7 +33,7 @@ import java.util.function.Function;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.idb.cacao.account.archetypes.AccountBuiltInDomainTables;
-import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
+import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.elements.AccountStandard;
 import org.idb.cacao.account.elements.AccountSubcategory;
 import org.idb.cacao.account.elements.DebitCredit;
@@ -124,7 +124,7 @@ public class ComputedStatementIncomeProcessor implements Function<StatementCompr
 	/**
 	 * The field name of the subcategory of an account according to the Taxpayer's Chart of Account
 	 */
-	private static final String accountSubCategory = IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountSubcategory.name());
+	private static final String accountSubCategory = IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountSubcategory.name());
 	
 	/**
 	 * Maps accounts codes to entries of Statement of Comprehensive Income

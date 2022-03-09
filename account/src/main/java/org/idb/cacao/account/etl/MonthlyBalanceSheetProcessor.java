@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.elasticsearch.action.index.IndexRequest;
-import org.idb.cacao.account.archetypes.AccountingGroupArchetype;
+import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.account.archetypes.GeneralLedgerArchetype;
 import org.idb.cacao.account.archetypes.OpeningBalanceArchetype;
 import org.idb.cacao.account.elements.AccountCategory;
@@ -177,7 +177,7 @@ public class MonthlyBalanceSheetProcessor {
 	/**
 	 * The category code related to the account informed in each Monthly Balance Sheet
 	 */
-	private static final String accountCategory = IndexNamesUtils.formatFieldName(AccountingGroupArchetype.FIELDS_NAMES.AccountCategory.name());
+	private static final String accountCategory = IndexNamesUtils.formatFieldName(ChartOfAccountsArchetype.FIELDS_NAMES.AccountCategory.name());
 
 	/**
 	 * Ignores differences lesser than half of a cent	

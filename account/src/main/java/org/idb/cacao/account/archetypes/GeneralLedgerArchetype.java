@@ -39,7 +39,7 @@ import static org.idb.cacao.account.archetypes.GeneralLedgerArchetype.FIELDS_NAM
  * @author Gustavo Figueiredo
  *
  */
-public class GeneralLedgerArchetype extends CommonAccountingArchetype {
+public class GeneralLedgerArchetype extends AccountingGroupArchetype {
 	
 	public static final String NAME = "accounting.general.ledger";
 

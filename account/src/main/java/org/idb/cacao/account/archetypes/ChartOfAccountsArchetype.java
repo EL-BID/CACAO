@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.idb.cacao.account.etl.AccountingLoader;
-import org.idb.cacao.account.validations.OpeningBalanceValidations;
+import org.idb.cacao.account.validations.ChartOfAccountsValidations;
 import org.idb.cacao.api.ETLContext;
 import org.idb.cacao.api.ValidationContext;
 import org.idb.cacao.api.templates.DocumentField;
@@ -31,17 +31,17 @@ import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
 
-import static org.idb.cacao.account.archetypes.OpeningBalanceArchetype.FIELDS_NAMES.*;
+import static org.idb.cacao.account.archetypes.ChartOfAccountsArchetype.FIELDS_NAMES.*;
 
 /**
- * This is the archetype for DocumentTemplate's related to OPENING BALANCE in ACCOUNTING
+ * This is the archetype for DocumentTemplate's related to CHART OF ACCOUNTS in ACCOUNTING
  * 
  * @author Gustavo Figueiredo
  *
  */
-public class OpeningBalanceArchetype extends AccountingGroupArchetype {
+public class ChartOfAccountsArchetype extends AccountingGroupArchetype {
 	
-	public static final String NAME = "accounting.opening.balance";
+	public static final String NAME = "accounting.chart.accounts";
 
 	/*
 	 * (non-Javadoc)
@@ -51,14 +51,17 @@ public class OpeningBalanceArchetype extends AccountingGroupArchetype {
 	public String getName() {
 		return NAME;
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getBuiltInDomainTables()
 	 */
 	@Override
 	public List<DomainTable> getBuiltInDomainTables() {
-		return Arrays.asList( AccountBuiltInDomainTables.DEBIT_CREDIT );
+		return Arrays.asList( AccountBuiltInDomainTables.ACCOUNT_CATEGORY_GAAP,
+				AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS,
+				AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_GAAP,
+				AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS );
 	}
 
 	public static enum FIELDS_NAMES {
@@ -67,16 +70,17 @@ public class OpeningBalanceArchetype extends AccountingGroupArchetype {
 		
 		TaxYear,
 		
-		InitialDate,
-		
 		AccountCode,
 		
-		InitialBalance,
+		AccountCategory,
 		
-		DebitCredit;
+		AccountSubcategory,
 		
-	}
-
+		AccountName,
+		
+		AccountDescription
+	};
+	
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.templates.TemplateArchetype#getRequiredFields()
@@ -101,29 +105,39 @@ public class OpeningBalanceArchetype extends AccountingGroupArchetype {
 				.withRequired(true)
 				.withFileUniqueness(true),
 			new DocumentField()
-				.withFieldName(InitialDate.name())
-				.withFieldType(FieldType.DATE)
-				.withDescription("Date for this initial balance and this particular account")
-				.withRequired(true),
-			new DocumentField()
 				.withFieldName(AccountCode.name())
 				.withFieldType(FieldType.CHARACTER)
-				.withDescription("Account code (reference to Chart of Account)")
+				.withDescription("Account code")
 				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName(InitialBalance.name())
-				.withFieldType(FieldType.DECIMAL)
-				.withDescription("The monetary amount of this initial balance")
+				.withFieldName(AccountCategory.name())
+				.withFieldType(FieldType.DOMAIN)
+				.withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS.getName())
+				.withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_CATEGORY_IFRS.getVersion())
+				.withDescription("Category of this account")
+				.withMaxLength(256)
 				.withRequired(true),
 			new DocumentField()
-				.withFieldName(DebitCredit.name())
+				.withFieldName(AccountSubcategory.name())
 				.withFieldType(FieldType.DOMAIN)
-				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
-				.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
-				.withDescription("This is an indication of whether this balance is debit or credit")
-				.withMaxLength(32)
-				.withRequired(true)
+				.withDomainTableName(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS.getName())
+				.withDomainTableVersion(AccountBuiltInDomainTables.ACCOUNT_SUBCATEGORY_IFRS.getVersion())
+				.withDescription("Sub-category of this account")
+				.withMaxLength(256)
+				.withRequired(true),
+			new DocumentField()
+				.withFieldName(AccountName.name())
+				.withFieldType(FieldType.CHARACTER)
+				.withDescription("Account name for displaying alongside the account code in different financial reports")
+				.withMaxLength(256)
+				.withRequired(true),
+			new DocumentField()
+				.withFieldName(AccountDescription.name())
+				.withFieldType(FieldType.CHARACTER)
+				.withDescription("Account description")
+				.withMaxLength(1024)
+				.withRequired(false)
 		);
 	}
 
@@ -133,7 +147,7 @@ public class OpeningBalanceArchetype extends AccountingGroupArchetype {
 	 */
 	@Override
 	public boolean validateDocumentUploaded(ValidationContext context) {
-		return OpeningBalanceValidations.validateDocumentUploaded(context, context.getParsedContents());
+		return ChartOfAccountsValidations.validateDocumentUploaded(context, context.getParsedContents());
 	}
 
 	/*
@@ -144,5 +158,5 @@ public class OpeningBalanceArchetype extends AccountingGroupArchetype {
 	public boolean performETL(ETLContext context) {
 		return AccountingLoader.performETL(context);
 	}
-
+	
 }
