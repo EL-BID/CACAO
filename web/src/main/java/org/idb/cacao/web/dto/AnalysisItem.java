@@ -20,11 +20,13 @@
 package org.idb.cacao.web.dto;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.math3.util.Precision;
+import org.elasticsearch.search.aggregations.metrics.Percentiles;
 
 public class AnalysisItem implements Comparable<AnalysisItem> {
 	
@@ -50,6 +52,37 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 
 	private List<Outlier> normalizedOutliers;
 	
+	public AnalysisItem() {		
+	}
+	
+	public AnalysisItem(String[] values, double sumValue, double averegaValue, double deviationValue, Percentiles percentile) {
+		this.statementOrder = values.length > 0 ? values[0] : "";
+		this.statementName = values.length > 0 ? values[0] : "";
+
+		if (percentile != null) {
+
+			percentile.forEach(item -> {
+				double percent = item.getPercent();
+
+				if (percent == 25) // First quartile
+					setQ1(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
+				else if (percent == 50) // Median
+					setMedian(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
+				else if (percent == 75) // Third quartile
+					setQ3(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
+
+			});
+
+			if (!Double.isNaN(getQ1()) && !Double.isNaN(getQ3())
+					&& getQ1() != 0 && getQ3() != 0) {
+				setSum(sumValue);
+				setAverage(averegaValue);
+				setDeviation(deviationValue);
+			}
+
+		}
+	}
+
 	public String getStatementOrder() {
 		return statementOrder;
 	}
