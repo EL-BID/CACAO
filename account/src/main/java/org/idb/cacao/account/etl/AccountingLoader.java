@@ -70,6 +70,7 @@ import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.utils.IndexNamesUtils;
+import org.idb.cacao.api.utils.StringUtils;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -363,6 +364,18 @@ public class AccountingLoader {
 	};
 	
 	/**
+	 * Returns indication that the uploaded document matches at least one of the give templates
+	 */
+	public static boolean matchesTemplate(DocumentUploaded doc, Collection<DocumentTemplate> templates) {
+		if (templates.isEmpty() || doc.getTemplateName()==null || doc.getTemplateName().trim().length()==0)
+			return false;
+		return templates.stream().anyMatch(template->{
+			return StringUtils.compareCaseInsensitive(doc.getTemplateName(), template.getName())==0
+				&& StringUtils.compareCaseInsensitive(doc.getTemplateVersion(), template.getVersion())==0;
+		});
+	}
+	
+	/**
 	 * Returns validated document regarding a specific taxpayerId and tax Period according to a collection of document templates
 	 */
 	public static DocumentUploaded getValidatedDocument(String taxPayerId, Integer taxPeriodNumber, Collection<DocumentTemplate> templates, ETLContext context) throws Exception {
@@ -536,17 +549,26 @@ public class AccountingLoader {
 			String taxPayerId = context.getDocumentUploaded().getTaxPayerId();
 			Integer taxPeriodNumber = context.getDocumentUploaded().getTaxPeriodNumber();
 			
-			final DocumentUploaded coa = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForCoA, context);
+			final DocumentUploaded coa =
+					(matchesTemplate(context.getDocumentUploaded(), templatesForCoA))
+					? context.getDocumentUploaded()
+					: getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForCoA, context);
 			if (coa==null) {
 				context.addAlert(context.getDocumentUploaded(), "{error.missingFile({accounting.chart.accounts})}");
 				return false;
 			}
-			final DocumentUploaded gl = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForLedger, context);
+			final DocumentUploaded gl = 
+					(matchesTemplate(context.getDocumentUploaded(), templatesForLedger))
+					? context.getDocumentUploaded()
+					: getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForLedger, context);
 			if (gl==null) {
 				context.addAlert(context.getDocumentUploaded(), "{error.missingFile({accounting.general.ledger})}");
 				return false;
 			}
-			final DocumentUploaded ob = getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForOpening, context);
+			final DocumentUploaded ob = 
+					(matchesTemplate(context.getDocumentUploaded(), templatesForOpening))
+					? context.getDocumentUploaded()
+					: getValidatedDocument(taxPayerId, taxPeriodNumber, templatesForOpening, context);
 			if (ob==null) {
 				context.addAlert(context.getDocumentUploaded(), "{error.missingFile({accounting.opening.balance})}");
 				return false;
