@@ -20,6 +20,7 @@
 package org.idb.cacao.web.repositories;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -46,6 +47,8 @@ public interface TaxpayerRepository extends ElasticsearchRepository<Taxpayer, St
 	Optional<Taxpayer> findByTaxPayerId(String taxPayerId);
 
 	Page<Taxpayer> findByTaxPayerId(String taxPayerId, Pageable pageable);
+	
+	List<Taxpayer> findByTaxPayerIdIn(Set<String> taxPayerIds);
 
 	Page<Taxpayer> findByTaxPayerIdContaining(String taxPayerId, Pageable pageable);
 

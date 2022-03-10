@@ -130,24 +130,34 @@ public class TaxpayerDto implements Serializable, Cloneable {
 	/**
 	 * Updates a Taxpayer object from this DTO
 	 * @param taxpayer Taxpayer entity object
+	 * @param updateIfPresent
 	 */
-	public void updateEntity(Taxpayer taxpayer) {
+	public Taxpayer updateEntity(Taxpayer taxpayer, boolean updateIfPresent) {
 		taxpayer.setTaxPayerId(taxPayerId);
-		taxpayer.setName(name);
-		taxpayer.setZipCode(zipCode);
-		taxpayer.setAddress(address);
-		taxpayer.setQualifier1(qualifier1);
-		taxpayer.setQualifier2(qualifier2);
-		taxpayer.setQualifier3(qualifier3);
-		taxpayer.setQualifier4(qualifier4);
-		taxpayer.setQualifier5(qualifier5);
+		if (!updateIfPresent || (name!=null && !name.isEmpty()))
+			taxpayer.setName(name);
+		if (!updateIfPresent || (zipCode!=null && !zipCode.isEmpty()))
+		    taxpayer.setZipCode(zipCode);
+		if (!updateIfPresent || (address!=null && !address.isEmpty()))
+			taxpayer.setAddress(address);
+		if (!updateIfPresent || (qualifier1!=null && !qualifier1.isEmpty()))
+			taxpayer.setQualifier1(qualifier1);
+		if (!updateIfPresent || (qualifier2!=null && !qualifier2.isEmpty()))
+		    taxpayer.setQualifier2(qualifier2);
+		if (!updateIfPresent || (qualifier3!=null && !qualifier3.isEmpty()))
+		    taxpayer.setQualifier3(qualifier3);
+		if (!updateIfPresent || (qualifier4!=null && !qualifier4.isEmpty()))
+		    taxpayer.setQualifier4(qualifier4);
+		if (!updateIfPresent || (qualifier5!=null && !qualifier5.isEmpty()))
+		    taxpayer.setQualifier5(qualifier5);
 		taxpayer.setActive(active);
+		return taxpayer;
 	}
 	
 	public Taxpayer createEntity() {
 		Taxpayer taxpayer = new Taxpayer();
 		taxpayer.setId(id);
-		updateEntity(taxpayer);
+		updateEntity(taxpayer, false);
 		return taxpayer;
 	}
 	

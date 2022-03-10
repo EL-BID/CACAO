@@ -20,7 +20,6 @@
 
 package org.idb.cacao.web.controllers.ui;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -101,14 +100,7 @@ public class DocumentTemplateUIController {
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
         model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
-        List<DocumentFormat> usedFormats = template.getInputs()== null ? Collections.emptyList() : 
-        	template.getInputs().stream()
-        	.map(DocumentInput::getFormat)
-        	.collect(Collectors.toList());
-        List<DocumentFormat> availableFormats = Arrays.stream(DocumentFormat.values())
-            .filter(format -> !usedFormats.contains(format))
-            .collect(Collectors.toList());
-        model.addAttribute("formats", availableFormats);
+        model.addAttribute("formats", DocumentFormat.values());
         model.addAttribute("showInputs", showInputs.orElse(false));
         return "templates/show_template";
     }
@@ -125,12 +117,11 @@ public class DocumentTemplateUIController {
 
     @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
     @GetMapping("/templates/{id}/input/{format}")
-    public String showEditDocumentInput(@PathVariable("id") String id, @PathVariable("format") String format, Model model) {
+    public String showEditDocumentInput(@PathVariable("id") String id, @PathVariable("inputName") String inputName, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
-    	DocumentFormat docFormat = DocumentFormat.valueOf(format);
-    	DocumentInput docInput = template.getInputOfFormat(docFormat);
+    	DocumentInput docInput = template.getInputWithName(inputName);
     	if(docInput==null) {
-    		throw new IllegalArgumentException("Input format " + docFormat.toString() + " is not defined in template");
+    		throw new IllegalArgumentException("Input format " + inputName + " is not defined in template");
     	}
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute("docInput", docInput);
@@ -142,9 +133,6 @@ public class DocumentTemplateUIController {
     public String showAddDocumentInput(@PathVariable("id") String id, @RequestParam("format") String format, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
     	DocumentFormat docFormat = DocumentFormat.valueOf(format);
-    	if (template.getInputOfFormat(docFormat)!=null) {
-    		throw new IllegalArgumentException("Input format " + docFormat.toString() + " is already defined in template");
-    	}
     	DocumentInput docInput = new DocumentInput();
     	docInput.setFormat(docFormat);
     	template.getFields().stream().forEach( f -> docInput.addField(

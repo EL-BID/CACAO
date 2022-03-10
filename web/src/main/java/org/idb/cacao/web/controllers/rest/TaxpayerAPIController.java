@@ -20,8 +20,12 @@
 package org.idb.cacao.web.controllers.rest;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -68,6 +72,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.google.common.collect.Lists;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -205,7 +210,7 @@ public class TaxpayerAPIController {
         
         try {
         	Taxpayer entity = new Taxpayer();
-        	taxpayer.updateEntity(entity);
+        	taxpayer.updateEntity(entity, false);
         	taxpayerRepository.saveWithTimestamp(entity);
         	taxpayer.setId(entity.getId());
         }
@@ -236,7 +241,7 @@ public class TaxpayerAPIController {
         }
 
         Taxpayer entity = existent.get();
-        taxpayer.updateEntity(entity);
+        taxpayer.updateEntity(entity, false);
         taxpayerRepository.saveWithTimestamp(entity);
         
         return ResponseEntity.ok().body(taxpayer);
@@ -320,5 +325,42 @@ public class TaxpayerAPIController {
         }   
         return ResponseEntity.ok().body(new TaxpayerDto(taxpayer));
     }
-
+	
+	private Taxpayer addOrUpdateTaxpayer(Taxpayer entity, TaxpayerDto taxpayer, User user) {
+		return taxpayer.updateEntity(entity, true);
+	}
+	
+	@Secured({"ROLE_TAXPAYER_WRITE"})
+    @PostMapping(value="/taxpayers", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value="Add multiple taxpayer",response=TaxpayerDto.class)
+	@CacheEvict(value={"qualifierValues"})
+    public ResponseEntity<Object> addTaxpayers(@Valid @RequestBody TaxpayerDto[] taxpayers, BindingResult result) {
+        if (result.hasErrors()) {
+        	return ControllerUtils.returnErrors(result, messageSource);
+        }
+        
+        if (taxpayers==null || taxpayers.length==0) {
+        	return ResponseEntity.badRequest().build();
+        }
+        
+        Set<String> taxpayerIds = Arrays.stream(taxpayers)
+        		.map( TaxpayerDto::getTaxPayerId)
+        		.collect( Collectors.toSet());
+        
+        List<Taxpayer> existents = taxpayerRepository.findByTaxPayerIdIn(taxpayerIds);
+        Map<String, Taxpayer> existentsMap = existents.stream()
+        	.collect(Collectors.toMap(Taxpayer::getTaxPayerId, Function.identity()));
+        List<Taxpayer> updated = Arrays.stream(taxpayers)
+        	.map(t -> addOrUpdateTaxpayer( existentsMap.getOrDefault(t.getTaxPayerId(), new Taxpayer()), t, null))
+        	.collect(Collectors.toList());
+        
+        try {
+        	updated = Lists.newArrayList(taxpayerRepository.saveAllWithTimestamp(updated));
+        }
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Create taxpayer failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage(ERROR_OP_FAILED, null, LocaleContextHolder.getLocale()));
+        }
+        return ResponseEntity.ok().body(updated);
+    }
 }

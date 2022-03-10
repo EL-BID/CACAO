@@ -19,13 +19,19 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers.rest;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
@@ -38,6 +44,7 @@ import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.dto.InterpersonalDto;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.entities.Interpersonal;
+import org.idb.cacao.web.entities.RelationshipType;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.InterpersonalRepository;
@@ -65,6 +72,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.google.common.collect.Lists;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -179,11 +187,17 @@ public class InterpersonalAPIController {
         return ResponseEntity.ok().body(new InterpersonalDto(entity));
     }
 
+	private Interpersonal addOrUpdateInterpersonal(Interpersonal entity, InterpersonalDto interpersonal, String user) {
+		interpersonal.updateEntity(entity);
+//		entity.setUser(user);
+		return entity;
+	}
+	
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Add multiple interpersonal relationship configurations",response=GenericCounts.class)
     public ResponseEntity<Object> addInterpersonals(@Valid @RequestBody InterpersonalDto[] interpersonalRelationships, BindingResult result) {
-        if (result!=null && result.hasErrors()) {
+        if (result.hasErrors()) {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
@@ -191,78 +205,26 @@ public class InterpersonalAPIController {
         	return ResponseEntity.badRequest().build();
         }
         
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if (auth==null)
-    		throw new UserNotFoundException();
-    	User user = UserUtils.getUser(auth);
-    	if (user==null)
-    		throw new UserNotFoundException();
-
-    	if (log.isLoggable(Level.INFO)) {
-    		log.log(Level.INFO, String.format("Creating/updating list of %d interpersonal relationships", interpersonalRelationships.length));
-    	}
-
-        GenericCounts counts = addOrCreateInterpersonals(interpersonalRelationships, user);
-
-        if (!counts.hasChanges()) {
-        	return ResponseEntity.badRequest().build();
-        }
-        else {
-        	return ResponseEntity.ok().body(counts);
-        }
-    }
-	
-	private GenericCounts addOrCreateInterpersonals(InterpersonalDto[] interpersonalRelationships, User user) {
-		
-        LongAdder countCreated = new LongAdder();
-        LongAdder countUpdated = new LongAdder();
-        LongAdder countErrors = new LongAdder();
+        Set<String> ids = Arrays.stream(interpersonalRelationships)
+        		.map( InterpersonalDto::getPersonId1)
+        		.collect( Collectors.toSet());
         
-        ExecutorService executor = Executors.newFixedThreadPool(DEFAULT_BULK_LOAD_PARALELISM);
+        List<Interpersonal> existents = interpersonalRepository.findByPersonId1In(ids);
+        Map<String, Interpersonal> existentsMap = existents.stream()
+        	.collect(Collectors.toMap(t -> t.getPersonId1()+t.getRelationshipType().name()+t.getPersonId2(), Function.identity()));
+        List<Interpersonal> updated = Arrays.stream(interpersonalRelationships)
+        	.map(t -> addOrUpdateInterpersonal( existentsMap.getOrDefault(t.getPersonId1()+t.getRelationshipType().name()+t.getPersonId2(),new Interpersonal()), t, null))
+        	.collect(Collectors.toList());
         
-        for (InterpersonalDto interpersonal:interpersonalRelationships) {
-        	if (interpersonal==null) {
-        		countErrors.increment();
-        		continue;
-        	}
-        	executor.submit(()->{
-        		
-                Optional<Interpersonal> existent =
-                    interpersonalRepository.findByActiveIsTrueAndPersonId1AndRelationshipTypeAndPersonId2(interpersonal.getPersonId1(), interpersonal.getRelationshipType().name(), interpersonal.getPersonId2()); 
-
-	            if (!existent.isPresent()) {
-	            	if (log.isLoggable(Level.INFO)) {
-	            		log.log(Level.INFO, String.format("Creating new interpersonal relationship between % and % with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
-	            	}
-	            	Interpersonal entity = new Interpersonal();
-	                interpersonal.updateEntity(entity);
-	                entity.setTimestamp(DateTimeUtils.now());
-	                entity.setUser(user.getLogin());
-
-	                try {
-	                	interpersonalRepository.saveWithTimestamp(entity);
-	                }
-	                catch (Exception ex) {
-	                	log.log(Level.SEVERE,"Create interpersonal relationship failed", ex);
-	                	countErrors.increment();
-	                }
-	                countCreated.increment();
-	            }
-        	});
-        }
-        
-        executor.shutdown();
         try {
-			boolean ok = executor.awaitTermination(4, TimeUnit.HOURS);
-			if (!ok)
-				log.log(Level.WARNING,"Too much time waiting for bulk load termination");
-		} catch (InterruptedException e) {
-        	log.log(Level.WARNING,"Interrupted bulk load", e);
-        	Thread.currentThread().interrupt();
-		}
-		
-        return new GenericCounts().withCreated(countCreated.longValue()).withUpdated(countUpdated.longValue()).withErrors(countErrors.longValue());
-	}
+        	updated = Lists.newArrayList(interpersonalRepository.saveAllWithTimestamp(updated));
+        }
+        catch (Exception ex) {
+        	log.log(Level.SEVERE,"Create interpersonal failed", ex);
+        	return ResponseEntity.badRequest().body(messageSource.getMessage("op.failed", null, LocaleContextHolder.getLocale()));
+        }
+        return ResponseEntity.ok().body(updated);
+    }
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @DeleteMapping(value="/interpersonal/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

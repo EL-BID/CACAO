@@ -423,9 +423,9 @@ public class AnalysisAPIController {
 	public ResponseEntity<Object> getAccountingFlows(
 			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "A start date to get values", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "A start date to get values", allowEmptyValue = false, allowMultiple = false, example = "2021-01-01", required = true, type = "LocalDate")
 			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
-			@ApiParam(name = "An end data to get values", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "An end data to get values", allowEmptyValue = false, allowMultiple = false, example = "2021-12-31", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {

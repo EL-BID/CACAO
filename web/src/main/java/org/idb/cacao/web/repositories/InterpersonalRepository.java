@@ -19,8 +19,11 @@
  *******************************************************************************/
 package org.idb.cacao.web.repositories;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.web.Synchronizable;
@@ -44,6 +47,8 @@ public interface InterpersonalRepository extends ElasticsearchRepository<Interpe
 	Page<Interpersonal> findByRelationshipType(String relationshipType, Pageable pageable);
 
 	Page<Interpersonal> findByPersonId1(String personId1, Pageable pageable);
+	
+	List<Interpersonal> findByPersonId1In(Set<String> personId1s);
 
 	Page<Interpersonal> findByPersonId2(String personId2, Pageable pageable);
 
@@ -70,5 +75,12 @@ public interface InterpersonalRepository extends ElasticsearchRepository<Interpe
 		entity.setChangedTime(DateTimeUtils.now());
 		return save(entity);
 	}
+	
+	default public <S extends Interpersonal> Iterable<S> saveAllWithTimestamp(Iterable<S> entities) {
+		OffsetDateTime now = DateTimeUtils.now();
+		entities.forEach(e->e.setChangedTime(now));
+		return saveAll(entities);
+	}
+
 
 }

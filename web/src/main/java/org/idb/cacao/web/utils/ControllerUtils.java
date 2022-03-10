@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.idb.cacao.web.GenericResponse;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
+import org.idb.cacao.web.errors.UserNotFoundException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
@@ -305,6 +306,19 @@ public class ControllerUtils {
 		return Integer.parseInt(env.getProperty("default.page.size"));
 	}
 
+	/**
+	 * Returns the authenticated user
+	 */
+	public static User getUser() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+    	return user;
+	}
+	
 	/**
 	 * Check if it's running inside JUnit test
 	 */
