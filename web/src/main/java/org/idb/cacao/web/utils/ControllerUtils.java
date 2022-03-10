@@ -324,6 +324,11 @@ public class ControllerUtils {
 		return System.getProperty("MOCKED_ELASTIC_SEARCH")!=null;
 	}
 
+	/**
+	 * Try to reduce the potential risk related to using an user entry for 'auto complete' purpose.<BR>
+	 * Reduce the size if the entry is very big.<BR>
+	 * Removes some special characters (such as parenthesis, brackets, dashes, quotes, etc.).
+	 */
 	public static String treatTermForAutoComplete(String term) {
 		if (term==null || term.length()==0)
 			return term;
