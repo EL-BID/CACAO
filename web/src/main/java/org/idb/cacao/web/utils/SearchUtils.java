@@ -45,6 +45,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchPhrasePrefixQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -239,10 +240,10 @@ public class SearchUtils {
 		final SearchSourceBuilder builder = new SearchSourceBuilder().size(size);
 		if(searchText!=null && !searchText.isEmpty()) {
 			BoolQueryBuilder query = QueryBuilders.boolQuery();
-			query.should(new MatchQueryBuilder(searchField1, searchText));
+			query.should(new MatchQueryBuilder(searchField1, searchText).operator(Operator.AND));
 			query.should(new MatchPhrasePrefixQueryBuilder(searchField1, searchText));
 			if(searchField2!=null) {
-				query.should(new MatchQueryBuilder(searchField2, searchText));
+				query.should(new MatchQueryBuilder(searchField2, searchText).operator(Operator.AND));
 				query.should(new MatchPhrasePrefixQueryBuilder(searchField2, searchText));
 			}
 			builder.query(query);

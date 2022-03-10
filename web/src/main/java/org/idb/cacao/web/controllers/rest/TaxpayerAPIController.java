@@ -147,7 +147,7 @@ public class TaxpayerAPIController {
 	public SearchResult<NameId> autocompleteTaxpayer(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<NameId> result;
 		try {
-			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, FIELD_TAX_PAYER_ID, "name", ControllerUtils.treatTermForAutoComplete(term.orElse("")), 10)
+			result = SearchUtils.doSearchTopWithFilter(elasticsearchClient, Taxpayer.class, FIELD_TAX_PAYER_ID, "name", term.orElse(""), 10)
 			    .stream()
 			    .map(t -> new NameId(t.get("name").toString(), t.get(FIELD_TAX_PAYER_ID).toString()))
 			    .collect(Collectors.toList());
