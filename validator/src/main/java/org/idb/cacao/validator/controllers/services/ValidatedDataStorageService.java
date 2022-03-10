@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.validator.controllers.services;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
@@ -112,5 +114,11 @@ public class ValidatedDataStorageService {
 		}
 		request.requests().clear();
 
+		try {
+			elasticsearchClient.indices().refresh(new RefreshRequest(index_name), RequestOptions.DEFAULT);
+		}
+		catch (IOException ex) {
+			log.log(Level.SEVERE, "Error while refreshing after insertion of "+count+" rows for file "+fileId+" for index '"+index_name+"' for template '"+template.getName()+"' "+template.getVersion(), ex);			
+		}
 	}
 }
