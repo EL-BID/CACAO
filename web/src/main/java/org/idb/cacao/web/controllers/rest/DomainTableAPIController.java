@@ -113,7 +113,7 @@ public class DomainTableAPIController {
 					DomainTable.class, 
 					"name.keyword",
 					"name",
-					term.orElse(""),
+					ControllerUtils.treatTermForAutoComplete(term.orElse("")),
 					filter);
 		} catch(IOException e) {
 			result = new ArrayList<>();

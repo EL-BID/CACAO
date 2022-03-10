@@ -59,6 +59,7 @@ public class ControllerUtils {
 
 	public static final int MIN_PAGE_SIZE = 5;
 	public static final int MAX_PAGE_SIZE = 100;
+	public static final int MAX_LENGTH_FOR_AUTO_COMPLETE = 256;
 
 	public static ResponseEntity<Object> returnErrors(BindingResult result, MessageSource messageSource) {
     	List<String> errors = result.getAllErrors().stream().map(e -> {
@@ -321,5 +322,15 @@ public class ControllerUtils {
 	 */
 	public static boolean hasMockES() {
 		return System.getProperty("MOCKED_ELASTIC_SEARCH")!=null;
+	}
+
+	public static String treatTermForAutoComplete(String term) {
+		if (term==null || term.length()==0)
+			return term;
+		term = term.trim();
+		if (term.length()>MAX_LENGTH_FOR_AUTO_COMPLETE)
+			term = term.substring(0, MAX_LENGTH_FOR_AUTO_COMPLETE);		
+		term = term.replaceAll("[\\-\\/\\\\<>\\(\\)\\{\\}\\[\\]\"'\\:]", ".");
+		return term;
 	}
 }
