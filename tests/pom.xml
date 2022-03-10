@@ -33,7 +33,6 @@
 			<artifactId>CACAO_API</artifactId>
 			<version>${project.version}</version>
 			<type>jar</type>
-			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -41,7 +40,6 @@
 			<artifactId>CACAO_ACCOUNT</artifactId>
 			<version>${project.version}</version>
 			<type>jar</type>
-			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -49,7 +47,6 @@
 			<artifactId>CACAO_MOCK_ES</artifactId>
 			<version>${project.version}</version>
 			<type>jar</type>
-			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -57,7 +54,6 @@
 			<artifactId>CACAOWeb</artifactId>
 			<version>${project.version}</version>
 			<type>jar</type>
-			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -65,7 +61,6 @@
 			<artifactId>CACAOValidator</artifactId>
 			<version>${project.version}</version>
 			<type>jar</type>
-			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -73,7 +68,6 @@
 			<artifactId>CACAO_ETL</artifactId>
 			<version>${project.version}</version>
 			<type>jar</type>
-			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
