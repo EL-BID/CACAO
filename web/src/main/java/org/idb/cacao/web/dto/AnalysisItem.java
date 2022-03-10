@@ -57,7 +57,7 @@ public class AnalysisItem implements Comparable<AnalysisItem> {
 	
 	public AnalysisItem(String[] values, double sumValue, double averegaValue, double deviationValue, Percentiles percentile) {
 		this.statementOrder = values.length > 0 ? values[0] : "";
-		this.statementName = values.length > 0 ? values[0] : "";
+		this.statementName = values.length > 1 ? values[1] : "";
 
 		if (percentile != null) {
 
