@@ -335,7 +335,7 @@ public class ControllerUtils {
 		term = term.trim();
 		if (term.length()>MAX_LENGTH_FOR_AUTO_COMPLETE)
 			term = term.substring(0, MAX_LENGTH_FOR_AUTO_COMPLETE);		
-		term = term.replaceAll("[\\-\\/\\\\<>\\(\\)\\{\\}\\[\\]\"'\\:]", ".");
+		term = term.replaceAll("[\\-\\/\\\\<>\\(\\)\\{\\}\\[\\]\"'\\:\\?\\!\\=\\+]", ".");
 		return term;
 	}
 }
