@@ -686,6 +686,14 @@ public class SearchUtils {
 		return agg;
 	}
 	
+	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, String[] fields) {
+		TermsAggregationBuilder agg = AggregationBuilders.terms(fields[0]).size(10_000).field(fields[0]);
+		if (fields.length>1) {
+			agg = agg.subAggregation(aggregationBuilder(agg, Arrays.copyOfRange(fields, 1, fields.length)));
+		} 
+		return agg;
+	}	
+	
 	private static <R> void collectAggregationLevel(Aggregations aggregations, Object[] fields, BiFunction<Aggregations, String[], R> function, 
 			int level, String[] values, List<R> results) {
 		Terms terms = aggregations.get(fields[level] instanceof Script ? ((Script)fields[level]).getId() : (String)fields[level]);

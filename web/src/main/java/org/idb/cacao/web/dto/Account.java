@@ -61,6 +61,16 @@ public class Account implements Serializable, Comparable<Account> {
 
 	public Account(Map<String, Object> values) {
 	}
+	
+	public Account(String[] values, double balance) {
+		this.categoryCode = values.length > 0 ? values[0] : "";
+		this.category = values.length > 1 ? values[1] : "";
+		this.subcategoryCode = values.length > 2 ? values[2] : "";
+		this.subcategory = values.length > 3 ? values[3] : "";
+		this.code = values.length > 4 ? values[4] : "";
+		this.name = values.length > 5 ? values[5] : "";
+		this.balance = balance;
+	}
 
 	public int getLevel() {
 		return level;
