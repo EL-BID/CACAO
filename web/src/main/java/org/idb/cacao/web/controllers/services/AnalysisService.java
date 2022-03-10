@@ -183,9 +183,17 @@ public class AnalysisService {
 
 		// Filter for Month
 		query = query.must(new TermQueryBuilder("month_number", period.getMonthValue()));
+//		
+//		String[] groupBy = {"account_category.keyword", translate("account_category_name") + ".keyword",
+//				"account_subcategory.keyword", translate("account_subcategory_name") + ".keyword", 
+//				"account_code.keyword", "account_name.keyword"};
+//		
+//		AggregationBuilder metric = AggregationBuilders.sum("finalBalance").field("final_balance_with_sign");
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
+		//SearchUtils.aggregationBuilder(null, groupBy, metric);
+		AbstractAggregationBuilder<?> aggregationBuilder = 
+				// Aggregates by first field
 				AggregationBuilders.terms("byCategory").size(10_000).field("account_category.keyword")
 						.subAggregation(AggregationBuilders.terms("byCategoryName").size(10_000)
 								.field(translate("account_category_name") + ".keyword")
@@ -230,106 +238,98 @@ public class AnalysisService {
 		SearchRequest searchRequest = searchBalance(taxpayerId, period);
 
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting accounts", ex);
-		}
-
-		List<Account> accounts = new LinkedList<>();
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No accounts found for taxPayer " + taxpayerId + " for period " + period.toString());
 			return Collections.emptyList(); // No balance sheet found
-		} else {
+		}
+			
+		List<Account> accounts = new LinkedList<>();
 
-			// Let's fill the resulting list with values
+		// Let's fill the resulting list with values
 
-			Terms categories = sresp.getAggregations().get("byCategory");
-			for (Terms.Bucket categoryBucket : categories.getBuckets()) {
+		Terms categories = sresp.getAggregations().get("byCategory");
+		for (Terms.Bucket categoryBucket : categories.getBuckets()) {
 
-				String category = categoryBucket.getKeyAsString();
-				if (category == null || category.isEmpty())
+			String category = categoryBucket.getKeyAsString();
+			if (category == null || category.isEmpty())
+				continue;
+
+			Map<String, Object> values = new HashMap<>();
+			values.put("byCategory", category);
+
+			Terms categoryNames = categoryBucket.getAggregations().get("byCategoryName");
+
+			for (Terms.Bucket categoryNameBucket : categoryNames.getBuckets()) {
+
+				String categoryName = categoryNameBucket.getKeyAsString();
+				if (categoryName == null || categoryName.isEmpty())
 					continue;
 
-				Map<String, Object> values = new HashMap<>();
-				values.put("byCategory", category);
+				Terms subcategories = categoryNameBucket.getAggregations().get("bySubCategory");
 
-				Terms categoryNames = categoryBucket.getAggregations().get("byCategoryName");
+				for (Terms.Bucket subcategoryBucket : subcategories.getBuckets()) {
 
-				for (Terms.Bucket categoryNameBucket : categoryNames.getBuckets()) {
-
-					String categoryName = categoryNameBucket.getKeyAsString();
-					if (categoryName == null || categoryName.isEmpty())
+					String subcategory = subcategoryBucket.getKeyAsString();
+					if (subcategory == null || subcategory.isEmpty())
 						continue;
 
-					Terms subcategories = categoryNameBucket.getAggregations().get("bySubCategory");
+					Terms subcategoryNames = subcategoryBucket.getAggregations().get("bySubCategoryName");
 
-					for (Terms.Bucket subcategoryBucket : subcategories.getBuckets()) {
+					for (Terms.Bucket subcategoryNameBucket : subcategoryNames.getBuckets()) {
 
-						String subcategory = subcategoryBucket.getKeyAsString();
-						if (subcategory == null || subcategory.isEmpty())
+						String subcategoryName = subcategoryNameBucket.getKeyAsString();
+						if (subcategoryName == null || subcategoryName.isEmpty())
 							continue;
 
-						Terms subcategoryNames = subcategoryBucket.getAggregations().get("bySubCategoryName");
+						Terms accountCodes = subcategoryNameBucket.getAggregations().get("byAccount");
 
-						for (Terms.Bucket subcategoryNameBucket : subcategoryNames.getBuckets()) {
+						for (Terms.Bucket accountCodeBucket : accountCodes.getBuckets()) {
 
-							String subcategoryName = subcategoryNameBucket.getKeyAsString();
-							if (subcategoryName == null || subcategoryName.isEmpty())
+							String accountCode = accountCodeBucket.getKeyAsString();
+							if (accountCode == null || accountCode.isEmpty())
 								continue;
 
-							Terms accountCodes = subcategoryNameBucket.getAggregations().get("byAccount");
+							Terms accountNames = accountCodeBucket.getAggregations().get("byAccountName");
 
-							for (Terms.Bucket accountCodeBucket : accountCodes.getBuckets()) {
+							for (Terms.Bucket accountNameBucket : accountNames.getBuckets()) {
 
-								String accountCode = accountCodeBucket.getKeyAsString();
-								if (accountCode == null || accountCode.isEmpty())
+								String accountName = accountNameBucket.getKeyAsString();
+								if (accountName == null || accountName.isEmpty())
 									continue;
 
-								Terms accountNames = accountCodeBucket.getAggregations().get("byAccountName");
+								Sum balance = accountNameBucket.getAggregations().get("finalBalance");
 
-								for (Terms.Bucket accountNameBucket : accountNames.getBuckets()) {
+								if (balance != null) {
+									double balanceValue = balance.getValue();
 
-									String accountName = accountNameBucket.getKeyAsString();
-									if (accountName == null || accountName.isEmpty())
+									if (!fetchZeroBalance && balanceValue == 0d)
 										continue;
 
-									Sum balance = accountNameBucket.getAggregations().get("finalBalance");
+									// Add each account
+									Account account = new Account();
+									account.setCategoryCode(category);
+									account.setCategory(categoryName);
+									account.setSubcategoryCode(subcategory);
+									account.setSubcategory(subcategoryName);
+									account.setCode(accountCode);
+									account.setName(accountName);
+									account.setBalance(balanceValue);
+									account.setLevel(3);
+									accounts.add(account);
+								}
 
-									if (balance != null) {
-										double balanceValue = balance.getValue();
+							} // Loop over account_name
 
-										if (!fetchZeroBalance && balanceValue == 0d)
-											continue;
+						} // Loop over account_code
 
-										// Add each account
-										Account account = new Account();
-										account.setCategoryCode(category);
-										account.setCategory(categoryName);
-										account.setSubcategoryCode(subcategory);
-										account.setSubcategory(subcategoryName);
-										account.setCode(accountCode);
-										account.setName(accountName);
-										account.setBalance(balanceValue);
-										account.setLevel(3);
-										accounts.add(account);
-									}
+					} // Loop over account_subcategory_name
 
-								} // Loop over account_name
+				} // Loop over account_subcategory
 
-							} // Loop over account_code
+			} // Loop over account_category_name
 
-						} // Loop over account_subcategory_name
-
-					} // Loop over account_subcategory
-
-				} // Loop over account_category_name
-
-			} // Loop over account_category
-
-		} // condition: got results from query
+		} // Loop over account_category
 
 		addCategorySubcategoryData(accounts);
 
@@ -518,7 +518,8 @@ public class AnalysisService {
 	 * 
 	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
-	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int sourceData, int year) {
+	private SearchRequest searchComputedStatementIncome(final List<String> taxpayerIds, int sourceData, int year, 
+			Object[] groupBy, AggregationBuilder[] metrics) {
 
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(
@@ -536,25 +537,29 @@ public class AnalysisService {
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
+		
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metrics);
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
-						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
-								.field(translate("statement_name") + ".keyword")
-								.subAggregation(AggregationBuilders.sum("sum").field("amount"))
-								.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
-								.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
-								.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation")
-										.field("amount_relative")));
+//		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
+//				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
+//						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
+//								.field(translate("statement_name") + ".keyword")
+//								.subAggregation(AggregationBuilders.sum("sum").field("amount"))
+//								.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
+//								.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
+//								.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation")
+//										.field("amount_relative")));
 
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
+		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-
-		searchRequest.source(searchSourceBuilder);
+//		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+//				.aggregation(aggregationBuilder);
+//
+//		// We are not interested on individual documents
+//		searchSourceBuilder.size(0);
+//
+//		searchRequest.source(searchSourceBuilder);
 
 		return searchRequest;
 
@@ -590,101 +595,71 @@ public class AnalysisService {
 			log.log(Level.INFO, () -> "No taxpayers found for qualifier " + qualifier + " for year " + year);
 			return null; // No data found
 		}
+		
+		Object[] groupBy = {"statement_number.keyword",translate("statement_name") + ".keyword"};
+		AggregationBuilder[] metrics = {
+			AggregationBuilders.sum("sum").field("amount"),
+			AggregationBuilders.percentiles("amount").field("amount_relative"),
+			AggregationBuilders.avg("average").field("amount_relative"),
+			AggregationBuilders.medianAbsoluteDeviation("deviation").field("amount_relative")
+		};		
 
 		// Create a search request
-		SearchRequest searchRequest = searchComputedStatementIncome(taxpayerIds, sourceData, year);
+		SearchRequest searchRequest = searchComputedStatementIncome(taxpayerIds, sourceData, year, groupBy, metrics);
 
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting accounts", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " for year " + year);
 			return null; // No data found
-		} else {
+		}
 
-			// Let's fill the resulting list with values
+		// Let's fill the resulting list with values
+		List<AnalysisItem> items = fillGeneralAnalysisItems(sresp, groupBy);
 
-			List<AnalysisItem> items = new LinkedList<>();
+		// Add outliers
+		for (AnalysisItem item : items) {
+			addOutliers(item, sourceData, year, taxpayerIds);
+		}
 
-			Terms statementsNumbers = sresp.getAggregations().get("byNumber");
+		AnalysisData data = new AnalysisData();
+		data.setItems(items);
+		updateScale(data);
+		data.setTotalTaxpayers(FormatUtils.getQuantityFormat().format(taxpayerIds.size()));
 
-			for (Terms.Bucket statementNumberBucket : statementsNumbers.getBuckets()) {
+		return data;
 
-				String statementNumber = statementNumberBucket.getKeyAsString();
-				if (statementNumber == null || statementNumber.isEmpty())
-					continue;
+	}
+	
+	/**
+	 * For each item from {@link SearchResponse}, build a new {@link AnalysisItem} object 
+	 * @param sresp	A search response with data from ES database
+	 * @param groupBy	Fields returned by ES
+	 * @return	A {@link List} of {@link AnalysisItem}
+	 */
+	private List<AnalysisItem> fillGeneralAnalysisItems(SearchResponse sresp, Object[] groupBy) {
 
-				Terms statementsNames = statementNumberBucket.getAggregations().get("byName");
+		// Let's fill the resulting list with values
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], AnalysisItem> function = (agg, values) -> {
+			Sum sum = agg.get("sum");			
+			Avg average = agg.get("average");
+			MedianAbsoluteDeviation deviation = agg.get("deviation");
+			Percentiles percentile = agg.get("amount");
+			
+			double sumValue = sum == null ? 0d
+					: Precision.round(sum.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
+			double averegaValue = average == null ? 0d
+					: Precision.round(average.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
+			double deviationValue = deviation == null ? 0d
+					: Precision.round(deviation.value(), 2, RoundingMode.HALF_DOWN.ordinal());			
+			
+			return new AnalysisItem(values, sumValue, averegaValue, deviationValue, percentile);
+		};
 
-				for (Terms.Bucket statementNameBucket : statementsNames.getBuckets()) {
-
-					String statementName = statementNameBucket.getKeyAsString();
-					if (statementName == null || statementName.isEmpty())
-						continue;
-
-					AnalysisItem analysisItem = new AnalysisItem();
-					analysisItem.setStatementOrder(statementNumber);
-					analysisItem.setStatementName(statementName);
-
-					Sum sum = statementNameBucket.getAggregations().get("sum");
-					Avg average = statementNameBucket.getAggregations().get("average");
-					MedianAbsoluteDeviation deviation = statementNameBucket.getAggregations().get("deviation");
-
-					double sumValue = sum == null ? 0d
-							: Precision.round(sum.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
-					double averegaValue = average == null ? 0d
-							: Precision.round(average.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
-					double deviationValue = deviation == null ? 0d
-							: Precision.round(deviation.value(), 2, RoundingMode.HALF_DOWN.ordinal());
-
-					Percentiles percentile = statementNameBucket.getAggregations().get("amount");
-					if (percentile != null) {
-
-						percentile.forEach(item -> {
-							double percent = item.getPercent();
-
-							if (percent == 25) // First quartile
-								analysisItem.setQ1(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
-							else if (percent == 50) // Median
-								analysisItem.setMedian(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
-							else if (percent == 75) // Third quartile
-								analysisItem.setQ3(Precision.round(item.getValue(), 2, RoundingMode.HALF_DOWN.ordinal()));
-
-						});
-
-						if (!Double.isNaN(analysisItem.getQ1()) && !Double.isNaN(analysisItem.getQ3())
-								&& analysisItem.getQ1() != 0 && analysisItem.getQ3() != 0) {
-							analysisItem.setSum(sumValue);
-							analysisItem.setAverage(averegaValue);
-							analysisItem.setDeviation(deviationValue);							
-							items.add(analysisItem);
-						}
-
-					}
-
-				} // Loop over statement name
-
-			} // Loop over statement number
-
-			// Add outliers
-			for (AnalysisItem item : items) {
-				addOutliers(item, sourceData, year, taxpayerIds);
-			}
-
-			AnalysisData data = new AnalysisData();
-			data.setItems(items);
-			updateScale(data);
-			data.setTotalTaxpayers(FormatUtils.getQuantityFormat().format(taxpayerIds.size()));
-
-			return data;
-
-		} // condition: got results from query
-
+		// Update outlier information for this taxpayer
+		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		
 	}
 
 	/**
@@ -775,100 +750,51 @@ public class AnalysisService {
 
 		if (item.getStatementName() == null)
 			return;
+		
+		// Define group by fields
+		Object[] groupBy = { "taxpayer_id.keyword", "taxpayer_name.keyword" };		
 
 		// Add outliers for minimal value
 		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementOrder(), item.getMin(),
-				sourceData, year, taxpayerIds);
-
+				sourceData, year, taxpayerIds, groupBy);
+		
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting outliers", ex);
-		}
-
-		if (sresp != null && Utils.getTotalHits(sresp) > 0) {
-
-			// Let's fill the resulting list with values
-			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");
-
-			for (Terms.Bucket taxpayerIdBucket : taxpayersIds.getBuckets()) {
-
-				String taxpayerId = taxpayerIdBucket.getKeyAsString();
-				if (taxpayerId == null || taxpayerId.isEmpty())
-					continue;
-
-				Terms taxpayersNames = taxpayerIdBucket.getAggregations().get("byTaxpayerName");
-
-				for (Terms.Bucket taxpayerNameBucket : taxpayersNames.getBuckets()) {
-
-					String taxpayerName = taxpayerNameBucket.getKeyAsString();
-
-					Sum amount = taxpayerNameBucket.getAggregations().get("amount");
-
-					double value = 0;
-					if (amount != null) {
-						value = Precision.round(amount.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
-					}
-
-					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(),
-							item.getStatementOrder(), value);
-					item.addOutlier(outlier);
-
-				}
-
-			}
-
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp != null) {
+			fillOutliers(sresp,item,groupBy);
 		}
 
 		// Add outliers for maximal value
 		searchRequest = getRequestForOutliers(false /* min */, item.getStatementOrder(), item.getMax(), sourceData,
-				year, taxpayerIds);
+				year, taxpayerIds, groupBy);
 
 		// Execute a search
-		sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting outliers", ex);
+		sresp = doSearch(searchRequest);
+
+		if (sresp != null) {			
+			fillOutliers(sresp,item,groupBy);
 		}
 
-		if (sresp != null && Utils.getTotalHits(sresp) > 0) {
+	}
 
-			// Let's fill the resulting list with values
+	/**
+	 * Fill {@link Outlier} objects with 
+	 * @param sresp
+	 * @param item
+	 * @param groupBy
+	 */
+	private void fillOutliers(SearchResponse sresp, AnalysisItem item, Object[] groupBy) {
 
-			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayerId");
+		// Let's fill the resulting list with values
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], Outlier> function = (agg, values) -> {
+			Sum amount = agg.get("amount");
+			return new Outlier(values, item, amount.getValue());
+		};
 
-			for (Terms.Bucket taxpayerIdBucket : taxpayersIds.getBuckets()) {
-
-				String taxpayerId = taxpayerIdBucket.getKeyAsString();
-				if (taxpayerId == null || taxpayerId.isEmpty())
-					continue;
-
-				Terms taxpayersNames = taxpayerIdBucket.getAggregations().get("byTaxpayerName");
-
-				for (Terms.Bucket taxpayerNameBucket : taxpayersNames.getBuckets()) {
-
-					String taxpayerName = taxpayerNameBucket.getKeyAsString();
-
-					Sum amount = taxpayerNameBucket.getAggregations().get("amount");
-
-					double value = 0;
-					if (amount != null) {
-						value = Precision.round(amount.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
-					}
-
-					Outlier outlier = new Outlier(taxpayerId, taxpayerName, item.getStatementName(),
-							item.getStatementOrder(), value);
-					item.addOutlier(outlier);
-
-				}
-
-			}
-
-		}
-
+		// Update outlier information for this taxpayer
+		SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
+		
 	}
 
 	/**
@@ -883,7 +809,7 @@ public class AnalysisService {
 	 * @return A {@link SearchRequest} with all configurations
 	 */
 	private SearchRequest getRequestForOutliers(boolean min, String statement, double value, int sourceData, int year,
-			List<String> taxpayerIds) {
+			List<String> taxpayerIds, Object[] groupBy ) {
 
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(
@@ -911,17 +837,13 @@ public class AnalysisService {
 			query = query.must(new RangeQueryBuilder("amount_relative").from(value));
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-				AggregationBuilders.terms("byTaxpayerId").size(10_000).field("taxpayer_id.keyword").subAggregation(
-						AggregationBuilders.terms("byTaxpayerName").size(10_000).field("taxpayer_name.keyword")
-								.subAggregation(AggregationBuilders.sum("amount").field("amount_relative")));
-
+		AggregationBuilder metric = AggregationBuilders.sum("amount").field("amount_relative");
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
 
 		// We are not interested on individual documents
 		searchSourceBuilder.size(0);
-
 		searchRequest.source(searchSourceBuilder);
 
 		return searchRequest;
@@ -947,41 +869,24 @@ public class AnalysisService {
 		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by taxpayerid field
 				AggregationBuilders.terms("byTaxpayer").size(10_000).field("taxPayerId");
 
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
-
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-
-		searchRequest.source(searchSourceBuilder);
-
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting accounts", ex);
-		}
-
-		List<String> taxpayers = new LinkedList<>();
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(query, aggregationBuilder, searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier + " with value " + qualifierValue);
 			return Collections.emptyList(); // No data found
-		} else {
+		}
+			
+		List<String> taxpayers = new LinkedList<>();
+		// Let's fill the resulting list with values
+		Terms taxpayersIds = sresp.getAggregations().get("byTaxpayer");
 
-			// Let's fill the resulting list with values
-			Terms taxpayersIds = sresp.getAggregations().get("byTaxpayer");
+		for (Terms.Bucket taxpayerBucket : taxpayersIds.getBuckets()) {
 
-			for (Terms.Bucket taxpayerBucket : taxpayersIds.getBuckets()) {
+			String taxpayerId = taxpayerBucket.getKeyAsString();
+			if (taxpayerId == null || taxpayerId.isEmpty())
+				continue;
 
-				String taxpayerId = taxpayerBucket.getKeyAsString();
-				if (taxpayerId == null || taxpayerId.isEmpty())
-					continue;
-
-				taxpayers.add(taxpayerId);
-
-			}
+			taxpayers.add(taxpayerId);
 
 		}
 
@@ -1006,42 +911,31 @@ public class AnalysisService {
 				AggregationBuilders.terms("byQualifierValue").size(10_000).field(qualifier + ".keyword");
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().aggregation(aggregationBuilder);
-
 		// We are not interested on individual documents
 		searchSourceBuilder.size(0);
-
 		searchRequest.source(searchSourceBuilder);
 
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting qualifier values", ex);
-		}
-
-		List<String> values = new LinkedList<>();
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No data found for qualifier " + qualifier);
 			return Collections.emptyList(); // No data found
-		} else {
+		} 
+			
+		List<String> values = new LinkedList<>();
 
-			// Let's fill the resulting list with values
-			Terms qualifierValues = sresp.getAggregations().get("byQualifierValue");
+		// Let's fill the resulting list with values
+		Terms qualifierValues = sresp.getAggregations().get("byQualifierValue");
 
-			for (Terms.Bucket qualifierValueBucket : qualifierValues.getBuckets()) {
+		for (Terms.Bucket qualifierValueBucket : qualifierValues.getBuckets()) {
 
-				String value = qualifierValueBucket.getKeyAsString();
-				if (value == null || value.isEmpty())
-					continue;
+			String value = qualifierValueBucket.getKeyAsString();
+			if (value == null || value.isEmpty())
+				continue;
 
-				values.add(value);
-
-			}
+			values.add(value);
 
 		}
-
 		values.sort(null);
 		return values;
 
@@ -1103,55 +997,49 @@ public class AnalysisService {
 			break;
 		}
 		SearchRequest searchRequest = new SearchRequest(index);
+		
+		String[] groupBy = {"year"};
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by qualifier field
-				AggregationBuilders.terms("byYear").size(10_000).field("year");
-
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, (AggregationBuilder)null);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().aggregation(aggregationBuilder);
-
 		// We are not interested on individual documents
 		searchSourceBuilder.size(0);
-
 		searchRequest.source(searchSourceBuilder);
 
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting year values", ex);
-		}
-
-		List<Integer> values = new LinkedList<>();
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, "No data found for years");
 			return new LinkedList<>(); // No data found
-		} else {
+		}
+			
+		List<Integer> values = new LinkedList<>();
 
-			// Let's fill the resulting list with values
+		// Let's fill the resulting list with values
 
-			Terms yearValues = sresp.getAggregations().get("byYear");
+		Terms yearValues = sresp.getAggregations().get("byYear");
 
-			for (Terms.Bucket yearValueBucket : yearValues.getBuckets()) {
+		for (Terms.Bucket yearValueBucket : yearValues.getBuckets()) {
 
-				Number value = yearValueBucket.getKeyAsNumber();
-				if (value == null || value.intValue() == 0)
-					continue;
+			Number value = yearValueBucket.getKeyAsNumber();
+			if (value == null || value.intValue() == 0)
+				continue;
 
-				values.add(value.intValue());
-
-			}
+			values.add(value.intValue());
 
 		}
-
 		values.sort(null);
 		return values;
 	}
 
+	/**
+	 * 
+	 * @param taxpayerId
+	 * @param startDate
+	 * @param finalDate
+	 * @return
+	 */
 	public List<AggregatedAccountingFlow> getAccountingFlow(String taxpayerId, Date startDate, Date finalDate) {
 		SearchRequest searchRequest = new SearchRequest(INDEX_PUBLISHED_ACCOUNTING_FLOW);
 
@@ -1184,14 +1072,8 @@ public class AnalysisService {
 
 		searchRequest.source(searchSourceBuilder);
 
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting flows", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No flows found for taxPayer " + taxpayerId + " for period from " + from + " to " + to);
 			return Collections.emptyList(); // No flows found
 		}
@@ -1210,9 +1092,12 @@ public class AnalysisService {
 	 * @param taxpayerId A taxpayer to filter for
 	 * @param sourceData An indication of source data (index) to use
 	 * @param year       A year to filter for
+	 * @param groupBy	 Fields to group by for
+	 * @param metric	 Metric to sum
 	 * @return A {@link SearchRequest} with all parameters and filters
 	 */
-	private SearchRequest searchComputedStatementIncomeValues(String taxpayerId, int sourceData, int year) {
+	private SearchRequest searchComputedStatementIncomeValues(String taxpayerId, int sourceData, int year, 
+			String[] groupBy, AggregationBuilder metric) {
 
 		// Index over 'Accounting Computed Statement Income' objects
 		SearchRequest searchRequest = new SearchRequest(
@@ -1231,22 +1116,10 @@ public class AnalysisService {
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
-
+		
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
-						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
-								.field(translate("statement_name") + ".keyword")
-								.subAggregation(AggregationBuilders.sum("amount").field("amount")));
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
-
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-
-		searchRequest.source(searchSourceBuilder);
-
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric); 
+		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
 
 	}
@@ -1307,59 +1180,31 @@ public class AnalysisService {
 	 */
 	private void getStatementIncomeValues(String taxpayerId, int year, int sourceData,
 			Map<String, StatementIncomeItem> items) {
+		
+		String[] groupBy = {"statement_number.keyword", translate("statement_name") + ".keyword"};		
+		AggregationBuilder metric = AggregationBuilders.sum("amount").field("amount");
 
 		// Define a search request according with parameters
-		SearchRequest searchRequest = searchComputedStatementIncomeValues(taxpayerId, sourceData, year);
+		SearchRequest searchRequest = searchComputedStatementIncomeValues(taxpayerId, sourceData, year, groupBy, metric);
 
 		// Execute a search
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting accounts", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, "No data found");
-			//return; // No data found
-		} else {
+			return;
+		} 
 
-			// Add values for statement income items
-			Terms statementsNumbers = sresp.getAggregations().get("byNumber");
+		// Retrieve information from result
+		BiFunction<Aggregations, String[], StatementIncomeItem> function = (agg, values) -> {
+			Sum amount = agg.get("amount");
+			StatementIncomeItem item = items.getOrDefault(values[0]/*statementNumber*/, 
+					new StatementIncomeItem(values, amount.getValue(), (SOURCE_JOURNAL == sourceData) /*calculated*/));
+			items.put(values[0]/*statementNumber*/, item);
+			return item;
+		};
 
-			for (Terms.Bucket statementNumberBucket : statementsNumbers.getBuckets()) {
-
-				String statementNumber = statementNumberBucket.getKeyAsString();
-				if (statementNumber == null || statementNumber.isEmpty())
-					continue;
-
-				Terms statementsNames = statementNumberBucket.getAggregations().get("byName");
-
-				for (Terms.Bucket statementNameBucket : statementsNames.getBuckets()) {
-
-					String statementName = statementNameBucket.getKeyAsString();
-					if (statementName == null || statementName.isEmpty())
-						continue;
-
-					Sum sum = statementNameBucket.getAggregations().get("amount");
-
-					if (sum != null) {
-						StatementIncomeItem item = items.getOrDefault(statementNumber, new StatementIncomeItem());
-						item.setStatementOrder(statementNumber);
-						item.setStatementName(statementName);
-						if (SOURCE_JOURNAL == sourceData)
-							item.setCalculatedValue(sum.getValue());
-						else
-							item.setDeclaredValue(sum.getValue());
-						item.setDifference(item.getDeclaredValue() - item.getCalculatedValue());
-						items.put(statementNumber, item);
-					}
-
-				} // Loop over statement name
-
-			} // Loop over statement number
-
-		}
+		// Update shareholding information for this taxpayer
+		SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 
 	}
 
@@ -1419,57 +1264,17 @@ public class AnalysisService {
 	 *         information
 	 */
 	private List<Shareholding> getShareholdings(String taxpayerId, int year) {
-
-		// Index to search in
-		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
-
-		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
-
-		// Filter for year
-		query = query.must(new TermQueryBuilder("year", year));
-
-		// Script in 'painless' language for identifying confirmations and returning the
-		// confirmed payment value
-		// We return '0' in case this property not being defined, so that we can have
-		// aggregation of 'zeroes' over
-		// slips with no corresponding confirmations.
-		org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
-				"if (doc['share_class.keyword'].size()==0) return '';"
-						+ "else return doc['share_class.keyword'].value; ");
-
+		
 		// Define group by fields
 		Object[] groupBy = { "shareholding_id.keyword", "shareholding_name.keyword",
-				translate("share_type_name") + ".keyword", new Script(scriptletShareClass, "byShareClass") };
-
-		// Define aggregations
-		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
-		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
-		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
-		AggregationBuilder equityMethodResult = AggregationBuilders.sum("equityMethodResult").field("equity_method_result");
-
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount,
-				sharePercentage, shareQuantity, equityMethodResult);
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
-
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-		searchRequest.source(searchSourceBuilder);
+				translate("share_type_name") + ".keyword", new Script(getShreholdScript(), "byShareClass") };
+		
+		// Index to search in
+		SearchRequest searchRequest = getShareholdRequest("taxpayer_id.keyword",taxpayerId,year,groupBy, getShareholdAggregationBuilder(true));
 
 		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting shareholdings", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No shareholding information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholding found
 		}
@@ -1487,7 +1292,7 @@ public class AnalysisService {
 		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 
 	}
-
+	
 	/**
 	 * Search and add shareholders information for a specified taxpayer and year
 	 * 
@@ -1498,53 +1303,17 @@ public class AnalysisService {
 	 *         information
 	 */
 	private List<Shareholding> getShareholders(String taxpayerId, int year) {
-
-		// Index to search in
-		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
-
-		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("shareholding_id.keyword", taxpayerId));
-
-		// Filter for year
-		query = query.must(new TermQueryBuilder("year", year));
-
-		// Script in 'painless' language for identifying if there is a field called
-		//share_class.keyword
-		org.elasticsearch.script.Script scriptletShareClass = new org.elasticsearch.script.Script(
-				"if (doc['share_class.keyword'].size()==0) return '';"
-						+ "else return doc['share_class.keyword'].value; ");
-
+		
 		// Define group by fields
 		Object[] groupBy = { "taxpayer_id.keyword", "taxpayer_name.keyword", translate("share_type_name") + ".keyword",
-				new Script(scriptletShareClass, "byShareClass") };
+				new Script(getShreholdScript(), "byShareClass") };		
 
-		// Define aggregations
-		AggregationBuilder shareAmount = AggregationBuilders.sum("shareAmount").field("share_amount");
-		AggregationBuilder sharePercentage = AggregationBuilders.sum("sharePercentage").field("share_percentage");
-		AggregationBuilder shareQuantity = AggregationBuilders.sum("shareQuantity").field("share_quantity");
-
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount,
-				sharePercentage, shareQuantity);
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
-
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-		searchRequest.source(searchSourceBuilder);
+		// Index to search in
+		SearchRequest searchRequest = getShareholdRequest("shareholding_id.keyword",taxpayerId,year,groupBy, getShareholdAggregationBuilder(false));
 
 		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting shareholders", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No shareholders information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No shareholders found
 		}
@@ -1560,6 +1329,68 @@ public class AnalysisService {
 		// Update shareholding information for this taxpayer
 		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
 
+	}
+	
+	/**
+	 * 
+	 * @return	A simple script to get share_class.keywod field value
+	 */
+	private org.elasticsearch.script.Script getShreholdScript() {
+		// Script in 'painless' language for identifying if there is a field called
+		//share_class.keyword
+		return new org.elasticsearch.script.Script(
+				"if (doc['share_class.keyword'].size()==0) return '';"
+						+ "else return doc['share_class.keyword'].value; ");
+	}
+	
+	/**
+	 * Create a {@link List} of {@link AggregationBuilder} with metrics
+	 * @param shareholding	Indicates if it's a shareholding search
+	 * @return	A {@link List} of {@link AggregationBuilder} with metrics
+	 */
+	private AggregationBuilder[] getShareholdAggregationBuilder(boolean shareholding) {
+		// Define aggregations
+		List<AggregationBuilder> metrics = new LinkedList<>();
+		metrics.add(AggregationBuilders.sum("shareAmount").field("share_amount"));
+		metrics.add(AggregationBuilders.sum("sharePercentage").field("share_percentage"));
+		metrics.add(AggregationBuilders.sum("shareQuantity").field("share_quantity"));
+		
+		if ( shareholding )
+			metrics.add(AggregationBuilders.sum("equityMethodResult").field("equity_method_result"));
+		
+		return metrics.toArray(new AggregationBuilder[0]);
+	}	
+
+	/**
+	 * Create and return a {@link SearchRequest} with provided parameters 
+	 * @param fieldName	Field name to search
+	 * @param taxpayerId	Taxpayer id
+	 * @param year			Year to search
+	 * @param groupBy		Fields to group result
+	 * @param metrics		Metrics to group
+	 * @return	A {@link SearchRequest} object
+	 */
+	private SearchRequest getShareholdRequest(String fieldName, String taxpayerId, int year, Object[] groupBy, AggregationBuilder[] metrics) {
+		
+		SearchRequest searchRequest = new SearchRequest(SHAREHOLDING_INDEX);
+		
+		BoolQueryBuilder query = QueryBuilders.boolQuery();
+		// Filter by taxpayer
+		query = query.must(new TermQueryBuilder(fieldName, taxpayerId));
+
+		// Filter for year
+		query = query.must(new TermQueryBuilder("year", year));
+
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metrics);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+				.aggregation(aggregationBuilder);
+
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);		
+		
+		return searchRequest;
 	}
 
 	/**
@@ -1608,16 +1439,8 @@ public class AnalysisService {
 		searchRequest.source(searchSourceBuilder);
 
 		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting revenue net and gross profit", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO, () -> "No revenue net and gross profit information found for taxPayer " + taxpayerId
 					+ " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1676,16 +1499,8 @@ public class AnalysisService {
 		searchRequest.source(searchSourceBuilder);
 
 		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting tax provision", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO,
 					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
@@ -1745,6 +1560,10 @@ public class AnalysisService {
 	        "initial_balance_with_sign",
 	        "doc_timestamp" };
 	
+	/**
+	 * Remove unecessary fields from document before return it
+	 * @param map	Map with pairs field names and values
+	 */
 	private void removeUnecessaryFields(Map<String, Object> map) {	
 		for ( String field : fieldsToRemove )
 			map.remove(field);	
@@ -1790,26 +1609,10 @@ public class AnalysisService {
 				.subAggregation(AggregationBuilders.terms("account_name").size(10_000).field("account_name.keyword"))
 						.subAggregation(sum).subAggregation(paging));
 
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-				.aggregation(aggregationBuilder);
-
-		// We are not interested on individual documents
-		searchSourceBuilder.size(0);
-		searchRequest.source(searchSourceBuilder);
-
-		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting tax provision", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
-			log.log(Level.INFO,
-					() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
+		SearchResponse sresp = doSearch(query,aggregationBuilder,searchRequest);
+		
+		if ( sresp == null ) {
+			log.log(Level.INFO,() -> "No tax provision information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
@@ -1845,6 +1648,57 @@ public class AnalysisService {
 	}
 
 	/**
+	 * Build search with given parameters
+	 * @param query
+	 * @param aggregationBuilder
+	 * @param searchRequest
+	 */
+	private void buildSearchSourceBuilder(BoolQueryBuilder query, AbstractAggregationBuilder<?> aggregationBuilder,SearchRequest searchRequest) {
+		SearchSourceBuilder searchSourceBuilder = null;
+		if ( query == null )
+			searchSourceBuilder = new SearchSourceBuilder().aggregation(aggregationBuilder);			
+		else
+			searchSourceBuilder = new SearchSourceBuilder().query(query).aggregation(aggregationBuilder);
+		// We are not interested on individual documents
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);		
+	}
+
+	/**
+	 * Do a search on ES database and return {@link SearchResponse} object
+	 * @param query	A query and it's parameters
+	 * @param buildSearchSourceBuilder	
+	 * @param searchRequest
+	 * @return	A {@link SearchResponse} object
+	 */
+	private SearchResponse doSearch(BoolQueryBuilder query, AbstractAggregationBuilder<?> buildSearchSourceBuilder,SearchRequest searchRequest) {
+		buildSearchSourceBuilder(query,buildSearchSourceBuilder,searchRequest);
+		return doSearch(searchRequest);
+	}
+	
+	/**
+	 * Do a search on ES database and return {@link SearchResponse} object
+	 * @param searchRequest	Search parameters
+	 * @return	A {@link SearchResponse} object
+	 */
+	private SearchResponse doSearch(SearchRequest searchRequest) {
+		// Search results
+		SearchResponse sresp = null;
+		try {
+			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Exception ex) {
+			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
+					&& !ErrorUtils.isErrorNotFound(ex))
+				log.log(Level.SEVERE, "Error getting tax provision", ex);
+			return null;
+		}		
+		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+			return null;			
+		}
+		return sresp;
+	}	
+
+	/**
 	 * Search and return major customers for a specified taxpayer and year
 	 * 
 	 * @param taxpayerId Taxpayer to search for
@@ -1855,9 +1709,8 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getCustomers(String taxpayerId, int year) {
 
-		return filterByTaxpayerIdAndYearDoingAggregation(taxpayerId, year, CUSTOMERS_INDEX, "customers",
-				"customer_id", "customer_id.keyword",
-				"customer_name", "customer_name.keyword");
+		return filterByTaxpayerIdAndYearDoingAggregation(taxpayerId, year, CUSTOMERS_INDEX,
+				new String[] {"customer_id.keyword", "customer_name.keyword"});
 
 	}
 
@@ -1872,19 +1725,21 @@ public class AnalysisService {
 	 */
 	private List<Map<String, Object>> getSuppliers(String taxpayerId, int year) {
 		
-		return filterByTaxpayerIdAndYearDoingAggregation(taxpayerId, year, SUPPLIERS_INDEX, "suppliers",
-				"supplier_id", "supplier_id.keyword",
-				"supplier_name", "supplier_name.keyword");
+		return filterByTaxpayerIdAndYearDoingAggregation(taxpayerId, year, SUPPLIERS_INDEX,
+				new String[] {"supplier_id.keyword", "supplier_name.keyword"});
 		
 	}
 	
 	/**
 	 * Search with some filters (over taxpayer id and year), doing some aggregations, and returns the data.
+	 * @param taxpayerId	Taxpayer id
+	 * @param year			Period (year)
+	 * @param index			Index to search
+	 * @param fieldsGroupBy	Fields to aggregate
+	 * @return
 	 */
 	private List<Map<String, Object>> filterByTaxpayerIdAndYearDoingAggregation(String taxpayerId, int year,
-			String index, String tag,
-			String groupByName1, String groupByField1, 
-			String groupByName2, String groupByField2) {
+			String index, String[] fieldsGroupBy) {
 
 		// Index to search in
 		SearchRequest searchRequest = new SearchRequest(index);
@@ -1904,8 +1759,8 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = AggregationBuilders.terms("year").size(10_000).field("year")
-				.subAggregation(AggregationBuilders.terms(groupByName1).size(10_000).field(groupByField1)
-				.subAggregation(AggregationBuilders.terms(groupByName2).size(10_000).field(groupByField2))
+				.subAggregation(AggregationBuilders.terms(fieldsGroupBy[0]).size(10_000).field(fieldsGroupBy[0])
+				.subAggregation(AggregationBuilders.terms(fieldsGroupBy[1]).size(10_000).field(fieldsGroupBy[1]))
 						.subAggregation(sum).subAggregation(paging));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
@@ -1916,27 +1771,19 @@ public class AnalysisService {
 		searchRequest.source(searchSourceBuilder);
 
 		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			if (!ErrorUtils.isErrorNoIndexFound(ex) && !ErrorUtils.isErrorNoMappingFoundForColumn(ex)
-					&& !ErrorUtils.isErrorNotFound(ex))
-				log.log(Level.SEVERE, "Error getting major "+tag, ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO,
-					() -> "No major "+tag+" information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No major information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 
-		String[] groupBy = { "year", groupByName1 };
+		String[] groupBy = { "year", fieldsGroupBy[0] };
 		Map<String,Double> yearValues = new HashMap<>();
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			String secondAggregation = getStringValueForAgg(agg,groupByName2);
+			String secondAggregation = getStringValueForAgg(agg,fieldsGroupBy[1]);
 			if ( secondAggregation == null )
 				return null;			
 			Sum amount = agg.get("amount");
@@ -1947,8 +1794,8 @@ public class AnalysisService {
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
 			Map<String, Object> instanceValues = new HashMap<>();
-			instanceValues.put(groupByName1, values[1]);
-			instanceValues.put(groupByName2, secondAggregation);			
+			instanceValues.put(fieldsGroupBy[0].replace(".keyword", ""), values[1]);
+			instanceValues.put(fieldsGroupBy[1].replace(".keyword", ""), secondAggregation);			
 			instanceValues.put("value", amount.getValue());
 			instanceValues.put("title", values[0] + ": " + secondAggregation);
 			instance.put("values", instanceValues);
@@ -1978,6 +1825,11 @@ public class AnalysisService {
 		return null;
 	}
 
+	/**
+	 * Locate on application.properties a number of past periods to consider on searches.
+	 * If value is not present, 5 periodes will be considered.
+	 * @return	A number of past periods to consider on searches
+	 */
 	private int getPastPeriods() {
 		String s = env.getProperty("search.past.periods");
 		return Integer.parseInt(s == null ? "5" : s);
@@ -2065,14 +1917,8 @@ public class AnalysisService {
 		searchRequest.source(searchSourceBuilder);
 
 		// Search results
-		SearchResponse sresp = null;
-		try {
-			sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
-		} catch (Exception ex) {
-			log.log(Level.SEVERE, "Error getting major customers", ex);
-		}
-
-		if (sresp == null || Utils.getTotalHits(sresp) == 0) {
+		SearchResponse sresp = doSearch(searchRequest);
+		if (sresp == null) {
 			log.log(Level.INFO,
 					() -> "No customers information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found

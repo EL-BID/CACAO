@@ -47,30 +47,34 @@ public class XMLUtils {
 	}
 
 	public static Node locateNode(Node parent, String prefix, String name) {
-		NodeList subNodes = parent.getChildNodes();
-		if (subNodes == null)
+		List<Node> nodes = locateNodes(parent,prefix,name);
+		if ( nodes == null || nodes.isEmpty() )
 			return null;
-		int num = subNodes.getLength();
-		if (num == 0)
-			return null;
-		for (int i = 0; i < num; i++) {
-			Node node = subNodes.item(i);
-			if (prefix != null) {
-				if (node.getPrefix() == null)
-					continue;
-				if (!prefix.equalsIgnoreCase(node.getPrefix()))
-					continue;
-			}
-			String this_name = node.getLocalName();
-			if (this_name == null)
-				this_name = node.getNodeName();
-			if (this_name != null) {
-				if (name.equalsIgnoreCase(this_name)) {
-					return node;
-				}
-			}
-		}
-		return null;
+		return nodes.get(0);
+//		NodeList subNodes = parent.getChildNodes();
+//		if (subNodes == null)
+//			return null;
+//		int num = subNodes.getLength();
+//		if (num == 0)
+//			return null;
+//		for (int i = 0; i < num; i++) {
+//			Node node = subNodes.item(i);
+//			if (prefix != null) {
+//				if (node.getPrefix() == null)
+//					continue;
+//				if (!prefix.equalsIgnoreCase(node.getPrefix()))
+//					continue;
+//			}
+//			String this_name = node.getLocalName();
+//			if (this_name == null)
+//				this_name = node.getNodeName();
+//			if (this_name != null) {
+//				if (name.equalsIgnoreCase(this_name)) {
+//					return node;
+//				}
+//			}
+//		}
+//		return null;
 	}
 
 	public static List<Node> locateNodesRecursive(Node parent, String prefix, String name) {

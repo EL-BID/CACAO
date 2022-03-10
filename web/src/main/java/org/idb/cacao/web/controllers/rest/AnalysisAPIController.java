@@ -146,21 +146,7 @@ public class AnalysisAPIController {
 		
 		if( comparisonPeriods < 10 ) { //Months before
 			
-			int numMonths = 1;
-			switch (comparisonPeriods) {
-			case 2:
-				numMonths = 3;
-				break;
-			case 3:
-				numMonths = 6;
-				break;
-			case 4:
-				numMonths = 12;
-				break;
-			default:
-				break;
-			}			
-			
+			int numMonths = getNumMonths(comparisonPeriods);						
 			for ( int i = 1; i <= numMonths; i++ ) {
 				YearMonth period = basePeriod.minusMonths(i);
 				periods.add(period);	
@@ -177,23 +163,9 @@ public class AnalysisAPIController {
 			
 		}
 		
-		else if( comparisonPeriods > 20 && comparisonPeriods < 30 ) { //Years after
+		else if( comparisonPeriods > 20 && comparisonPeriods < 30 ) { //Months after
 			
-			int numMonths = 1;
-			switch (comparisonPeriods) {
-			case 22:
-				numMonths = 3;
-				break;
-			case 23:
-				numMonths = 6;
-				break;
-			case 24:
-				numMonths = 12;
-				break;
-			default:
-				break;
-			}			
-			
+			int numMonths = getNumMonths(comparisonPeriods);
 			for ( int i = 1; i <= numMonths; i++ ) {
 				YearMonth period = basePeriod.plusMonths(i);
 				periods.add(period);	
@@ -211,6 +183,27 @@ public class AnalysisAPIController {
 		return periods;
 	}
 	
+	/**
+	 * 
+	 * @param comparisonPeriods
+	 * @return	Number of months according with comparison periods
+	 */
+	private int getNumMonths(int comparisonPeriods) {
+		switch (comparisonPeriods) {
+		case 2:
+		case 22:
+			return 3;			
+		case 3:
+		case 23:
+			return 6;
+		case 4:
+		case 24:
+			return 12;			
+		default:
+			return 1;
+		}
+	}
+
 	@ApiOperation(value = "Get vertical and horizontal additional columns to show in table data ", response = List.class, tags = "vertical-horizontal-view-columns")
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/vertical-horizontal-view-columns"})

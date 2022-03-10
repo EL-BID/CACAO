@@ -43,6 +43,16 @@ public class Outlier implements Cloneable, Comparable<Outlier> {
 		this.order = order;
 		this.value = value;
 	}
+	
+	public Outlier(Object[] values, AnalysisItem item, double value) {
+		super();
+		this.taxpayerId = values.length > 0 ? (String)values[0] : "";
+		this.taxpayerName = values.length > 1 ? (String)values[1] : "";
+		this.statementName = item.getStatementName();
+		this.order = item.getStatementOrder();
+		this.value = value;
+		item.addOutlier(this);
+	}	
 
 	public Outlier(Outlier other) {
 		this.taxpayerId = other.taxpayerId;
