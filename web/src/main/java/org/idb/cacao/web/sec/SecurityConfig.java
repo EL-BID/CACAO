@@ -141,7 +141,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         	.frameOptions().sameOrigin()
         	.referrerPolicy(ReferrerPolicy.SAME_ORIGIN).and() // includes a 'Referrer-Policy: same-origin' header for increased security measure
         	.contentSecurityPolicy("default-src 'none'; "
-        			+ "script-src 'self' 'nonce-{nonce}' 'unsafe-eval'; "	// The {nonce} part is replaced by internals of 'CSPNonceFilter'
+        			+ "script-src 'self' 'nonce-{nonce}'; "	// The {nonce} part is replaced by internals of 'CSPNonceFilter'
         			+ "style-src https: 'unsafe-inline' ; "
         			+ "img-src https: data:; "
         			+ "font-src 'self' https://fonts.gstatic.com data:; "
