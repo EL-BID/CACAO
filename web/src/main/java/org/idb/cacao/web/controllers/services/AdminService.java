@@ -956,9 +956,9 @@ public class AdminService {
 		
 		User userLogged = (auth==null) ? null : userService.getUser(auth);
 		
-		DocumentInput input_format = inputFormats.stream().filter(i->DocumentFormat.XLS.equals(i.getFormat())).findFirst().orElse(null);
-		if (input_format!=null) {
-			DocumentFormat format = input_format.getFormat();
+		DocumentInput inputFormat = inputFormats.stream().filter(i->DocumentFormat.XLS.equals(i.getFormat())).findFirst().orElse(null);
+		if (inputFormat!=null) {
+			DocumentFormat format = inputFormat.getFormat();
 			
 			final boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
 
@@ -991,7 +991,7 @@ public class AdminService {
 
 	    			final FileGenerator gen = FileGenerators.getFileGenerator(format);
 	    			gen.setDocumentTemplate(template);
-	    			gen.setDocumentInputSpec(input_format);
+	    			gen.setDocumentInputSpec(inputFormat);
 	    			gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
 					gen.setRandomSeed(doc_seed);
 
@@ -1082,6 +1082,7 @@ public class AdminService {
 					DocumentUploaded regUpload = new DocumentUploaded();
 					regUpload.setTemplateName(template.getName());
 					regUpload.setTemplateVersion(template.getVersion());
+					regUpload.setInputName(inputFormat.getInputName());
 					regUpload.setFileId(fileId);
 					regUpload.setFilename(originalFilename);
 					regUpload.setSubDir(subDir);

@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class JSONParser extends HirarquicalDocumentParser {
+	@SuppressWarnings("unchecked")
 	@Override
 	protected Map<String, Object> contentToMap(String textContent) {
 		Map<String, Object> result;

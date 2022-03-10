@@ -104,6 +104,10 @@ public class DocumentUploaded implements Serializable, Cloneable {
 	@AFieldDescriptor(externalName = "template.version")
 	private String templateVersion;
 	
+	@Field(type=Keyword)
+	@AFieldDescriptor(externalName = "input.name")
+	private String inputName;	
+	
 	/**
 	 * Original file name. The name used to store in disk is the fileId.
 	 */
@@ -257,6 +261,14 @@ public class DocumentUploaded implements Serializable, Cloneable {
 
 	public void setTemplateVersion(String templateVersion) {
 		this.templateVersion = templateVersion;
+	}
+
+	public String getInputName() {
+		return inputName;
+	}
+
+	public void setInputName(String inputName) {
+		this.inputName = inputName;
 	}
 
 	public String getFilename() {

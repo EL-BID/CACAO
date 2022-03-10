@@ -160,12 +160,12 @@ public class Validations {
 	public synchronized void addLogError(String message, boolean criticalError) {
 		if (criticalError) {
 			validationContext.addAlert(message);
-			log.log(Level.WARNING, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
+			log.log(Level.WARNING, () -> "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
 					message);
 		}
 		else {
 			validationContext.addNonCriticalAlert(message);
-			log.log(Level.FINE, "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
+			log.log(Level.FINE, () -> "Document Id: " + validationContext.getDocumentUploaded().getId() + " => " +
 					message);
 		}
 	}

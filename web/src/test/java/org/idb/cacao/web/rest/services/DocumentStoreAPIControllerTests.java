@@ -22,15 +22,18 @@ package org.idb.cacao.web.rest.services;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.storage.IStorageService;
+import org.idb.cacao.api.templates.DocumentFormat;
+import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.mock_es.ElasticsearchMockClient;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
@@ -102,6 +105,10 @@ class DocumentStoreAPIControllerTests {
 		DocumentTemplate template = new DocumentTemplate();
 		template.setName("TEST");
 		template.setVersion("1.0");
+		DocumentInput input = new DocumentInput();
+		input.setInputName("CSV");
+		input.setFormat(DocumentFormat.CSV);
+		template.setInputs(Arrays.asList(input));
 		templateRepository.save(template);
 		
 		MockMultipartFile multipartFile = new MockMultipartFile("fileinput", "test.txt",
@@ -111,7 +118,8 @@ class DocumentStoreAPIControllerTests {
 				.file(multipartFile)
 				.with(csrf())
 				.param("templateName", "TEST")
-				.param("templateVersion", "1.0"))
+				.param("templateVersion", "1.0")
+				.param("inputName", "CSV"))
 				.andExpect(status().isOk());
 		
 		Page<DocumentUploaded> match_uploads = documentsUploadedRepository.findByFilename("test.txt", PageRequest.ofSize(1));

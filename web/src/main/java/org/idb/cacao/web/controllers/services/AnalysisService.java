@@ -963,13 +963,7 @@ public class AnalysisService {
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
 		// Filter by taxpayer id
-		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
-		List<String> taxpayerIds = Arrays.asList(taxpayerId);
-		for (String argument : taxpayerIds) {
-			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
-		}
-		subquery = subquery.minimumShouldMatch(1);
-		query = query.must(subquery);
+		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
@@ -1053,11 +1047,17 @@ public class AnalysisService {
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], StatementIncomeItem> function = (agg, values) -> {
-			Sum amount = agg.get("amount");
-			StatementIncomeItem item = items.getOrDefault(values[0]/*statementNumber*/, 
-					new StatementIncomeItem(values, amount.getValue(), (SOURCE_JOURNAL == sourceData) /*calculated*/));
-			items.put(values[0]/*statementNumber*/, item);
-			return item;
+			Sum amount = agg.get("amount");			
+			if (amount != null) {
+				StatementIncomeItem item = items.getOrDefault(values[0]/*statementNumber*/, new StatementIncomeItem(values));
+				if (SOURCE_JOURNAL == sourceData)
+					item.setCalculatedValue(amount.getValue());
+				else
+					item.setDeclaredValue(amount.getValue());
+				item.setDifference(item.getDeclaredValue() - item.getCalculatedValue());
+				items.put(values[0], item);
+			}
+			return null;
 		};
 
 		// Update shareholding information for this taxpayer
@@ -1751,13 +1751,19 @@ public class AnalysisService {
 		// Index over 'Customers' objects
 		SearchRequest searchRequest = new SearchRequest(index);
 
-		BoolQueryBuilder query = QueryBuilders.boolQuery();		
+		BoolQueryBuilder query = QueryBuilders.boolQuery();	
+	
+		final String message;
 		
 		// Filter by taxpayer		
-		if ( CUSTOMERS_INDEX.equals(index) )
+		if ( CUSTOMERS_INDEX.equals(index) ) {
 			query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
-		else
+			message = "customers";
+		}
+		else {
 			query = query.must(new TermQueryBuilder("supplier_id.keyword", taxpayerId));
+			message = "suppliers";
+		}
 
 		// Filter by year
 		query = query.must(new TermQueryBuilder("year", year));
@@ -1777,7 +1783,7 @@ public class AnalysisService {
 		SearchResponse sresp = doSearch(searchRequest);
 		if (sresp == null) {
 			log.log(Level.INFO,
-					() -> "No customers information found for taxPayer " + taxpayerId + " for period " + year);
+					() -> "No " + message + " information found for taxPayer " + taxpayerId + " for period " + year);
 			return Collections.emptyList(); // No data found
 		}
 

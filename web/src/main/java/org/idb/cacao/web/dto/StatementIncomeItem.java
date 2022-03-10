@@ -31,14 +31,9 @@ public class StatementIncomeItem implements Comparable<StatementIncomeItem> {
 	
 	private double difference;	
 	
-	public StatementIncomeItem(String[] values, double value, boolean calculated) {
+	public StatementIncomeItem(String[] values) {
 		this.statementOrder = values.length > 0 ? values[0] : "";
 		this.statementName = values.length > 1 ? values[1] : "";
-		if ( calculated )
-			this.calculatedValue = value;
-		else
-			this.declaredValue = value;
-		this.difference = this.declaredValue - this.calculatedValue;
 	}
 
 	public StatementIncomeItem() {		
