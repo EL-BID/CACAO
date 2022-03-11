@@ -41,11 +41,11 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.io.FilenameUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -85,9 +85,9 @@ import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
-import org.idb.cacao.web.utils.FileUtils;
 import org.idb.cacao.web.utils.SearchUtils;
 import org.idb.cacao.web.utils.UserUtils;
+import org.idb.cacao.web.utils.ZipConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -297,25 +297,31 @@ public class DocumentStoreAPIController {
 
 		List<Map<String, String>> results = new LinkedList<>();		
 		
-		try (InputStream inputStream = fileinput.getInputStream()) {
+		final String originalFileName = fileinput.getOriginalFilename();
+		
+		try {
 		
 			//Upload a file(s) within zip file
-			if ( FileUtils.isCompressedFile(inputStream) ) {
+			if ( originalFileName != null && FilenameUtils.isExtension(originalFileName.toLowerCase(), "zip") ) {
 				
-				//Need to reopen stream
+				//Need to reopen stream				
 				try (ZipInputStream zipStream = new ZipInputStream(fileinput.getInputStream())) {
-					ZipEntry ze;
-
-					while ((ze = zipStream.getNextEntry()) != null) {
+					
+					ZipConsumer.ConsumeContents consumeZipContents = (ze, input)->
 						results.add(uploadFile(ze.getName(), zipStream, /* closeInputStream */false, 
 								templateName, templateVersion, inputName, remoteIpAddr, user));
-					}
+	
+					ZipConsumer zipConsumer = new ZipConsumer(zipStream::getNextEntry, zipStream, consumeZipContents)
+							.threadholdEntries(maxEntriesPerUploadedZip);
+					
+					zipConsumer.run();
+	
 				}
 				
 			}
 			//Upload a single file
 			else {
-				results.add(uploadFile(fileinput.getOriginalFilename(), fileinput.getInputStream(), /* closeInputStream */true, 
+				results.add(uploadFile(originalFileName, fileinput.getInputStream(), /* closeInputStream */true, 
 							templateName, templateVersion, inputName, remoteIpAddr, user));
 			}
 			
@@ -403,7 +409,7 @@ public class DocumentStoreAPIController {
 			rollbackProcedures.add(() -> documentsSituationHistoryRepository.delete(savedSituation)); 
 			Map<String, String> result = new HashMap<>();
 			result.put("result", "ok");
-			result.put("file_id", fileId);
+			result.put(FIELD_DOC_ID, fileId);
 
 			FileUploadedEvent event = new FileUploadedEvent();
 			event.setFileId(savedInfo.getId());
