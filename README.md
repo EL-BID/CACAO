@@ -396,7 +396,7 @@ sudo yum install docker -y
 
 sudo service docker start
 
-sudo usermod -a -G docker ec2-user
+sudo usermod -a -G docker $USER
 
 sudo systemctl enable docker
 
@@ -408,7 +408,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
-echo 'vm.max_map_count=262144' >> /etc/sysctl.conf
+echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf
 
 sudo sysctl -w vm.max_map_count=262144
 
