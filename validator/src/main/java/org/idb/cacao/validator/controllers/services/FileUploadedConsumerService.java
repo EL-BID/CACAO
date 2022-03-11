@@ -177,17 +177,43 @@ public class FileUploadedConsumerService {
 			
 			Validations validations = new Validations(validationContext, domainTableRepository);
 
-			Optional<DocumentTemplate> template = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
+			Optional<DocumentTemplate> opTemplate = documentTemplateRepository.findByNameAndVersion(doc.getTemplateName(),
 					doc.getTemplateVersion());
-			if (!template.isPresent()) {
+			if (!opTemplate.isPresent()) {
 				doc = setSituation(doc, DocumentSituation.INVALID);
 				validations.addLogError("{doc.error.template.not.found}");
 				saveValidationMessages(validationContext);
-				throw new TemplateNotFoundException("Template with name " + doc.getTemplateName() + " and version "
-						+ doc.getTemplateVersion() + " wasn't found in database.");
+				StringBuilder msg = new StringBuilder("Template with name ").append(doc.getTemplateName())
+						.append(" and version ").append(doc.getTemplateVersion()).append(" wasn't found in database.");
+				throw new TemplateNotFoundException(msg.toString());
 			}
-
-			validationContext.setDocumentTemplate(template.get());
+			
+			DocumentTemplate template = opTemplate.get();
+			final String inputName = doc.getInputName();
+			
+			//If input name is provided, validate it
+			if ( inputName != null && !inputName.isEmpty()) {
+				
+				boolean inputValid = false;				
+				
+				List<DocumentInput> inputs = template.getInputs();
+				
+				if ( inputs != null && !inputs.isEmpty() ) {
+					inputValid = inputs.stream().filter(item->item.getInputName().equals(inputName)).findFirst().isPresent();
+				}
+				
+				if (!inputValid) {
+					doc = setSituation(doc, DocumentSituation.INVALID);
+					validations.addLogError("{doc.error.input.not.found}");
+					saveValidationMessages(validationContext);
+					StringBuilder msg = new StringBuilder("Input name ").append(doc.getInputName())
+							.append(" for template ").append(doc.getTemplateName()).append(" wasn't found in database.");
+					throw new TemplateNotFoundException(msg.toString());
+				}				
+				
+			}
+			
+			validationContext.setDocumentTemplate(template);
 
 			String fullPath = doc.getFileIdWithPath();
 
@@ -198,29 +224,45 @@ public class FileUploadedConsumerService {
 			validationContext.setDocumentUploaded(doc);
 
 			// Check the DocumentInput related to this file
-
-			List<DocumentInput> possibleInputs = template.get().getInputs();
-			DocumentInput docInputExpected;
-			if (possibleInputs == null || possibleInputs.isEmpty()) {
-				doc = setSituation(doc, DocumentSituation.INVALID);
-				validations.addLogError("{doc.error.template.not.found}");
-				saveValidationMessages(validationContext);
-				throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version "
-						+ doc.getTemplateVersion() + " was not configured with proper input format!");
-			} else if (possibleInputs.size() == 1) {
-				docInputExpected = possibleInputs.get(0);
-			} else {
-				// If we have more than one possible input for the same DocumentTemplate, we
-				// need to choose one
-				docInputExpected = chooseFileInput(filePath, doc.getFilename(), possibleInputs);
-				if (docInputExpected == null) {
+			
+			DocumentInput docInputExpected = null;			
+			if ( doc.getInputName() == null || doc.getInputName().isEmpty() ) {
+				List<DocumentInput> possibleInputs = opTemplate.get().getInputs();
+				if (possibleInputs == null || possibleInputs.isEmpty()) {
+					doc = setSituation(doc, DocumentSituation.INVALID);
+					validations.addLogError("{doc.error.template.not.found}");
+					saveValidationMessages(validationContext);
+					throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version "
+							+ doc.getTemplateVersion() + " was not configured with proper input format!");
+				} else if (possibleInputs.size() == 1) {
+					docInputExpected = possibleInputs.get(0);
+				} else {
+					// If we have more than one possible input for the same DocumentTemplate, we
+					// need to choose one
+					docInputExpected = chooseFileInput(filePath, doc.getFilename(), possibleInputs);
+					if (docInputExpected == null) {
+						doc = setSituation(doc, DocumentSituation.INVALID);
+						validations.addLogError("{doc.error.file.format.not.found}");
+						saveValidationMessages(validationContext);
+						throw new UnknownFileFormatException(
+								"The file did not match any of the expected file formats for template "
+										+ doc.getTemplateName() + " and version " + doc.getTemplateVersion());
+					}
+				}				
+			}
+			else {
+				Optional<DocumentInput> opInput = 
+						opTemplate.get().getInputs().stream().filter(item->item.getInputName().equals(inputName)).findFirst();
+				if ( opInput.isPresent() )
+					docInputExpected = opInput.get();
+				else  {
 					doc = setSituation(doc, DocumentSituation.INVALID);
 					validations.addLogError("{doc.error.file.format.not.found}");
 					saveValidationMessages(validationContext);
 					throw new UnknownFileFormatException(
 							"The file did not match any of the expected file formats for template "
 									+ doc.getTemplateName() + " and version " + doc.getTemplateVersion());
-				}
+				}					
 			}
 
 			// Given the DocumentInput, get the corresponding FileFormat object
@@ -240,7 +282,7 @@ public class FileUploadedConsumerService {
 			// Initializes the FileParser for processing
 			parser.setPath(filePath);
 			parser.setDocumentInputSpec(docInputExpected);
-			parser.setDocumentTemplate(template.get());
+			parser.setDocumentTemplate(opTemplate.get());
 			
 			long timestamp = System.currentTimeMillis();
 
@@ -264,7 +306,7 @@ public class FileUploadedConsumerService {
 
 			// If the template defines any field to be used as criteria of 'file uniqueness', we should
 			// gather this information as well			
-			List<DocumentField> fileUniquenessFields = template.get().getFileUniquenessFields();
+			List<DocumentField> fileUniquenessFields = opTemplate.get().getFileUniquenessFields();
 			Map<String, Object> fileUniquenessValues = (fileUniquenessFields.isEmpty()) ? null : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 			Set<String> fileUniquenessViolationFieldNames = null;
 
@@ -448,8 +490,8 @@ public class FileUploadedConsumerService {
 			timestamp = System.currentTimeMillis();
 
 			// Check for domain-specific validations related to a built-in archetype
-			if (template.get().getArchetype() != null && template.get().getArchetype().trim().length() > 0) {
-				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(template.get().getArchetype());
+			if (opTemplate.get().getArchetype() != null && opTemplate.get().getArchetype().trim().length() > 0) {
+				Optional<TemplateArchetype> archetype = TemplateArchetypes.getArchetype(opTemplate.get().getArchetype());
 				if (archetype.isPresent()) {
 
 					boolean ok = archetype.get().validateDocumentUploaded(validationContext);

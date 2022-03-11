@@ -495,10 +495,10 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	 * Returns DocumentInput associated to this template with a given DocumentFormat
 	 */
 	@JsonIgnore
-	public DocumentInput getInputOfFormat(DocumentFormat format) {
+	public DocumentInput getInputWithName(String name) {
 		if (inputs==null)
 			return null;
-		return inputs.stream().filter(f->format.equals(f.getFormat())).findAny().orElse(null);		
+		return inputs.stream().filter(f->name.equals(f.getInputName())).findAny().orElse(null);		
 	}
 
 	public void setInputs(List<DocumentInput> inputs) {

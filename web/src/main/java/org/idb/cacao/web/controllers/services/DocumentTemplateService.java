@@ -38,6 +38,7 @@ import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.dto.DocumentTemplateDto;
+import org.idb.cacao.web.dto.TemplateAndInput;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,17 +188,43 @@ public class DocumentTemplateService {
 	 * Returns the names of all templates that have some 'file' configured (i.e. they are 'downloadable' and 'uploadable'). 
 	 * Returns only their names and version.
 	 */
-	public Map<String,String> getNamesTemplatesWithVersions() {
+	public List<TemplateAndInput> getNamesTemplatesWithVersions() {
 		
-		Map<String,String> templatesNames = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		List<TemplateAndInput> templatesAndInputs= new LinkedList<>();
 		Iterable<DocumentTemplate> allTemplates = getTemplatesWithFiles();
 		for (DocumentTemplate template:allTemplates) {
 			if (null==template.getName() || (template.getName().trim().length()==0))
 				continue;
-			templatesNames.put(template.getName(),template.getVersion());
+			
+			List<DocumentInput> inputs = template.getInputs();
+			
+			if (inputs != null && !inputs.isEmpty()) {
+				
+				inputs.forEach( input-> {
+					
+					String templateName = template.getName();
+					String inputName = input.getInputName();
+					String inputNameDisplay = inputName;
+				
+					
+					if ( inputName.contains(templateName) )
+						inputNameDisplay = inputName.replace(templateName, "").trim();
+					
+					TemplateAndInput item = new TemplateAndInput();
+					item.setTemplateName(templateName);
+					item.setVersion(template.getVersion());
+					item.setInputName(inputName);
+					item.setInputNameDisplay(inputNameDisplay);
+					templatesAndInputs.add(item);
+					
+				});
+				
+			}
+			
+
 		}
 		
-		return templatesNames;
+		return templatesAndInputs;
 	}
 
 	/**

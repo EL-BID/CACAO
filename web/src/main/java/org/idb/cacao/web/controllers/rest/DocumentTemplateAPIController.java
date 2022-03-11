@@ -230,9 +230,9 @@ public class DocumentTemplateAPIController {
 		
 		DocumentTemplate template = match.get();
 		
-		DocumentInput existingDocInput = template.getInputOfFormat(docInput.getFormat());
+		DocumentInput existingDocInput = template.getInputWithName(docInput.getInputName());
 		if (existingDocInput!=null) {
-			return ControllerUtils.returnBadRequest("template.input.format.exists", messageSource, docInput.getFormat().toString());
+			return ControllerUtils.returnBadRequest("template.input.format.exists", messageSource, docInput.getInputName());
 		}
 		template.addInput(docInput);
 		templateService.compatibilizeTemplateFieldsMappings(template);
@@ -255,7 +255,7 @@ public class DocumentTemplateAPIController {
 		
 		DocumentTemplate template = match.get();
 		
-		DocumentInput existingDocInput = template.getInputOfFormat(docInput.getFormat());
+		DocumentInput existingDocInput = template.getInputWithName(docInput.getInputName());
 		if (existingDocInput==null) {
 			ControllerUtils.returnBadRequest("template.input.format.not.exists", messageSource, docInput.getFormat().toString());
 		}

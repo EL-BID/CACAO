@@ -331,7 +331,7 @@ public class AnalysisAPIController {
 					allowableValues = "1 - SOURCE_JOURNAL, 2 - SOURCE_DECLARED_INCOME_STATEMENT,  3 - SOURCE_BOOTH_INCOME_STATEMENT, 4 - SOURCE_SHAREHOLDERS") 
 			@RequestParam("sourceData") int sourceData,
 			@ApiParam(name = "Year to use in analysis", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
-			@RequestParam("year") String year) {
+			@RequestParam("year") int year) {
 		
 		if ( qualifier == null || qualifier.isEmpty() ) {
 			log.log(Level.WARNING, "Missing parameter 'qualifier'");
@@ -348,7 +348,7 @@ public class AnalysisAPIController {
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
+		if ( year == 0 ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -360,7 +360,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, sourceData, Integer.valueOf(year));
+    	AnalysisData analysisData = analysisService.getGeneralAnalysisValues(qualifier, qualifierValue, sourceData, year);
 	
     	return ResponseEntity.ok().body(analysisData);    	
 	}
@@ -395,7 +395,7 @@ public class AnalysisAPIController {
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/analysis/years"})
 	public ResponseEntity<Object> getYears(
-			@ApiParam(name = "Indicates an index to search values", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "String", 
+			@ApiParam(name = "Indicates an index to search values", allowEmptyValue = false, allowMultiple = false, example = "Economic sector", required = true, type = "Integer", 
 						allowableValues = "1 - SOURCE_JOURNAL, 2 - SOURCE_DECLARED_INCOME_STATEMENT,  3 - SOURCE_BOOTH_INCOME_STATEMENT, 4 - SOURCE_SHAREHOLDERS")
 			@RequestParam("sourceData") int sourceData) {
 		
@@ -423,9 +423,9 @@ public class AnalysisAPIController {
 	public ResponseEntity<Object> getAccountingFlows(
 			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
-			@ApiParam(name = "A start date to get values", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "A start date to get values", allowEmptyValue = false, allowMultiple = false, example = "2021-01-01", required = true, type = "LocalDate")
 			@RequestParam("startDate") @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
-			@ApiParam(name = "An end data to get values", allowEmptyValue = false, allowMultiple = false, example = "Wed Dec 01 2021", required = true, type = "LocalDate")
+			@ApiParam(name = "An end data to get values", allowEmptyValue = false, allowMultiple = false, example = "2021-12-31", required = true, type = "LocalDate")
 			@RequestParam("finalDate") @DateTimeFormat(iso = ISO.DATE) LocalDate finalDate) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
@@ -455,14 +455,14 @@ public class AnalysisAPIController {
 			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
 			@ApiParam(name = "Year to seach data", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
-			@RequestParam("year") String year ) {
+			@RequestParam("year") int year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
 			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
+		if ( year == 0 ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -474,8 +474,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<StatementIncomeItem> statements = analysisService.getStatementIncomeDeclaredAndCalculated(
-    			taxpayerId,Integer.valueOf(year));
+    	List<StatementIncomeItem> statements = analysisService.getStatementIncomeDeclaredAndCalculated(taxpayerId, year);
 	
     	return ResponseEntity.ok().body(statements);    	
 	}
@@ -492,14 +491,14 @@ public class AnalysisAPIController {
 			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
 			@ApiParam(name = "Year to seach data", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
-			@RequestParam("year") String year ) {
+			@RequestParam("year") int year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
 			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
+		if ( year == 0 ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -515,7 +514,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<?> result = analysisService.getTaxpayerData(taxpayerId,Integer.valueOf(year),searchType);
+    	List<?> result = analysisService.getTaxpayerData(taxpayerId,year,searchType);
     	
     	if ( result == null || result.isEmpty() )  
     		result = Collections.emptyList();
@@ -530,14 +529,14 @@ public class AnalysisAPIController {
 			@ApiParam(name = "Taxpayer ID", allowEmptyValue = false, allowMultiple = false, example = "1234567890", required = true, type = "String")
 			@RequestParam("taxpayerId") String taxpayerId,
 			@ApiParam(name = "Year to seach data", allowEmptyValue = false, allowMultiple = false, example = "2021", required = true, type = "Integer")
-			@RequestParam("year") String year ) {
+			@RequestParam("year") int year ) {
 		
 		if ( taxpayerId == null || taxpayerId.isEmpty() ) {
 			log.log(Level.WARNING, MISSING_PARAMETER_TAXPAYER_ID);
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
 		
-		if ( year == null || year.isEmpty() || Integer.valueOf(year) == 0 ) {
+		if ( year == 0 ) {
 			log.log(Level.WARNING, "Missing or invalid parameter 'year'");
 			return ResponseEntity.ok().body(Collections.emptyList());
 		}
@@ -549,7 +548,7 @@ public class AnalysisAPIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
-    	List<?> result = analysisService.getCustomersVsSuppliers(taxpayerId,Integer.valueOf(year));
+    	List<?> result = analysisService.getCustomersVsSuppliers(taxpayerId,year);
     	
     	if ( result == null || result.isEmpty() )  
     		result = Collections.emptyList();

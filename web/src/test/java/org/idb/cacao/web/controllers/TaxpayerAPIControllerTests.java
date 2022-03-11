@@ -69,6 +69,8 @@ import java.util.function.Consumer;
 class TaxpayerAPIControllerTests {
 
 	private static ElasticsearchMockClient mockElastic;
+	
+	private static Random seedGenerator = new Random(TestDataGenerator.generateSeed("TEST TAXPAYER"));
 
 	@Autowired
 	private MockMvc mvc;
@@ -78,6 +80,9 @@ class TaxpayerAPIControllerTests {
 	
 	@Autowired
 	private JacksonTester<TaxpayerDto> json;
+	
+	@Autowired
+	private JacksonTester<List<TaxpayerDto>> jsonList;
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -126,7 +131,6 @@ class TaxpayerAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	void testHandleCreateTaxpayer() throws Exception {
-		Random seedGenerator = new Random(TestDataGenerator.generateSeed("CREATE"));
 		for (int i=0; i<100; i++) {
 			long seed = seedGenerator.nextLong();
 			Taxpayer entity = TestDataGenerator.generateTaxpayer(seed, 11);
@@ -176,7 +180,6 @@ class TaxpayerAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testActivateTaxpayer() throws Exception {
-		Random seedGenerator = new Random(TestDataGenerator.generateSeed("ACTIVATE"));
 		List<Taxpayer> taxpayers = insertTaxpayers(seedGenerator, 11, 2, t -> t.setActive(false));
 		for(Taxpayer taxpayer: taxpayers) {
 			MockHttpServletResponse response = mvc.perform(
@@ -197,7 +200,6 @@ class TaxpayerAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testDeactivateTaxpayer() throws Exception {
-		Random seedGenerator = new Random(TestDataGenerator.generateSeed("DEACTIVATE"));
 		List<Taxpayer> taxpayers = insertTaxpayers(seedGenerator, 11, 2, t -> t.setActive(true));
 		for(Taxpayer taxpayer: taxpayers) {
 			MockHttpServletResponse response = mvc.perform(
@@ -218,7 +220,6 @@ class TaxpayerAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testCreateExistingTaxpayer() throws Exception {
-		Random seedGenerator = new Random(TestDataGenerator.generateSeed("CREATE2"));
 		List<Taxpayer> taxpayers = insertTaxpayers(seedGenerator, 11, 2, null);
 		for (int i=0; i<taxpayers.size(); i++) {
 			Taxpayer entity = taxpayers.get(i);
@@ -244,7 +245,6 @@ class TaxpayerAPIControllerTests {
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
 	@Test
 	public void testEditTaxpayer() throws Exception, IOException {
-		Random seedGenerator = new Random(TestDataGenerator.generateSeed("TEST"));
 		List<Taxpayer> taxpayers = insertTaxpayers(seedGenerator, 11, 10, null);
 		
 		for (int i=0; i<taxpayers.size(); i++) {
@@ -275,4 +275,74 @@ class TaxpayerAPIControllerTests {
 		}
 	}
 
+	private void sampleUpdate(TaxpayerDto taxpayer, long seed) {
+		Taxpayer other = TestDataGenerator.generateTaxpayer(seed, 11);
+		taxpayer.setName(other.getName());
+		taxpayer.setAddress(other.getAddress());
+		taxpayer.setZipCode(other.getZipCode());
+		taxpayer.setQualifier1(other.getQualifier1());
+		// do not update the following fields
+		taxpayer.setQualifier2(null);
+		taxpayer.setQualifier3(null);
+		taxpayer.setQualifier4(null);
+		taxpayer.setQualifier5(null);
+	}
+	/*
+	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
+	@Test
+	public void testAddTaxpayers() throws Exception {
+		
+		Map<String, TaxpayerDto> existentTaxpayers = insertTaxpayers(seedGenerator, 11, 10, null)
+				.stream()
+				.map(t -> new TaxpayerDto(t))
+				.collect( Collectors.toMap(TaxpayerDto::getTaxPayerId, Function.identity()));
+		Map<String, TaxpayerDto> toUpdate = existentTaxpayers.values()
+			.stream()
+			.peek( t -> sampleUpdate(t, seedGenerator.nextLong()) )
+			.collect( Collectors.toMap(TaxpayerDto::getTaxPayerId, Function.identity()));;
+		Map<String, TaxpayerDto> toInsert = IntStream.range(0, 10)
+			.mapToObj(i -> new TaxpayerDto(TestDataGenerator.generateTaxpayer(seedGenerator.nextLong(), 11)))
+			.collect(Collectors.toMap(TaxpayerDto::getTaxPayerId, Function.identity()));
+		
+		List<TaxpayerDto> taxpayers = Stream.concat(toUpdate.values().stream(), toInsert.values().stream())
+			.collect(Collectors.toList());
+		
+		MockHttpServletResponse response = mvc.perform(
+                post("/api/taxpayers/")
+                	.with(csrf())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        jsonList.write(taxpayers).getJson()
+                    )
+            )
+            .andReturn()
+            .getResponse();
+		assertEquals(HttpStatus.OK.value(), response.getStatus());
+		toInsert.values().stream().forEach(t -> {
+	        Optional<Taxpayer> existing = taxpayerRepository.findByTaxPayerId(t.getTaxPayerId());
+	        assertTrue(existing.isPresent());
+	        Taxpayer saved = existing.get();
+	        compareTaxpayer(t, saved);
+		});
+		
+		toUpdate.values().stream().forEach(t -> {
+			Optional<Taxpayer> existing = taxpayerRepository.findByTaxPayerId(t.getTaxPayerId());
+	        assertTrue(existing.isPresent());
+	        Taxpayer saved = existing.get();
+	        TaxpayerDto previous = existentTaxpayers.get(t.getTaxPayerId());
+			assertEquals(t.getName(), saved.getName());
+	        assertEquals(t.getTaxPayerId(), saved.getTaxPayerId());
+	        assertEquals(t.getAddress(), saved.getAddress());
+	        assertEquals(t.getZipCode(), saved.getZipCode());
+	        assertEquals(t.getQualifier1(), saved.getQualifier1());
+	        assertEquals(t.isActive(), saved.isActive());
+	        // The following fields should not be updated
+	        assertEquals(previous.getQualifier2(), saved.getQualifier2());
+	        assertEquals(previous.getQualifier3(), saved.getQualifier3());
+	        assertEquals(previous.getQualifier4(), saved.getQualifier4());
+	        assertEquals(previous.getQualifier5(), saved.getQualifier5());
+		});
+	}
+	*/
 }

@@ -213,7 +213,7 @@
 		})
 		
 		table_inputs.on('rowClick', function(e, row) {
-			window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + row.getData().format)
+			window.location.replace([[@{/templates/{id}/input/(id=${template.id})}]] + row.getData().inputName)
 		})
 		
 		$('#tab .item').tab()

@@ -67,6 +67,12 @@ public class InterpersonalDto implements Serializable {
 	public InterpersonalDto() {
 	}
 	
+	public InterpersonalDto(String personId1, String personId2, RelationshipType relationshipType) {
+		this.personId1 = personId1;
+		this.personId2 = personId2;
+		this.relationshipType = relationshipType;
+	}
+	
 	public InterpersonalDto(Interpersonal interpersonal) {
 		this.id = interpersonal.getId();
 		this.personId1 = interpersonal.getPersonId1();

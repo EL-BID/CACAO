@@ -68,12 +68,13 @@
   			});
 
 		$('#fileinput').change(function(){
-      		var file_el = $( this )
-      		var form_el = $('#uploadform')
-      		var dimmer_el = $('#dimmer')
-	  		var templateAndVersion = $('.ui.dropdown').dropdown('get value').split("=")	
-      		var upload_url = '/api/doc?templateName='+encodeURIComponent(templateAndVersion[0])+'&templateVersion='+encodeURIComponent(templateAndVersion[1])	  		
-      		var filename = file_el.val().split('\\').pop();      
+      		let file_el = $( this )
+      		let form_el = $('#uploadform')
+      		let dimmer_el = $('#dimmer')
+			let template = $('.ui.dropdown').dropdown('get value').split("=")
+      		let upload_url = '/api/doc?templateName='+encodeURIComponent(template[0])+'&templateVersion='+encodeURIComponent(template[1])+'&inputName='+encodeURIComponent(template[2])
+			console.log(upload_url)
+      		let filename = file_el.val().split('\\').pop();      
       		uploadFile(file_el, form_el, dimmer_el, upload_url, filename);
   		});
 

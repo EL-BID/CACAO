@@ -55,7 +55,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 @AutoConfigureJsonTesters
