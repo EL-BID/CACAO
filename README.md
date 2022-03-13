@@ -299,7 +299,7 @@ ___
   - Take note of these information and keep secret (do not publish anywhere):
     - Application ID (client)
     - Secret
-  - You must inform these information in the configuration file 'app_config', at the deployment environment, accessible only by root user
+  - You must inform these information in the configuration file 'app_config_web', at the deployment environment, accessible only by root user
     - spring.security.oauth2.client.registration.google.client-id=<copy here you application ID from Google>
     - spring.security.oauth2.client.registration.google.client-secret=<copy here your secret from Google>
 - Publish the application (from 'Testing' to 'Production')
@@ -327,7 +327,7 @@ ___
   - Go to panel 'Permissions of API'
   - Click que button/check mark 'Consent'
 - Include OpenId claims (email, family_name and given_name) at Token Configuration   
-- You must inform these information in the configuration file 'app_config', at the deployment environment, accessible only by root user
+- You must inform these information in the configuration file 'app_config_web', at the deployment environment, accessible only by root user
   - azure.activedirectory.tenant-id=<copy here you tenant ID from Microsoft>
   - spring.security.oauth2.client.registration.azure.client-id=<copy here your client ID from Microsoft>
   - spring.security.oauth2.client.registration.azure.client-secret=<copy here you secret from Microsoft>
