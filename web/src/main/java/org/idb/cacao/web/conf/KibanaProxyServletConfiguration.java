@@ -41,6 +41,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
+import org.idb.cacao.api.utils.ElasticClientFactory;
 import org.idb.cacao.web.controllers.services.ElasticSearchService;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.entities.User;
@@ -194,7 +195,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 					KibanaProxy.kibanaSuperUser = propertyResolver.getProperty("kibana.superuser");
 					if (kibanaSuperUser!=null && kibanaSuperUser.trim().length()>0) {
 						KibanaProxy.esname = esUsername.toCharArray();
-						String p = propertyResolver.getProperty("es.password");
+						String p = ElasticClientFactory.readESPassword(propertyResolver);
 						KibanaProxy.espass = (p!=null) ? p.toCharArray() : null;
 					}
 					KibanaProxy.authenticationEnabled = true;

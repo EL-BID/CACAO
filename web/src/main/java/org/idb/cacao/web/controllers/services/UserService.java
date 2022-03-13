@@ -44,6 +44,7 @@ import org.idb.cacao.web.repositories.UserRepository;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.security.user.privileges.Role;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.utils.ElasticClientFactory;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.entities.Interpersonal;
 import org.idb.cacao.web.entities.RelationshipType;
@@ -458,7 +459,7 @@ public class UserService {
 	 */
 	public boolean hasKibanaUserUserAccess(User user) {
 		String es_username = env.getProperty("es.user");
-		String es_password = env.getProperty("es.password");
+		String es_password = ElasticClientFactory.readESPassword(env);
 		String kibanaSuperUser = env.getProperty("kibana.superuser");
 
 		boolean is_kibana_super_user = (es_username!=null && es_username.trim().length()>0 
@@ -474,7 +475,7 @@ public class UserService {
 	public boolean mayHaveSpaceForPrivateDashboards(User user) {
 		
 		String es_username = env.getProperty("es.user");
-		String es_password = env.getProperty("es.password");
+		String es_password = ElasticClientFactory.readESPassword(env);
 		String kibanaSuperUser = env.getProperty("kibana.superuser");
 
 		boolean is_kibana_super_user = (es_username!=null && es_username.trim().length()>0 

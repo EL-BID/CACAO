@@ -73,6 +73,7 @@ import org.elasticsearch.client.security.user.privileges.Role;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.IndexSettings;
+import org.idb.cacao.api.utils.ElasticClientFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -827,7 +828,7 @@ public class ESUtils {
 	 */
 	public static RequestCallback getKibanaRequestCallback(Environment env, Object requestBody) {
 		String kibanaUser = env.getProperty("es.user", "elastic");
-		String kibanaPassword = env.getProperty("es.password");
+		String kibanaPassword = ElasticClientFactory.readESPassword(env);
 		if (kibanaUser!=null && kibanaUser.length()>0 && kibanaPassword!=null && kibanaPassword.length()>0) {
 			String encoding = Base64.getEncoder().encodeToString((String.join(":", kibanaUser, kibanaPassword)).getBytes());
 			return req->{

@@ -19,11 +19,19 @@
  *******************************************************************************/
 package org.idb.cacao.api.utils;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.net.ssl.SSLContext;
 
@@ -34,6 +42,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.core.env.Environment;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.RestClients;
+import org.springframework.util.StreamUtils;
 import org.springframework.data.elasticsearch.client.ClientConfiguration.MaybeSecureClientConfigurationBuilder;
 import org.springframework.data.elasticsearch.client.ClientConfiguration.TerminalClientConfigurationBuilder;
 
@@ -45,6 +54,8 @@ import org.springframework.data.elasticsearch.client.ClientConfiguration.Termina
  */
 public abstract class ElasticClientFactory {
 	
+	private static final Logger log = Logger.getLogger(ElasticClientFactory.class.getName());
+
 	public static final String PROPERTY_HOST = "es.host";
 	public static final String PROPERTY_PORT = "es.port";
 	public static final String PROPERTY_SSL = "es.ssl";
@@ -68,6 +79,11 @@ public abstract class ElasticClientFactory {
 	 * Default port number for SSL
 	 */
 	public static final int DEFAULT_SSL_PORT = 443;
+	
+	/**
+	 * Maximum size for passwords
+	 */
+	private static final int MAX_SIZE_FOR_PASSWORD = 512;
 	
 	private ElasticClientFactory() {
 		// This is a utility class
@@ -107,7 +123,7 @@ public abstract class ElasticClientFactory {
         	ssl("true".equalsIgnoreCase(env.getProperty(PROPERTY_SSL)) || port==DEFAULT_SSL_PORT);
         	verifySSLHost(!"false".equalsIgnoreCase(env.getProperty(PROPERTY_VERIFY_HOST)));
     		username(env.getProperty(PROPERTY_USER));
-    		password(env.getProperty(PROPERTY_PASSWORD));
+    		password(readESPassword(env));
     		timeout(env.getProperty(PROPERTY_TIMEOUT));
 		}
 
@@ -268,4 +284,45 @@ public abstract class ElasticClientFactory {
 		
 	}
 
+	/**
+	 * Read the content of the property containing the password for connection to ElasticSearch. Admits the indication
+	 * of a filename instead of the password itself if the provided content starts with the prefix 'file:'
+	 */
+	public static String readESPassword(Environment env) {
+		String password = env.getProperty(PROPERTY_PASSWORD);
+		if (password==null || password.trim().length()==0)
+			return null;
+		// Check if the property value refers to a file (it could be a 'secret' mounted at runtime). In this case will try to load it contents.
+		if (password.startsWith("file:")) {
+			String passwordFile = password.substring("file:".length());
+			File file = new File(passwordFile);
+			if (!file.exists()) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, String.format("File informed in '%s' does not exist!", PROPERTY_PASSWORD));
+				return null;
+			}
+			if (file.length()==0) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, String.format("File informed in '%s' is empty!", PROPERTY_PASSWORD));
+				return null;
+			}
+			if (file.length()>MAX_SIZE_FOR_PASSWORD) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, String.format("File informed in '%s' is too big!", PROPERTY_PASSWORD));
+				return null;
+			}
+			try (InputStream input = new BufferedInputStream(new FileInputStream(file));) {
+				password = StreamUtils.copyToString(input, StandardCharsets.UTF_8);
+				return password;
+			}
+			catch (IOException ex) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, "Error reading contents from file informed in '"+PROPERTY_PASSWORD+"'", ex);
+				return null;
+			}
+		}
+		else {
+			return password;
+		}
+	}
 }
