@@ -51,6 +51,9 @@ ENV EUREKA_SERVER=eureka:8761
 
 ENV WEB_JVM_OPTS="-Xms512m -Xmx512m"
 
+# Password for connection to ElasticSearch if RBAC has been enabled
+ENV ELASTIC_PASSWORD=
+
 # additional configuration and start application
 CMD ["./setup.sh"]
 

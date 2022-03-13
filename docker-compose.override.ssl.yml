@@ -29,4 +29,13 @@ services:
       - URL=${URL}
       - KIBANA_USERNAME=kibana
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
-    
+  web:
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}   
+  validator:
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}   
+  etl:    
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}   
+  

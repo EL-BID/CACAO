@@ -495,13 +495,16 @@ Take note of login and passwords for all user accounts that were generated (most
 
 ### Exit shell from es01
 
-### Test arbitrary HTTP call to the ElasticSearch with user/password. Change the {password} below with the actual password that has been generated
-    docker exec -it es01 curl -k https://es01:9200 -u elastic:{password}
-
-It should respond with a JSON content with some information, including something like this: "tagline" : "You Know, for Search"
-
 ### Add to .env file at the host the password that was generated for 'kibana' user. Change the {password} below with the actual password that has been generated
     echo KIBANA_PASSWORD={password} >> .env
+
+### Add to .env file at the host the password that was generated for 'elastic' user. Change the {password} below with the actual password that has been generated
+    echo ELASTIC_PASSWORD={password} >> .env
+
+### Test arbitrary HTTP call to the ElasticSearch.
+    docker exec --env-file .env -it es01 /bin/bash -c 'curl -k https://es01:9200 -u kibana:$KIBANA_PASSWORD'
+
+It should respond with a JSON content with some information, including something like this: "tagline" : "You Know, for Search"
  
  ### Start Kibana
     docker-compose up -d kibana
@@ -509,15 +512,15 @@ It should respond with a JSON content with some information, including something
 ### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
     docker exec -it kibana tail -f /usr/share/kibana/logs/kibana.log
     
-### Test arbitrary HTTP call to the Kibana with user/password. Change the {password} below with the actual password that has been generated
-    docker exec -it kibana curl -k https://kibana:5601/kibana/api/spaces/space -u elastic:{password}
+### Test arbitrary HTTP call to the Kibana.
+    docker exec --env-file .env -it kibana /bin/bash -c 'curl -k https://kibana:5601/kibana/api/spaces/space -u elastic:$ELASTIC_PASSWORD'
     
 It should respond with a JSON content with some information about the Kibana default 'space', among others.
     
-### Include all permissions to the Application (replace {elastic password here} with the password generated in previous step for user account 'elastic')
+### Include all permissions to the Application
     echo 'es.user=elastic' | tee -a app_config_web app_config_etl app_config_validator
     
-    echo 'es.password={elastic password here}' | tee -a app_config_web app_config_etl app_config_validator
+    echo 'es.password=${ELASTIC_PASSWORD}' | tee -a app_config_web app_config_etl app_config_validator
     
     echo 'es.ssl=true' | tee -a app_config_web app_config_etl app_config_validator
 
