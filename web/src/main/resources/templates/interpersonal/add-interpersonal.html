@@ -92,7 +92,7 @@
 $('#select1').dropdown({
      apiSettings: {
         url: '/api/taxpayers/autocomplete?term={query}',
-        method: 'GET',
+        method: 'POST',
         //dataType: 'text',
         cache: false,
         onResponse: function(result) {
@@ -114,7 +114,7 @@ $('#select1').dropdown({
 $('#select2').dropdown({
      apiSettings: {
         url: '/api/taxpayers/autocomplete?term={query}',
-        method: 'GET',
+        method: 'POST',
         //dataType: 'text',
         cache: false,
         onResponse: function(result) {

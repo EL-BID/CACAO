@@ -165,7 +165,7 @@ class TaxpayerAPIControllerTests {
 	@Test
 	public void testAutocompleteTaxpayer(String term, String expected) throws Exception {
 		MockHttpServletResponse response = mvc.perform(
-                get("/api/taxpayer/autocomplete")
+                post("/api/taxpayer/autocomplete")
                 	.with(csrf())
                 	.param("term", term)
                     .accept(MediaType.APPLICATION_JSON)

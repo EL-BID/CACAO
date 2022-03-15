@@ -116,12 +116,12 @@ public class DocumentTemplateUIController {
     }
 
     @Secured({"ROLE_TAX_TEMPLATE_WRITE"})
-    @GetMapping("/templates/{id}/input/{format}")
-    public String showEditDocumentInput(@PathVariable("id") String id, @PathVariable("inputName") String inputName, Model model) {
+    @GetMapping("/templates/{id}/editinput")
+    public String showEditDocumentInput(@PathVariable("id") String id, @RequestParam("inputName") String inputName, Model model) {
     	DocumentTemplate template = documentTemplateRepository.findById(id).orElseThrow(() -> new IllegalArgumentException(ERROR_INVALID_TEMPLATE_ID + id));
     	DocumentInput docInput = template.getInputWithName(inputName);
     	if(docInput==null) {
-    		throw new IllegalArgumentException("Input format " + inputName + " is not defined in template");
+    		throw new IllegalArgumentException("Input name " + inputName + " is not defined in template");
     	}
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute("docInput", docInput);

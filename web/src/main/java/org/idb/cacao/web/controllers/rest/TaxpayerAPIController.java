@@ -147,7 +147,7 @@ public class TaxpayerAPIController {
 	 * Method used for returning names of users that match a given term. Useful for 'auto complete' fields
 	 */
 	@Secured({"ROLE_TAXPAYER_READ"})
-	@GetMapping("/taxpayers/autocomplete")
+	@PostMapping("/taxpayers/autocomplete")
 	@ApiOperation(value="Method used for returning taxpayer id and name that match a given term with their id or name. Useful for 'auto complete' fields")
 	public SearchResult<NameId> autocompleteTaxpayer(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<NameId> result;
@@ -168,7 +168,7 @@ public class TaxpayerAPIController {
 	 * Method used for returning names of users that match a given term. Useful for 'auto complete' fields
 	 */
 	@Secured({"ROLE_TAXPAYER_READ"})
-	@GetMapping("/taxpayer/names")
+	@PostMapping("/taxpayer/names")
 	@ApiOperation(value="Method used for returning names of taxpayers that match a given term. Useful for 'auto complete' fields")
 	public ResponseEntity<List<String>> getTaxpayerNames(@ApiParam(required=false) @RequestParam("term") Optional<String> term) {
 		List<String> names;
