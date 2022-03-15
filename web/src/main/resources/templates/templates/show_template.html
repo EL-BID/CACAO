@@ -208,13 +208,13 @@
 		        {title: /*[[#{doc.input.format}]]*/ "Format", field:"format", minWidth:100}
 		    ],
 		    data: [ [# th:each="i : ${template.inputs}"]
-		      { id: [# th:text="${i.id}"/], inputName: [# th:text="${i.inputName}"/], inputName: [# th:text="${i.inputName}"/] },
+		      { id: [# th:text="${i.id}"/], inputName: [# th:text="${i.inputName}"/], format: [# th:text="${i.format.name()}"/] },
 		      [/] ]    	
 		})
 		
-		table_inputs.on('rowClick', function(e, row) {
-			window.location.replace([[@{/templates/{id}/editinput/(id=${template.id})}]] + "?inputName=" + row.getData().inputName)
-		})
+	    table_inputs.on('rowClick', function(e, row) {
+            window.location.replace([[@{/templates/{id}/editinput/(id=${template.id})}]] + "?inputName=" + row.getData().inputName)
+        })
 		
 		$('#tab .item').tab()
 		[# th:if="${showInputs}"]
