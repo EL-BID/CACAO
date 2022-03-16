@@ -21,6 +21,7 @@ package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -58,7 +59,7 @@ public class CSVParser extends FileParserAdapter {
 	/**
 	 * A parser to handle CSV lines
 	 */
-	private CsvParser csvParser;
+	private CsvParser baseCSVParser;
 	
 	private TabulatedData tab;
 
@@ -72,6 +73,7 @@ public class CSVParser extends FileParserAdapter {
 			try {
 				scanner.close();
 			} catch (Exception e) {
+				log.log(Level.INFO,"Scanner close error", e);
 			}
 		}
 		
@@ -95,7 +97,7 @@ public class CSVParser extends FileParserAdapter {
 			}
 			
 		} catch (IOException e) {
-			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
 		}
 		
 	}	
@@ -133,7 +135,7 @@ public class CSVParser extends FileParserAdapter {
 						
 						return tab.parseLine(parts);
 					}
-					return null;
+					return Collections.emptyMap();
 				}
 				
 				@Override
@@ -148,7 +150,7 @@ public class CSVParser extends FileParserAdapter {
 			}; 
 			
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
+			log.log(Level.SEVERE, String.format("Error trying to iterate data from file %s", path.getFileName()), e);			
 		}
 		
 		return null;
@@ -160,6 +162,7 @@ public class CSVParser extends FileParserAdapter {
 			try {
 				scanner.close();
 			} catch (Exception e) {
+				log.log(Level.INFO,"Scanner close error", e);
 			}
 		}
 	}
@@ -171,7 +174,7 @@ public class CSVParser extends FileParserAdapter {
 	 */
 	private String[] readLine(String line) {
 		
-		if ( csvParser == null ) {
+		if ( baseCSVParser == null ) {
 			// creates a CSV parser
 			CsvParserSettings settings = new CsvParserSettings();
 			settings.detectFormatAutomatically();
@@ -186,10 +189,10 @@ public class CSVParser extends FileParserAdapter {
 			settings.trimValues(true);
 			settings.getFormat().setNormalizedNewline('\n');
 			settings.setMaxColumns(1000);
-			csvParser = new CsvParser(settings);
+			baseCSVParser = new CsvParser(settings);
 		}
 		
-		return csvParser.parseLine(line);
+		return baseCSVParser.parseLine(line);
 	}
 
 }

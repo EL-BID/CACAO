@@ -20,6 +20,7 @@
 package org.idb.cacao.validator.parsers;
 
 import java.io.FileInputStream;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +47,6 @@ import org.idb.cacao.api.errors.InvalidFileException;
  * @since 05/03/2022
  *
  */
-
-
 public abstract class HirarquicalDocumentParser extends FileParserAdapter {
 	private static final Logger log = Logger.getLogger(HirarquicalDocumentParser.class.getName());
 
@@ -75,14 +74,14 @@ public abstract class HirarquicalDocumentParser extends FileParserAdapter {
 					String line = scanner.nextLine();
 					if (line.trim().length()==0)
 						continue;
-						contentText.append(line);
+					contentText.append(line);
 				}
 			
 			}
 
 			String text = contentText.toString();
 
-            if (!this.validateFile(text)) {
+            if (Boolean.FALSE.equals(validateFile(text))) {
 				throw new InvalidFileException("Invalid file");
 			}
 
@@ -99,7 +98,7 @@ public abstract class HirarquicalDocumentParser extends FileParserAdapter {
 			tab.parseColumnNames(titles.toArray());
 
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
 		}
 	}
 
@@ -132,7 +131,7 @@ public abstract class HirarquicalDocumentParser extends FileParserAdapter {
 						
 						return tab.parseLine(parts);
 					}
-					return null;
+					return Collections.emptyMap();
 				}
 				
 				@Override
@@ -142,22 +141,20 @@ public abstract class HirarquicalDocumentParser extends FileParserAdapter {
 				
 				@Override
 				public void close() {
-									
+					entries = null;
 				}
 			}; 
 			
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
+			log.log(Level.SEVERE, String.format("Error trying to iterate data from file %s", path.getFileName()), e);			
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void close() {
-		
-		entries = null;
-		
+	public void close() {		
+		entries = null;		
 	}
 
 }

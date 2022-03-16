@@ -58,7 +58,7 @@ public interface FileParser extends Closeable {
 	/**
 	 * Specification for this template
 	 */
-	default public void setDocumentTemplate(DocumentTemplate template) { }
+	public default void setDocumentTemplate(DocumentTemplate template) { }
 	
 	/**
 	 * Trigger the start of the file processing. Every information needed for this task

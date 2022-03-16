@@ -19,6 +19,7 @@
  *******************************************************************************/
 package org.idb.cacao.validator.parsers;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,6 +84,9 @@ public class TabulatedData {
 	 * Parse one line of data regarding one record
 	 */
 	public Map<String,Object> parseLine(Object[] parts) {
+		
+		if ( parts == null || parts.length == 0 )
+			return Collections.emptyMap();
 		
 		Map<String,Object> toRet = new HashMap<>();
 		

@@ -22,6 +22,7 @@ package org.idb.cacao.validator.parsers;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -79,16 +80,13 @@ public class WordParser extends FileParserAdapter {
 							continue;
 						}
 
-						if (table.getRow(0).getTableCells().size() == dataTable.getRow(0).getTableCells().size()) {
+						if (table.getRow(0).getTableCells().size() == dataTable.getRow(0).getTableCells().size() 
+								&& isFirstRowEquals(table)) {
 
-							if (isFirstRowEquals(table)) {
-
-								// Remove first row, supposed to be column descriptions
-								table.removeRow(0);
-								// Add new table data inside actual table
-								table.getRows().forEach(row -> dataTable.addRow(row));
-
-							}
+							// Remove first row, supposed to be column descriptions
+							table.removeRow(0);
+							// Add new table data inside actual table
+							table.getRows().forEach(row -> dataTable.addRow(row));
 
 						}
 
@@ -99,7 +97,7 @@ public class WordParser extends FileParserAdapter {
 			}
 
 		} catch (IOException e) {
-			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
 		}
 
 		if (dataTable != null) {
@@ -118,7 +116,7 @@ public class WordParser extends FileParserAdapter {
 	 */
 	private String[] readLine(XWPFTableRow row) {
 		if (row == null)
-			return null;
+			return new String[0];
 		List<XWPFTableCell> columns = row.getTableCells();
 		List<String> columnsDescriptions = new ArrayList<>(columns.size());
 		columns.forEach(col -> columnsDescriptions.add(col.getText()));
@@ -185,7 +183,7 @@ public class WordParser extends FileParserAdapter {
 						String[] parts = readLine(row);
 						return tab.parseLine(parts);
 					}
-					return null;
+					return Collections.emptyMap();
 				}
 
 				@Override
@@ -200,7 +198,7 @@ public class WordParser extends FileParserAdapter {
 			};
 
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to iterate data from file %s", path.getFileName()), e);
 		}
 
 		return null;

@@ -106,7 +106,12 @@ class ExcelDataSerie {
 	/**
 	 * Persist the boolean indications of the field mapping (prevent unnecessary recalculations)
 	 */
-	private Boolean sameRow, sameColumn;
+	private Boolean sameRow;
+	
+	/**
+	 * Persist the boolean indications of the field mapping (prevent unnecessary recalculations)
+	 */
+	private Boolean sameColumn;
 	
 	/**
 	 * Persist the constant value (prevent unnecessary recalculations)
@@ -212,13 +217,13 @@ class ExcelDataSerie {
 		}
 		else if (isSameColumn()) {
 			try {
-				int last_row = sheet.getLastRowNum();
-				if (last_row<=0)
+				int lastRow = sheet.getLastRowNum();
+				if (lastRow<=0)
 					return 0;
 				if (firstRow==null)
-					return last_row+1;
+					return lastRow+1;
 				else
-					return Math.max(0,last_row-firstRow.intValue()+1);
+					return Math.max(0,lastRow-firstRow.intValue()+1);
 			}
 			catch (Exception ex) {
 				return 0;
@@ -229,10 +234,10 @@ class ExcelDataSerie {
 				Row r = sheet.getRow(row);
 				if (r==null)
 					return 0;
-				short last_col = r.getLastCellNum();
-				if (last_col<=0)
+				short lastCol = r.getLastCellNum();
+				if (lastCol<=0)
 					return 0;
-				return last_col;
+				return lastCol;
 			}
 			catch (Exception ex) {
 				return 0;
@@ -287,10 +292,10 @@ class ExcelDataSerie {
 			}
 			try {
 				CellReference cref = cellReferences[currentCellReference];
-				Sheet sheet = (sheets!=null) ? sheets.getOrDefault(cref.getSheetName(), this.sheet) : this.sheet;
-				if (sheet==null)
+				Sheet sheetRef = (sheets!=null) ? sheets.getOrDefault(cref.getSheetName(), this.sheet) : this.sheet;
+				if (sheetRef==null)
 					return null;
-				Row r = sheet.getRow(cref.getRow());
+				Row r = sheetRef.getRow(cref.getRow());
 				if (r==null)
 					return null;
 				Cell c = r.getCell(cref.getCol());
@@ -444,17 +449,17 @@ class ExcelDataSerie {
 			if (currentCellReference.intValue()>=cellReferences.length) {
 				return null;
 			}
-			CellReference requested_cell_ref = new CellReference(cell);
+			CellReference requestedCellRef = new CellReference(cell);
 			CellReference cref = cellReferences[currentCellReference];
-			if (cellReferencesComparator.compare(requested_cell_ref, cref)!=0) {
-				int position = Arrays.binarySearch(cellReferences, /*fromIndex*/currentCellReference, /*toIndex*/cellReferences.length, requested_cell_ref, cellReferencesComparator);
+			if (cellReferencesComparator.compare(requestedCellRef, cref)!=0) {
+				int position = Arrays.binarySearch(cellReferences, /*fromIndex*/currentCellReference, /*toIndex*/cellReferences.length, requestedCellRef, cellReferencesComparator);
 				if (position<0) {
 					// If binarySearch returned negative number, we need to find an approximation to the requested cell
-					int in_range_element_position = -2-position;
-					if (in_range_element_position<0)
+					int inRrangeElementPosition = -2-position;
+					if (inRrangeElementPosition<0)
 						return null; // we did not reach the position for this field
-					if (currentCellReference != in_range_element_position) {
-						currentCellReference = in_range_element_position;
+					if (currentCellReference != inRrangeElementPosition) {
+						currentCellReference = inRrangeElementPosition;
 						usedPreviousValue = false; // reset this indication because we are now at a different value position
 					}
 					else {
@@ -486,14 +491,14 @@ class ExcelDataSerie {
 				if (metric && usedPreviousValue)
 					return null;
 			}
-			Sheet sheet = cell.getSheet();
-			Row r = sheet.getRow(cref.getRow());
+			Sheet sheetRef = cell.getSheet();
+			Row r = sheetRef.getRow(cref.getRow());
 			if (r==null)
 				return null;
 			Cell c = r.getCell(cref.getCol());
 			if (c==null)
 				return null;
-			atLocation.set(cellReferencesComparator.compare(requested_cell_ref, cref)==0);
+			atLocation.set(cellReferencesComparator.compare(requestedCellRef, cref)==0);
 			return ExcelParser.getCellValue(c, evaluator);
 		}
 		else if (individualValues!=null) {
@@ -502,17 +507,17 @@ class ExcelDataSerie {
 			if (currentIndividualValue.intValue()>=individualValues.length) {
 				return null;
 			}
-			ExcelValue requested_cell_ref = new ExcelValue(cell, /*value*/null);
+			ExcelValue requestedCellRef = new ExcelValue(cell, /*value*/null);
 			ExcelValue cref = individualValues[currentIndividualValue];
-			if (individualValuesComparator.compare(requested_cell_ref, cref)!=0) {
-				int position = Arrays.binarySearch(individualValues, /*fromIndex*/currentIndividualValue, /*toIndex*/individualValues.length, requested_cell_ref, individualValuesComparator);
+			if (individualValuesComparator.compare(requestedCellRef, cref)!=0) {
+				int position = Arrays.binarySearch(individualValues, /*fromIndex*/currentIndividualValue, /*toIndex*/individualValues.length, requestedCellRef, individualValuesComparator);
 				if (position<0) {
 					// If binarySearch returned negative number, we need to find an approximation to the requested cell
-					int in_range_element_position = -2-position;
-					if (in_range_element_position<0)
+					int inRangeElementPosition = -2-position;
+					if (inRangeElementPosition<0)
 						return null; // we did not reach the position for this field
-					if (currentIndividualValue != in_range_element_position) {
-						currentIndividualValue = in_range_element_position;
+					if (currentIndividualValue != inRangeElementPosition) {
+						currentIndividualValue = inRangeElementPosition;
 						usedPreviousValue = false; // reset this indication because we are now at a different value position
 					}
 					else {
@@ -544,7 +549,7 @@ class ExcelDataSerie {
 				if (metric && usedPreviousValue)
 					return null;					
 			}
-			atLocation.set(individualValuesComparator.compare(requested_cell_ref, cref)==0);
+			atLocation.set(individualValuesComparator.compare(requestedCellRef, cref)==0);
 			return cref.getValue();
 		}
 		else if (isSameColumn()) {

@@ -83,22 +83,22 @@ public class ValidatedDataStorageService {
         
         OffsetDateTime timestamp = context.getDocumentUploaded().getTimestamp();
 
-		for (Map<String,Object> record: parsedContents) {	
+		for (Map<String,Object> dataRecord: parsedContents) {	
 			
 			String rowId = String.format("%s.%014d", fileId, ++count);
 			
 			// Formats all field names according to ElasticSearch standards
-			Map<String,Object> normalized_record = IndexNamesUtils.normalizeAllKeysForES(record);
+			Map<String,Object> normalizedRecord = IndexNamesUtils.normalizeAllKeysForES(dataRecord);
 			
 			// Includes additional metadata
-			normalized_record.put(ValidatedDataFieldNames.FILE_ID.name(), fileId);
-			normalized_record.put(ValidatedDataFieldNames.TIMESTAMP.name(), timestamp);
-			normalized_record.put(ValidatedDataFieldNames.LINE.name(), count);
+			normalizedRecord.put(ValidatedDataFieldNames.FILE_ID.name(), fileId);
+			normalizedRecord.put(ValidatedDataFieldNames.TIMESTAMP.name(), timestamp);
+			normalizedRecord.put(ValidatedDataFieldNames.LINE.name(), count);
 			
 			// Add this record to index
 			request.add(new IndexRequest(index_name)
 				.id(rowId)
-				.source(normalized_record));
+				.source(normalizedRecord));
 
 		} // LOOP over parsed data records
 		
@@ -110,7 +110,8 @@ public class ValidatedDataStorageService {
 				RequestOptions.DEFAULT));
 		}
 		catch (Exception ex) {
-			log.log(Level.SEVERE, "Error while storing "+count+" rows for file "+fileId+" for index '"+index_name+"' for template '"+template.getName()+"' "+template.getVersion(), ex);
+			String message = String.format("Error while storing %d rows for file %s for index '%s' for template '%s %s' ", count, fileId, index_name, template.getName(), template.getVersion());
+			log.log(Level.SEVERE, message, ex);
 		}
 		request.requests().clear();
 
@@ -118,7 +119,8 @@ public class ValidatedDataStorageService {
 			elasticsearchClient.indices().refresh(new RefreshRequest(index_name), RequestOptions.DEFAULT);
 		}
 		catch (IOException ex) {
-			log.log(Level.SEVERE, "Error while refreshing after insertion of "+count+" rows for file "+fileId+" for index '"+index_name+"' for template '"+template.getName()+"' "+template.getVersion(), ex);			
+			String message = String.format("Error while refreshing after insertion of %d rows for file %s for index '%s' for template '%s %s", count, fileId, index_name, template.getName(), template.getVersion());
+			log.log(Level.SEVERE, message, ex);			
 		}
 	}
 }

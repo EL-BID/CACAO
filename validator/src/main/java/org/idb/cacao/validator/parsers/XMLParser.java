@@ -36,9 +36,7 @@ public class XMLParser extends HirarquicalDocumentParser {
 
 	@Override
 	protected Map<String, Object> contentToMap(String textContent) {
-		Map<String, Object> result = U.fromXmlMap(textContent);
-
-		return result;
+		return U.fromXmlMap(textContent);
 	}
 
 	@Override

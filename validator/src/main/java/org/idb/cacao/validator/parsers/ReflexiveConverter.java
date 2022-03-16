@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.idb.cacao.api.ValidationContext;
+import org.idb.cacao.api.errors.GeneralException;
 
 /**
  * Base class for a generic traversal of object hierarchy
@@ -45,28 +46,28 @@ public abstract class ReflexiveConverter {
 	/**
 	 * For each visited field type enlists the internal fields
 	 */
-	private final Map<Class<?>,List<FieldDescriptor>> map_fields;
+	private final Map<Class<?>,List<FieldDescriptor>> mapFields;
 	
 	/**
 	 * For each visited field type enlists the internal fields of primitive type
 	 */
-	private final Map<Class<?>,List<FieldDescriptor>> map_fields_primitive;
+	private final Map<Class<?>,List<FieldDescriptor>> mapFieldsPrimitive;
 	
 	/**
 	 * For each visited field type enlists the internal fields of complex type
 	 */	
-	private final Map<Class<?>,List<FieldDescriptor>> map_fields_complex;
+	private final Map<Class<?>,List<FieldDescriptor>> mapFieldsComplex;
 
 	/**
 	 * For each visited field type enlists the internal fields of multiple-valued type (e.g. arrays and lists)
 	 */
-	private final Map<Class<?>,List<FieldDescriptor>> map_fields_multiple;
+	private final Map<Class<?>,List<FieldDescriptor>> mapFieldsMultiple;
 	
-	public ReflexiveConverter() {
-		map_fields = new HashMap<>();
-		map_fields_primitive = new HashMap<>();
-		map_fields_complex = new HashMap<>();
-		map_fields_multiple = new HashMap<>();
+	protected ReflexiveConverter() {
+		mapFields = new HashMap<>();
+		mapFieldsPrimitive = new HashMap<>();
+		mapFieldsComplex = new HashMap<>();
+		mapFieldsMultiple = new HashMap<>();
 	}
 	
 	/**
@@ -146,68 +147,67 @@ public abstract class ReflexiveConverter {
 			Map<?,?> map = (Map<?,?>)obj;
 			visitFieldsStart(obj);
 			// First classifies the values according to their 'types': primitives, complex and multiple
-			List<Map.Entry<?, ?>> fields_primitive = new LinkedList<>();
-			List<Map.Entry<?, ?>> fields_complex = new LinkedList<>();
-			List<Map.Entry<?, ?>> fields_multiple = new LinkedList<>();
+			List<Map.Entry<?, ?>> fieldsPrimitive = new LinkedList<>();
+			List<Map.Entry<?, ?>> fieldsComplex = new LinkedList<>();
+			List<Map.Entry<?, ?>> fieldsMultiple = new LinkedList<>();
 			for (Map.Entry<?,?> entry:map.entrySet()) {
 				Object valor = entry.getValue();
 				if (valor==null) {
-					fields_primitive.add(entry);
-					//continue;
+					fieldsPrimitive.add(entry);
 				}
 				else if (isPrimitiveType(valor.getClass()))
-					fields_primitive.add(entry);
+					fieldsPrimitive.add(entry);
 				else if (isArrayType(valor.getClass())) {
 					if ( valor instanceof Object[] ) {
 						Object[] valores = (Object[])valor;
 						if ( valores.length == 0 || valores[0] == null || valores[0].toString().isEmpty() ) {
 							entry.setValue(null);
-							fields_primitive.add(entry);
+							fieldsPrimitive.add(entry);
 						}
 						else {
-							fields_multiple.add(entry);
+							fieldsMultiple.add(entry);
 						}
 					}
 					else {
-						fields_multiple.add(entry);							
+						fieldsMultiple.add(entry);							
 					}
 				}
 				else {
-					fields_complex.add(entry);
+					fieldsComplex.add(entry);
 				}
 			}
 			// Insert the values in order (first the primitive types, followed by complex type, and lastly by multiple-valued types)
-			for (Map.Entry<?,?> entry:fields_primitive) {
-				String nome_campo = ValidationContext.toString(entry.getKey());
-				if (nome_campo==null)
+			for (Map.Entry<?,?> entry:fieldsPrimitive) {
+				String fieldName = ValidationContext.toString(entry.getKey());
+				if (fieldName==null)
 					continue;
 				Object valor = entry.getValue();
-				FieldDescriptor campo;
+				FieldDescriptor field;
 				if ( valor == null )
-					campo = new FieldDescriptor(nome_campo, String.class);
+					field = new FieldDescriptor(fieldName, String.class);
 				else
-					campo = new FieldDescriptor(nome_campo, valor.getClass());
-				visitFieldPrimitive(obj, campo, valor);						
+					field = new FieldDescriptor(fieldName, valor.getClass());
+				visitFieldPrimitive(obj, field, valor);						
 			}
-			for (Map.Entry<?,?> entry:fields_complex) {
-				String nome_campo = ValidationContext.toString(entry.getKey());
-				if (nome_campo==null)
+			for (Map.Entry<?,?> entry:fieldsComplex) {
+				String fieldName = ValidationContext.toString(entry.getKey());
+				if (fieldName==null)
 					continue;
 				Object valor = entry.getValue();
-				FieldDescriptor campo = new FieldDescriptor(nome_campo, valor.getClass());
+				FieldDescriptor campo = new FieldDescriptor(fieldName, valor.getClass());
 				visitFieldStart(obj, campo, valor);
 				if (valor!=null) {
 					parse(valor);
 				}
 				visitFieldStop(obj, campo, valor);
 			}
-			for (Map.Entry<?,?> entry:fields_multiple) {
-				String nome_campo = ValidationContext.toString(entry.getKey());
+			for (Map.Entry<?,?> entry:fieldsMultiple) {
+				String fieldName = ValidationContext.toString(entry.getKey());
 				
-				if (nome_campo==null)
+				if (fieldName==null)
 					continue;
 				Object valor = entry.getValue();
-				FieldDescriptor campo = new FieldDescriptor(nome_campo, valor.getClass());
+				FieldDescriptor campo = new FieldDescriptor(fieldName, valor.getClass());
 				visitFieldStart(obj, campo, valor);
 				if (valor!=null) {
 					parse(valor);
@@ -255,13 +255,13 @@ public abstract class ReflexiveConverter {
 	 * Returns all the fields related to an arbitrary type
 	 */
 	protected List<FieldDescriptor> getFields(Class<?> type) {
-		List<FieldDescriptor> fields = map_fields.get(type);
+		List<FieldDescriptor> fields = mapFields.get(type);
 		if (fields!=null)
 			return fields;
-		List<Field> java_fields = getFields(type, /*statics*/false, /*finals*/true, /*transients*/true);
-		if (java_fields==null)
-			java_fields = Collections.emptyList();
-		List<FieldDescriptor> custom_fields = java_fields.stream()
+		List<Field> javaFields = getFields(type, /*statics*/false, /*finals*/true, /*transients*/true);
+		if (javaFields==null)
+			javaFields = Collections.emptyList();
+		List<FieldDescriptor> customFields = javaFields.stream()
 			.map(FieldDescriptor::new)
 			.sorted(new Comparator<FieldDescriptor>() {
 				@Override
@@ -270,20 +270,20 @@ public abstract class ReflexiveConverter {
 				}
 			})
 			.collect(Collectors.toList());
-		map_fields.put(type,custom_fields);
-		return custom_fields;
+		mapFields.put(type,customFields);
+		return customFields;
 	}
 	
 	/**
 	 * Returns all the fields of primitive type related to an arbitrary type
 	 */
 	protected List<FieldDescriptor> getFieldsPrimitive(Class<?> type) {
-		List<FieldDescriptor> fields = map_fields_primitive.get(type);
+		List<FieldDescriptor> fields = mapFieldsPrimitive.get(type);
 		if (fields!=null) 
 			return fields;
-		List<FieldDescriptor> todos_fields = getFields(type);
-		fields = todos_fields.stream().filter(campo->isPrimitiveType(campo.fieldType)).collect(Collectors.toList());
-		map_fields_primitive.put(type,fields);
+		List<FieldDescriptor> allFields = getFields(type);
+		fields = allFields.stream().filter(campo->isPrimitiveType(campo.fieldType)).collect(Collectors.toList());
+		mapFieldsPrimitive.put(type,fields);
 		return fields;
 	}
 
@@ -291,12 +291,12 @@ public abstract class ReflexiveConverter {
 	 * Returns all the fields of complex type related to an arbitrary type
 	 */
 	protected List<FieldDescriptor> getFieldsComplex(Class<?> type) {
-		List<FieldDescriptor> fields = map_fields_complex.get(type);
+		List<FieldDescriptor> fields = mapFieldsComplex.get(type);
 		if (fields!=null) 
 			return fields;
-		List<FieldDescriptor> todos_fields = getFields(type);
-		fields = todos_fields.stream().filter(campo->isComplexType(campo.fieldType)).collect(Collectors.toList());
-		map_fields_complex.put(type,fields);
+		List<FieldDescriptor> allFields = getFields(type);
+		fields = allFields.stream().filter(campo->isComplexType(campo.fieldType)).collect(Collectors.toList());
+		mapFieldsComplex.put(type,fields);
 		return fields;
 	}
 	
@@ -304,12 +304,12 @@ public abstract class ReflexiveConverter {
 	 * Returns all the fields of multiple-valued type related to an arbitrary type
 	 */
 	protected List<FieldDescriptor> getFieldsMultiple(Class<?> type) {
-		List<FieldDescriptor> fields = map_fields_multiple.get(type);
+		List<FieldDescriptor> fields = mapFieldsMultiple.get(type);
 		if (fields!=null) 
 			return fields;
-		List<FieldDescriptor> todos_fields = getFields(type);
-		fields = todos_fields.stream().filter(campo->isArrayType(campo.fieldType)).collect(Collectors.toList());
-		map_fields_multiple.put(type,fields);
+		List<FieldDescriptor> allFields = getFields(type);
+		fields = allFields.stream().filter(campo->isArrayType(campo.fieldType)).collect(Collectors.toList());
+		mapFieldsMultiple.put(type,fields);
 		return fields;
 	}
 
@@ -329,8 +329,7 @@ public abstract class ReflexiveConverter {
 		if (Temporal.class.isAssignableFrom(type)) return true;
 		if (String.class.isAssignableFrom(type)) return true;
 		if (Enum.class.isAssignableFrom(type)) return true;
-		if (Object.class.equals(type)) return true;
-		return false;
+		return (Object.class.equals(type));
 	}
 
 	/**
@@ -380,7 +379,7 @@ public abstract class ReflexiveConverter {
 				try {
 					return field.get(instance);
 				} catch (IllegalArgumentException | IllegalAccessException e) {
-					throw new RuntimeException(e);
+					throw new GeneralException(e);
 				}
 			}
 			return null;
@@ -401,11 +400,11 @@ public abstract class ReflexiveConverter {
 
 	public static List<Field> getFields(Class<?> type, boolean statics, boolean finals, boolean transients) {
 		Class<?> inspectClass = type;
-		List<Field> fields = new LinkedList<Field>();
+		List<Field> fields = new LinkedList<>();
 		while (inspectClass != null) {
-			Field[] reflected_fields = inspectClass.getDeclaredFields();
-			if (reflected_fields != null && reflected_fields.length > 0) {
-				for (Field field : reflected_fields) {
+			Field[] reflectedFields = inspectClass.getDeclaredFields();
+			if (reflectedFields != null && reflectedFields.length > 0) {
+				for (Field field : reflectedFields) {
 					int mod = field.getModifiers();
 					if (!statics && Modifier.isStatic(mod))
 						continue; // Não considera os fields estáticos

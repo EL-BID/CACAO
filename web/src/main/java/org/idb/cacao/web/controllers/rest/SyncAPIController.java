@@ -185,7 +185,6 @@ public class SyncAPIController {
 	 */
 	public static final String DATA_PARQUET_FILENAME = "data.snappy.parquet";
 
-
 	@Autowired
 	private Environment env;
 

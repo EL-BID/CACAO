@@ -22,6 +22,8 @@ package org.idb.cacao.validator.parsers;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.idb.cacao.validator.utils.JSONUtils;
 
@@ -39,6 +41,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class JSONParser extends HirarquicalDocumentParser {
+	
+	private static final Logger log = Logger.getLogger(JSONParser.class.getName());
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	protected Map<String, Object> contentToMap(String textContent) {
@@ -48,7 +53,7 @@ public class JSONParser extends HirarquicalDocumentParser {
 
 			return result;
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
+			log.log(Level.FINEST, e.getMessage(), e);
 		}
 		
 		return Collections.emptyMap();

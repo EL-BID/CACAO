@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -51,6 +52,7 @@ import org.idb.cacao.validator.utils.XMLUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * Parser for a PDF Document. PDF must use PDF Forms.
@@ -95,7 +97,7 @@ public class PDFParser extends FileParserAdapter {
 				try (PDDocument document = PDDocument.load(stream);) {
 					processForms(document, /*includeAllNamedObject*/false);
 				} catch (Exception e) {
-					log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
+					log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
 				}
 			}
 			
@@ -124,7 +126,7 @@ public class PDFParser extends FileParserAdapter {
 			
 		}
 		catch (IOException e) {
-			log.log(Level.SEVERE, "Error trying to read file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
 		}	
 	}
 
@@ -145,7 +147,7 @@ public class PDFParser extends FileParserAdapter {
 			
 			final PDFParser parser = this;
 			final int size = allFieldsValues.isEmpty() ? 0 : 
-				allFieldsValues.values().stream().map(values->values.size()).sorted(Comparator.reverseOrder()).findFirst().orElse(0);							
+				allFieldsValues.values().stream().map(List::size).sorted(Comparator.reverseOrder()).findFirst().orElse(0);							
 			
 			return new DataIterator() {
 				
@@ -171,7 +173,7 @@ public class PDFParser extends FileParserAdapter {
 			}; 
 			
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to iterate data from file " + path.getFileName(), e);			
+			log.log(Level.SEVERE, String.format("Error trying to iterate data from file %s", path.getFileName()), e);			
 		}
 		
 		return null;
@@ -185,7 +187,7 @@ public class PDFParser extends FileParserAdapter {
 	 */
 	protected Map<String, Object> getNext(int index) {
 		
-		Map<String, Object> record = new HashMap<>();
+		Map<String, Object> dataItem = new HashMap<>();
 		
 		for ( DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields() ) {
 			
@@ -193,24 +195,24 @@ public class PDFParser extends FileParserAdapter {
 			String fieldName = fieldMapping.getFieldName();
 			
 			if ( key == null ) {
-				record.put(fieldName, null);
+				dataItem.put(fieldName, null);
 			}
 			else {
 				List<Object> fieldValues = allFieldsValues.get(key); 
 				
 				if ( fieldValues == null || fieldValues.isEmpty() ) {
-					record.put(fieldName, null);	
+					dataItem.put(fieldName, null);	
 				}
 				else {
 				
 					if ( index <= (fieldValues.size() -1) ) {
-						record.put(fieldName, fieldValues.get(index));	
+						dataItem.put(fieldName, fieldValues.get(index));	
 					}
 					else if ( index > 0 && fieldValues.size() == 1 ) {
-						record.put(fieldName, fieldValues.get(0));
+						dataItem.put(fieldName, fieldValues.get(0));
 					}
 					else {
-						record.put(fieldName, null);	
+						dataItem.put(fieldName, null);	
 					}
 					
 				}
@@ -218,7 +220,7 @@ public class PDFParser extends FileParserAdapter {
 			
 		}
 		
-		return record;
+		return dataItem;
 	}
 
 	@Override
@@ -233,8 +235,12 @@ public class PDFParser extends FileParserAdapter {
 	 * Process internal form structures
 	 * @param document
 	 * @param includeAllNamedObject If set to TRUE, will include in 'fieldValues' all objects with 'name' property, including those ones without values
+	 * @throws ParserConfigurationException 
+	 * @throws IOException 
+	 * @throws SAXException 
+	 * @throws TransformerException 
 	 */
-	protected void processForms(PDDocument document, boolean includeAllNamedObject) throws Exception {
+	protected void processForms(PDDocument document, boolean includeAllNamedObject) throws ParserConfigurationException, SAXException, IOException, TransformerException {
 		
 		// O arquivo PDF pode trabalhar com diferentes estruturas de formulário.
 		
@@ -269,8 +275,7 @@ public class PDFParser extends FileParserAdapter {
 		try {
 			List<PDSignatureField> sfields = document.getSignatureFields();
 			if (sfields!=null && !sfields.isEmpty()) {
-				for (PDSignatureField sfield:sfields) {
-					System.out.println(sfield);
+				for (PDSignatureField sfield:sfields) {					
 					allFieldsValues.compute(sfield.getMappingName(), (k,v)-> v == null ? new LinkedList<>() : v).add(sfield.getValueAsString());
 				}
 			}
@@ -293,12 +298,12 @@ public class PDFParser extends FileParserAdapter {
 					if (button!=null && !button.isEmpty())
 						continue; // ignora botões
 					String name = prefixFieldName+XMLUtils.getAttribute(child, "name");
-					Node node_value = XMLUtils.locateNode(child, null, "value");
-					if (node_value!=null) {
+					Node nodeValue = XMLUtils.locateNode(child, null, "value");
+					if (nodeValue!=null) {
 						try {
-							Node text_value = XMLUtils.locateNode(node_value, null, "text");
-							if (text_value!=null) {
-								String content = text_value.getTextContent();
+							Node textValue = XMLUtils.locateNode(nodeValue, null, "text");
+							if (textValue!=null) {
+								String content = textValue.getTextContent();
 								if (content!=null)
 									content = content.trim();
 								if (content!=null && content.length()>0) {
@@ -307,12 +312,11 @@ public class PDFParser extends FileParserAdapter {
 								else if (includeAllNamedObject) {
 									fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);												
 								}
-								continue;
 							}
 							else {
-								Node float_value = XMLUtils.locateNode(node_value, null, "float");
-								if (float_value!=null) {
-									String content = float_value.getTextContent();
+								Node floatValue = XMLUtils.locateNode(nodeValue, null, "float");
+								if (floatValue!=null) {
+									String content = floatValue.getTextContent();
 									if (content!=null && !content.trim().isEmpty() ) {
 										content = content.trim();
 										Number valor;		
@@ -325,12 +329,11 @@ public class PDFParser extends FileParserAdapter {
 									else if (includeAllNamedObject) {
 										fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
 									}
-									continue;
 								}
 								else {
-									Node date_value = XMLUtils.locateNode(node_value, null, "date");
-									if (date_value!=null) {
-										String content = date_value.getTextContent();
+									Node dateValue = XMLUtils.locateNode(nodeValue, null, "date");
+									if (dateValue!=null) {
+										String content = dateValue.getTextContent();
 										if (content!=null && !content.trim().isEmpty() ) {
 											Date d = ParserUtils.parseFlexibleDate(content.trim());
 											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(d);
@@ -338,25 +341,23 @@ public class PDFParser extends FileParserAdapter {
 										else if (includeAllNamedObject) {
 											fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);												
 										}
-										continue;
 									}
 									else {
-										Node integer_value = XMLUtils.locateNode(node_value, null, "integer");
-										if (integer_value!=null) {
-											String content = integer_value.getTextContent();
+										Node integerValue = XMLUtils.locateNode(nodeValue, null, "integer");
+										if (integerValue!=null) {
+											String content = integerValue.getTextContent();
 											if (content!=null && !content.trim().isEmpty() ) {
-												long valor = Long.valueOf(content.trim());		
+												long valor = Long.parseLong(content.trim());		
 												fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(valor);
 											}
 											else if (includeAllNamedObject) {
 												fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
-											}
-											continue;		
+											}		
 										}
 										else {											
-											Node decimal_value = XMLUtils.locateNode(node_value, null, "decimal");
-											if (decimal_value!=null) {
-												String content = decimal_value.getTextContent();
+											Node decimalValue = XMLUtils.locateNode(nodeValue, null, "decimal");
+											if (decimalValue!=null) {
+												String content = decimalValue.getTextContent();
 												if (content!=null && !content.trim().isEmpty() ) {
 													content = content.trim();
 													Number valor;		
@@ -369,7 +370,6 @@ public class PDFParser extends FileParserAdapter {
 												else if (includeAllNamedObject) {
 													fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
 												}
-												continue;
 											}
 										
 											// Ignore other field types
@@ -396,8 +396,8 @@ public class PDFParser extends FileParserAdapter {
 						if (includeAllNamedObject) {
 							fieldValues.compute(name, (k,v)-> v == null ? new LinkedList<>() : v).add(null);											
 						}
-						String next_prefix = (prefixFieldName==null) ? (name+".") : (prefixFieldName+name+".");
-						processXFAForm(child, includeAllNamedObject, fieldValues, next_prefix);
+						String nextPrefix = (prefixFieldName==null) ? (name+".") : (prefixFieldName+name+".");
+						processXFAForm(child, includeAllNamedObject, fieldValues, nextPrefix);
 					}
 					else {
 						processXFAForm(child, includeAllNamedObject, fieldValues, prefixFieldName);

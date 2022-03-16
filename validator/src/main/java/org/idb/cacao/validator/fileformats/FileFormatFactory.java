@@ -20,7 +20,7 @@
 package org.idb.cacao.validator.fileformats;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,9 +36,12 @@ public class FileFormatFactory {
 	
 	private static final Map<DocumentFormat, FileFormat> allFormats;
 	
+	private FileFormatFactory() {		
+	}
+	
 	// Registers all built-in FileFormat implementations
 	static {
-		allFormats = new HashMap<>();
+		allFormats = new EnumMap<>(DocumentFormat.class);		
 		registerFileFormat(new CSVFileFormat());
 		registerFileFormat(new WordFileFormat());
 		registerFileFormat(new JSONFileFormat());

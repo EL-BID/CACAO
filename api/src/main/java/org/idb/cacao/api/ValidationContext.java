@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.idb.cacao.api.templates.DocumentTemplate;
@@ -105,6 +106,11 @@ public class ValidationContext {
 	 * - may be a list of Maps (if there are multiple occurrences of the same NESTED field at the same file)<BR>
 	 */
 	private List<Map<String,Object>> parsedContents;
+	
+	/**
+	 * A {@link Supplier} function to provide implementation for a {@link List} that will keep all parsed data
+	 */
+	private Supplier<List<Map<String,Object>>> parsedContentsListFactory = LinkedList::new;	
 	
 	public ValidationContext() {
 		this.alerts = new LinkedList<>();
@@ -278,12 +284,20 @@ public class ValidationContext {
 		this.parsedContents = parsedContents;
 	}
 	
-	public void addParsedContent(Map<String,Object> record) {
-		if (record==null)
+	public Supplier<List<Map<String, Object>>> getParsedContentsListFactory() {
+		return parsedContentsListFactory;
+	}
+
+	public void setParsedContentsListFactory(Supplier<List<Map<String, Object>>> parsedContentsListFactory) {
+		this.parsedContentsListFactory = parsedContentsListFactory;
+	}
+
+	public void addParsedContent(Map<String,Object> dataItem) {
+		if (dataItem==null)
 			return;
 		if (this.parsedContents==null)
-			this.parsedContents = new LinkedList<>();
-		this.parsedContents.add(record);
+			this.parsedContents = parsedContentsListFactory.get();
+		this.parsedContents.add(dataItem);
 	}
 	
 	/**
@@ -292,12 +306,12 @@ public class ValidationContext {
 	 */
 	public void setFieldInParsedContents(String fieldName, Object fixedContents) {
 		if (this.parsedContents==null)
-			this.parsedContents = new LinkedList<>();
+			this.parsedContents = parsedContentsListFactory.get();
 		if (this.parsedContents.isEmpty()) {
 			this.parsedContents.add(new HashMap<>());
 		}
-		for (Map<String, Object> record: this.parsedContents) {
-			record.put(fieldName, fixedContents);
+		for (Map<String, Object> dataItem: this.parsedContents) {
+			dataItem.put(fieldName, fixedContents);
 		}
 	}
 	
@@ -332,8 +346,8 @@ public class ValidationContext {
 			return null;
 		if (parsedContents.size()<=index)
 			return null;
-		Map<String,Object> record = parsedContents.get(index);
-		return getParsedContent(record, fieldName, nestedFieldNames);
+		Map<String,Object> dataItem = parsedContents.get(index);
+		return getParsedContent(dataItem, fieldName, nestedFieldNames);
 	}
 	
 	/**
@@ -341,10 +355,10 @@ public class ValidationContext {
 	 * @param nestedFieldNames Optional parameter with other field names to look in nested structure.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T getParsedContent(Map<String,Object> record, String fieldName, String... nestedFieldNames) {
-		if (record==null)
+	public static <T> T getParsedContent(Map<String,Object> dataItem, String fieldName, String... nestedFieldNames) {
+		if (dataItem==null)
 			return null;
-		Object content = record.get(fieldName);
+		Object content = dataItem.get(fieldName);
 		if (content==null)
 			return null;
 		if (nestedFieldNames!=null && nestedFieldNames.length>0) {
@@ -361,8 +375,8 @@ public class ValidationContext {
 	 * Same as {@link #getParsedContent(Map, String, String...) getParsedContent} but also do some casting and conversions
 	 * in order to return a java.util.Date object.
 	 */
-	public static Date getParsedDateContent(Map<String,Object> record, String fieldName, String... nestedFieldNames) {
-		Object content = getParsedContent(record, fieldName, nestedFieldNames);
+	public static Date getParsedDateContent(Map<String,Object> dataItem, String fieldName, String... nestedFieldNames) {
+		Object content = getParsedContent(dataItem, fieldName, nestedFieldNames);
 		return toDate(content);
 	}
 
@@ -371,7 +385,7 @@ public class ValidationContext {
 	 * the corresponding standard warning and returns NULL.
 	 * @param context Validation context. Receives warnings.
 	 * @param type Field type
-	 * @param record Record fields and values
+	 * @param dataItem Record fields and values
 	 * @param fieldName Field name to find
 	 * @param nestedFieldNames Optional parameter with other field names to look in nested structure.
 	 */
@@ -379,14 +393,14 @@ public class ValidationContext {
 	public static <T> T getParsedRequiredContent(
 			ValidationContext context,
 			Class<T> type,
-			Map<String,Object> record, 
+			Map<String,Object> dataItem, 
 			String fieldName, 
 			String... nestedFieldNames) {
 		
 		if (Date.class==type) {
 			Date date;
 			try {
-				date = getParsedDateContent(record, fieldName, nestedFieldNames);
+				date = getParsedDateContent(dataItem, fieldName, nestedFieldNames);
 			}
 			catch (RuntimeException e) {
 				context.addAlert("{error.invalidField("+fieldName+")}");
@@ -401,7 +415,7 @@ public class ValidationContext {
 		
 		Object anyvalue;
 		try {
-			anyvalue = getParsedContent(record, fieldName, nestedFieldNames);
+			anyvalue = getParsedContent(dataItem, fieldName, nestedFieldNames);
 		}
 		catch (RuntimeException e) {
 			context.addAlert("{error.invalidField("+fieldName+")}");
@@ -537,14 +551,14 @@ public class ValidationContext {
 		}
 		else if (value instanceof String) {
 			String txt = (String)value;
-	    	if (txt==null || txt.trim().length()==0)
+	    	if (txt.isEmpty())
 	    		return null;
 	    	txt = txt.trim();
-	    	int comma_position = txt.indexOf(",");
-	    	int dot_position = txt.indexOf(".");
+	    	int commaPosition = txt.indexOf(",");
+	    	int dotPosition = txt.indexOf(".");
 	    	try {
-		    	if (comma_position>=0 && dot_position>=0) {
-		    		if (comma_position<dot_position) {
+		    	if (commaPosition>=0 && dotPosition>=0) {
+		    		if (commaPosition<dotPosition) {
 		    	    	try {
 		    	    		return parseDecimalGrouping(txt);
 		    	    	}
@@ -561,7 +575,7 @@ public class ValidationContext {
 		    	    	}    			
 		    		}
 		    	}
-		    	else if (comma_position>=0) {
+		    	else if (commaPosition>=0) {
 			    	try {
 			    		return parseDecimalWithComma(txt);
 			    	}
@@ -569,8 +583,8 @@ public class ValidationContext {
 			    		return parseDecimal(txt);
 			    	}    			    		
 		    	}
-		    	else if (dot_position>=0) {
-		    		if (txt.indexOf('.', dot_position+1)>0) {
+		    	else if (dotPosition>=0) {
+		    		if (txt.indexOf('.', dotPosition+1)>0) {
 		    			// If we have more dots, probably dots are grouping separators
 		    	    	try {
 		    	    		return parseDecimalWithComma(txt);

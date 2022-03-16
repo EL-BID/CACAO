@@ -36,6 +36,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -113,6 +114,7 @@ public class ExcelParser extends FileParserAdapter {
 			try {
 				workbook.close();
 			} catch (Exception e) {
+				log.log(Level.FINEST, e.getMessage(), e);
 			}
 		}
 		
@@ -195,7 +197,7 @@ public class ExcelParser extends FileParserAdapter {
 			}
 			
 		} catch (IOException | EncryptedDocumentException e) {
-			log.log(Level.SEVERE, "Error trying to read Excel file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to read Excel file %s", path.getFileName()), e);
 		}
 		
 		if (documentTemplate!=null && !mapDataSeries.isEmpty()) {
@@ -204,9 +206,9 @@ public class ExcelParser extends FileParserAdapter {
 				.map(DocumentField::getFieldName).collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
 			if (!metricsNames.isEmpty()) {
 				for (Map.Entry<DocumentInputFieldMapping, ExcelDataSerie> entry:mapDataSeries.entrySet()) {
-					boolean is_metric = metricsNames.contains(entry.getKey().getFieldName());
-					if (is_metric)
-						entry.getValue().metric = is_metric;
+					boolean isMetric = metricsNames.contains(entry.getKey().getFieldName());
+					if (isMetric)
+						entry.getValue().metric = isMetric;
 				}
 			}
 		}
@@ -228,7 +230,7 @@ public class ExcelParser extends FileParserAdapter {
 		
 		// This function will make irrelevant any difference regarding symbols and spaces. Will also make irrelevant differences
 		// in diacritical marks.
-		final Function<String,String> uniformNames = (name)->
+		final UnaryOperator<String> uniformNames = name->
 			Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("[\\p{InCombiningDiacriticalMarks}]", "")
 				.replaceAll("[^A-Za-z\\d]", "");
 		
@@ -244,18 +246,14 @@ public class ExcelParser extends FileParserAdapter {
 				String formula = namedCell.getRefersToFormula();
 				try {
 					AreaReference aref = new AreaReference(formula, workbook.getSpreadsheetVersion());
-					for (CellReference ref: aref.getAllReferencedCells()) {
-						allReferencedCells.add(ref);
-					}
+					Collections.addAll(allReferencedCells, aref.getAllReferencedCells());
 				}
 				catch (IllegalArgumentException ex) {
 					if (!AreaReference.isContiguous(formula)) {
 						// Common error: 'References passed to the AreaReference must be contiguous'
 						AreaReference[] arefs = AreaReference.generateContiguous(workbook.getSpreadsheetVersion(), formula);
 						for (AreaReference aref: arefs) {
-							for (CellReference ref: aref.getAllReferencedCells()) {
-								allReferencedCells.add(ref);
-							}							
+							Collections.addAll(allReferencedCells, aref.getAllReferencedCells());
 						}
 					}
 					else {
@@ -304,9 +302,9 @@ public class ExcelParser extends FileParserAdapter {
 						continue;
 					if (cellRangeForSheet.getLastColumn()<cellRangeForSheet.getFirstColumn())
 						continue;
-					cellRangeForSheet.forEach(cellAddress->{
-						cellReferences.add(new CellReference(sheet.getSheetName(),cellAddress.getRow(),cellAddress.getColumn(),false,false));
-					});
+					cellRangeForSheet.forEach(cellAddress->
+						cellReferences.add(new CellReference(sheet.getSheetName(),cellAddress.getRow(),cellAddress.getColumn(),false,false))
+					);
 				}
 				if (!cellReferences.isEmpty()) {
 					
@@ -336,21 +334,21 @@ public class ExcelParser extends FileParserAdapter {
 							Cell cell = cells.next();
 							if (!CellType.STRING.equals(cell.getCellType()))
 								continue;
-							String cell_value;
+							String cellValue;
 							try {
-								cell_value = cell.getStringCellValue();
+								cellValue = cell.getStringCellValue();
 							} catch (Exception ex) {
 								continue;
 							}
-							if (cell_value==null || cell_value.length()==0)
+							if (cellValue==null || cellValue.length()==0)
 								continue;
-							Matcher matcher = pattern.matcher(cell_value);
+							Matcher matcher = pattern.matcher(cellValue);
 							if (!matcher.find())
 								continue;
-							String extracted_value = (matcher.groupCount()>0) ? matcher.group(1) : matcher.group();
-							if (extracted_value==null || extracted_value.length()==0)
+							String extractedValue = (matcher.groupCount()>0) ? matcher.group(1) : matcher.group();
+							if (extractedValue==null || extractedValue.length()==0)
 								continue;
-							matchingValues.add(new ExcelValue(s,row.getRowNum(),cell.getColumnIndex(),extracted_value));
+							matchingValues.add(new ExcelValue(s,row.getRowNum(),cell.getColumnIndex(),extractedValue));
 						} // LOOP over cells for pattern matching
 					} // LOOP over rows for pattern matching
 				} // LOOP over sheets for pattern matching
@@ -381,11 +379,9 @@ public class ExcelParser extends FileParserAdapter {
 			return;
 		}
 
-		if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {
-			
+		if (fieldMapping.getCellName()!=null && fieldMapping.getCellName().trim().length()>0) {			
 			// This criteria should be configured by means of addDataSerieBasedOnNamedCell
-			return;
-			
+			return;			
 		}
 
 		ExcelDataSerie dataSerie = new ExcelDataSerie();
@@ -484,7 +480,7 @@ public class ExcelParser extends FileParserAdapter {
 				return new SameStepsDataIterator();
 
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Error trying to iterate data from Excel file " + path.getFileName(), e);
+			log.log(Level.SEVERE, String.format("Error trying to iterate data from Excel file %s", path.getFileName()), e);
 		}
 
 		return null;
@@ -498,9 +494,8 @@ public class ExcelParser extends FileParserAdapter {
 			return false;
 		
 		// Some simplified and compact way to 'describe' the data spread over different sheets
-		final Function<ExcelDataSerie,String> spreadDescription = (dataSerie)->{
-			return dataSerie.getSheets().stream().map(s->String.format("%s:%d",s.getSheetName(),dataSerie.getSize(s))).collect(Collectors.joining("|"));
-		};
+		final Function<ExcelDataSerie,String> spreadDescription = dataSerie-> 
+			dataSerie.getSheets().stream().map(s->String.format("%s:%d",s.getSheetName(),dataSerie.getSize(s))).collect(Collectors.joining("|"));
 		
 		// Let's keep the previous 'data spread' in order to check for any different one
 		String dataSpreadPreviousField = null;
@@ -561,6 +556,7 @@ public class ExcelParser extends FileParserAdapter {
 				try {
 					workbook.close();
 				} catch (Exception e) {
+					log.log(Level.FINEST, e.getMessage(), e);
 				}
 			}
 		}
@@ -581,8 +577,8 @@ public class ExcelParser extends FileParserAdapter {
 			
 				toRet = new HashMap<>(); 
 				
-				int count_fixed_fields = 0;
-				int count_variable_fields = 0;
+				int countFixedFields = 0;
+				int countVariableFields = 0;
 				
 				for (DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields()) {
 					
@@ -597,20 +593,20 @@ public class ExcelParser extends FileParserAdapter {
 					toRet.put(fieldMapping.getFieldName(), value);									
 
 					if (dataSerie.isConstant())
-						count_fixed_fields++;
+						countFixedFields++;
 					else
-						count_variable_fields++;
+						countVariableFields++;
 					
 					toRet.put(fieldMapping.getFieldName(), value);
 
 				}
 				
-				if (count_fixed_fields==0 && count_variable_fields==0) {
+				if (countFixedFields==0 && countVariableFields==0) {
 					// If we got no data in this iteration, let's try again the next row (or column)
 					continue;
 				}
 				
-				if (count_variable_fields==0 && countRecords>0) {
+				if (countVariableFields==0 && countRecords>0) {
 					// If we got only constant data, let's try again the next row (or column), unless
 					// this is the first iteration (maybe all the data is fixed)
 					continue;
@@ -657,8 +653,8 @@ public class ExcelParser extends FileParserAdapter {
 
 			while (true) {
 				if (cellIterator!=null) {
-					boolean has_enough_data_for_one_record = feedValuesFromRow(cellIterator);
-					if (has_enough_data_for_one_record) {
+					boolean hasEnoughDataForOneRecord = feedValuesFromRow(cellIterator);
+					if (hasEnoughDataForOneRecord) {
 						// If we got here, we have data to return
 						moved = true;
 						countRecords++;					
@@ -674,7 +670,7 @@ public class ExcelParser extends FileParserAdapter {
 					currentSheet = sheetIterator.next();
 					rowIterator = currentSheet.rowIterator();
 					cellIterator = null;
-					continue; // try next sheet in the same workbook 
+					//continue; // try next sheet in the same workbook 
 				} 				
 				else {
 					break; // no more data
@@ -806,6 +802,7 @@ public class ExcelParser extends FileParserAdapter {
 			try {
 				workbook.close();
 			} catch (Exception e) {
+				log.log(Level.FINEST, e.getMessage(), e);
 			}
 		}
 	}
@@ -962,9 +959,9 @@ public class ExcelParser extends FileParserAdapter {
 		int count = 0; // count empty rows
 		int min = s.getFirstRowNum();
 		int max = s.getLastRowNum();
-		int first_best = 0; // the row with the most filled cells
-		int rank_best = 0; // the number of filled cells in the 'first_best' row 
-		int after_best = 0; // counts how many rows are following the 'first_best' row
+		int firstBest = 0; // the row with the most filled cells
+		int rankBest = 0; // the number of filled cells in the 'first_best' row 
+		int afterBest = 0; // counts how many rows are following the 'first_best' row
 		for (line = min; line <= max; line++) {
 			Row r = s.getRow(line);
 			if (r == null) {
@@ -972,17 +969,17 @@ public class ExcelParser extends FileParserAdapter {
 					continue;
 				break;
 			}
-			int first_col = r.getFirstCellNum();
-			int last_col = r.getLastCellNum();
+			int firstCol = r.getFirstCellNum();
+			int lastCol = r.getLastCellNum();
 			int rank = 0; // counts non empty cells
-			int null_c = 0; // counts successive null cells
-			for (int ci = first_col; ci <= last_col && ci >= 0; ci++) {
+			int nullCells = 0; // counts successive null cells
+			for (int ci = firstCol; ci <= lastCol && ci >= 0; ci++) {
 				Cell c = r.getCell(ci);
 				if (c != null && c.getCellType() != CellType.BLANK) {
 					rank++;
-					null_c = 0;
+					nullCells = 0;
 				} else {
-					if (++null_c > 5)
+					if (++nullCells > 5)
 						break;
 				}
 			}
@@ -991,19 +988,19 @@ public class ExcelParser extends FileParserAdapter {
 					continue;
 				break;
 			}
-			if (rank > rank_best) {
-				rank_best = rank;
-				first_best = line;
-				after_best = 0;
+			if (rank > rankBest) {
+				rankBest = rank;
+				firstBest = line;
+				afterBest = 0;
 			}
 			else {
-				if (after_best++ >= tolerance)
+				if (afterBest++ >= tolerance)
 					break;
 			}
 		}
-		if (rank_best > 0)
-			first_best++; // skip the supposed header line
-		return first_best;
+		if (rankBest > 0)
+			firstBest++; // skip the supposed header line
+		return firstBest;
 	}
 
 }

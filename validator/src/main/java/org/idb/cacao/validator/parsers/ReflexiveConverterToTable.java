@@ -104,8 +104,8 @@ public class ReflexiveConverterToTable extends ReflexiveConverter {
 	@Override
 	protected void visitFieldStart(Object obj, FieldDescriptor field, Object value) {
 		if (value!=null) {
-			String obj_name = field.getFieldName();
-			parenthood.push(obj_name);
+			String objName = field.getFieldName();
+			parenthood.push(objName);
 		}			
 	}
 	
@@ -160,8 +160,8 @@ public class ReflexiveConverterToTable extends ReflexiveConverter {
 		// The heuristic will considers the hierarchy.
 		// If there is an odd number of one-to-many relationships in the hierarchy, suppose we are filling different columns of the same row
 		// If there is an even number of one-to-many relationships in the hierarchy, suppose we are filling different rows of the same column
-		boolean filling_columns = !countersInLevel.isEmpty() && ((parentCols.size()%2)==1);
-		if (filling_columns) {
+		boolean fillingColumns = !countersInLevel.isEmpty() && ((parentCols.size()%2)==1);
+		if (fillingColumns) {
 			// fills in different values in different columns
 			int count = countersInLevel.peek().incrementAndGet();
 			String title;
@@ -198,8 +198,8 @@ public class ReflexiveConverterToTable extends ReflexiveConverter {
 		int col = getOrCreateColumn(title);
 		setCell(row, col, value);
 		// Signals we have filled this column, so that the same values may be copied into new rows that are nested
-		BitSet cols_marks = parentCols.peek();
-		cols_marks.set(col);
+		BitSet colsMarks = parentCols.peek();
+		colsMarks.set(col);
 	}
 	
 	private int getOrCreateColumn(String title) {
@@ -242,8 +242,8 @@ public class ReflexiveConverterToTable extends ReflexiveConverter {
 			row++;
 			// While creating new rows, repeats the values from the ancestors
 			if (!parentCols.isEmpty()) {
-				BitSet cols_marks = parentCols.peek();
-				for (int col=cols_marks.nextSetBit(0);col>=0;col=cols_marks.nextSetBit(col+1)) {
+				BitSet colsMarks = parentCols.peek();
+				for (int col=colsMarks.nextSetBit(0);col>=0;col=colsMarks.nextSetBit(col+1)) {
 					setCell(row, col, getCell(row-1, col));
 				}
 			}

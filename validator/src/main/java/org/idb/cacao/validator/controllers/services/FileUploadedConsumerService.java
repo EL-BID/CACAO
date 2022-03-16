@@ -23,6 +23,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -70,11 +71,13 @@ import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageRepository;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
+import org.idb.cacao.validator.utils.Utils;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -118,6 +121,9 @@ public class FileUploadedConsumerService {
 
 	@Autowired
 	private final StreamBridge streamBridge;
+
+	@Autowired
+	private Environment env;
 	
 	@Value("${validation.max.errors.per.upload}")
 	private long maxValidationErrorsPerUpload;
@@ -129,21 +135,21 @@ public class FileUploadedConsumerService {
 	@Bean
 	public Consumer<String> receiveAndValidateFile() {
 		return documentId -> {
-			log.log(Level.INFO, "Received message with documentId " + documentId);
+			log.log(Level.INFO, "Received message with documentId {0}", documentId);
 
 			try {
 				Boolean validated = validateDocument(documentId);
 
-				if (validated) {
-					log.log(Level.INFO, "Sending a message to ETL with documentId " + documentId);
+				if (validated.booleanValue()) {
+					log.log(Level.INFO, "Sending a message to ETL with documentId {0}", documentId);
 
 					streamBridge.send("receiveAndValidateFile-out-0", documentId);
 				}
 
 			} catch (MissingConfigurationException e) {
-				log.log(Level.INFO, "Configuration is missing for document " + documentId, e);
+				log.log(Level.INFO, String.format("Configuration is missing for document %s", documentId), e);
 			} catch (Exception e) {
-				log.log(Level.SEVERE, "Something went wrong with document " + documentId + " Exception: " + e, e);
+				log.log(Level.SEVERE, String.format("Something went wrong with document %s. Exception: %s", documentId, e), e);
 			}
 		};
 	}
@@ -157,7 +163,7 @@ public class FileUploadedConsumerService {
 	 */
 	public Boolean validateDocument(String documentId) throws GeneralException, DocumentNotFoundException {
 
-		log.log(Level.INFO, "Received a message with documentId " + documentId);
+		log.log(Level.INFO, "Received a message with documentId {0}", documentId);
 
 		List<Runnable> rollbackProcedures = new LinkedList<>(); // hold rollback procedures only to be used in case of
 																// error
@@ -199,7 +205,7 @@ public class FileUploadedConsumerService {
 				List<DocumentInput> inputs = template.getInputs();
 				
 				if ( inputs != null && !inputs.isEmpty() ) {
-					inputValid = inputs.stream().filter(item->item.getInputName().equals(inputName)).findFirst().isPresent();
+					inputValid = inputs.stream().anyMatch(item->item.getInputName().equals(inputName));
 				}
 				
 				if (!inputValid) {
@@ -217,7 +223,7 @@ public class FileUploadedConsumerService {
 
 			String fullPath = doc.getFileIdWithPath();
 
-			Path filePath = fileSystemStorageService.find(fullPath);
+			Path filePath = fileSystemStorageService.find(fullPath);			
 			validationContext.setDocumentPath(filePath);
 
 			doc = setSituation(doc, DocumentSituation.ACCEPTED);
@@ -274,6 +280,13 @@ public class FileUploadedConsumerService {
 				throw new MissingConfigurationException("Template with name " + doc.getTemplateName() + " and version "
 						+ doc.getTemplateVersion() + " was not configured with proper input format!");
 			}
+			
+			try {
+				validationContext.setParsedContentsListFactory(Utils.getList(format,Files.size(filePath), env));
+			} catch (IOException e1) {
+				throw new GeneralException(e1);
+			}
+			
 			FileFormat fileFormat = FileFormatFactory.getFileFormat(format);
 
 			// Given the FileFormat, create a new FileParser
@@ -294,9 +307,9 @@ public class FileUploadedConsumerService {
 				setSituation(doc, DocumentSituation.INVALID);
 				validations.addLogError("{doc.error.parse}");
 				saveValidationMessages(validationContext);
-				log.log(Level.SEVERE, "Exception while parsing record for file " + documentId, ex);				
+				log.log(Level.SEVERE, String.format("Exception while parsing record for file %s", documentId), ex);				
 				throw new ValidationException(
-						"An error ocurred while attempting to read data in file " + doc.getFilename() + ".", ex);				
+						String.format("An error ocurred while attempting to read data in file %s.", doc.getFilename()), ex);				
 			}
 			
 			final long elapsed_time_prepare_parser = System.currentTimeMillis() - timestamp;
@@ -318,7 +331,7 @@ public class FileUploadedConsumerService {
 					setSituation(doc, DocumentSituation.INVALID);
 					validations.addLogError("{doc.error.no.records.found}");
 					saveValidationMessages(validationContext);
-					log.log(Level.SEVERE, "Impossible to read fields in file " + documentId);
+					log.log(Level.SEVERE, "Impossible to read fields in file {0}", documentId);
 					throw new ValidationException(
 							"An error ocurred while attempting to read data in file " + doc.getFilename() + ".");
 				}
@@ -326,15 +339,15 @@ public class FileUploadedConsumerService {
 				long added = 0;
 				while (iterator.hasNext()) {
 
-					Map<String, Object> record = iterator.next();
+					Map<String, Object> dataItem = iterator.next();
 
-					if (record == null)
+					if (dataItem == null || dataItem.isEmpty() )
 						continue;
 					
 					if (fileUniquenessValues!=null && fileUniquenessValues.size()<fileUniquenessFields.size()) {
 						// Gather values for 'file uniqueness' criteria
 						for (DocumentField fUniqueField: fileUniquenessFields) {
-							Object value = record.get(fUniqueField.getFieldName());
+							Object value = dataItem.get(fUniqueField.getFieldName());
 							if (value==null)
 								continue;
 							Object previousValue = fileUniquenessValues.get(fUniqueField.getFieldName());
@@ -360,7 +373,7 @@ public class FileUploadedConsumerService {
 						}
 					}
 
-					validationContext.addParsedContent(record);
+					validationContext.addParsedContent(dataItem);
 					added++;
 
 				} // LOOP over each parsed record
@@ -369,18 +382,19 @@ public class FileUploadedConsumerService {
 					setSituation(doc, DocumentSituation.INVALID);
 					validations.addLogError("{doc.error.no.records.found}");
 					saveValidationMessages(validationContext);
-					log.log(Level.SEVERE, "No records found on file " + documentId);
+					log.log(Level.SEVERE, "No records found on file {0}", documentId);
 					throw new ValidationException(
 							"No records found on file file " + doc.getFilename() + ".");					
 				}					
 				
-				log.log(Level.INFO, added + " records added to validator from " + doc.getFilename());
+				String message = String.format("%d records added to validator from %s",added, doc.getFilename());
+				log.log(Level.INFO, message);
 
 			} catch (Exception e) {
 				setSituation(doc, DocumentSituation.INVALID);
 				validations.addLogError("{doc.error.parse}");
 				saveValidationMessages(validationContext);
-				log.log(Level.SEVERE, "Exception while parsing record for file " + documentId, e);				
+				log.log(Level.SEVERE, String.format("Exception while parsing record for file %s", documentId), e);				
 				throw new ValidationException(
 						"An error ocurred while attempting to read data in file " + doc.getFilename() + ".", e);
 			} finally {
@@ -406,8 +420,8 @@ public class FileUploadedConsumerService {
 			if (doc.getTaxPayerId()!=null && doc.getTaxPayerId().trim().length()>0) {
 				AtomicReference<String> userTaxpayerId = new AtomicReference<>();
 				try {
-					boolean has_access = usersTaxpayersService.isUserRepresentativeOf(doc.getUser(), doc.getTaxPayerId(), userTaxpayerId);
-					if (!has_access) {
+					boolean hasAccess = usersTaxpayersService.isUserRepresentativeOf(doc.getUser(), doc.getTaxPayerId(), userTaxpayerId);
+					if (!hasAccess) {
 						// Reset the taxpayer Id indication in the DocumentUploaded because we don't want to list this occurrence for him
 						String taxpayerId = doc.getTaxPayerId();
 						doc.setTaxPayerId(userTaxpayerId.get());
@@ -415,7 +429,8 @@ public class FileUploadedConsumerService {
 						setSituation(doc, DocumentSituation.INVALID);
 						validations.addLogError("{doc.error.user.not.representative("+doc.getUser().replaceAll("[\\,\\(\\)\\{\\}]", "")+","+taxpayerId.replaceAll("[\\,\\(\\)\\{\\}]", "")+")}");
 						saveValidationMessages(validationContext);
-						log.log(Level.SEVERE, "Exception while parsing record for file " + documentId + ": the user "+doc.getUser()+" does not represent the taxpayer "+taxpayerId);				
+						String message = String.format("Exception while parsing record for file %s: the user %s does not represent the taxpayer %s", documentId, doc.getUser(), taxpayerId);
+						log.log(Level.SEVERE, message);				
 						throw new ValidationException(
 								"User has no permission for uploading file " + doc.getFilename() + ".");
 					}
@@ -425,10 +440,10 @@ public class FileUploadedConsumerService {
 				}
 				catch (Exception ex) {
 					setSituation(doc, DocumentSituation.INVALID);
-					String error_msg = (ex.getMessage()==null) ? "" : ex.getMessage().replaceAll("[\\,\\(\\)\\{\\}]", "");
-					validations.addLogError("{error.internal.server("+error_msg+")}");
+					String errorMessage = (ex.getMessage()==null) ? "" : ex.getMessage().replaceAll("[\\,\\(\\)\\{\\}]", "");
+					validations.addLogError("{error.internal.server("+errorMessage+")}");
 					saveValidationMessages(validationContext);
-					log.log(Level.SEVERE, "Exception while checking user permission for uploading file " + documentId, ex);				
+					log.log(Level.SEVERE, String.format("Exception while checking user permission for uploading file %s", documentId), ex);				
 					throw new ValidationException(
 							"An error ocurred while attempting to check user permission for uplading file " + doc.getFilename() + ".", ex);					
 				}
@@ -477,8 +492,7 @@ public class FileUploadedConsumerService {
 
 			if (validationContext.hasAlerts()) {
 				setSituation(doc, DocumentSituation.INVALID);
-				log.log(Level.SEVERE, "Not all field values are provided or compatible with specified field types on document "
-						+ documentId + ". " + "Please check document error messagens for details.");
+				log.log(Level.SEVERE, "Not all field values are provided or compatible with specified field types on document {0}. Please check document error messagens for details.", documentId);
 				saveValidationMessages(validationContext);
 				throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
 			}
@@ -502,8 +516,8 @@ public class FileUploadedConsumerService {
 							validationContext.addAlert("{error.invalid.file}");
 						}
 						setSituation(doc, DocumentSituation.INVALID);
-						log.log(Level.SEVERE, "The validation check of "
-								+ documentId + " does not conform to the archetype "+archetype.get().getName()+". Please check document error messagens for details.");
+						String message = String.format("The validation check of %s does not conform to the archetype %s. Please check document error messagens for details.", documentId, archetype.get().getName());
+						log.log(Level.SEVERE, message);
 						saveValidationMessages(validationContext);
 						throw new ValidationException("There are errors on file " + doc.getFilename() + ". Please check.");
 					}
@@ -565,8 +579,8 @@ public class FileUploadedConsumerService {
 							situation.setTaxPeriodNumber(validationContext.getDocumentUploaded().getTaxPeriodNumber());
 							documentsSituationHistoryRepository.save(situation);
 						} catch (Exception e) {
-							log.log(Level.WARNING, "Can't update document situation history for document id " + 
-									validationContext.getDocumentUploaded().getId(), e);
+							log.log(Level.WARNING, String.format("Can't update document situation history for document id %s", 
+									validationContext.getDocumentUploaded().getId()), e);
 						}
 						
 					}
@@ -653,7 +667,6 @@ public class FileUploadedConsumerService {
 		doc.setSituation(docSituation);
 
 		DocumentUploaded savedDoc = documentsUploadedRepository.saveWithTimestamp(doc);
-		// rollbackProcedures.add(()->documentsUploadedRepository.delete(savedDoc)); //
 		// in case of error delete the DocumentUploaded
 
 		DocumentSituationHistory situation = DocumentSituationHistory.create()
@@ -703,18 +716,18 @@ public class FileUploadedConsumerService {
 		// Let's read the beginning of the file and try to match according to some
 		// 'magic number'
 		byte[] header = new byte[SAMPLE_SIZE]; // let's read just this much from the file beginning
-		int header_length;
+		int headerLength;
 		try (InputStream inputStream = new BufferedInputStream(new FileInputStream(path.toFile()))) {
-			header_length = inputStream.read(header);
+			headerLength = inputStream.read(header);
 		} catch (IOException ex) {
-			log.log(Level.SEVERE, "Error reading file contents " + path.toString(), ex);
+			log.log(Level.SEVERE, String.format("Error reading file contents %s", path.toString()), ex);
 			return null;
 		}
 
 		List<DocumentInput> matchingDocumentInputs2ndRound = new LinkedList<>();
 		for (DocumentInput input : matchingDocumentInputs) {
 			FileFormat fileFormat = mapFileFormats.get(input);
-			if (Boolean.FALSE.equals(fileFormat.matchFileHeader(header, header_length)))
+			if (Boolean.FALSE.equals(fileFormat.matchFileHeader(header, headerLength)))
 				continue;
 			// This is a valid candidate, but let's try others
 			matchingDocumentInputs2ndRound.add(input);
@@ -726,8 +739,8 @@ public class FileUploadedConsumerService {
 			return matchingDocumentInputs2ndRound.get(0);
 
 		// If we got more than one option, it's not possible to proceed
-		log.log(Level.SEVERE, "There is ambiguity to resolve file " + path.toString() + " into one of the "
-				+ matchingDocumentInputs2ndRound.size() + " possible file format options!");
+		String message = String.format("There is ambiguity to resolve file %s into one of the %s possible file format options!", path.toString(), matchingDocumentInputs2ndRound.size());
+		log.log(Level.SEVERE, message);
 		return null;
 	}
 
