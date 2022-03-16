@@ -19,13 +19,23 @@
  *******************************************************************************/
 package org.idb.cacao.validator.utils;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
+import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DB.IndexTreeListMaker;
 import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
 import org.mapdb.IndexTreeList;
 import org.mapdb.Serializer;
+import org.mapdb.SortedTableMap;
 
 /**
  * A factory for {@link DB} objects
@@ -37,26 +47,25 @@ import org.mapdb.Serializer;
  */
 public class MapDBFactory {
 	
-	/**
-	 * Singleton {@link DB} instance
-	 */
-	private static DB db;
+	private static final Logger log = Logger.getLogger(MapDBFactory.class.getName());
 	
 	/**
 	 * Hide public constructor
 	 */
 	private MapDBFactory() {		
 	}
+
 	
 	/**
 	 * 
 	 * @return Singleton {@link DB} instance
 	 */
-	private static synchronized DB getDBInstance() {		
-		if ( db == null )
-			db = DBMaker.tempFileDB().make();
-		
-		return db;
+	private static synchronized DB newInstance() {		
+		return DBMaker.tempFileDB()
+				.closeOnJvmShutdown()
+				.fileLockDisable()
+				.fileMmapEnableIfSupported()
+				.make();
 	}
 	
 	/**
@@ -68,7 +77,7 @@ public class MapDBFactory {
 	 */
 	@SuppressWarnings("unchecked")
 	public static IndexTreeList<?> newGenericList(String prefix) {		
-		IndexTreeListMaker<?> listMaker = getDBInstance().indexTreeList(prefix + "_" + 
+		IndexTreeListMaker<?> listMaker = newInstance().indexTreeList(prefix + "_" + 
 				System.currentTimeMillis(),Serializer.JAVA);
 		return listMaker.create();			
 	}
@@ -82,7 +91,7 @@ public class MapDBFactory {
 	 */
 	@SuppressWarnings("unchecked")
 	public static IndexTreeList<?> newGenericList() {		
-		IndexTreeListMaker<?> listMaker = getDBInstance().indexTreeList(String.valueOf(System.currentTimeMillis()),Serializer.JAVA);
+		IndexTreeListMaker<?> listMaker = newInstance().indexTreeList(String.valueOf(System.currentTimeMillis()),Serializer.JAVA);
 		return listMaker.create();			
 	}	
 	
@@ -94,8 +103,68 @@ public class MapDBFactory {
 	 * @return	A new implementation {@link List} backed on disk storage
 	 */	
 	public static IndexTreeList<String> newStringList() {		
-		IndexTreeListMaker<String> listMaker = getDBInstance().indexTreeList(String.valueOf(System.currentTimeMillis()),Serializer.STRING);
+		IndexTreeListMaker<String> listMaker = newInstance().indexTreeList(String.valueOf(System.currentTimeMillis()),Serializer.STRING);
 		return listMaker.create();			
+	}
+	
+	/**
+	 * Close a database referenced by a list
+	 * 
+	 * @param list	List to close database
+	 */
+	public static void close(List<?> list) {
+		if ( !(list instanceof IndexTreeList) )
+			return;		
+		try {
+			((IndexTreeList<?>)list).getStore().close();
+		} catch (Exception e) {
+			log.log(Level.INFO, e.getMessage(), e);
+		}
+	}
+	
+	/**
+	 * Close a database referenced by a list
+	 * 
+	 * @param list	List to close database
+	 */
+	public static void close(Map<?,?> map) {
+		try {
+			if ( (map instanceof BTreeMap) )					
+				((BTreeMap<?,?>)map).close();
+			else if ( (map instanceof HTreeMap) )					
+				((HTreeMap<?,?>)map).close();
+			else if ( (map instanceof SortedTableMap) )					
+				((SortedTableMap<?,?>)map).close();
+		} catch (Exception e) {
+			log.log(Level.INFO, e.getMessage(), e);
+		}
+	}	
+
+	/**
+	 * Clear unused temporary files from previous executions
+	 */
+	public static void clearTemporaryFiles() {
+		
+		File tempDir = new File(System.getProperty("java.io.tmpdir"));
+		
+		if ( tempDir.exists() && tempDir.isDirectory() ) {
+			
+			Pattern pFilename = Pattern.compile("^mapdb(\\d{1,50})temp", Pattern.CASE_INSENSITIVE);
+			
+			String[] filenames = tempDir.list((dir,name)->pFilename.matcher(name).matches());
+			
+			if ( filenames.length > 0 ) {				
+				for ( String filename : filenames ) {					
+					try {
+						Files.delete(Paths.get(new File(tempDir, filename).toURI()));						
+					} catch (Exception e) {
+						log.log(Level.INFO, String.format("Couldn't delete temporary file %s", filename), e);
+					}					
+				}				 
+			}			
+		}
+				
+		
 	}		
 
 }

@@ -31,6 +31,7 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -311,6 +312,7 @@ public class AdminService {
 			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
 			new Option("y","year",true, "Informs the year to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
+			new Option("p","period",true, "Informs the years interval to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
 			new Option("thr","threads",true, "Number of parallel threads for generating random data (does not apply to validator/ETL phases). This parameter is only considered together with 'docs' parameter. If not informed, use "+DEFAULT_PARALLELISM_FOR_DATA_GENERATOR+" parallel threads."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
@@ -836,8 +838,21 @@ public class AdminService {
 				int limitDocs = (cmdLine.hasOption("ldoc")) ? Integer.parseInt(cmdLine.getOptionValue("ldoc")) : 10;
 				long fixedLimitRecords = (cmdLine.hasOption("lrec")) ? Long.parseLong(cmdLine.getOptionValue("lrec")) : -1;
 				String seedWord = (cmdLine.hasOption("s")) ? cmdLine.getOptionValue("s") : null;
-				int year = (cmdLine.hasOption("y")) ? Integer.parseInt(cmdLine.getOptionValue("y")) : Year.now().getValue() - 1;
+				List<Integer> years = new ArrayList<>(2);
+				years.add((cmdLine.hasOption("y")) ? Integer.parseInt(cmdLine.getOptionValue("y")) : Year.now().getValue() - 1);
+				String period = (cmdLine.hasOption("p")) ? cmdLine.getOptionValue("p") : null;
 				int threads = (cmdLine.hasOption("thr")) ? Integer.parseInt(cmdLine.getOptionValue("thr")) : DEFAULT_PARALLELISM_FOR_DATA_GENERATOR;
+				
+				years.add(years.get(0));
+				if ( period != null ) {				
+					String[] yearsPeriod = period.split(":");
+					if ( yearsPeriod.length > 0 )
+						years.set(0, Integer.parseInt(yearsPeriod[0]));
+					if ( yearsPeriod.length > 1 )
+						years.set(1, Integer.parseInt(yearsPeriod[1]));
+					else
+						years.set(1, Integer.parseInt(yearsPeriod[0]));
+				}					
 				
 				Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 				RequestAttributes reqAttr = RequestContextHolder.currentRequestAttributes();
@@ -850,23 +865,25 @@ public class AdminService {
 						}
 						@Override
 						public void run() {
-							StringBuilder bg_report = new StringBuilder();
-							bg_report.append("Report for background process of creation of ").append(limitDocs).append(" documents with random data for template ").append(templateName).append("\n");
+							StringBuilder bgReport = new StringBuilder();
+							bgReport.append("Report for background process of creation of ").append(limitDocs).append(" documents with random data for template ").append(templateName).append("\n");
 							try {
-								service.createSampleDocuments(auth, remoteIpAddr, templateName.trim(), limitDocs, fixedLimitRecords, seedWord, year, bg_report, threads);
+								for ( int year = years.get(0); year <= years.get(1); year++ )
+									service.createSampleDocuments(auth, remoteIpAddr, templateName.trim(), limitDocs, fixedLimitRecords, seedWord, year, bgReport, threads);
 							}
 							catch (Exception ex) {
 								log.log(Level.SEVERE, ex, () -> "Error while generating documents with arguments: "+String.join(" ",cmdLine.getArgs()));
 							}
 							finally {
-								log.log(Level.INFO, bg_report.toString());
+								log.log(Level.INFO, bgReport.toString());
 							}
 						}
 					}.start();
 					report.append("Creating ").append(limitDocs).append(" documents with random data for template ").append(templateName).append(" at background\n");
 				}
 				else {
-					service.createSampleDocuments(auth, remoteIpAddr, templateName.trim(), limitDocs, fixedLimitRecords, seedWord, year, report, threads);
+					for ( int year = years.get(0); year <= years.get(1); year++ )
+						service.createSampleDocuments(auth, remoteIpAddr, templateName.trim(), limitDocs, fixedLimitRecords, seedWord, year, report, threads);
 				}
 			}
 		}

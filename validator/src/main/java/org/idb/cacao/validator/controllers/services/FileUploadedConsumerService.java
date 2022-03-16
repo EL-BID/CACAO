@@ -71,6 +71,7 @@ import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageRepository;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
+import org.idb.cacao.validator.utils.MapDBFactory;
 import org.idb.cacao.validator.utils.Utils;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -402,7 +403,10 @@ public class FileUploadedConsumerService {
 				if (iterator != null)
 					iterator.close();
 
-				parser.close();			
+				parser.close();
+				//Close list, if it's stored in disk
+				MapDBFactory.close(validationContext.getParsedContents());
+				
 			}
 
 			final long elapsed_time_parsing = System.currentTimeMillis() - timestamp;

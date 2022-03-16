@@ -21,6 +21,7 @@ package org.idb.cacao.validator;
 
 import org.idb.cacao.api.CommonApplication;
 import org.idb.cacao.validator.controllers.services.ResourceMonitorService;
+import org.idb.cacao.validator.utils.MapDBFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -60,6 +61,11 @@ public class Application extends CommonApplication {
 	public void doSomethingAfterValidatorStartup() {
 		
 		runStartupCodeAsync();
+		
+		/**
+		 * Clear uncleaned files from previous executions
+		 */
+		MapDBFactory.clearTemporaryFiles();
 		
 	}
 

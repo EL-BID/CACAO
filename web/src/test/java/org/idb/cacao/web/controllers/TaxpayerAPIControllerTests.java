@@ -19,8 +19,20 @@
  *******************************************************************************/
 package org.idb.cacao.web.controllers;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.function.Consumer;
 
 import org.idb.cacao.api.Taxpayer;
 import org.idb.cacao.api.utils.RandomDataGenerator;
@@ -50,17 +62,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.jayway.jsonpath.JsonPath;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.function.Consumer;
-
 @AutoConfigureJsonTesters
 @RunWith(JUnitPlatform.class)
 @AutoConfigureMockMvc
@@ -80,9 +81,6 @@ class TaxpayerAPIControllerTests {
 	
 	@Autowired
 	private JacksonTester<TaxpayerDto> json;
-	
-	@Autowired
-	private JacksonTester<List<TaxpayerDto>> jsonList;
 	
 	@BeforeAll
 	public static void beforeClass() throws Exception {
@@ -275,6 +273,7 @@ class TaxpayerAPIControllerTests {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void sampleUpdate(TaxpayerDto taxpayer, long seed) {
 		Taxpayer other = TestDataGenerator.generateTaxpayer(seed, 11);
 		taxpayer.setName(other.getName());
