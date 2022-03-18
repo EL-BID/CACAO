@@ -28,10 +28,12 @@ import javax.validation.Valid;
 import org.idb.cacao.web.controllers.services.AdminService;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.errors.PresentationDisabledFeature;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -76,6 +78,9 @@ public class AdminAPIController {
 	@Autowired
 	private AdminService adminService;
 
+	@Value("${presentation.mode}")
+	private Boolean presentationMode;
+
 	/**
 	 * Post a command regarding one of the administrative operations
 	 */
@@ -91,6 +96,10 @@ public class AdminAPIController {
         	return ControllerUtils.returnErrors(result, messageSource);
         }
         
+		if (Boolean.TRUE.equals(presentationMode)) {
+			throw new PresentationDisabledFeature();
+		}
+
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
     		throw new UserNotFoundException();

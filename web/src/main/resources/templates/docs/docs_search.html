@@ -25,7 +25,7 @@
 			<span class="content" th:text="#{docs.history}">All Uploads</span>
 		</h2>
 		<div id="table" class="ui orange compact table"></div>
-		<div class="ui column right floated">
+		<div class="ui column right floated" th:unless="${@DocumentStoreService.isPresentationMode()}">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/docs}" class="ui primary button"><i class="plus icon"></i><span th:text="#{docs.main.upload}">Upload Documents</span></a>
 			</div>

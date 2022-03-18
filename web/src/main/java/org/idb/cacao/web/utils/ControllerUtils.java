@@ -352,4 +352,9 @@ public class ControllerUtils {
 		term = term.replaceAll("[\\-\\/\\\\<>\\(\\)\\{\\}\\[\\]\"'\\:\\?\\!\\=\\+]", ".");
 		return term;
 	}
+	
+	public static String redirectToPresentationWarning(Model model, MessageSource messageSource) {
+		model.addAttribute("message", messageSource.getMessage("presentation.disabled.feature", null, LocaleContextHolder.getLocale()));
+		return "error"; // use 'error.html' template file for showing the warning
+	}
 }

@@ -38,6 +38,7 @@ import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.repositories.ESStandardRoles;
 import org.idb.cacao.web.utils.LoginUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
@@ -69,6 +70,9 @@ public class LoginUIController {
 	
 	@Autowired
 	private UserService userService;
+
+	@Value("${presentation.mode}")
+	private Boolean presentationMode;
 
 	@GetMapping("/")
 	public String frontend(Model model){
@@ -130,10 +134,12 @@ public class LoginUIController {
 	public List<MenuItem> getHomeMenuItens(Collection<? extends GrantedAuthority> roles) {
 
 		List<MenuItem> menu = new LinkedList<>();
+		
+		final boolean isPresentationMode = Boolean.TRUE.equals(presentationMode);
 
 		menu.add(new MenuItem(messages.getMessage("menu.homepage", null, LocaleContextHolder.getLocale()), "/cards"));
 		
-		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_WRITE)) {
+		if (!isPresentationMode && hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_WRITE)) {
 			menu.add(new MenuItem(messages.getMessage("docs.main.upload", null, LocaleContextHolder.getLocale()),
 				"/docs"));
 		}
@@ -201,7 +207,7 @@ public class LoginUIController {
 					"/sys-info",  "info circle"));
 		}
 		
-		if (hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ_ALL)) {
+		if (!isPresentationMode && hasPrivilege(roles, SystemPrivilege.TAX_DECLARATION_READ_ALL)) {
 			
 			String uri = userService.getDashboardsURI();
 			if (uri!=null && uri.trim().length()>0) {
@@ -228,7 +234,7 @@ public class LoginUIController {
 					"/swagger-ui/index.html"));
 		}
 
-		if (hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
+		if (!isPresentationMode && hasPrivilege(roles, SystemPrivilege.ADMIN_OPS)) {
 			menu.add(
 				new MenuItem(messages.getMessage("admin.shell", null, LocaleContextHolder.getLocale()), "/admin-shell",  "cogs"));
 		}

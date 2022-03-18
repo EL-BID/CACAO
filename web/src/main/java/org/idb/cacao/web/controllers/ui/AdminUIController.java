@@ -39,8 +39,13 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.commons.text.StringEscapeUtils;
+import org.idb.cacao.web.utils.ControllerUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
@@ -61,13 +66,22 @@ public class AdminUIController {
 	
 	public static final int LOG_TAIL_MAX_LINES = 100;
 
+	@Value("${presentation.mode}")
+	private Boolean presentationMode;
+
+	@Autowired
+	private MessageSource messageSource;
+
 	/**
 	 * Returns user interface for administrative operations
 	 */
 	@Secured({"ROLE_ADMIN_OPS"})
 	@GetMapping("/admin-shell")
-	public String getAdminShell() {
+	public String getAdminShell(Model model) {
 		
+		if (Boolean.TRUE.equals(presentationMode))
+			return ControllerUtils.redirectToPresentationWarning(model, messageSource);
+
 		return "admin/admin-shell";
 		
 	}

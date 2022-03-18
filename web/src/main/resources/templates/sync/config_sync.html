@@ -94,6 +94,8 @@
 	  $('#cancel').show();
 	  $('form').find("input").prop("readonly",false)
 	  $('form').find("select").prop("disabled",false)
+	  $(":input[type=text]:not([readonly='readonly'])").css("background-color","white");
+	  $("select:not(disabled)").css("background-color","white");
   });
   $('form').submit(function(event){
 	 event.preventDefault();
@@ -156,8 +158,10 @@
 	  dlg.modal('show');
   });
   $('#cancel').click(function(){
-	  window.location.replace([[@{/config_sync}]]) 
+	  window.location.replace([[@{/config-sync}]]) 
   })
+  $(":input[type=text][readonly='readonly']").css("background-color","lightgray");
+  $("select:disabled").css("background-color","lightgray");
 </script>
 </body>
 </html>

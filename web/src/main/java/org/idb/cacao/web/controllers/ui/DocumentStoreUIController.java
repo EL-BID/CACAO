@@ -27,7 +27,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.utils.ControllerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.annotation.Secured;
@@ -53,10 +55,17 @@ public class DocumentStoreUIController {
 	
 	@Autowired
 	private MessageSource messageSource;
+	
+	@Value("${presentation.mode}")
+	private Boolean presentationMode;
 
 	@Secured({"ROLE_TAX_DECLARATION_WRITE"})
 	@GetMapping("/docs")
 	public String getDocs(Model model) {
+		
+		if (Boolean.TRUE.equals(presentationMode))
+			return ControllerUtils.redirectToPresentationWarning(model, messageSource);
+		
 		model.addAttribute("templates", templateService.getNamesTemplatesWithVersions());
 		return "docs/docs_main";
 	}

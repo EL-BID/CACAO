@@ -100,7 +100,7 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 	private Environment propertyResolver;
 	
 	private ApplicationContext applicationContext;
-	
+
 	/**
 	 * Synchronization object per user login
 	 */
@@ -172,37 +172,41 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 		private static char[] esname;
 		private static char[] espass;
 		private final Map<String, CheckedUserStatus> checkedUserStatusMap;
+		private final boolean presentationMode;
 
 		public KibanaProxy(Environment propertyResolver, ApplicationContext app) {
 			this.checkedUserStatusMap = new ConcurrentHashMap<>();
-			KibanaProxy.sslVerifyHost = !"false".equalsIgnoreCase(propertyResolver.getProperty("es.ssl.verifyhost"));
-			KibanaProxy.userService = app.getBean(UserService.class);
-			if (ControllerUtils.isJUnitTest()) {
-				log.log(Level.INFO, "Skipping KibanaProxy initialization because it's running in a JUnit test case");
-				return;
-			}
-			String esUsername = propertyResolver.getProperty("es.user");
-			ElasticSearchService service = app.getBean(ElasticSearchService.class);
-			try {
-				service.assertStandardSpaces();
-			}
-			catch (Exception ex) {
-				log.log(Level.SEVERE, "Error configuring Kibana Spaces", ex);						
-			}
-			if (esUsername!=null && esUsername.trim().length()>0) {
+			this.presentationMode = "true".equalsIgnoreCase(propertyResolver.getProperty("presentation.mode"));
+			if (!presentationMode) {
+				KibanaProxy.sslVerifyHost = !"false".equalsIgnoreCase(propertyResolver.getProperty("es.ssl.verifyhost"));
+				KibanaProxy.userService = app.getBean(UserService.class);
+				if (ControllerUtils.isJUnitTest()) {
+					log.log(Level.INFO, "Skipping KibanaProxy initialization because it's running in a JUnit test case");
+					return;
+				}
+				String esUsername = propertyResolver.getProperty("es.user");
+				ElasticSearchService service = app.getBean(ElasticSearchService.class);
 				try {
-					service.assertStandardRoles();
-					KibanaProxy.kibanaSuperUser = propertyResolver.getProperty("kibana.superuser");
-					if (kibanaSuperUser!=null && kibanaSuperUser.trim().length()>0) {
-						KibanaProxy.esname = esUsername.toCharArray();
-						String p = ElasticClientFactory.readESPassword(propertyResolver);
-						KibanaProxy.espass = (p!=null) ? p.toCharArray() : null;
-					}
-					KibanaProxy.authenticationEnabled = true;
+					service.assertStandardSpaces();
 				}
 				catch (Exception ex) {
-					log.log(Level.SEVERE, "Error initializing KibanaProxy", ex);
-					KibanaProxy.authenticationEnabled = false; // leave authentication process for Kibana itself (will prompt user for login and password)
+					log.log(Level.SEVERE, "Error configuring Kibana Spaces", ex);						
+				}
+				if (esUsername!=null && esUsername.trim().length()>0) {
+					try {
+						service.assertStandardRoles();
+						KibanaProxy.kibanaSuperUser = propertyResolver.getProperty("kibana.superuser");
+						if (kibanaSuperUser!=null && kibanaSuperUser.trim().length()>0) {
+							KibanaProxy.esname = esUsername.toCharArray();
+							String p = ElasticClientFactory.readESPassword(propertyResolver);
+							KibanaProxy.espass = (p!=null) ? p.toCharArray() : null;
+						}
+						KibanaProxy.authenticationEnabled = true;
+					}
+					catch (Exception ex) {
+						log.log(Level.SEVERE, "Error initializing KibanaProxy", ex);
+						KibanaProxy.authenticationEnabled = false; // leave authentication process for Kibana itself (will prompt user for login and password)
+					}
 				}
 			}
 		}
@@ -226,6 +230,13 @@ public class KibanaProxyServletConfiguration implements EnvironmentAware, Applic
 
 		@Override
 		protected void service(HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws ServletException, IOException {
+			
+			if (presentationMode) {
+				servletResponse.setStatus(HttpStatus.SC_SERVICE_UNAVAILABLE); // 503
+				servletResponse.getWriter().write("DisabledFeature");
+				return;								
+			}
+			
 			if (BLOCK_LIST.matcher(servletRequest.getRequestURI()).find()) {
 				servletResponse.setStatus(HttpStatus.SC_FORBIDDEN); // 403
 				servletResponse.getWriter().write("Forbidden");

@@ -80,6 +80,7 @@ import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.InsufficientPrivilege;
 import org.idb.cacao.web.errors.MissingParameter;
+import org.idb.cacao.web.errors.PresentationDisabledFeature;
 import org.idb.cacao.web.errors.UserNotFoundException;
 import org.idb.cacao.web.repositories.DocumentSituationHistoryRepository;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
@@ -191,6 +192,9 @@ public class DocumentStoreAPIController {
 	@Value("${max.entries.per.uploaded.zip}")
 	private int maxEntriesPerUploadedZip;
 	
+	@Value("${presentation.mode}")
+	private Boolean presentationMode;
+
 	/**
 	 * Endpoint for uploading a document to be parsed
 	 */
@@ -207,6 +211,10 @@ public class DocumentStoreAPIController {
 			@RequestParam("inputName") String inputName,			
 			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
+		
+		if (Boolean.TRUE.equals(presentationMode)) {
+			throw new PresentationDisabledFeature();
+		}
 
 		if (log.isLoggable(Level.FINE)) {
 			log.log(Level.FINE,

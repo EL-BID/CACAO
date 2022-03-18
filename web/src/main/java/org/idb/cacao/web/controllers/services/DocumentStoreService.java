@@ -51,6 +51,7 @@ import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.Utils;
 import org.idb.cacao.web.utils.ErrorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.Authentication;
@@ -63,7 +64,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Gustavo Figueiredo
  *
  */
-@Service
+@Service("DocumentStoreService")
 public class DocumentStoreService {
 
 	private static final Logger log = Logger.getLogger(DocumentStoreService.class.getName());
@@ -78,6 +79,9 @@ public class DocumentStoreService {
 
 	@Autowired
 	private MessageSource messageSource;
+
+	@Value("${presentation.mode}")
+	private Boolean presentationMode;
 
 	/**
 	 * Queries ElasticSearch for structured information collected and stored for an uploaded file.
@@ -421,4 +425,10 @@ public class DocumentStoreService {
     	return searchRequest;
 	}
 
+	/**
+	 * Check if the current application is running as 'PRESENTATION MODE'
+	 */
+	public boolean isPresentationMode() {
+		return Boolean.TRUE.equals(presentationMode);
+	}
 }
