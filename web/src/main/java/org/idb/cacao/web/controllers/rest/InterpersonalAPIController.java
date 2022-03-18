@@ -163,7 +163,7 @@ public class InterpersonalAPIController {
         }
         
         if (log.isLoggable(Level.INFO)) {
-        	log.log(Level.INFO, String.format("Creating new interpersonal relationship between % and %s with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
+        	log.log(Level.INFO, String.format("Creating new interpersonal relationship between %s and %s with type %s", interpersonal.getPersonId1(), interpersonal.getPersonId2(), interpersonal.getRelationshipType().name()));
         }
 
         Interpersonal entity = new Interpersonal();

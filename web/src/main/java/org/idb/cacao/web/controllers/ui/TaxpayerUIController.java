@@ -49,6 +49,7 @@ public class TaxpayerUIController {
 	@Secured({"ROLE_TAXPAYER_WRITE"})
 	@GetMapping("/taxpayers/add")
     public String showAddTaxpayer(Model model) {
+		model.addAttribute("taxpayer", new Taxpayer());
 		return "taxpayers/add-taxpayer";
 	}
 
