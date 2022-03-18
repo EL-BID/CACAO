@@ -69,6 +69,45 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+	
+	/**
+	 * This is the default Content Security Policy directive to be returned as HTTP header for almost all responses
+	 * produced by this web application. 
+	 */
+	private static final String DEFAULT_CSP_DIRECTIVE = 
+			  "default-src 'none'; "
+			+ "script-src 'self' 'nonce-{nonce}'; "	// The {nonce} part is replaced by internals of 'CSPNonceFilter'
+			+ "style-src https: 'unsafe-inline' ; "
+			+ "img-src https: data:; "
+			+ "font-src 'self' https://fonts.gstatic.com data:; "
+			+ "frame-ancestors 'self'; "
+			+ "form-action 'self'; "
+			+ "connect-src 'self'; " // for auto-complete (e.g. while filling the form for creating a simplified payment)
+			+ "child-src 'self' https:; "	// for child frames, including external mobile payment platforms redirected from here
+			+ "object-src 'none'";
+
+	/**
+	 * This is an alternative Content Security Policy directive to be returned as HTTP header exclusively for responses
+	 * including reference to Vega.JS and VegaLite.JS, because they require the use of 'unsafe-eval' at 'script-src' due
+	 * to the use of 'new Function()' inside this visualization library.
+	 * @see https://github.com/vega/vega/issues/1106 (issue still open to this today)
+	 */
+	private static final String VEGA_COMPATIBLE_CSP_DIRECTIVE = 
+			  "default-src 'none'; "
+			+ "script-src 'self' 'nonce-{nonce}' 'unsafe-eval'; "	// The {nonce} part is replaced by internals of 'CSPNonceFilter'
+			+ "style-src https: 'unsafe-inline' ; "
+			+ "img-src https: data:; "
+			+ "font-src 'self' https://fonts.gstatic.com data:; "
+			+ "frame-ancestors 'self'; "
+			+ "form-action 'self'; "
+			+ "connect-src 'self'; " // for auto-complete (e.g. while filling the form for creating a simplified payment)
+			+ "child-src 'self' https:; "	// for child frames, including external mobile payment platforms redirected from here
+			+ "object-src 'none'";
+	
+	/**
+	 * The name of the CSP header according to https://www.w3.org/TR/CSP2/
+	 */
+	private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
 
 	/**
 	 * Handles authentication failures
@@ -140,16 +179,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .headers()
         	.frameOptions().sameOrigin()
         	.referrerPolicy(ReferrerPolicy.SAME_ORIGIN).and() // includes a 'Referrer-Policy: same-origin' header for increased security measure
-        	.contentSecurityPolicy("default-src 'none'; "
-        			+ "script-src 'self' 'nonce-{nonce}'; "	// The {nonce} part is replaced by internals of 'CSPNonceFilter'
-        			+ "style-src https: 'unsafe-inline' ; "
-        			+ "img-src https: data:; "
-        			+ "font-src 'self' https://fonts.gstatic.com data:; "
-        			+ "frame-ancestors 'self'; "
-        			+ "form-action 'self'; "
-        			+ "connect-src 'self'; " // for auto-complete (e.g. while filling the form for creating a simplified payment)
-        			+ "child-src 'self' https:; "	// for child frames, including external mobile payment platforms redirected from here
-        			+ "object-src 'none'").and()
+        	.contentSecurityPolicy(DEFAULT_CSP_DIRECTIVE).and()
         .and()
         
         // WHO CAN DO WHAT ...
@@ -284,5 +314,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		kibanaEndpointExpression += "**";
 		
 		return new AntPathRequestMatcher(kibanaEndpointExpression);
+	}
+	
+	/**
+	 * Set the response header related to CSP for compatibility with JS code dependent on Vega/VegaLite visualization library.
+	 */
+	public static void setVegaCompatibleCSPDirective(HttpServletResponse response) {
+		response.setHeader(CONTENT_SECURITY_POLICY_HEADER, VEGA_COMPATIBLE_CSP_DIRECTIVE);
 	}
 }

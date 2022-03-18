@@ -21,8 +21,11 @@ package org.idb.cacao.web.controllers.ui;
 
 import java.util.logging.Logger;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.errors.UserNotFoundException;
+import org.idb.cacao.web.sec.SecurityConfig;
 import org.idb.cacao.web.utils.UserUtils;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
@@ -58,7 +61,7 @@ public class AnalysisUIController {
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/general-analysis"})
-	public String getGeneralAnalysis(Model model) {
+	public String getGeneralAnalysis(Model model, HttpServletResponse response) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -67,6 +70,8 @@ public class AnalysisUIController {
     	if (user==null)
     		throw new UserNotFoundException();
     	
+    	SecurityConfig.setVegaCompatibleCSPDirective(response);
+
         return "analysis/general_analysis";
 	}		
 
@@ -85,7 +90,7 @@ public class AnalysisUIController {
 	}
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/statement-income-analysis"})
-	public String getStatementIncomeAnalysis(Model model) {
+	public String getStatementIncomeAnalysis(Model model, HttpServletResponse response) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -94,12 +99,14 @@ public class AnalysisUIController {
     	if (user==null)
     		throw new UserNotFoundException();
 		
+    	SecurityConfig.setVegaCompatibleCSPDirective(response);
+    	
         return "analysis/statement_income_analysis";
 	}
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/taxpayer-general-view"})
-	public String getTaxpayerGeneralView(Model model) {
+	public String getTaxpayerGeneralView(Model model, HttpServletResponse response) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -107,13 +114,15 @@ public class AnalysisUIController {
     	User user = UserUtils.getUser(auth);
     	if (user==null)
     		throw new UserNotFoundException();
-		
+
+    	SecurityConfig.setVegaCompatibleCSPDirective(response);
+
         return "analysis/taxpayer_general_view";
 	}
 	
 	@Secured({"ROLE_TAX_REPORT_READ"})
 	@GetMapping(value= {"/customers-vs-suppliers-analysis"})
-	public String getClientsVsSuppliersView(Model model) {
+	public String getClientsVsSuppliersView(Model model, HttpServletResponse response) {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if (auth==null)
@@ -121,7 +130,9 @@ public class AnalysisUIController {
     	User user = UserUtils.getUser(auth);
     	if (user==null)
     		throw new UserNotFoundException();
-    	
+
+    	SecurityConfig.setVegaCompatibleCSPDirective(response);
+
         return "analysis/customers_vs_suppliers_analysis";
 	}	
 }
