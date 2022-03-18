@@ -162,6 +162,7 @@ public class DocumentTemplateAPIController {
         	return ResponseEntity.notFound().build();
 
 		DocumentTemplate entity = existing.get();
+		template.setInputs(entity.getInputs());
 		template.updateEntity(entity);
 		templateService.compatibilizeTemplateFieldsMappings(entity);
         templateRepository.saveWithTimestamp(entity);
