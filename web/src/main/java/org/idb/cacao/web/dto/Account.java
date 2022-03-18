@@ -69,7 +69,7 @@ public class Account implements Serializable, Comparable<Account> {
 		this.subcategory = values.length > 3 ? values[3] : "";
 		this.code = values.length > 4 ? values[4] : "";
 		this.name = values.length > 5 ? values[5] : "";
-		this.balance = balance;
+		this.balance = balance;		
 	}
 
 	public int getLevel() {

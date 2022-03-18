@@ -161,6 +161,9 @@ public class AdminService {
 
 	private static final Logger log = Logger.getLogger(AdminService.class.getName());
 	
+	private static final String FAILURE = "FAILURE";
+	private static final String SUCCESS = "SUCCESS";	
+	
 	/**
 	 * Default number of parallel threads to be used for generating documents with random data
 	 */
@@ -225,7 +228,7 @@ public class AdminService {
 	/**
 	 * Enumerates all the implemented administrative operations
 	 */
-	public static enum AdminOperations {
+	public enum AdminOperations {
 				
 		HELP(AdminService::getHelp,
 			"Returns information about all commands that can be issued through this terminal",
@@ -312,7 +315,7 @@ public class AdminService {
 			new Option("bg","background",false, "Run the command at background (i.e.: do not wait until all the documents are created). This parameter is only considered together with 'docs' parameter. If not informed, waits until all the documents are generated (regardless the 'validation' and 'ETL' phases)."),
 			new Option("s","seed",true, "Informs a word or number to be used as 'SEED' for generating random numbers. Different seeds will result in different contents. This parameter is only considered together with 'docs' parameter. If not informed, use a randomly generated seed."),
 			new Option("y","year",true, "Informs the year to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
-			new Option("p","period",true, "Informs the years interval to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year."),
+			new Option("p","period",true, "Informs the years interval to be used for generating random data (i.e. for dates and other periods). This parameter is only considered together with 'docs' parameter. If not informed, use the year before the current year. If it's informed with year parameter, it prevails."),
 			new Option("thr","threads",true, "Number of parallel threads for generating random data (does not apply to validator/ETL phases). This parameter is only considered together with 'docs' parameter. If not informed, use "+DEFAULT_PARALLELISM_FOR_DATA_GENERATOR+" parallel threads."),
 			new Option("ldoc","limit_docs",true, "Limit the number of sample documents to create. This parameter is only considered together with 'docs' parameter. If not informed, use default 10."),
 			new Option("lrec","limit_records",true, "Limit the number of records to create. This parameter is only considered together with 'docs' parameter. If not informed, use some built-in default (usually 10000, but may be different depending on the archetype).")),
@@ -581,7 +584,7 @@ public class AdminService {
 			}
 		}
 		
-		return "SUCCESS";
+		return SUCCESS;
 	}
 	
 	/**
@@ -686,7 +689,7 @@ public class AdminService {
 				}
 				if (users==null || users.isEmpty())
 					return Collections.emptyList();
-				return users.stream().map(u->u.getUsername()).sorted().collect(Collectors.joining("\n"));
+				return users.stream().map(org.elasticsearch.client.security.user.User::getUsername).sorted().collect(Collectors.joining("\n"));
 			}
 			case "role":
 			case "roles": {
@@ -699,7 +702,7 @@ public class AdminService {
 				}
 				if (roles==null || roles.isEmpty())
 					return Collections.emptyList();
-				return roles.stream().map(r->r.getName()).sorted().collect(Collectors.joining("\n"));
+				return roles.stream().map(org.elasticsearch.client.security.user.privileges.Role::getName).sorted().collect(Collectors.joining("\n"));
 			}
 			case "space":
 			case "spaces": {
@@ -789,9 +792,9 @@ public class AdminService {
 		}
 		
 		if (success)
-			return "SUCCESS";
+			return SUCCESS;
 		else
-			return "FAILURE";
+			return FAILURE;
 	}
 	
 	/**
@@ -900,9 +903,7 @@ public class AdminService {
 		
 		report.append(String.format("%-40s\t%-10s\t%s%n", "name", "version", "group"));
 		try (Stream<DomainTable> tables = ScrollUtils.findAll(service.domainTableRepository, service.elasticsearchClient, 10).sorted();) {
-			tables.forEach(t->{
-				report.append(String.format("%-40s\t%-10s\t%s%n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
-			});
+			tables.forEach(t->report.append(String.format("%-40s\t%-10s\t%s%n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup())));
 		}
 
 		return report.toString();
@@ -916,9 +917,7 @@ public class AdminService {
 
 		report.append(String.format("%-40s\t%-10s\t%s%n", "name", "version", "group"));
 		try (Stream<DocumentTemplate> templates = ScrollUtils.findAll(service.templateRepository, service.elasticsearchClient, 10).sorted();) {
-			templates.forEach(t->{
-				report.append(String.format("%-40s\t%-10s\t%s%n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup()));				
-			});
+			templates.forEach(t->report.append(String.format("%-40s\t%-10s\t%s%n", t.getName(), t.getVersion(), t.getGroup()==null?"":t.getGroup())));
 		}
 
 		return report.toString();
@@ -977,7 +976,7 @@ public class AdminService {
 		if (inputFormat!=null) {
 			DocumentFormat format = inputFormat.getFormat();
 			
-			final boolean has_custom_generator = (archetype.isPresent()) ? archetype.get().hasCustomGenerator(template, format) : false;
+			final boolean has_custom_generator = (archetype.isPresent()) && archetype.get().hasCustomGenerator(template, format);
 
 			for (int i=0; i<limitDocs; i++) {
 				String subDir = fileSystemStorageService.getSubDir();
@@ -1000,10 +999,10 @@ public class AdminService {
 
 	        	Callable<Object> procedure = ()->{
 
-					final CustomDataGenerator custom_gen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixedLimitRecords) : null;
+					final CustomDataGenerator customGen = (has_custom_generator) ? archetype.get().getCustomGenerator(template, format, doc_seed, fixedLimitRecords) : null;
 
-					final long limit_records = (fixedLimitRecords<0 && custom_gen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
-							: (fixedLimitRecords<0 && custom_gen==null) ? 10_000 
+					final long limit_records = (fixedLimitRecords<0 && customGen!=null) ? Long.MAX_VALUE // the actual termination will be decided by the custom generator
+							: (fixedLimitRecords<0 && customGen==null) ? 10_000 
 							: fixedLimitRecords;
 
 	    			final FileGenerator gen = FileGenerators.getFileGenerator(format);
@@ -1017,14 +1016,14 @@ public class AdminService {
 					String taxpayerId = null;
 					
 					try {
-						if (custom_gen!=null) {
-							custom_gen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
+						if (customGen!=null) {
+							customGen.setDomainTableRepository(domainTableRepository::findByNameAndVersion);
 							if (year!=0)
-								custom_gen.setTaxYear(year);
-							custom_gen.setOverallSeed(seed, limitDocs, doc_index);
-							custom_gen.start();
-							taxpayerId = custom_gen.getTaxpayerId();
-							gen.setFixedYear(custom_gen.getTaxYear());
+								customGen.setTaxYear(year);
+							customGen.setOverallSeed(seed, limitDocs, doc_index);
+							customGen.start();
+							taxpayerId = customGen.getTaxpayerId();
+							gen.setFixedYear(customGen.getTaxYear());
 						}
 						else {
 							if (year!=0)
@@ -1038,16 +1037,16 @@ public class AdminService {
 						gen.setPath(destinationFile);
 						gen.start();
 						
-						if (custom_gen!=null) {
-							originalFilename = Optional.ofNullable(custom_gen.getFileName()).orElseGet(gen::getOriginalFileName);
+						if (customGen!=null) {
+							originalFilename = Optional.ofNullable(customGen.getFileName()).orElseGet(gen::getOriginalFileName);
 						}
 						else {
 							originalFilename = gen.getOriginalFileName();
 						}
 						
 						for (long j=0; j<limit_records; j++) {
-							if (custom_gen!=null) {
-								Map<String,Object> record = custom_gen.nextRecord();
+							if (customGen!=null) {
+								Map<String,Object> record = customGen.nextRecord();
 								if (record==null)
 									break;
 								gen.addRecord(record);
@@ -1058,8 +1057,8 @@ public class AdminService {
 						}
 					}
 					finally {
-						if (custom_gen!=null) {
-							custom_gen.close();
+						if (customGen!=null) {
+							customGen.close();
 						}
 						gen.close();
 					}
@@ -1201,18 +1200,12 @@ public class AdminService {
 			.toString();
 	}
 	
-	private static void updateIndexPattern(AdminService service, String spaceId, String indexIdOrName, LongAdder countUpdates, LongAdder countErrors) throws IOException {
+	private static void updateIndexPattern(AdminService service, String spaceId, String indexIdOrName, LongAdder countUpdates, LongAdder countErrors) {
 		if (indexIdOrName==null || indexIdOrName.trim().length()==0) {
 			
 			// Updates all index patterns
 			List<ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, spaceId);
-			if (indexPatterns==null || indexPatterns.isEmpty()) {
-				
-				return;
-				
-			}
-			else {
-				
+			if (indexPatterns!=null && !indexPatterns.isEmpty()) {				
 				final String[] indexPatternsIds = indexPatterns.stream().map(ESUtils.KibanaSavedObject::getId).toArray(String[]::new);
 				
 				for (String patternId: indexPatternsIds) {
@@ -1241,22 +1234,12 @@ public class AdminService {
 			else {
 				
 				List<ESUtils.KibanaSavedObject> indexPatterns = ESUtils.getKibanaIndexPatterns(service.env, service.restTemplate, spaceId);
-				if (indexPatterns==null || indexPatterns.isEmpty()) {
-					
-					return;
-					
-				}
-				else {
+				if (indexPatterns!=null && !indexPatterns.isEmpty()) {
 					
 					ESUtils.KibanaSavedObject indexPattern =
 					indexPatterns.stream().filter(i->String.CASE_INSENSITIVE_ORDER.compare(i.getTitle(), indexIdOrName)==0).findAny().orElse(null);
 					
-					if (indexPattern==null) {
-						
-						return;
-						
-					}
-					else {
+					if (indexPattern!=null) {
 						
 						updateIndexPatternInternal(service, spaceId, indexPattern.getId(), countUpdates, countErrors);
 
@@ -1347,7 +1330,7 @@ public class AdminService {
 						tp_entry.getValue().partitions().stream()
 						.map(tpInfo->new TopicPartition(topic,tpInfo.partition()))
 						.collect(Collectors.toMap(Function.identity(), 
-								(e)->OffsetSpec.latest()));
+								e->OffsetSpec.latest()));
 					Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
 					long total = 0;
 					for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
@@ -1383,7 +1366,7 @@ public class AdminService {
 							tp_entry.getValue().partitions().stream()
 							.map(tpInfo->new TopicPartition(topic,tpInfo.partition()))
 							.collect(Collectors.toMap(Function.identity(), 
-									(e)->OffsetSpec.latest()));
+									e->OffsetSpec.latest()));
 						Map<TopicPartition,ListOffsetsResultInfo> offsets = kafkaAdminClient.listOffsets(requestInfo).all().get();
 						for (TopicPartitionInfo tp_info: tp_entry.getValue().partitions()) {
 							int part = tp_info.partition();
@@ -1410,7 +1393,7 @@ public class AdminService {
 								tp_entry.getValue().partitions().stream()
 								.map(tpInfo->new TopicPartition(topic,tpInfo.partition()))
 								.collect(Collectors.toMap(Function.identity(), 
-										(e)->OffsetSpec.latest()));
+										e->OffsetSpec.latest()));
 						}
 						if (parts.length>2) {
 							long offset = Long.parseLong(parts[2]);
@@ -1671,9 +1654,9 @@ public class AdminService {
 				final String[] indexPatternsIds = indexPatterns.stream().map(ESUtils.KibanaSavedObject::getId).toArray(String[]::new);
 				boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", indexPatternsIds);
 				if (success)
-					return "SUCCESS";
+					return SUCCESS;
 				else
-					return "FAILURE";
+					return FAILURE;
 				
 			}
 			
@@ -1694,9 +1677,9 @@ public class AdminService {
 			
 				boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", new String[] { indexIdOrName });
 				if (success)
-					return "SUCCESS";
+					return SUCCESS;
 				else
-					return "FAILURE";
+					return FAILURE;
 				
 			}
 			else {
@@ -1721,9 +1704,9 @@ public class AdminService {
 						
 						boolean success = ESUtils.copyKibanaSavedObjects(service.env, service.restTemplate, sourceSpaceId, targetSpaceId, "index-pattern", new String[] { indexPattern.getId() });
 						if (success)
-							return "SUCCESS";
+							return SUCCESS;
 						else
-							return "FAILURE";
+							return FAILURE;
 
 					}
 					

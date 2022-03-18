@@ -96,6 +96,10 @@ public class AnalysisService {
 
 	private static final String ACCOUNT_SUBCATEGORY_TAX_PROVISION = "LIABILITY_PROVISION_TAX";
 	private static final String ACCOUNT_CATEGORY_EXPENSE = "EXPENSE";
+	
+	private static final String KEYWORD = ".keyword";
+	private static final String AMOUNT = "amount";
+	private static final String TAXPAYER_ID_KEYWORD = "taxpayer_id.keyword";
 
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
@@ -176,7 +180,7 @@ public class AnalysisService {
 
 		// Filter by taxpayerId
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", period.getYear()));
@@ -205,8 +209,8 @@ public class AnalysisService {
 	@Cacheable("accounts")
 	public List<Account> getAccounts(final String taxpayerId, YearMonth period, boolean fetchZeroBalance) {
 
-		String[] groupBy = {"account_category.keyword", translate("account_category_name") + ".keyword",
-				"account_subcategory.keyword", translate("account_subcategory_name") + ".keyword", 
+		String[] groupBy = {"account_category.keyword", translate("account_category_name") + KEYWORD,
+				"account_subcategory.keyword", translate("account_subcategory_name") + KEYWORD, 
 				"account_code.keyword", "account_name.keyword"};
 		
 		AggregationBuilder metric = AggregationBuilders.sum("finalBalance").field("final_balance_with_sign");
@@ -223,7 +227,9 @@ public class AnalysisService {
 		
 		BiFunction<Aggregations, String[], Account> function = (agg, values) -> {
 			Sum sum = agg.get("finalBalance");
-			return new Account(values, sum.getValue());
+			Account account = new Account(values, sum.getValue());
+			account.setLevel(3);
+			return account;
 		};		
 			
 		List<Account> accounts = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
@@ -424,7 +430,7 @@ public class AnalysisService {
 		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 		for (String argument : taxpayerIds) {
-			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
+			subquery = subquery.should(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, argument));
 		}
 		subquery = subquery.minimumShouldMatch(1);
 		query = query.must(subquery);
@@ -433,17 +439,6 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("year", year));
 		
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metrics);
-		
-		// Configure the aggregations
-//		AbstractAggregationBuilder<?> aggregationBuilder = // Aggregates by first field
-//				AggregationBuilders.terms("byNumber").size(10_000).field("statement_number.keyword")
-//						.subAggregation(AggregationBuilders.terms("byName").size(10_000)
-//								.field(translate("statement_name") + ".keyword")
-//								.subAggregation(AggregationBuilders.sum("sum").field("amount"))
-//								.subAggregation(AggregationBuilders.percentiles("amount").field("amount_relative"))
-//								.subAggregation(AggregationBuilders.avg("average").field("amount_relative"))
-//								.subAggregation(AggregationBuilders.medianAbsoluteDeviation("deviation")
-//										.field("amount_relative")));		
 		
 		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
@@ -482,10 +477,10 @@ public class AnalysisService {
 		}
 		
 		//String[] groupBy = {"byNumber", "byName"};
-		String[] groupBy = {"statement_number.keyword",translate("statement_name") + ".keyword"};
+		String[] groupBy = {"statement_number.keyword",translate("statement_name") + KEYWORD};
 		AggregationBuilder[] metrics = {
-			AggregationBuilders.sum("sum").field("amount"),
-			AggregationBuilders.percentiles("amount").field("amount_relative"),
+			AggregationBuilders.sum("sum").field(AMOUNT),
+			AggregationBuilders.percentiles(AMOUNT).field("amount_relative"),
 			AggregationBuilders.avg("average").field("amount_relative"),
 			AggregationBuilders.medianAbsoluteDeviation("deviation").field("amount_relative")
 		};		
@@ -531,7 +526,7 @@ public class AnalysisService {
 			Sum sum = agg.get("sum");			
 			Avg average = agg.get("average");
 			MedianAbsoluteDeviation deviation = agg.get("deviation");
-			Percentiles percentile = agg.get("amount");
+			Percentiles percentile = agg.get(AMOUNT);
 			
 			double sumValue = sum == null ? 0d
 					: Precision.round(sum.getValue(), 2, RoundingMode.HALF_DOWN.ordinal());
@@ -648,7 +643,7 @@ public class AnalysisService {
 			return;
 		
 		// Define group by fields
-		String[] groupBy = { "taxpayer_id.keyword", "taxpayer_name.keyword" };		
+		String[] groupBy = { TAXPAYER_ID_KEYWORD, "taxpayer_name.keyword" };		
 
 		// Add outliers for minimal value
 		SearchRequest searchRequest = getRequestForOutliers(true /* min */, item.getStatementOrder(), item.getMin(),
@@ -684,7 +679,7 @@ public class AnalysisService {
 		// Let's fill the resulting list with values
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Outlier> function = (agg, values) -> {
-			Sum amount = agg.get("amount");
+			Sum amount = agg.get(AMOUNT);
 			return new Outlier(values, item, amount.getValue());
 		};
 
@@ -721,7 +716,7 @@ public class AnalysisService {
 		// Filter by taxpayer id
 		BoolQueryBuilder subquery = QueryBuilders.boolQuery();
 		for (String argument : taxpayerIds) {
-			subquery = subquery.should(new TermQueryBuilder("taxpayer_id.keyword", argument));
+			subquery = subquery.should(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, argument));
 		}
 		subquery = subquery.minimumShouldMatch(1);
 		query = query.must(subquery);
@@ -736,7 +731,7 @@ public class AnalysisService {
 			query = query.must(new RangeQueryBuilder("amount_relative").from(value));
 
 		// Configure the aggregations
-		AggregationBuilder metric = AggregationBuilders.sum("amount").field("amount_relative");
+		AggregationBuilder metric = AggregationBuilders.sum(AMOUNT).field("amount_relative");
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
 		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
@@ -756,7 +751,7 @@ public class AnalysisService {
 
 		// Filter by qualifier
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.should(new TermQueryBuilder(qualifier + ".keyword", qualifierValue));
+		query = query.should(new TermQueryBuilder(qualifier + KEYWORD, qualifierValue));
 
 		String[] groupBy = {"taxPayerId.keyword"};
 		
@@ -770,9 +765,7 @@ public class AnalysisService {
 			return Collections.emptyList(); // No data found
 		}
 		
-		BiFunction<Aggregations, String[], String> function = (agg, values) -> {
-			return values[0];
-		};
+		BiFunction<Aggregations, String[], String> function = (agg, values) -> values[0];
 
 		// Update outlier information for this taxpayer
 		return SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
@@ -791,7 +784,7 @@ public class AnalysisService {
 		// Index over 'taxpayer' objects
 		SearchRequest searchRequest = new SearchRequest(TAXPAYER_INDEX);
 		
-		String[] groupBy = {qualifier + ".keyword"};
+		String[] groupBy = {qualifier + KEYWORD};
 
 		// Configure the aggregations
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy);
@@ -803,9 +796,7 @@ public class AnalysisService {
 			return Collections.emptyList(); // No data found
 		} 
 		
-		BiFunction<Aggregations, String[], String> function = (agg, values) -> {
-			return values[0];
-		};
+		BiFunction<Aggregations, String[], String> function = (agg, values) -> values[0];
 
 		// Update outlier information for this taxpayer
 		List<String> values = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
@@ -881,9 +872,7 @@ public class AnalysisService {
 			return new LinkedList<>(); // No data found
 		}
 			
-		BiFunction<Aggregations, String[], Integer> function = (agg, values) -> {			
-			return new Integer(values[0]);
-		};
+		BiFunction<Aggregations, String[], Integer> function = (agg, values) -> new Integer(values[0]);
 
 		// Update outlier information for this taxpayer
 		List<Integer> years = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);
@@ -902,7 +891,7 @@ public class AnalysisService {
 
 		// Filter by taxpayerId
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter for period
 		String from = ParserUtils.formatTimestampES(startDate);
@@ -917,7 +906,7 @@ public class AnalysisService {
 				"debited_account_subcategory_name.keyword", "debited_account_code.keyword",
 				"debited_account_name.keyword" };
 
-		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field("amount");
+		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field(AMOUNT);
 
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
 
@@ -963,7 +952,7 @@ public class AnalysisService {
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 
 		// Filter by taxpayer id
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
@@ -1032,8 +1021,8 @@ public class AnalysisService {
 	private void getStatementIncomeValues(String taxpayerId, int year, int sourceData,
 			Map<String, StatementIncomeItem> items) {
 		
-		String[] groupBy = {"statement_number.keyword", translate("statement_name") + ".keyword"};		
-		AggregationBuilder metric = AggregationBuilders.sum("amount").field("amount");
+		String[] groupBy = {"statement_number.keyword", translate("statement_name") + KEYWORD};		
+		AggregationBuilder metric = AggregationBuilders.sum(AMOUNT).field(AMOUNT);
 
 		// Define a search request according with parameters
 		SearchRequest searchRequest = searchComputedStatementIncomeValues(taxpayerId, sourceData, year, groupBy, metric);
@@ -1047,7 +1036,7 @@ public class AnalysisService {
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], StatementIncomeItem> function = (agg, values) -> {
-			Sum amount = agg.get("amount");			
+			Sum amount = agg.get(AMOUNT);			
 			if (amount != null) {
 				StatementIncomeItem item = items.getOrDefault(values[0]/*statementNumber*/, new StatementIncomeItem(values));
 				if (SOURCE_JOURNAL == sourceData)
@@ -1124,10 +1113,10 @@ public class AnalysisService {
 		
 		// Define group by fields
 		Object[] groupBy = { "shareholding_id.keyword", "shareholding_name.keyword",
-				translate("share_type_name") + ".keyword", new Script(getShreholdScript(), "byShareClass") };
+				translate("share_type_name") + KEYWORD, new Script(getShreholdScript(), "byShareClass") };
 		
 		// Index to search in
-		SearchRequest searchRequest = getShareholdRequest("taxpayer_id.keyword",taxpayerId,year,groupBy, getShareholdAggregationBuilder(true));
+		SearchRequest searchRequest = getShareholdRequest(TAXPAYER_ID_KEYWORD,taxpayerId,year,groupBy, getShareholdAggregationBuilder(true));
 
 		// Search results
 		SearchResponse sresp = doSearch(searchRequest);
@@ -1162,11 +1151,11 @@ public class AnalysisService {
 	private List<Shareholding> getShareholders(String taxpayerId, int year) {
 		
 		// Define group by fields
-		Object[] groupBy = { "taxpayer_id.keyword", "taxpayer_name.keyword", translate("share_type_name") + ".keyword",
+		Object[] groupBy = { TAXPAYER_ID_KEYWORD, "taxpayer_name.keyword", translate("share_type_name") + KEYWORD,
 				new Script(getShreholdScript(), "byShareClass") };		
 
 		// Index to search in
-		SearchRequest searchRequest = getShareholdRequest("shareholding_id.keyword",taxpayerId,year,groupBy, getShareholdAggregationBuilder(false));
+		SearchRequest searchRequest = getShareholdRequest("shareholding_id.keyword", taxpayerId, year, groupBy, getShareholdAggregationBuilder(false));
 
 		// Search results
 		SearchResponse sresp = doSearch(searchRequest);
@@ -1194,7 +1183,7 @@ public class AnalysisService {
 	 */
 	private org.elasticsearch.script.Script getShreholdScript() {
 		// Script in 'painless' language for identifying if there is a field called
-		//share_class.keyword
+		// share_class.keyword
 		return new org.elasticsearch.script.Script(
 				"if (doc['share_class.keyword'].size()==0) return '';"
 						+ "else return doc['share_class.keyword'].value; ");
@@ -1268,7 +1257,7 @@ public class AnalysisService {
 		
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter by year
 		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
@@ -1281,10 +1270,10 @@ public class AnalysisService {
 		query = query.must(subquery);
 
 		// Define group by fields
-		Object[] groupBy = { "year", "statement_number.keyword", translate("statement_name") + ".keyword" };
+		Object[] groupBy = { "year", "statement_number.keyword", translate("statement_name") + KEYWORD };
 
 		// Define aggregations
-		AggregationBuilder shareAmount = AggregationBuilders.sum("amount").field("amount");
+		AggregationBuilder shareAmount = AggregationBuilders.sum(AMOUNT).field(AMOUNT);
 
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount);
 
@@ -1309,7 +1298,7 @@ public class AnalysisService {
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			Sum amount = agg.get("amount");
+			Sum amount = agg.get(AMOUNT);
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("type", type);
 			instance.put("year", values[0]);
@@ -1340,7 +1329,7 @@ public class AnalysisService {
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter by subcategory
 		query = query.must(new TermQueryBuilder("account_subcategory_tag.keyword", ACCOUNT_SUBCATEGORY_TAX_PROVISION));
@@ -1443,7 +1432,7 @@ public class AnalysisService {
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter by expense category
 		query = query.must(new TermQueryBuilder("account_category_tag.keyword", ACCOUNT_CATEGORY_EXPENSE));
@@ -1603,15 +1592,15 @@ public class AnalysisService {
 
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		// Filter by taxpayer
-		query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+		query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 
 		// Filter by year
 		query.must(new RangeQueryBuilder("year").from(year - getPastPeriods()).to(year));
 
-		AggregationBuilder sum = AggregationBuilders.sum("amount").field("amount");
+		AggregationBuilder sum = AggregationBuilders.sum(AMOUNT).field(AMOUNT);
 		
 		BucketSortPipelineAggregationBuilder paging = PipelineAggregatorBuilders
-				.bucketSort("paging", Arrays.asList(new FieldSortBuilder("amount").order(SortOrder.DESC))).from(0)
+				.bucketSort("paging", Arrays.asList(new FieldSortBuilder(AMOUNT).order(SortOrder.DESC))).from(0)
 				.size(5);		
 
 		// Configure the aggregations
@@ -1643,7 +1632,7 @@ public class AnalysisService {
 			String secondAggregation = getStringValueForAgg(agg,fieldsGroupBy[1]);
 			if ( secondAggregation == null )
 				return null;			
-			Sum amount = agg.get("amount");
+			Sum amount = agg.get(AMOUNT);
 
 			if ( amount.getValue() <= 0 )
 				return null;
@@ -1651,8 +1640,8 @@ public class AnalysisService {
 			Map<String, Object> instance = new HashMap<>();
 			instance.put("year", values[0]);
 			Map<String, Object> instanceValues = new HashMap<>();
-			instanceValues.put(fieldsGroupBy[0].replace(".keyword", ""), values[1]);
-			instanceValues.put(fieldsGroupBy[1].replace(".keyword", ""), secondAggregation);			
+			instanceValues.put(fieldsGroupBy[0].replace(KEYWORD, ""), values[1]);
+			instanceValues.put(fieldsGroupBy[1].replace(KEYWORD, ""), secondAggregation);			
 			instanceValues.put("value", amount.getValue());
 			instanceValues.put("title", values[0] + ": " + secondAggregation);
 			instance.put("values", instanceValues);
@@ -1707,7 +1696,7 @@ public class AnalysisService {
 		
 		List<Map<String, Object>> customers = getCustomersVsSuppliersValues(taxpayerId, year, CUSTOMERS_INDEX, groupByCustomers);
 		
-		String[] groupBySuppliers = { "year", "month_number", "taxpayer_id.keyword","taxpayer_name.keyword" };
+		String[] groupBySuppliers = { "year", "month_number", TAXPAYER_ID_KEYWORD,"taxpayer_name.keyword" };
 		
 		List<Map<String, Object>> suppliers = getCustomersVsSuppliersValues(taxpayerId, year, SUPPLIERS_INDEX, groupBySuppliers);
 		
@@ -1721,14 +1710,14 @@ public class AnalysisService {
 		suppliers.forEach( item -> {
 			YearMonth month = YearMonth.of(Integer.valueOf(item.get("year").toString()), 
 					Integer.valueOf(item.get("month_number").toString()));
-			Pair<YearMonth,String> key = Pair.of(month,item.get("taxpayer_id.keyword").toString());
+			Pair<YearMonth,String> key = Pair.of(month,item.get(TAXPAYER_ID_KEYWORD).toString());
 			CustomerVsSupplier instance = instances.get(key);
 			if ( instance == null ) {
 				instance = new CustomerVsSupplier(item, "supplier");
 				instances.put(key, instance);
 			}
 			else {
-				instance.setSupplierValue(Double.parseDouble(item.get("amount").toString()));
+				instance.setSupplierValue(Double.parseDouble(item.get(AMOUNT).toString()));
 			}
 			instance.setDifference(instance.getCustomerValue()-instance.getSupplierValue());
 
@@ -1757,7 +1746,7 @@ public class AnalysisService {
 		
 		// Filter by taxpayer		
 		if ( CUSTOMERS_INDEX.equals(index) ) {
-			query = query.must(new TermQueryBuilder("taxpayer_id.keyword", taxpayerId));
+			query = query.must(new TermQueryBuilder(TAXPAYER_ID_KEYWORD, taxpayerId));
 			message = "customers";
 		}
 		else {
@@ -1769,7 +1758,7 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("year", year));
 
 		// Configure the aggregations
-		AggregationBuilder sum = AggregationBuilders.sum("amount").field("amount");
+		AggregationBuilder sum = AggregationBuilders.sum(AMOUNT).field(AMOUNT);
 		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, sum);		
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
@@ -1789,13 +1778,13 @@ public class AnalysisService {
 
 		// Retrieve information from result
 		BiFunction<Aggregations, String[], Map<String, Object>> function = (agg, values) -> {
-			Sum amount = agg.get("amount");
+			Sum amount = agg.get(AMOUNT);
 			Map<String, Object> instance = new HashMap<>();
 			instance.put(groupBy[0], values[0]);
 			instance.put(groupBy[1], values[1]);
 			instance.put(groupBy[2], values[2]);
 			instance.put(groupBy[3], values[3]);
-			instance.put("amount", amount.getValue());
+			instance.put(AMOUNT, amount.getValue());
 			return instance;
 		};
 

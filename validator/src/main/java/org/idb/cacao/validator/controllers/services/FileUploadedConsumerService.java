@@ -23,7 +23,6 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -71,14 +70,11 @@ import org.idb.cacao.validator.repositories.DocumentTemplateRepository;
 import org.idb.cacao.validator.repositories.DocumentUploadedRepository;
 import org.idb.cacao.validator.repositories.DocumentValidationErrorMessageRepository;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
-import org.idb.cacao.validator.utils.MapDBFactory;
-import org.idb.cacao.validator.utils.Utils;
 import org.idb.cacao.validator.validations.Validations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -123,9 +119,6 @@ public class FileUploadedConsumerService {
 	@Autowired
 	private final StreamBridge streamBridge;
 
-	@Autowired
-	private Environment env;
-	
 	@Value("${validation.max.errors.per.upload}")
 	private long maxValidationErrorsPerUpload;
 
@@ -282,11 +275,7 @@ public class FileUploadedConsumerService {
 						+ doc.getTemplateVersion() + " was not configured with proper input format!");
 			}
 			
-			try {
-				validationContext.setParsedContentsListFactory(Utils.getList(format,Files.size(filePath), env));
-			} catch (IOException e1) {
-				throw new GeneralException(e1);
-			}
+			validationContext.setParsedContentsListFactory(LinkedList::new);
 			
 			FileFormat fileFormat = FileFormatFactory.getFileFormat(format);
 
@@ -403,9 +392,7 @@ public class FileUploadedConsumerService {
 				if (iterator != null)
 					iterator.close();
 
-				parser.close();
-				//Close list, if it's stored in disk
-				MapDBFactory.close(validationContext.getParsedContents());
+				parser.close();				
 				
 			}
 

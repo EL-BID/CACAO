@@ -69,13 +69,6 @@
 			<artifactId>jsoup</artifactId>
 			<version>1.14.3</version>
 		</dependency>
-		
-		<!-- https://mvnrepository.com/artifact/org.mapdb/mapdb -->
-		<dependency>
-			<groupId>org.mapdb</groupId>
-			<artifactId>mapdb</artifactId>
-			<version>3.0.8</version>
-		</dependency>		
 
 	</dependencies>
 

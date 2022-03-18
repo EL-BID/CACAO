@@ -206,11 +206,11 @@ public class Validations {
 			return;
 		
 		parsedContents.parallelStream().iterator().forEachRemaining(values -> {
-
+			
 			for (DocumentField field : fields) {
 
 				try {
-					Object fieldValue = values.get(field.getFieldName());
+					Object fieldValue = values.get(field.getFieldName());					
 
 					// If field value is null, there is nothing to check
 					if (fieldValue == null)
@@ -241,7 +241,10 @@ public class Validations {
 						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
 					// Update field value to it's new representation
-					values.replace(field.getFieldName(), fieldValue);
+					if ( fieldValue == null)
+						values.remove(field.getFieldName());
+					else
+						values.replace(field.getFieldName(), fieldValue);
 				} catch (Exception e) {
 					log.log(Level.SEVERE,"Error parsing record values.", e);					
 				}
