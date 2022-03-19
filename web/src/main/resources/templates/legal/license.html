@@ -6,15 +6,15 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-	<!-- Sidebar Menu -->
+	<!--/* Sidebar Menu */-->
 	<th:block th:unless="${logged_area}">
 		<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
 	</th:block>
 	<div class="pusher">
-		<!-- Public Menu -->
+		<!--/* Public Menu */-->
 		<th:block th:unless="${logged_area}">
 			<div th:replace="fragments/page_fragments :: publicMenu"></div>
-			<!-- Fix to avoid overlap from the Menu -->
+			<!--/* Fix to avoid overlap from the Menu */-->
 			<div>
 				<br>
 				<br>
@@ -25,7 +25,7 @@
 <div class="ui text white container">
 	<div class="ui tab active" data-tab="individual" th:switch="${#locale.language}">
 	
-	<!-- Case language is set to English -->	
+	<!--/* Case language is set to English */-->	
 	<div th:case="en">
 		<h1>License</h1>
 		<p>This software is licensed accordingly to the MIT license.</p>
@@ -38,7 +38,7 @@
 		<p></p>
 	</div>
 
-	<!-- Case language is set to Spanish -->	
+	<!--/* Case language is set to Spanish */-->	
 	<div th:case="es">
 		<h1>Licencia</h1>
 		<p>Este software está licenciado de acuerdo con la	licencia MIT.</p> 
@@ -86,12 +86,12 @@
 	
 	</div>
 </div>		
-		<!-- Footer -->
+		<!--/* Footer */-->
 		<th:block th:unless="${logged_area}">
 			<div th:replace="fragments/page_fragments :: footer"></div>
 		</th:block>
 </div>
-	<!-- Language Javascript -->
+	<!--/* Language Javascript */-->
 	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
 </body>
 </html>

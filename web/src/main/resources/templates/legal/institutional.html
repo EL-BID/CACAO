@@ -6,15 +6,15 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-	<!-- Sidebar Menu -->
+	<!--/* Sidebar Menu */-->
 	<th:block th:unless="${logged_area}">
 		<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
 	</th:block>
 	<div class="pusher">
-		<!-- Public Menu -->
+		<!--/* Public Menu */-->
 		<th:block th:unless="${logged_area}">
 			<div th:replace="fragments/page_fragments :: publicMenu"></div>
-			<!-- Fix to avoid overlap from the menu -->
+			<!--/* Fix to avoid overlap from the menu */-->
 			<div class="ui large aligned">
 				<div class="row">
 					<br>
@@ -26,7 +26,7 @@
 		<br>
 		<div class="ui container">
 			<div th:switch="${#locale.language}">
-				<!-- Case language is set to English -->
+				<!--/* Case language is set to English */-->
 				<div th:case="en">
 					<div class="ui middle aligned center container">
 						<h2 class="ui header">
@@ -54,7 +54,7 @@
 						</div>
 					</div>
 				</div>
-				<!-- Case language is set to Spanish -->
+				<!--/* Case language is set to Spanish */-->
 				<div th:case="es">
 					<div class="ui middle aligned center container">
 						<h2 class="ui header">
@@ -85,12 +85,12 @@
 				<br>
 			</div>
 		</div>
-		<!-- Footer -->
+		<!--/* Footer */-->
 		<th:block th:unless="${logged_area}">
 			<div th:replace="fragments/page_fragments :: footer"></div>
 		</th:block>
 	</div>
-	<!-- Language Javascript -->
+	<!--/* Language Javascript */-->
 	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
 </body>
 </html>

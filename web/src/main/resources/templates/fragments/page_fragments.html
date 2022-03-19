@@ -383,14 +383,14 @@ svg .unselected {
 </style>
 </head>
 <body>
-	<!-- Public Sidebar Menu -->
+	<!--/* Public Sidebar Menu */-->
 	<div class="ui vertical inverted sidebar menu dontprint" th:fragment="publicSidebarMenu">
 		<a class="item" th:text="#{menu.homepage}" th:href="@{/}">homepage</a>
 		<a class="item" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
 		<a class="item" th:text="#{menu.usermanual}" th:href="@{/usermanual}">user manual</a>
 		<a class="item startbtn" th:text="#{app.start}">Start</a>
 	</div>
-	<!-- Public Menu -->
+	<!--/* Public Menu */-->
 	<div class="ui container dontprint" th:fragment="publicMenu">
 		<div class="ui fixed inverted menu" id="my_menu">
 			<a class="toc item">
@@ -419,7 +419,7 @@ svg .unselected {
 			</div>
 		</div>
 	</div>
-	<!-- Logged Sidebar Menu -->
+	<!--/* Logged Sidebar Menu */-->
 	<div class="ui vertical inverted sidebar menu dontprint" th:fragment="loggedSidebarMenu">
 		<th:block th:each="menu_item : ${menu}">
 			<a class="item" th:if="${menu_item.link}!=null" th:href="${menu_item.link}" href="#" th:text="${menu_item.name}" th:target="${target_frame}" target="">Menu Item</a>
@@ -429,7 +429,7 @@ svg .unselected {
 		</th:block>
 		<a class="item" th:text="#{menu.logout}" th:href="@{/logout}">Logout</a>
 	</div>
-	<!-- Logged Submenu -->
+	<!--/* Logged Submenu */-->
 	<div class="ui accordion inverted item" th:fragment="submenu">
 		<a class="title" th:text="${menu_interno.name + '&MediumSpace;&MediumSpace;' + '&xdtri;'}">Menu</a>
 		<div class="content">
@@ -441,7 +441,7 @@ svg .unselected {
 			</th:block>
 		</div>
 	</div>
-	<!-- Logged Menu -->
+	<!--/* Logged Menu */-->
 	<div class="ui container" th:fragment="loggedMenu">
 		<div class="ui fixed inverted menu" id="my_menu">
 			<a class="toc item">
@@ -454,7 +454,6 @@ svg .unselected {
 			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}" th:target="${target_frame}" target="">institutional</a>
 			<a class="item hideable" th:text="#{menu.usermanual}" th:href="@{/usermanual}" th:target="${target_frame}" target="">user's manual</a>
 			<div class="ui right simple dropdown item hideable">
-<!-- 				<div id="auth" th:text="${#authentication.name}"></div> -->
 				<div sec:authentication="name"></div>
 				<i class="dropdown icon"></i>
 				<div class="menu">
@@ -463,7 +462,7 @@ svg .unselected {
 			</div>
 		</div>
 	</div>
-	<!-- Footer -->
+	<!--/* Footer */-->
 	<div class="ui inverted vertical footer segment dontprint" th:fragment="footer">
 		<div class="ui container">
 			<div class="ui stackable inverted divided equal height stackable grid">
@@ -502,11 +501,11 @@ svg .unselected {
 			</div>
 		</div>
 	</div>
-	<!-- Logged Footer -->
+	<!--/* Logged Footer */-->
 	<div class="ui vertical segment" style="background: linear-gradient(-45deg, #7b3f00, #fcd22f, #964b00);" th:fragment="loggedFooter">
 		<h5 style="text-align: center;" th:text="#{ta.full.name}">Tax Administration</h5>
 	</div>
-	<!-- Language Javascript -->
+	<!--/* Language Javascript */-->
 	<script th:nonce="${cspNonce}" th:inline="javascript" th:with="lang=${#locale.language}" th:fragment="languageJavascript">
 	$('.ui.dropdown.chooselang').dropdown();
 	$('.ui.dropdown.chooselang').dropdown('set selected', /*[[${lang}]]*/'')

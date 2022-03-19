@@ -6,10 +6,10 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-	<!-- Sidebar Menu -->
+	<!--/* Sidebar Menu */-->
 	<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
 	<div class="pusher">
-		<!-- Public Menu -->
+		<!--/* Public Menu */-->
 		<div th:replace="fragments/page_fragments :: publicMenu"></div>
 		<div class="ui large aligned">
 			<div class="row">
@@ -77,17 +77,17 @@
 				</div>
 			</div>
 		</div>
-		<!-- Fix to avoid overlap from the footer -->
+		<!--/* Fix to avoid overlap from the footer */-->
 		<div>
 			<br>
 			<br>
 		</div>
-		<!-- Footer -->
+		<!--/* Footer */-->
 		<div th:replace="fragments/page_fragments :: footer"></div>
 	</div>
-	<!-- Language Javascript -->
+	<!--/* Language Javascript */-->
 	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
-	<!-- Login Form Check Javascript -->
+	<!--/* Login Form Check Javascript */-->
 	<script th:nonce="${cspNonce}" th:inline="javascript">
   $(document).ready(function() {
       $('.ui.form').form({

@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-	<!-- Fix to avoid overlap from the Menu -->
+	<!--/* Fix to avoid overlap from the Menu */-->
 	<div>
 		<br>
 	</div>
@@ -25,7 +25,7 @@
 						<div class="row">
 							<div class="ui form">
 								<label for="apiToken" th:text="#{user.token.api}">User Token</label>
-								<!-- /* The 'apiToken' of 'User' is encrypted */ -->
+								<!--/* The 'apiToken' of 'User' is encrypted */-->
 								<input type="text" th:value="${user.apiToken==null?'':'****************************'}" id="apiToken" readonly>
 							</div>
 						</div>

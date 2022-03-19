@@ -7,15 +7,15 @@
 </head>
 <body>
 
-<!-- Sidebar Menu -->
+<!--/* Sidebar Menu */-->
 	<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
 
 <div class="pusher">
 
-<!-- Public Menu -->
+<!--/* Public Menu */-->
 			<div th:replace="fragments/page_fragments :: publicMenu"></div>
 
-	<!-- Fix to avoid overlap from the menu -->
+	<!--/* Fix to avoid overlap from the menu */-->
     <div class="ui large aligned">
       <div class="row">
       	<br><br><br><br><br>
@@ -26,7 +26,7 @@
 	<div class="ui tab active" data-tab="individual" th:switch="${#locale.language}">
 	
 	
-	<!-- Case language is set to English -->	
+	<!--/* Case language is set to English */-->	
 	<div th:case="en">
 	
 	<h1>Privacy Policy</h1>
@@ -53,7 +53,7 @@
 	
 	</div>
 	
-	<!-- Case language is set to French -->	
+	<!--/* Case language is set to French */-->	
 	<div th:case="fr">
 	<h1>Politique de confidentialité</h1>
 	<p>Votre vie privée est importante pour nous. La politique de CACAO est de respecter votre vie privée en ce qui concerne toute information que vous pourriez fournir sur le site web de CACAO.
@@ -80,7 +80,7 @@
 	
 	</div>
 	
-	<!-- Case language is set to Portuguese -->	
+	<!--/* Case language is set to Portuguese */-->	
 	<div th:case="pt">
 	<h1>Política de Privacidade</h1>
 	<p>A sua privacidade é importante para nós. É política do site CACAO respeitar a sua privacidade em relação a qualquer informação que possa recolher no site CACAO.</p>
@@ -107,7 +107,7 @@
 	</div>
 	
 	
-	<!-- Case language is set to Spanish -->	
+	<!--/* Case language is set to Spanish */-->	
 	<div th:case="es">
 	<h1>Política de privacidad</h1>
 	<p>Su privacidad es importante para nosotros. Es política del sitio web de CACAO respetar su privacidad con respecto a cualquier información que pueda recopilar en el sitio web de CACAO.</p>
@@ -136,13 +136,13 @@
 	</div>
 </div>
 
-<!-- Footer -->
+<!--/* Footer */-->
 	<div th:replace="fragments/page_fragments :: footer"></div>
 
 	</div>
 
 
-<!-- Language Javascript -->
+<!--/* Language Javascript */-->
 <div th:replace="fragments/page_fragments :: languageJavascript"></div>
 
 </body>

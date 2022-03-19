@@ -6,10 +6,10 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body style="overflow: hidden; margin: 0">
-	<!-- Sidebar Menu -->
+	<!--/* Sidebar Menu */-->
 	<div th:replace="fragments/page_fragments :: loggedSidebarMenu(target_frame='child_frame')"></div>
 	<div class="pusher" style="box-sizing: border-box; display: block; width: 100%; height: calc(100% - 100px); overflow: hidden; border: none;">
-		<!-- Public Menu -->
+		<!--/* Public Menu */-->
 		<div th:replace="fragments/page_fragments :: loggedMenu(target_frame='child_frame')"></div>
 		<div class="ui large aligned">
 			<div class="row">
@@ -20,10 +20,10 @@
 		</div>
 		<iframe th:src="@{${first_page_child_frame}}" src="/" name="child_frame" height="100%" width="100%"
 			style="box-sizing: border-box; display: block; width: 100%; height: calc(100% - 100px); overflow: hidden; border: none;"></iframe>
-		<!-- Logged Footer -->
+		<!--/* Logged Footer */-->
 		<div th:replace="fragments/page_fragments :: loggedFooter"></div>
 	</div>
-	<!-- Language Javascript -->
+	<!--/* Language Javascript */-->
 	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
 	<script th:nonce="${cspNonce}">
 		$('.ui.accordion').accordion('open (1)');
