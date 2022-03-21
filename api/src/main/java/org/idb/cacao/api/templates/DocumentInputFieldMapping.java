@@ -86,6 +86,7 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 * Applies to these file formats:<BR>
 	 * XLS/XLSX<BR>
 	 * TXT/CSV<BR>
+	 * PDF (for PDF Forms)<BR>
 	 * DOC/DOCX (for tables inside)<BR>
 	 */
 	@Field(type=Integer)
@@ -97,6 +98,7 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 * Applies to these file formats:<BR>
 	 * XLS/XLSX<BR>
 	 * TXT/CSV<BR>
+	 * PDF (for PDF Forms)<BR>
 	 * DOC/DOCX (for tables inside)<BR>
 	 */
 	@Field(type=Keyword)
@@ -108,6 +110,7 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 * Applies to these file formats:<BR>
 	 * XLS/XLSX<BR>
 	 * TXT/CSV<BR>
+	 * PDF (for PDF Forms)<BR>
 	 * DOC/DOCX (for tables inside)<BR>
 	 */
 	@Field(type=Integer)
