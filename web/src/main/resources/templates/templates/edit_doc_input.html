@@ -167,10 +167,12 @@ let table = new Tabulator('#table', {
         [/]
 
         [# th:if="${docInput.format.name()=='JSON'}"]
+        {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 5},
         {title: /*[[#{mapping.path.expression}]]*/ "Path Expression", field:"pathExpression", minWidth:100, editor:true, responsive:3}
         [/]
 
         [# th:if="${docInput.format.name()=='XML'}"]
+        {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 5},
         {title: /*[[#{mapping.path.expression}]]*/ "Path Expression", field:"pathExpression", minWidth:100, editor:true, responsive:3}
         [/]
 
@@ -183,7 +185,9 @@ let table = new Tabulator('#table', {
         [/]
         
         [# th:if="${docInput.format.name()=='PDF'}"]
-        {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 3}
+        {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 3},
+        {title: /*[[#{mapping.column.index}]]*/ "Column Index", field:"columnIndex", width:80, minWidth:100, editor:"number", responsive: 3,
+            editorParams: { min:0 }},
         [/]
     ],
     data: fields
