@@ -175,16 +175,12 @@ let table = new Tabulator('#table', {
         [/]
 
         [# th:if="${docInput.format.name()=='DOC'}"]
-	    {title: /*[[#{mapping.row.index}]]*/ "Row Index", field: "rowIndex", width:80, minWidth:100, editor:"number", responsive: 5,
-            editorParams: { min:0 }},
         {title: /*[[#{mapping.column.index}]]*/ "Column Index", field:"columnIndex", width:80, minWidth:100, editor:"number", responsive: 3,
                 editorParams: { min:0 }},
         {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 3}
         [/]
         
         [# th:if="${docInput.format.name()=='PDF'}"]
-    	{title: /*[[#{mapping.row.index}]]*/ "Row Index", field: "rowIndex", width:80, minWidth:100, editor:"number", responsive: 5,
-            editorParams: { min:0 }},
         {title: /*[[#{mapping.column.index}]]*/ "Column Index", field:"columnIndex", width:80, minWidth:100, editor:"number", responsive: 3,
                 editorParams: { min:0 }},        
         {title: /*[[#{mapping.column.name.expression}]]*/ "Name Expression", field: "columnNameExpression", minWidth:100, editor:true, responsive: 3}
