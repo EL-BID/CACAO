@@ -109,7 +109,6 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	 * May be NULL if not specific to a particular row in a specific order<BR>
 	 * Applies to these file formats:<BR>
 	 * XLS/XLSX<BR>
-	 * TXT/CSV<BR>
 	 * PDF (for PDF Forms)<BR>
 	 * DOC/DOCX (for tables inside)<BR>
 	 */
