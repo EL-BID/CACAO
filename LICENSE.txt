@@ -36,3 +36,21 @@ http://www.json.org/license.html
 
 Creative Commons Zero (CC0)
 https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+LGPL 2.1
+http://www.gnu.org/licenses/lgpl-2.1.html
+
+MPL 1.1
+https://www.mozilla.org/en-US/MPL/1.1/
+
+BSD 2-Clause License
+https://opensource.org/licenses/BSD-2-Clause
+
+EDL 1.0
+http://www.eclipse.org/org/documents/edl-v10.php
+
+Elastic License 2.0
+https://raw.githubusercontent.com/elastic/elasticsearch/v7.12.1/licenses/ELASTIC-LICENSE-2.0.txt
+
+The SAX License
+http://www.saxproject.org/copying.html
