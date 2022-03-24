@@ -175,6 +175,18 @@ public class CreateDocumentTemplatesSamples {
 		}
 		return mappings;
 	}
+
+	/**
+	 * Given a document template and its DocumentField's definitions, returns a list of DocumentInputFieldMapping
+	 * considering as input columns the column names
+	 */
+	public static List<DocumentInputFieldMapping> getMappingsWithColumnNameExpression(DocumentTemplate docTemplate) {
+		List<DocumentInputFieldMapping> mappings = new ArrayList<>(docTemplate.getFields().size());
+		for (DocumentField field: docTemplate.getFields()) {
+			mappings.add(new DocumentInputFieldMapping().withFieldName(field.getFieldName()).withColumnNameExpression(field.getFieldName()));
+		}
+		return mappings;
+	}
 	
 	/**
 	 * Configure the DocumentTemplate with multiple DocumentInput related to common formats
@@ -202,7 +214,7 @@ public class CreateDocumentTemplatesSamples {
 		input.setFormat(DocumentFormat.JSON);
 		docTemplate.addInput(input);
 
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
+		input.setFields(getMappingsWithColumnNameExpression(docTemplate));
 		input.setFieldsIdsMatchingTemplate(docTemplate);
 
 		input = new DocumentInput("PDF "+inputSufix);

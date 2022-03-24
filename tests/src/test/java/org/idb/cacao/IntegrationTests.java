@@ -21,8 +21,11 @@ package org.idb.cacao;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.time.Duration;
+import java.util.Locale;
 
+import org.junit.ClassRule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -36,6 +39,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
+import org.springframework.web.server.i18n.AcceptHeaderLocaleContextResolver;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -54,102 +60,31 @@ public class IntegrationTests {
     
     private static final Integer ELASTICSEARCH_PORT = 9200;
 
-    // ES Container
-    @Container
-    private static ElasticsearchContainer esContainer = 
-        new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:" + ELASTICSEARCH_VERSION)
-            .withEnv("discovery.type", "single-node")
-            .withExposedPorts(ELASTICSEARCH_PORT);
+    @ClassRule
+    public static DockerComposeContainer environment =
+        new DockerComposeContainer(new File("compose-test.yml"));
+                //.withExposedService("web_1", 8080);
 
 
     @BeforeAll
     public static void beforeAll() {
-        esContainer.setWaitStrategy(Wait.forHttp("/")
-            .forPort(9200)
-            .forStatusCode(200)
-            .withStartupTimeout(Duration.ofSeconds(120)));
-        esContainer.start();
-
-        int containerPort = esContainer.getMappedPort(ELASTICSEARCH_PORT);
-        System.setProperty("es.port", "" + containerPort);
-        System.setProperty("es.host", "127.0.0.1");
-        System.setProperty("ssl.trust.server", esContainer.getHost());
-        System.setProperty("i18n.locale", "en_US");
-        System.setProperty("user.country", "en_US");
-        System.setProperty("user.language", "en-US");
-        System.setProperty("spring.mvc.locale", "en_US");
-        
-        SpringApplicationBuilder cacaoWeb = 
-            new SpringApplicationBuilder(org.idb.cacao.web.WebApplication.class).
-            profiles("dev").
-            properties("es.port=" + containerPort).
-            properties("es.host=127.0.0.1")
-            .properties("ssl.trust.server=" + esContainer.getHost())
-            .properties(
-                "es.ssl=false",
-                "es.ssl.verifyhost=false",
-                "spring.elasticsearch.rest.connection-timeout=5m",
-                "cacao.user.language=en_US",
-                "cacao.user.country=US",
-                "i18n.locale=en_US",
-                "spring.mvc.locale=en_US",
-                "privilege.ADMIN_OPS=SYSADMIN",
-                "privilege.CONFIG_API_TOKEN=SYSADMIN,SUPPORT,DECLARANT",
-                "privilege.CONFIG_SYSTEM_MAIL=SYSADMIN",
-                "privilege.INTERPERSONAL_READ_ALL=SYSADMIN,SUPPORT,MASTER,AUTHORITY",
-                "privilege.INTERPERSONAL_WRITE=SYSADMIN,SUPPORT,AUTHORITY",
-                "privilege.SYNC_OPS=SYSADMIN",
-                "privilege.TAX_DECLARATION_READ=SYSADMIN,SUPPORT,AUTHORITY,MASTER,DECLARANT",
-                "privilege.TAX_DECLARATION_READ_ALL=SYSADMIN,SUPPORT,MASTER,AUTHORITY",
-                "privilege.TAX_DECLARATION_WRITE=SYSADMIN,DECLARANT",
-                "privilege.TAX_DECLARATION_WRITE_EMPTY=SYSADMIN,SUPPORT,MASTER",
-                "privilege.TAX_TEMPLATE_WRITE=SYSADMIN,SUPPORT",
-                "privilege.TAX_DOMAIN_TABLE_WRITE=SYSADMIN,SUPPORT",
-                "privilege.TAXPAYER_READ=SYSADMIN,SUPPORT,AUTHORITY,MASTER,DECLARANT",
-                "privilege.TAXPAYER_READ_ALL=SYSADMIN,SUPPORT,AUTHORITY,MASTER",
-                "privilege.TAXPAYER_WRITE=SYSADMIN,SUPPORT",
-                "privilege.USER_RECENT_READ=SYSADMIN",
-                "privilege.USER_HISTORY_READ=SYSADMIN,SUPPORT",
-                "privilege.USER_READ=SYSADMIN,SUPPORT",
-                "privilege.USER_WRITE=SYSADMIN,SUPPORT",
-                "privilege.TAX_REPORT_READ=SYSADMIN,SUPPORT,AUTHORITY,MASTER"
-                /*,
-                "server.ssl.key-store-type=PKCS12",
-                "server.ssl.key-store=file:/f/cacao/cert.p12",
-                "server.ssl.key-store-password=123456",
-                "server.ssl.key-alias=cacao",
-                "server.ssl.enabled=true",
-                "spring.thymeleaf.cache=false",
-                "auto.reload.properties=10",
-                "use.kafka.embedded=true",
-                "storage.incoming.files.original.dir=f:/cacao"*/
-                
-            );
-
-        cacaoWeb.run("server.port=8888");
-
-
-
-        /*
-        SpringApplicationBuilder cacaoValidator = 
-            new SpringApplicationBuilder(org.idb.cacao.validator.Application.class).properties("es.port=" + containerPort);
-        
-        cacaoValidator.run("server.port=8081");
-        */
-        
-
+        environment.start();
+        System.out.println("Environment started");
     }
 
 	@AfterAll
 	public static void afterClass() {
-		if (esContainer !=null)
-            esContainer.stop();
+		if (environment !=null)
+            environment.stop();
 
 	}
 
     @Test
     public void esShouldBeUpAndRunning() {
-        assertTrue(esContainer.isRunning());
+        System.out.println("Environment started");
+        System.out.println("Environment started");
+        //assertTrue(environment.isRunning());
+        assertTrue(environment == null);
     }
 
 }

@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  es01:
+    #container_name: es01
+    hostname: 'es01'
+    build:
+      context: ../es
+    environment:
+      - PORT=9200
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data-sn
+      - ./conf/es-dev.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
+    restart: always
+volumes:
+  es-data:
+    driver: local
