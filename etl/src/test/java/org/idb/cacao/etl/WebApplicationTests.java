@@ -12,7 +12,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @RunWith(JUnitPlatform.class)
 @SpringBootTest
-@EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9094", "port=9094" })
+@EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 @DirtiesContext
 class WebApplicationTests {
 
