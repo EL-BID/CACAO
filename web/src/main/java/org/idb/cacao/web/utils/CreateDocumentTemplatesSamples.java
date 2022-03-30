@@ -21,9 +21,11 @@ package org.idb.cacao.web.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.apache.commons.text.CaseUtils;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
@@ -196,40 +198,69 @@ public class CreateDocumentTemplatesSamples {
 		if (docTemplate == null)
 			return;
 
-		DocumentInput input = new DocumentInput("CSV "+inputSufix);
-		input.setFormat(DocumentFormat.CSV);
-		docTemplate.addInput(input);
+		List<DocumentInput> inputs = docTemplate.getInputs();
+		Set<DocumentFormat> formats = new HashSet<DocumentFormat>();
 
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
+		if (inputs != null) {
+			for (DocumentInput input: inputs) {
+				formats.add(input.getFormat());
+			}
+		}
+		
 
-		input = new DocumentInput("XLS "+inputSufix);
-		input.setFormat(DocumentFormat.XLS);
-		docTemplate.addInput(input);
+		if (!formats.contains(DocumentFormat.CSV)) {
+			DocumentInput input = new DocumentInput("CSV "+inputSufix);
+			input.setFormat(DocumentFormat.CSV);
+			docTemplate.addInput(input);
+	
+			input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
+			input.setFieldsIdsMatchingTemplate(docTemplate);
+		}
 
-		input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
+		if (!formats.contains(DocumentFormat.XLS)) {
+			DocumentInput input = new DocumentInput("XLS "+inputSufix);
+			input.setFormat(DocumentFormat.XLS);
+			docTemplate.addInput(input);
+	
+			input.setFields(getMappingsWithFixedColumnPositionsAndSheetIndex(docTemplate, 0));
+			input.setFieldsIdsMatchingTemplate(docTemplate);
+		}
 
-		input = new DocumentInput("JSON "+inputSufix);
-		input.setFormat(DocumentFormat.JSON);
-		docTemplate.addInput(input);
+		if (!formats.contains(DocumentFormat.JSON)) {
+			DocumentInput input = new DocumentInput("JSON "+inputSufix);
+			input.setFormat(DocumentFormat.JSON);
+			docTemplate.addInput(input);
+	
+			input.setFields(getMappingsWithColumnNameExpression(docTemplate));
+			input.setFieldsIdsMatchingTemplate(docTemplate);
+		}
 
-		input.setFields(getMappingsWithColumnNameExpression(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
+		if (!formats.contains(DocumentFormat.XML)) {
+			DocumentInput input = new DocumentInput("XML "+inputSufix);
+			input.setFormat(DocumentFormat.XML);
+			docTemplate.addInput(input);
+	
+			input.setFields(getMappingsWithColumnNameExpression(docTemplate));
+			input.setFieldsIdsMatchingTemplate(docTemplate);
+		}
 
-		input = new DocumentInput("PDF "+inputSufix);
-		input.setFormat(DocumentFormat.PDF);
-		docTemplate.addInput(input);
+		if (!formats.contains(DocumentFormat.PDF)) {
+			DocumentInput input = new DocumentInput("PDF "+inputSufix);
+			input.setFormat(DocumentFormat.PDF);
+			docTemplate.addInput(input);
+	
+			input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
+			input.setFieldsIdsMatchingTemplate(docTemplate);
+		}
 
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
+		if (!formats.contains(DocumentFormat.DOC)) {
+			DocumentInput input = new DocumentInput("DOC "+inputSufix);
+			input.setFormat(DocumentFormat.DOC);
+			docTemplate.addInput(input);
 
-		input = new DocumentInput("DOC "+inputSufix);
-		input.setFormat(DocumentFormat.DOC);
-		docTemplate.addInput(input);
-
-		input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
-		input.setFieldsIdsMatchingTemplate(docTemplate);
+			input.setFields(getMappingsWithFixedColumnPositions(docTemplate));
+			input.setFieldsIdsMatchingTemplate(docTemplate);
+		}
 
 	}
 
@@ -253,8 +284,6 @@ public class CreateDocumentTemplatesSamples {
 
 		if (docTemplate == null)
 			return;
-
-		addInputsCommonFormats(docTemplate, "Chart Of Accounts");
 
 		DocumentInput input = new DocumentInput("XML Chart Of Accounts");
 		input.setFormat(DocumentFormat.XML);
@@ -281,6 +310,8 @@ public class CreateDocumentTemplatesSamples {
 
 		input.setFields(mappings);
 		input.setFieldsIdsMatchingTemplate(docTemplate);
+
+		addInputsCommonFormats(docTemplate, "Chart Of Accounts");
 
 	}
 
