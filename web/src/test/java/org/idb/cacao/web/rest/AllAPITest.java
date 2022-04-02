@@ -38,11 +38,14 @@ import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
+import org.idb.cacao.web.utils.ControllerUtils;
+import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -61,7 +64,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @AutoConfigureJsonTesters
 @RunWith(JUnitPlatform.class)
 @AutoConfigureMockMvc
@@ -69,6 +72,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest( webEnvironment = WebEnvironment.DEFINED_PORT, classes = {org.idb.cacao.web.WebApplication.class}, properties = {
 		"storage.incoming.files.original.dir=${java.io.tmpdir}/cacao/storage"
 })
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AllAPITest {
     
     private static final String ELASTICSEARCH_VERSION = "7.14.1";
@@ -96,27 +100,40 @@ public class AllAPITest {
 
     @BeforeAll
     public static void beforeAll() {
+    	
+    	ControllerUtils.setRunningTest(true);
+    	
         esContainer.setWaitStrategy(Wait.forHttp("/")
             .forPort(9200)
             .forStatusCode(200)
             .withStartupTimeout(Duration.ofSeconds(120)));
         esContainer.start();
+        
+        int containerPort = esContainer.getMappedPort(ELASTICSEARCH_PORT);
+        System.setProperty("es.port", "" + containerPort);
+        System.setProperty("es.host", "127.0.0.1");
+        System.setProperty("ssl.trust.server", esContainer.getHost());
+        System.setProperty("i18n.locale", "en_US");
+        System.setProperty("user.country", "en_US");
+        System.setProperty("user.language", "en-US");
+        System.setProperty("spring.mvc.locale", "en_US");        
     }
 
 	@AfterAll
 	public static void afterClass() {
 		if (esContainer !=null)
             esContainer.stop();
+		ControllerUtils.setRunningTest(false);
 	}
 
-    @Test
-    void esShouldBeUpAndRunning() {
+    @Test //esShouldBeUpAndRunning    
+    void test01() {
         assertTrue(esContainer.isRunning());
     }
 
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
-	@Test
-	void testHandleFileUpload() throws Exception {
+	@Test //HandleFileUpload
+	void test02() throws Exception {
 		
 		// Creates some template for testing
 		DocumentTemplate template = new DocumentTemplate();
