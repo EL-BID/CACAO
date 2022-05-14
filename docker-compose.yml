@@ -4,7 +4,7 @@ services:
     image: cacao_api
     build:
       args:
-        - USE_PROXY=true
+#        - USE_PROXY
       context: ./
       dockerfile: ./api/Dockerfile
       network: host      
@@ -12,7 +12,7 @@ services:
     image: cacao_plugin_account
     build:
       args:
-        - USE_PROXY=true
+#        - USE_PROXY
       context: ./
       dockerfile: ./account/Dockerfile
       network: host      
@@ -22,7 +22,7 @@ services:
     container_name: eureka
     build:
       args:
-        - USE_PROXY=true
+#        - USE_PROXY
       context: ./
       dockerfile: ./eureka/Dockerfile
       network: host      
@@ -39,7 +39,7 @@ services:
     hostname: 'web'
     build:
       args:
-        - USE_PROXY=true
+#        - USE_PROXY
       context: ./
       dockerfile: ./web/Dockerfile
       network: host      
@@ -70,7 +70,7 @@ services:
     hostname: 'validator'
     build:
       args:
-        - USE_PROXY=true
+#        - USE_PROXY
       context: ./
       dockerfile: ./validator/Dockerfile
       network: host      
@@ -99,7 +99,7 @@ services:
     hostname: 'etl'
     build:
       args:
-        - USE_PROXY=true
+#        - USE_PROXY
       context: ./
       dockerfile: ./etl/Dockerfile
       network: host      

@@ -1,5 +1,4 @@
 FROM maven:3.8.2-openjdk-11
-ARG USE_PROXY
 
 ENV HOME=/home/usr/app
 RUN mkdir -p $HOME
