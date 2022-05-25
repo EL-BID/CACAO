@@ -17,7 +17,7 @@
 		</h2>
 		<div class="ui middle aligned center aligned grid container">
 			<div class="ui orange fluid segment">
-				<form action="#" th:action="@{/config_email}" th:object="${config}" method="post">
+				<form action="#" th:action="@{/config-email}" th:object="${config}" method="post">
 				
 					<div class="row">
 						<div class="ui form">
@@ -142,7 +142,7 @@
 						if ("OK"==msg) {
 							$('#modal_successful').modal('show')
 							setTimeout(function(){
-								window.location.replace([[@{/config_email}]])
+								window.location.replace([[@{/config-email}]])
 							}, 2000);
 						}
 						else {

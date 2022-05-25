@@ -24,9 +24,11 @@ import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.PaginationData;
 import org.idb.cacao.web.dto.UserDto;
+import org.idb.cacao.web.entities.PasswordResetToken;
 import org.idb.cacao.web.entities.User;
 import org.idb.cacao.web.entities.UserProfile;
 import org.idb.cacao.web.errors.UserNotFoundException;
+import org.idb.cacao.web.repositories.PasswordResetTokenRepository;
 import org.idb.cacao.web.repositories.UserRepository;
 import org.idb.cacao.web.utils.ControllerUtils;
 import org.idb.cacao.web.utils.SearchUtils;
@@ -35,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -85,6 +88,9 @@ public class UserAPIController {
 	@Autowired
 	private RestHighLevelClient elasticsearchClient;
 	
+	@Autowired
+	private PasswordResetTokenRepository passwordResetRepository;
+
 	@JsonView(Views.Public.class)
 	@Secured({"ROLE_USER_READ"})
 	@GetMapping(value="/users", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -270,6 +276,19 @@ public class UserAPIController {
         	log.log(Level.INFO, String.format("Deleting user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
         }
         
+        // Removes references to User object
+        try {
+	        Page<PasswordResetToken> refs = passwordResetRepository.findByUserId(user.getId(), PageRequest.of(0, 10_000));
+	        if (refs!=null && refs.hasContent()) {
+	        	for (PasswordResetToken ref: refs) {
+	        		passwordResetRepository.delete(ref);
+	        	}
+	        }
+        }
+        catch (Throwable ex) {
+        	log.log(Level.SEVERE, "Error when trying to delete PasswordResetToken that references user to be deleted: #"+id+" "+user.getName()+" "+user.getLogin()+" "+user.getProfile());
+        }
+
         user.setActive(false);
         try {
         	userRepository.saveWithTimestamp(user);
