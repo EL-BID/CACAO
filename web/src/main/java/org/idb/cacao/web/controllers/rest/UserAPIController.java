@@ -189,6 +189,10 @@ public class UserAPIController {
         User entity = new User();
         try {
         	user.updateEntity(entity);
+        	if (user.getPassword()!=null && user.getPassword().trim().length()>0
+        			&& user.getConfirmPassword()!=null && user.getConfirmPassword().trim().length()>0
+        			&& user.getPassword().equalsIgnoreCase(user.getConfirmPassword()))
+        		entity.setPassword(userService.encodePassword(user.getPassword()));
         	userRepository.saveWithTimestamp(entity);
         }
         catch (Exception ex) {
@@ -222,7 +226,11 @@ public class UserAPIController {
         final boolean changed_user_profile = hasChanged(entity.getProfile(), user.getProfile());
 
         user.updateEntity(entity);
-        
+    	if (user.getPassword()!=null && user.getPassword().trim().length()>0
+    			&& user.getConfirmPassword()!=null && user.getConfirmPassword().trim().length()>0
+    			&& user.getPassword().equalsIgnoreCase(user.getConfirmPassword()))
+    		entity.setPassword(userService.encodePassword(user.getPassword()));
+
         if (log.isLoggable(Level.INFO)) {
         	log.log(Level.INFO, String.format("Changing user #%s|%s|%s|%s", id, user.getName(), user.getLogin(), user.getProfile()));
         }
