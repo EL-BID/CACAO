@@ -50,4 +50,13 @@ public class LegalUIController {
 		return "legal/license";
 	}
 
+	/**
+	 * Show HTML contents with Architecture
+	 */
+	@GetMapping("/architecture")
+	public String showArchitecture(Model model) {
+
+		return "legal/architecture";
+	}
+
 }

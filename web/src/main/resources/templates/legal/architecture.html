@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head th:replace="fragments/page_fragments :: header">
+<!-- Although the entire head will be replaced, its necessary to establish the charset
+	for all static content before the Thymeleaf processing. -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+	<!--/* Sidebar Menu */-->
+	<th:block th:unless="${logged_area}">
+		<div th:replace="fragments/page_fragments :: publicSidebarMenu"></div>
+	</th:block>
+	<div class="pusher">
+		<!--/* Public Menu */-->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+			<!--/* Fix to avoid overlap from the Menu */-->
+			<div>
+				<br>
+				<br>
+				<br>
+			</div>
+		</th:block>
+		<br>
+<div class="ui text white container">
+	<div class="ui tab active" data-tab="individual">
+	
+		<h1>Architecture</h1>
+		
+		<p dir="auto"><B>CACAO</B> is a web platform developed according to the 12-Factor design pattern (for more information about ’12-Factor’ design, see external link <a href="https://12factor.net/">https://12factor.net/</a>). There are different parts of this application that run as autonomous internal services. 
+		</p>
+		<p>The following picture illustrates all of these internal components that are part of <B>CACAO</B>:</p>
+
+		<img style="margin-top: 7px; margin-right: 8px; width: 100%;" alt="CACAO architecture"
+			src="/images/cacao-architecture.png" />
+			
+		<p>These softwares and technologies are provided by thrid party:</p>
+		<ul>
+			<li>Apache Eureka <a href="https://github.com/Netflix/eureka">(https://github.com/Netflix/eureka)</a></li>
+			<li>Apache Kafka <a href="https://kafka.apache.org/">(https://kafka.apache.org/)</a></li>
+			<li>Apache Zookeeper <a href="https://zookeeper.apache.org/">(https://zookeeper.apache.org/)</a></li>
+			<li>Docker <a href="https://www.docker.com/">(https://www.docker.com/)</a></li>
+			<li>ElasticSearch <a href="https://www.elastic.co/what-is/elasticsearch">(https://www.elastic.co/what-is/elasticsearch)</a></li>
+			<li>Java <a href="https://www.java.com/">(https://www.java.com/)</a></li>
+			<li>Kibana <a href="https://www.elastic.co/kibana/">(https://www.elastic.co/kibana/)</a></li>
+			<li>Let's Encrypt <a href="https://letsencrypt.org/">(https://letsencrypt.org/)</a></li>
+			<li>NGINX <a href="https://nginx.org/en/">(https://nginx.org/en/)</a></li>
+			<li>Spring Framework <a href="https://spring.io/">(https://spring.io/)</a></li>
+		</ul>
+
+	
+	</div>
+</div>		
+		<!--/* Footer */-->
+		<th:block th:unless="${logged_area}">
+			<div th:replace="fragments/page_fragments :: footer"></div>
+		</th:block>
+</div>
+	<!--/* Language Javascript */-->
+	<div th:replace="fragments/page_fragments :: languageJavascript"></div>
+</body>
+</html>

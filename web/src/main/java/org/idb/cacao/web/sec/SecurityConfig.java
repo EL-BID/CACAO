@@ -190,7 +190,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         		"/error*", "/emailError*", 
         		
         		// ALLOW FIRST PAGE
-        		"/", "/index*", "/login*", "/privacy*", "/terms*", "/license*",
+        		"/", "/index*", "/login*", "/privacy*", "/terms*", "/license*", "/architecture*",
         		"/institutional*","/usermanual*",  
         		"/forgetPassword*", "/resetPassword*", "/savePassword*", "/updatePassword*")
             
