@@ -28,7 +28,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-
 @Testcontainers
 @AutoConfigureJsonTesters
 @RunWith(JUnitPlatform.class)
