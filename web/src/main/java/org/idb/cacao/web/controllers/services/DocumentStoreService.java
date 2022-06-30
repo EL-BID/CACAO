@@ -431,4 +431,6 @@ public class DocumentStoreService {
 	public boolean isPresentationMode() {
 		return Boolean.TRUE.equals(presentationMode);
 	}
+	
+	
 }
