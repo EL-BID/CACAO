@@ -46,11 +46,11 @@ k) Todo código HTML utilizado como 'template' para construção de páginas din
 l) Todo fragmento de conteúdo HTML que é reutilizado em diferentes páginas HTML deve estar no diretório
 	src/main/resources/templates/fragments
 m) Todo conteúdo estático JS, CSS, HTML, entre outros, deve estar em subdiretórios do diretório
-	src/main/webapp
+	src/main/resources/static
 	Exemplo:
-	src/main/webapp/js
-	src/main/webapp/css
-	src/main/webapp/images
+	src/main/resources/static/js
+	src/main/resources/static/css
+	src/main/resources/static/images
 	etc.
 
 7 - Todas as dependências (JAR de terceiros) devem ser inseridas no arquivo POM. Não teremos

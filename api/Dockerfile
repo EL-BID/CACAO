@@ -1,4 +1,5 @@
 FROM maven:3.8.2-openjdk-11
+
 ENV HOME=/home/usr/app
 RUN mkdir -p $HOME
 WORKDIR $HOME
