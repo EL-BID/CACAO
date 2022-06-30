@@ -358,21 +358,21 @@ ___
 
 ## Configure Role Based User Authentication (RBAC) for ElasticSearch and Kibana
 
-### Create self signed certificates for every component in the stack
+1. Create self signed certificates for every component in the stack
 
     docker cp conf/instance.yml es01:/usr/share/elasticsearch/config/instance.yml
     docker exec -it es01 /usr/share/elasticsearch/bin/elasticsearch-certutil cert --keep-ca-key --pem --in /usr/share/elasticsearch/config/instance.yml --out /usr/share/elasticsearch/CERT/certs.zip
 
 Confirm with 'Y' if prompted to create 'CERT' directory.
 
-### Copy certificate files to local
+2. Copy certificate files to local
 
     docker cp es01:/usr/share/elasticsearch/CERT/certs.zip conf/certs.zip
     unzip conf/certs.zip -d conf
     
 If 'unzip' is not recognized as a valid command, install it first (e.g.: yum install unzip)
 
-### Copy certificate files to each node of ElasticSearch and Kibana
+3. Copy certificate files to each node of ElasticSearch and Kibana
 
     chmod u+x conf/copy_certs.sh
     conf/copy_certs.sh
@@ -410,25 +410,25 @@ Steps for dealing with the repeating error ‘No such container:path: kibana:/us
 ```
 
 
-### Stop running components
+4. Stop running components
     docker-compose stop web etl validator kibana es01 es02 es03
 
-### Copy 'docker-compose.override.ssl.yml' to 'docker-compose.override.yml'
+5. Copy 'docker-compose.override.ssl.yml' to 'docker-compose.override.yml'
     cp docker-compose.override.ssl.yml docker-compose.override.yml 
 
-WARNING
+***WARNING***
 
 If you are using a different version of 'docker-compose.yml', you may need to check the
 contents of 'docker-compose.override.ssl.yml' and see if they match you current
 configuration (e.g. check the services names and the number of them)
 
-### Start Elastic nodes
+6. Start Elastic nodes
     docker-compose up -d es01 es02 es03
 
-### Access shell inside ElasticSearch container
+7. Access shell inside ElasticSearch container
     docker exec -it es01 /bin/bash
 
-### Generates random passwords for ElasticSearch components
+8. Generates random passwords for ElasticSearch components
     /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -u "https://es01:9200"
     
 When prompted, confirm with 'y' and ENTER
@@ -437,31 +437,31 @@ When prompted, confirm with 'y' and ENTER
     
 Take note of login and passwords for all user accounts that were generated (most important ones: 'elastic' and 'kibana')
 
-### Exit shell from es01
+9. Exit shell from es01
 
-### Add to .env file at the host the password that was generated for 'kibana' user. Change the {password} below with the actual password that has been generated
+10. Add to .env file at the host the password that was generated for 'kibana' user. Change the {password} below with the actual password that has been generated
     echo KIBANA_PASSWORD={password} >> .env
 
-### Add to .env file at the host the password that was generated for 'elastic' user. Change the {password} below with the actual password that has been generated
+11. Add to .env file at the host the password that was generated for 'elastic' user. Change the {password} below with the actual password that has been generated
     echo ELASTIC_PASSWORD={password} >> .env
 
-### Test arbitrary HTTP call to the ElasticSearch.
+12. Test arbitrary HTTP call to the ElasticSearch.
     docker exec --env-file .env -it es01 /bin/bash -c 'curl -k https://es01:9200 -u kibana:$KIBANA_PASSWORD'
 
 It should respond with a JSON content with some information, including something like this: "tagline" : "You Know, for Search"
  
- ### Start Kibana
+13. Start Kibana
     docker-compose up -d kibana
  
-### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
+14. Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
     docker exec -it kibana tail -f /usr/share/kibana/logs/kibana.log
     
-### Test arbitrary HTTP call to the Kibana.
+15. Test arbitrary HTTP call to the Kibana.
     docker exec --env-file .env -it kibana /bin/bash -c 'curl -k https://kibana:5601/kibana/api/spaces/space -u elastic:$ELASTIC_PASSWORD'
     
 It should respond with a JSON content with some information about the Kibana default 'space', among others.
     
-### Include all permissions to the Application
+16. Include all permissions to the Application
     echo 'es.user=elastic' | tee -a app_config_web app_config_etl app_config_validator
     
     echo 'es.password=${ELASTIC_PASSWORD}' | tee -a app_config_web app_config_etl app_config_validator
@@ -470,16 +470,16 @@ It should respond with a JSON content with some information about the Kibana def
 
     echo 'es.ssl.verifyhost=false' | tee -a app_config_web app_config_etl app_config_validator
     
-### Start Application nodes
+17. Start Application nodes
     docker-compose up -d web etl validator
     
-### Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
+18. Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
     docker logs --follow web
 
-### Start Proxy node
+19. Start Proxy node
     docker-compose up -d proxy
     
-### Test access to CACAO using your browser
+20. Test access to CACAO using your browser
 
 ___
 
@@ -491,7 +491,7 @@ These features must be performed using a SYSTEM ADMINISTRATOR profile. They shou
 
 Every command line shown here must be executed using the 'System operations' menu. Just type in the command line using the CACAO command prompt and press ENTER. Check the result panel for the produced messages.
 
-### Deleting all previous data
+1. Deleting all previous data
 
 If you want to start the CACAO fresh new, type in this command. It will delete all previous templates, validated document and published data.
 
@@ -499,7 +499,7 @@ If you want to start the CACAO fresh new, type in this command. It will delete a
     
 There are other forms of the command line 'delete' that may be used for deleting only part of data. Use 'help delete' for more information about these options.
 
-### Generating built-in templates
+2. Generating built-in templates
 
 If you want to create 'default templates' according to built-in archetypes, type in this command.
 
@@ -507,7 +507,7 @@ If you want to create 'default templates' according to built-in archetypes, type
     
 The previous command line will create a couple of 'templates' and all the needed 'domain tables'.
 
-### Generating documents with random data
+3. Generating documents with random data
 
 If you want to create some 'documents' with random data simulating files being uploaded by different taxpayers, use the command 'samples' with the command option '--doc', followed by the name of the template for which you want to generate files. Usually you will also inform the number of documents to generate using the command line option '--limit_docs' and an initial 'random seed' using the command line option '--seed'.
 
