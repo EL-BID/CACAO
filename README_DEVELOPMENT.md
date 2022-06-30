@@ -411,9 +411,11 @@ Steps for dealing with the repeating error ‘No such container:path: kibana:/us
 
 
 4. Stop running components
+
     docker-compose stop web etl validator kibana es01 es02 es03
 
 5. Copy 'docker-compose.override.ssl.yml' to 'docker-compose.override.yml'
+
     cp docker-compose.override.ssl.yml docker-compose.override.yml 
 
 ***WARNING***
@@ -423,12 +425,15 @@ contents of 'docker-compose.override.ssl.yml' and see if they match you current
 configuration (e.g. check the services names and the number of them)
 
 6. Start Elastic nodes
+
     docker-compose up -d es01 es02 es03
 
 7. Access shell inside ElasticSearch container
+
     docker exec -it es01 /bin/bash
 
 8. Generates random passwords for ElasticSearch components
+
     /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto -u "https://es01:9200"
     
 When prompted, confirm with 'y' and ENTER
@@ -440,28 +445,35 @@ Take note of login and passwords for all user accounts that were generated (most
 9. Exit shell from es01
 
 10. Add to .env file at the host the password that was generated for 'kibana' user. Change the {password} below with the actual password that has been generated
+
     echo KIBANA_PASSWORD={password} >> .env
 
 11. Add to .env file at the host the password that was generated for 'elastic' user. Change the {password} below with the actual password that has been generated
+
     echo ELASTIC_PASSWORD={password} >> .env
 
 12. Test arbitrary HTTP call to the ElasticSearch.
+
     docker exec --env-file .env -it es01 /bin/bash -c 'curl -k https://es01:9200 -u kibana:$KIBANA_PASSWORD'
 
 It should respond with a JSON content with some information, including something like this: "tagline" : "You Know, for Search"
  
 13. Start Kibana
+
     docker-compose up -d kibana
  
 14. Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
+
     docker exec -it kibana tail -f /usr/share/kibana/logs/kibana.log
     
 15. Test arbitrary HTTP call to the Kibana.
+
     docker exec --env-file .env -it kibana /bin/bash -c 'curl -k https://kibana:5601/kibana/api/spaces/space -u elastic:$ELASTIC_PASSWORD'
     
 It should respond with a JSON content with some information about the Kibana default 'space', among others.
     
 16. Include all permissions to the Application
+
     echo 'es.user=elastic' | tee -a app_config_web app_config_etl app_config_validator
     
     echo 'es.password=${ELASTIC_PASSWORD}' | tee -a app_config_web app_config_etl app_config_validator
@@ -471,12 +483,15 @@ It should respond with a JSON content with some information about the Kibana def
     echo 'es.ssl.verifyhost=false' | tee -a app_config_web app_config_etl app_config_validator
     
 17. Start Application nodes
+
     docker-compose up -d web etl validator
     
 18. Check LOG entries for errors (<CTRL+C> to terminate LOG after a while)
+
     docker logs --follow web
 
 19. Start Proxy node
+
     docker-compose up -d proxy
     
 20. Test access to CACAO using your browser
