@@ -60,7 +60,6 @@ import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.services.DocumentTemplateService;
 import org.idb.cacao.web.controllers.services.FileUploadedProducer;
 import org.idb.cacao.web.controllers.services.MessagesService;
-import org.idb.cacao.web.controllers.services.SaveDataToParquet;
 import org.idb.cacao.web.controllers.services.UserService;
 import org.idb.cacao.web.dto.FileUploadedEvent;
 import org.idb.cacao.web.dto.PaginationData;
@@ -173,8 +172,6 @@ public class DocumentStoreAPIController {
 
 	@Autowired
 	private MessagesService messagesService;
-	
-	@Autowired SaveDataToParquet saveDataToParquet;
 	
 	/**
 	 * Maximum number of entries it expects to find in incoming ZIP file
@@ -909,12 +906,5 @@ public class DocumentStoreAPIController {
 		throw new ResponseStatusException(HttpStatus.NOT_FOUND,
 				messageSource.getMessage("doc.not.found", null, LocaleContextHolder.getLocale()));
 	}
-	
-	@Secured({"ROLE_TAX_DECLARATION_READ"})
-	@GetMapping(value = "/doc/saveAll", produces = MediaType.TEXT_HTML_VALUE)
-	@ApiOperation(value = "Return the document. The document may be identified by the internal numerical ID.")
-	public Boolean saveAllDocuments() {
-		saveDataToParquet.saveData();
-		return Boolean.TRUE;
-	}
+
 }
