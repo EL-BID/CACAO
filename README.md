@@ -12,6 +12,12 @@ Each part of CACAO runs inside a Docker container, so it’s possible to deploy 
 
 It’s possible to scale up any one of them by running multiple instances according to different needs. For example, if the ‘validation phase’ becomes a bottleneck in a scenario with high workload, it’s possible to start multiple instances of the component related to ‘validation’. On the other hand, to increase concurrency of multiple users, it may be necessary to start multiple instances of the component related to the frontend (the ‘web’ component). So, the overall system is flexible enough to accommodate different workload needs.
 
+For a better overview of CACAO platform, please look at this page: https://github.com/EL-BID/CACAO/wiki
+
+If you are interested in seeing some of CACAO's screenshots, please see here: https://github.com/EL-BID/CACAO/wiki/CACAO-Screenshots
+
+There are other 'README*' files at the root of this project for details on specific subjects (e.g. for preparing a development environment).
+
 ___
 
 ## Minimum requirements for production environment
