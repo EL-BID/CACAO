@@ -193,7 +193,7 @@ public class AnalysisService {
 	 * 
 	 * @return A {@link List} of {@link Account}
 	 */
-	@Cacheable("accounts")
+	@Cacheable(value = "accounts")
 	public List<Account> getAccounts(final String taxpayerId, YearMonth period, boolean fetchZeroBalance) {
 
 		String[] groupBy = {"account_category.keyword", translate("account_category_name") + KEYWORD,
@@ -765,7 +765,7 @@ public class AnalysisService {
 	 * 
 	 * @return A {@link List} of values for specified qualifier
 	 */
-	@Cacheable("qualifierValues")
+	@Cacheable(value = "qualifierValues")
 	public List<String> getQualifierValues(String qualifier) {
 
 		// Index over 'taxpayer' objects
@@ -805,7 +805,7 @@ public class AnalysisService {
 	 * 
 	 * @return A list of years present in Accounting Statement Income indexes
 	 */
-	@Cacheable("years")
+	@Cacheable(value = "years")
 	public List<Integer> getYears(int sourceData) {
 
 		if (sourceData == SOURCE_BOOTH_INCOME_STATEMENT) {
