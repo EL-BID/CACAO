@@ -8,6 +8,7 @@ package org.idb.cacao.web.utils;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 import org.idb.cacao.api.Periodicity;
 import org.idb.cacao.api.utils.DateTimeUtils;
@@ -31,12 +32,12 @@ public class PeriodicityUtils {
 			return null;
 		switch (periodicity) {
 		case MONTHLY: {
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.setTime(dateInPeriod);
 			return cal.get(Calendar.YEAR) * 100 + (cal.get(Calendar.MONTH)+1);
 		}
 		case SEMIANNUALLY: {
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.setTime(dateInPeriod);
 			int y = cal.get(Calendar.YEAR);
 			int m = cal.get(Calendar.MONTH);

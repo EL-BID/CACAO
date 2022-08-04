@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -564,7 +565,7 @@ public class DocumentStoreAPIController {
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		if (days.isPresent() && days.get().trim().length() > 0) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.add(Calendar.DAY_OF_YEAR, -Integer.parseInt(days.get()));
 			timestampQuery.from(ParserUtils.formatTimestampES(cal.getTime()), true);
 			query.must(timestampQuery);
@@ -640,7 +641,7 @@ public class DocumentStoreAPIController {
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		if (days.isPresent() && days.get().trim().length() > 0) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.add(Calendar.DAY_OF_YEAR, -Integer.parseInt(days.get()));
 			timestampQuery.from(ParserUtils.formatTimestampES(cal.getTime()), true);
 			query.must(timestampQuery);

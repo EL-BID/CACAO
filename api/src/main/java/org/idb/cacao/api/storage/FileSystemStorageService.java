@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
@@ -281,7 +282,7 @@ public class FileSystemStorageService implements IStorageService {
 			searching_year = new AtomicInteger();
 			searching_month = new AtomicInteger();
 			
-			final Calendar cal = Calendar.getInstance();
+			final Calendar cal = Calendar.getInstance(Locale.getDefault());
 			
 			cal.setTimeInMillis(startingTimestamp);
 			this.start_year = cal.get(Calendar.YEAR);

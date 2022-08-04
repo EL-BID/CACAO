@@ -8,6 +8,7 @@ package org.idb.cacao.etl.loader;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,13 +22,14 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ETLContext;
-import org.idb.cacao.api.PublishedDataFieldNames;
-import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.ETLContext.LoadDataStrategy;
 import org.idb.cacao.api.ETLContext.TaxpayerRepository;
+import org.idb.cacao.api.PublishedDataFieldNames;
+import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 
 import com.google.common.cache.CacheBuilder;
@@ -147,6 +149,19 @@ public class GenericDataPublisher {
 						Object value = normalizedRecord.remove(vfieldName.name());
 						if (value!=null) {
 							normalizedRecord.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
+
+							//In case of Date values add three additional fields: month number, and year and year month.
+							if ( value instanceof Date ) {
+								
+								Integer month = DateTimeUtils.getMonth((Date)value);
+								Integer year = DateTimeUtils.getYear((Date)value);
+								Integer monthYear = Integer.valueOf(String.valueOf(year) + String.valueOf(month)); 
+								normalizedRecord.put(IndexNamesUtils.formatFieldName(vfieldName.name() + "_month_number"), month);								
+								normalizedRecord.put(IndexNamesUtils.formatFieldName(vfieldName.name() + "_year"), year);
+								normalizedRecord.put(IndexNamesUtils.formatFieldName(vfieldName.name() + "_year_month"), monthYear);
+								
+							}
+							
 						}
 					}
 

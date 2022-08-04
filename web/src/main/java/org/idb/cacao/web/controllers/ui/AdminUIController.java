@@ -120,7 +120,7 @@ public class AdminUIController {
 			minDayBefore = null;
 		}
 		else {
-			Calendar c = Calendar.getInstance();
+			Calendar c = Calendar.getInstance(Locale.getDefault());
 			c.setTime(minimumTimestamp);
 			c.set(Calendar.MILLISECOND, 0);
 			c.set(Calendar.SECOND, 0);
@@ -138,7 +138,7 @@ public class AdminUIController {
 			maxDayAfter = null;
 		}
 		else {
-			Calendar c = Calendar.getInstance();
+			Calendar c = Calendar.getInstance(Locale.getDefault());
 			c.setTime(maximumTimestamp);
 			c.set(Calendar.MILLISECOND, 0);
 			c.set(Calendar.SECOND, 0);
