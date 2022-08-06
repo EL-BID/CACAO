@@ -7,6 +7,7 @@
 package org.idb.cacao.web.sec;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 import javax.transaction.Transactional;
 
@@ -36,7 +37,7 @@ public class UserSecurityService implements ISecurityUserService {
     }
 
     private boolean isTokenExpired(PasswordResetToken passToken) {
-        return passToken.getExpiryDate()==null || passToken.getExpiryDate().isBefore(OffsetDateTime.now());
+        return passToken.getExpiryDate()==null || passToken.getExpiryDate().isBefore(OffsetDateTime.now(ZoneId.systemDefault()));
     }
 
 }

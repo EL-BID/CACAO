@@ -26,6 +26,8 @@ import static org.idb.cacao.api.utils.ParserUtils.parseYMD;
 import java.math.BigInteger;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -222,8 +224,25 @@ public class Validations {
 					else if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) )
 						fieldValue = checkCharacterValue(field, fieldValue);
 
-					else if (FieldType.DATE.equals(field.getFieldType()))
+					else if (FieldType.DATE.equals(field.getFieldType())) {
 						fieldValue = checkDateValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
+						if ( fieldValue != null ) {
+							OffsetDateTime date = null;
+							if ( fieldValue instanceof Date ) {
+								date = OffsetDateTime.from(((Date)fieldValue).toInstant().atZone(ZoneId.systemDefault()));								
+							}
+							else if ( fieldValue instanceof OffsetDateTime ) {
+								date = ((OffsetDateTime)fieldValue);
+							}
+							if ( date != null ) {
+								int month = date.getMonthValue();
+								int year = date.getYear();
+								values.put(field.getFieldName() + "_month_number", month);
+								values.put(field.getFieldName() + "_year", year);
+								values.put(field.getFieldName() + "_year_month", year * 100 + month);
+							}
+						}
+					}
 
 					else if (FieldType.DECIMAL.equals(field.getFieldType()))
 						fieldValue = checkDecimalValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
@@ -234,8 +253,17 @@ public class Validations {
 					else if (FieldType.INTEGER.equals(field.getFieldType()))
 						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
-					else if (FieldType.MONTH.equals(field.getFieldType()))
+					else if (FieldType.MONTH.equals(field.getFieldType())) {
 						fieldValue = checkMonthValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
+						
+						if ( fieldValue != null && fieldValue instanceof OffsetDateTime ) {
+							int month = ((OffsetDateTime)fieldValue).getMonthValue();
+							int year = ((OffsetDateTime)fieldValue).getYear();
+							values.put(field.getFieldName() + "_month_number", month);
+							values.put(field.getFieldName() + "_year", year);
+							values.put(field.getFieldName() + "_year_month", year * 100 + month);
+						}
+					}
 
 					else if (FieldType.TIMESTAMP.equals(field.getFieldType()))
 						fieldValue = checkTimestampValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
@@ -350,40 +378,90 @@ public class Validations {
 	 * @param fieldValue
 	 * @return Validated and transformed field value
 	 */
+//	private Object checkMonthValue(String fieldName, Object fieldValue, boolean required) {
+//
+//		if (fieldValue == null)
+//			return null;		
+//		
+//		if ( fieldValue instanceof Date ) {
+//			return ParserUtils.formatMonth((Date)fieldValue);
+//		}
+//		
+//		if ( fieldValue instanceof OffsetDateTime ) {
+//			return ParserUtils.formatMonth((OffsetDateTime)fieldValue);
+//		}
+//		
+//		String value = ValidationContext.toString(fieldValue);
+//		
+//		if ( isMY(value) ) {			
+//			return value.substring(3) + "-" + value.substring(0,2);
+//		}
+//		
+//		if ( isYM(value) ) {
+//			return value.replace('/', '-').replace('\\', '-');
+//		}
+//		
+//		if ( isMonthYear(value) || isYearMonth(value) ) {
+//			
+//			String toRet = getYearMonth(value);
+//			if ( toRet != null )
+//				return toRet;
+//		}		
+//		
+//		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
+//		return null;		
+//		
+//	}
+	
+	/**
+	 * Validate and transform field value from {@link FieldType.MONTH}
+	 * 
+	 * @param fieldName
+	 * @param fieldValue
+	 * @return Validated and transformed field value
+	 */
 	private Object checkMonthValue(String fieldName, Object fieldValue, boolean required) {
 
 		if (fieldValue == null)
-			return null;		
+			return null;
 		
-		if ( fieldValue instanceof Date ) {
-			return ParserUtils.formatMonth((Date)fieldValue);
-		}
+		if ( (fieldValue instanceof Date) )
+			return OffsetDateTime.from(((Date)fieldValue).toInstant().atZone(ZoneOffset.systemDefault()));
 		
-		if ( fieldValue instanceof OffsetDateTime ) {
-			return ParserUtils.formatMonth((OffsetDateTime)fieldValue);
-		}
-		
+		if (fieldValue instanceof OffsetDateTime)
+			return fieldValue;
+
 		String value = ValidationContext.toString(fieldValue);
 		
+		int month = 0;
+		int year = 0;
 		if ( isMY(value) ) {			
-			return value.substring(3) + "-" + value.substring(0,2);
+			year = Integer.valueOf(value.substring(3));
+			month = Integer.valueOf(value.substring(0,2));
 		}
 		
-		if ( isYM(value) ) {
-			return value.replace('/', '-').replace('\\', '-');
+		else if ( isYM(value) ) {
+			year = Integer.valueOf(value.substring(0,4));
+			month = Integer.valueOf(value.substring(5));			
 		}
 		
-		if ( isMonthYear(value) || isYearMonth(value) ) {
+		else if ( isMonthYear(value) || isYearMonth(value) ) {
 			
 			String toRet = getYearMonth(value);
-			if ( toRet != null )
-				return toRet;
+			if ( toRet != null ) {
+				year = Integer.valueOf(toRet.substring(0,4));
+				month = Integer.valueOf(toRet.substring(5));
+			}
 		}		
+		
+		if ( year > 0 && month > 0 ) {
+			return OffsetDateTime.from(ParserUtils.toDate(1/*first day of month*/, month, year).toInstant().atZone(ZoneOffset.systemDefault()));
+		}
 		
 		addLogError("{field.value.invalid(" + value + "," + fieldName + ")}", /*criticalError*/required);
 		return null;		
 		
-	}
+	}	
 
 	/**
 	 * Validate and transform field value from {@link FieldType.INTEGER}

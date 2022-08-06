@@ -7,7 +7,7 @@
 package org.idb.cacao.api.utils;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -182,6 +182,6 @@ public class DateTimeUtils {
 	 * @return	An {@link OffsetDateTime} in UTC time.
 	 */
 	public static final OffsetDateTime now() {
-		return OffsetDateTime.now(ZoneOffset.UTC);		
+		return OffsetDateTime.now(ZoneId.systemDefault());		
 	}
 }

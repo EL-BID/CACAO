@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -99,7 +99,7 @@ public interface IStorageService {
 	 * @return	A subdir of storage where a file should be stored
 	 */
 	public default String getSubDir() {		
-		OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+		OffsetDateTime now = OffsetDateTime.now(ZoneId.systemDefault());
 		return now.getYear() + File.separator + now.getMonthValue();		
 	}
 	
