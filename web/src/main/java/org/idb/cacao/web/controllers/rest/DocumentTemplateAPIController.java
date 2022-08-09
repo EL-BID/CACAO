@@ -243,9 +243,9 @@ public class DocumentTemplateAPIController {
 		
 		DocumentTemplate template = match.get();
 		
-		DocumentInput existingDocInput = template.getInputWithName(docInput.getInputName());
+		DocumentInput existingDocInput = template.getInputWithId(docInput.getId());
 		if (existingDocInput==null) {
-			ControllerUtils.returnBadRequest("template.input.format.not.exists", messageSource, docInput.getFormat().toString());
+			return ControllerUtils.returnBadRequest("template.input.format.not.exists", messageSource, docInput.getFormat().toString());
 		}
 		else {
 			existingDocInput.setInputName(docInput.getInputName());

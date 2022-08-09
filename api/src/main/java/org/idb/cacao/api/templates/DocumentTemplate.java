@@ -479,7 +479,7 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 	}
 	
 	/**
-	 * Returns DocumentInput associated to this template with a given DocumentFormat
+	 * Returns DocumentInput associated to this template with a given Name
 	 */
 	@JsonIgnore
 	public DocumentInput getInputWithName(String name) {
@@ -488,6 +488,16 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 		return inputs.stream().filter(f->name.equals(f.getInputName())).findAny().orElse(null);		
 	}
 
+	/**
+	 * Returns DocumentInput associated to this template with a given id
+	 */
+	@JsonIgnore
+	public DocumentInput getInputWithId(int inputId) {
+		if (inputs==null)
+			return null;
+		return inputs.stream().filter(f->inputId==f.getId()).findAny().orElse(null);		
+	}
+	
 	public void setInputs(List<DocumentInput> inputs) {
 		this.inputs = inputs;
 	}
