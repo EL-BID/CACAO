@@ -61,10 +61,18 @@
 							<input type="text" th:value="#{${template.periodicity}}"
 								class="form-control" readonly>
 						</div>
-						<div class="eight wide field">
+						<div class="four wide field">
 							<label th:text="#{template.group}"
 								style="margin-bottom: 0px; text-transform: uppercase;">Group</label> <input
 								type="text" th:value="*{group}" class="form-control" readonly>
+						</div>
+						<div class="four wide field">
+							<label th:text="#{template.archetype}"
+								style="margin-bottom: 0px; text-transform: uppercase;">Archetype</label> 
+							<input
+								type="text" th:value="#{*{archetype}}" class="form-control" readonly th:if="${template.archetype!=null && template.archetype.trim().length()>0}">
+							<input
+								type="text" th:value="#{template.no.archetype}" class="form-control" readonly th:unless="${template.archetype!=null && template.archetype.trim().length()>0}">
 						</div>
                         <div class="two wide field">
                             <label th:text="#{template.required}" style="margin-bottom: 0px; text-transform: uppercase;">Required</label>

@@ -49,6 +49,8 @@ public class DocumentTemplateUIController {
 	private static final String ATTRIBUTE_FIELD_TYPES = "fieldTypes";
 
 	private static final String ATTRIBUTE_TEMPLATE = "template";
+	
+	private static final String ATTRIBUTE_ARCHETYPES = "archetypes";
 
 	@Autowired
 	private DocumentTemplateRepository documentTemplateRepository;
@@ -99,6 +101,7 @@ public class DocumentTemplateUIController {
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
         model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
+        model.addAttribute(ATTRIBUTE_ARCHETYPES, TemplateArchetypes.getNames());
         return "templates/edit_template";
     }
 
@@ -157,6 +160,7 @@ public class DocumentTemplateUIController {
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
         model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
+        model.addAttribute(ATTRIBUTE_ARCHETYPES, TemplateArchetypes.getNames());
         return "templates/edit_template";
     
     }

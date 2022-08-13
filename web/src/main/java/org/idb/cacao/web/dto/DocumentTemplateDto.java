@@ -82,10 +82,8 @@ public class DocumentTemplateDto implements Serializable {
 	}
 	
 	public void updateEntity(DocumentTemplate template) {
-		if (template.getId()==null) {
-			template.setArchetype(archetype);
-			template.setGroup(group);
-		}
+		template.setArchetype(archetype);
+		template.setGroup(group);
 		template.setName(name);
 		template.setVersion(version);
 		template.setPeriodicity(periodicity);

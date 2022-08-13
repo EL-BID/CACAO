@@ -13,9 +13,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -24,6 +26,8 @@ import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.TemplateArchetype;
+import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.web.dto.DocumentTemplateDto;
 import org.idb.cacao.web.dto.TemplateAndInput;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
@@ -395,6 +399,36 @@ public class DocumentTemplateService {
 				}
 				else {
 					names.add(field.getFieldName());
+				}
+			}
+		}
+		if (template.getArchetype()!=null && template.getArchetype().trim().length()>0) {
+			Optional<TemplateArchetype> arch = TemplateArchetypes.getArchetype(template.getArchetype());
+			if (arch.isPresent()) {
+				// If the document has declared an archetype, check if the required fields defined in the built-in archetype are present
+				List<DocumentField> requiredFieldsInArchetype = arch.get().getRequiredFields();
+				if (requiredFieldsInArchetype!=null && !requiredFieldsInArchetype.isEmpty()) {
+					Map<String,DocumentField> fieldsInTemplate = (template.getFields()==null) ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
+							: template.getFields().stream().collect(Collectors.toMap(
+									/*keyMapper*/DocumentField::getFieldName, 
+									/*valueMapper*/Function.identity(), 
+									/*mergeFunction*/(a,b)->a, 
+									/*mapSupplier*/()->new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+					for (DocumentField fieldInArchetype: requiredFieldsInArchetype) {
+						if (!Boolean.TRUE.equals(fieldInArchetype.getRequired()))
+							continue;
+						DocumentField fieldInTemplate = fieldsInTemplate.get(fieldInArchetype.getFieldName());
+						if (fieldInTemplate==null) {
+							String fieldName = messageSource.getMessage("field.name", null, LocaleContextHolder.getLocale());
+							String archName = messageSource.getMessage(arch.get().getName(), null, LocaleContextHolder.getLocale());
+							String errorMessage = messageSource.getMessage("error.missing.archetype.field", 
+									new Object[] {fieldInArchetype.getFieldName(),archName,template.getName()}, 
+									LocaleContextHolder.getLocale());
+							result.addError(new ObjectError(
+								fieldName,
+								errorMessage));												
+						}
+					}
 				}
 			}
 		}

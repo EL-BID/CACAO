@@ -68,11 +68,23 @@
               </select> 
               <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
             </div>
-            <div class="eight wide field">
+            <div class="four wide field">
               <label th:text="#{template.group}"
-                style="margin-bottom: 0px; text-transform: uppercase;">"Group</label>
+                style="margin-bottom: 0px; text-transform: uppercase;">Group</label>
               <input type="text" th:field="*{group}" th:value="*{group}" class="form-control" id="group" placeholder="Group" th:placeholder="#{template.group}">
               <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="ui warning message"></span>
+            </div>
+            <div class="four wide field">
+              <label th:text="#{template.archetype}"
+                style="margin-bottom: 0px; text-transform: uppercase;">Archetype</label>
+              <select th:field="*{archetype}" class="ui fluid dropdown local" id="selectArchetype">
+                <option value="" th:text="#{template.no.archetype}" th:selected="${template.archetype==null or template.archetype.trim().length()==0}">No archetype</option>
+                <option
+                  th:each="i : ${archetypes}"
+                  th:value="${i}" th:text="#{${i}}"
+                  th:selected="${i==template.archetype}"></option>
+              </select> 
+              <span th:if="${#fields.hasErrors('archetype')}" th:errors="*{archetype}" class="ui warning message"></span>
             </div>
             <div class="two wide field">
                 <label th:text="#{template.required}" style="margin-bottom: 0px; text-transform: uppercase;">Required</label>
@@ -282,6 +294,9 @@
 				$('#select_domain_version').dropdown('change values', [])
 			}
 		} 
+		$('#archetypes').dropdown({
+			   clearable: true
+			})
 		$('#select_domain_version').dropdown({
 		   clearable: true
 		})
