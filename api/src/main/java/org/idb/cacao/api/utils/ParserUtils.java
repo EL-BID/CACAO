@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -514,7 +515,7 @@ public class ParserUtils {
 		if (dmy==null || dmy.length()!=10)
 			return null;
 		try {
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.set(Calendar.YEAR, Integer.parseInt(dmy.substring(6, 10)));
 			cal.set(Calendar.MONTH, Integer.parseInt(dmy.substring(3, 5))-1);
 			cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(dmy.substring(0, 2)));
@@ -536,14 +537,14 @@ public class ParserUtils {
 		if (mdy==null || mdy.length()!=10)
 			return null;
 		try {
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.set(Calendar.YEAR, Integer.parseInt(mdy.substring(6, 10)));
 			cal.set(Calendar.MONTH, Integer.parseInt(mdy.substring(0, 2))-1);
 			cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(mdy.substring(3, 5)));
 			cal.set(Calendar.HOUR_OF_DAY, 0);
 			cal.set(Calendar.MINUTE, 0);
 			cal.set(Calendar.SECOND, 0);
-			cal.set(Calendar.MILLISECOND, 0);
+			cal.set(Calendar.MILLISECOND, 0);			
 			return cal.getTime();
 		}
 		catch (Exception ex) {
@@ -558,7 +559,7 @@ public class ParserUtils {
 		if (ymd==null || ymd.length()!=10)
 			return null;
 		try {
-			Calendar cal = Calendar.getInstance();
+			Calendar cal = Calendar.getInstance(Locale.getDefault());
 			cal.set(Calendar.YEAR, Integer.parseInt(ymd.substring(0, 4)));
 			cal.set(Calendar.MONTH, Integer.parseInt(ymd.substring(5, 7))-1);
 			cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(ymd.substring(8, 10)));
@@ -943,7 +944,7 @@ public class ParserUtils {
 	}
 
 	public static Date toDate(int day, int month, int year) {
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.set(year, month - 1, day, 0, 0, 0);
 		cal.set(Calendar.MILLISECOND, 0);
 		return cal.getTime();

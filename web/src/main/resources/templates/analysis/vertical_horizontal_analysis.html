@@ -179,6 +179,11 @@
 			$('#form').submit();
 	     });
 		
+		$('#zeroBalance').on('change', function() {
+			$("#showtable").hide()
+			$('#form').submit();
+	     });		
+		
 		$('#level').on('change', function() {
 			var level = $('#level').val();
 			if ( level == 3 ) {

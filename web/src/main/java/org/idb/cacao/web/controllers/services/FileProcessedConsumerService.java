@@ -21,7 +21,7 @@ import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.web.repositories.DocumentTemplateRepository;
 import org.idb.cacao.web.repositories.DocumentUploadedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
@@ -43,14 +43,24 @@ public class FileProcessedConsumerService {
 	
 	@Autowired
 	private KibanaSpacesService kibanaSpacesService;
-
-	@Bean
-	@CacheEvict(value={"years","accounts","qualifierValues"})
+	
+	@Autowired
+	private CacheManager cacheManager;
+	
+	@Bean	
 	public Consumer<String> receiveProcessedFile() {
 		return documentId -> {
-			log.log(Level.INFO, "Received a message with documentId " + documentId);	
-			etlFinished(documentId);
+			log.log(Level.INFO, "Received a message with documentId " + documentId);
+			clearCache();
+			etlFinished(documentId);			
 		};
+	}
+	
+	/**
+	 * Clear all cache
+	 */
+	public void clearCache() {
+		cacheManager.getCacheNames().stream().forEach(cacheName -> cacheManager.getCache(cacheName).clear());
 	}
 
 	/**
@@ -58,6 +68,7 @@ public class FileProcessedConsumerService {
 	 * 
 	 * @param documentId	The ID of {@link DocumentUploaded} that finished processing
 	 */
+	//@CacheEvict(beforeInvocation = true, cacheNames = {"years","accounts","qualifierValues"}, allEntries = true)
 	private void etlFinished(String documentId) {
 		
 		try {

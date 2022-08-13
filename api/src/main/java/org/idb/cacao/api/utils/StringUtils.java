@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.springframework.context.MessageSource;
@@ -32,7 +33,7 @@ public class StringUtils {
     public static final Pattern pBoolean = Pattern.compile("^(?>true|false)$",Pattern.CASE_INSENSITIVE);
 
 	public static Date toDate(int day, int month, int year) {
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.set(year, month - 1, day, 0, 0, 0);
 		cal.set(Calendar.MILLISECOND, 0);
 		return cal.getTime();

@@ -8,6 +8,7 @@ package org.idb.cacao.web.controllers;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Class used to form an unique identification number for a given document. Some document with the
@@ -75,7 +76,7 @@ public class DocumentId {
 			if (subject!=null && subject.trim().length()>0)
 				sb.append(subject);
 			if (day!=null) {
-				Calendar cal = Calendar.getInstance();
+				Calendar cal = Calendar.getInstance(Locale.getDefault());
 				cal.setTime(day);
 				if (sb.length()>0)
 					sb.append("_");

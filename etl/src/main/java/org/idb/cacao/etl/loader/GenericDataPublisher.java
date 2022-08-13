@@ -21,10 +21,10 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.idb.cacao.api.DocumentSituation;
 import org.idb.cacao.api.DocumentUploaded;
 import org.idb.cacao.api.ETLContext;
-import org.idb.cacao.api.PublishedDataFieldNames;
-import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.ETLContext.LoadDataStrategy;
 import org.idb.cacao.api.ETLContext.TaxpayerRepository;
+import org.idb.cacao.api.PublishedDataFieldNames;
+import org.idb.cacao.api.ValidatedDataFieldNames;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.TemplateArchetype;
@@ -146,7 +146,7 @@ public class GenericDataPublisher {
 						// Published data has all fields in lower case
 						Object value = normalizedRecord.remove(vfieldName.name());
 						if (value!=null) {
-							normalizedRecord.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);
+							normalizedRecord.put(IndexNamesUtils.formatFieldName(vfieldName.name()), value);						
 						}
 					}
 

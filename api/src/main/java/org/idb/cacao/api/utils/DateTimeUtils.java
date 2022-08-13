@@ -7,9 +7,10 @@
 package org.idb.cacao.api.utils;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 /**
@@ -26,7 +27,7 @@ public class DateTimeUtils {
 	public static Date lastTimeOfDay(Date timestamp) {
 		if (timestamp==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.setTime(timestamp);
 		cal.set(Calendar.HOUR_OF_DAY, 23);
 		cal.set(Calendar.MINUTE, 59);
@@ -40,7 +41,7 @@ public class DateTimeUtils {
 	public static Date firstTimeOfDay(Date timestamp) {
 		if (timestamp==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.setTime(timestamp);
 		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.MINUTE, 0);
@@ -55,7 +56,7 @@ public class DateTimeUtils {
 	public static Date lastTimeOfMonth(Date timestamp) {
 		if (timestamp==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.setTime(timestamp);
 		cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
 		cal.set(Calendar.HOUR_OF_DAY, 23);
@@ -70,7 +71,7 @@ public class DateTimeUtils {
 	public static Date lastTimeOfYear(Integer year) {
 		if (year==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.set(Calendar.YEAR, year);
 		cal.set(Calendar.MONTH, Calendar.DECEMBER);
 		cal.set(Calendar.DAY_OF_MONTH, 31);
@@ -86,7 +87,7 @@ public class DateTimeUtils {
 	public static Date firstTimeOfYear(Integer year) {
 		if (year==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.set(Calendar.YEAR, year);
 		cal.set(Calendar.MONTH, Calendar.JANUARY);
 		cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -111,7 +112,7 @@ public class DateTimeUtils {
 	public static Integer getYear(Date timestamp) {
 		if (timestamp==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.setTime(timestamp);
 		return cal.get(Calendar.YEAR);
 	}
@@ -122,7 +123,7 @@ public class DateTimeUtils {
 	public static Integer getMonth(Date timestamp) {
 		if (timestamp==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.setTime(timestamp);
 		return cal.get(Calendar.MONTH) + 1;
 	}
@@ -133,7 +134,7 @@ public class DateTimeUtils {
 	public static Integer getSemester(Date timestamp) {
 		if (timestamp==null)
 			return null;
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(Locale.getDefault());
 		cal.setTime(timestamp);
 		int m = cal.get(Calendar.MONTH);
 		if (m<Calendar.JULY)
@@ -181,6 +182,6 @@ public class DateTimeUtils {
 	 * @return	An {@link OffsetDateTime} in UTC time.
 	 */
 	public static final OffsetDateTime now() {
-		return OffsetDateTime.now(ZoneOffset.UTC);		
+		return OffsetDateTime.now(ZoneId.systemDefault());		
 	}
 }
