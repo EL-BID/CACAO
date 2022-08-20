@@ -1,0 +1,13 @@
+# Application identity
+app.name=CACAO
+app.full.name=System for Consulting and Storing Accounting Data and Organizational Support
+app.start=Start CACAO
+app.description=CACAO is a system maintained by the Tax Administration for receiving and maintaining files with accounting data of taxpayers.
+
+# Tax Administration identification
+ta.short.name=<Tax Admin>
+ta.full.name=<Tax Admin Full Name>
+ministry.short.name=<MF>
+ministry.full.name=<Ministry of Finance>
+ta.full.country=<Country Name>
+ta.full.address= <T.A. Full Address>

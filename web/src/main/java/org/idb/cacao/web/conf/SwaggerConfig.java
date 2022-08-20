@@ -14,6 +14,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 
 import springfox.documentation.builders.PathSelectors;
@@ -37,6 +38,9 @@ public class SwaggerConfig {
 
     @Autowired
     private MessageSource messages;
+    
+	@Autowired
+	private Environment env;    
     
     @Autowired
     private SwaggerRolesBindingConfig swaggerRolesBindingConfig;
@@ -68,7 +72,7 @@ public class SwaggerConfig {
     private ApiInfo apiInfo() {
     	return new ApiInfo(
     		/*title*/messages.getMessage("api.app.name", null, LocaleContextHolder.getLocale()),
-    		/*description*/messages.getMessage("app.full.name", null, LocaleContextHolder.getLocale()),
+    		/*description*/env.getProperty("app.full.name"),
     		/*version*/messages.getMessage("api.app.version", null, LocaleContextHolder.getLocale()),
     		/*termsOfServiceUrl*/"/terms", 
     		new Contact("", "", ""),

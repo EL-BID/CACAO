@@ -28,7 +28,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="_csrf" th:content="${_csrf.token}"/>
 <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-<title th:text="#{app.name}">Application Title</title>
+<title th:text="${@environment.getProperty('app.name')}">Application Title</title>
 <link rel="stylesheet" type="text/css" class="ui" href="/css/semantic.min.css">
 <link rel="stylesheet" type="text/css" class="ui" href="/css/jquery-ui.min.css">
 <link rel="stylesheet" type="text/css" class="ui" href="/css/toastui-editor.min.css">
@@ -388,7 +388,7 @@ svg .unselected {
 		<a class="item" th:text="#{menu.homepage}" th:href="@{/}">homepage</a>
 		<a class="item" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
 		<a class="item" th:text="#{menu.usermanual}" th:href="@{/usermanual}">user manual</a>
-		<a class="item startbtn" th:text="#{app.start}">Start</a>
+		<a class="item startbtn" th:text="${@environment.getProperty('app.start')}">Start</a>
 	</div>
 	<!--/* Public Menu */-->
 	<div class="ui container dontprint" th:fragment="publicMenu">
@@ -400,7 +400,7 @@ svg .unselected {
 			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}">institutional</a>
 			<a class="item hideable" th:text="#{menu.usermanual}" th:href="@{/usermanual}">usermanual</a>
 			<div class="right item">
-				<a class="ui item startbtn hideable" th:text="#{app.start}">start</a>
+				<a class="ui item startbtn hideable" th:text="${@environment.getProperty('app.start')}">start</a>
 				<div class="ui dropdown item chooselang">
 					<input type="hidden" name="country">
 					<i class="globe icon"></i>
@@ -449,7 +449,7 @@ svg .unselected {
 			</a>
 			<a class="ui simple item" th:href="@{/home}" target="">
 				<img class="logo" src="images/Cacao-logo-small.png">
-				<span th:text="#{app.name}">Application Title</span>
+				<span th:text="${@environment.getProperty('app.name')}">Application Title</span>
 			</a>
 			<a class="item hideable" th:text="#{menu.institutional}" th:href="@{/institutional}" th:target="${target_frame}" target="">institutional</a>
 			<a class="item hideable" th:text="#{menu.usermanual}" th:href="@{/usermanual}" th:target="${target_frame}" target="">user's manual</a>

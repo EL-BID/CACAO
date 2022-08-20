@@ -25,8 +25,8 @@
 				<br> 
 
 				<img src="/images/Cacao-logo.png" class="ui large middle aligned image">
-				<h2 th:text="#{app.full.name}">Application Full Name</h2>
-				<div class="ui huge primary button startbtn" th:text="#{app.start}" id="startbtn">Start</div>
+				<h2 th:text="${@environment.getProperty('app.full.name')}">Application Full Name</h2>
+				<div class="ui huge primary button startbtn" th:text="${@environment.getProperty('app.start')}" id="startbtn">Start</div>
 			</div>
 
 		</div>
@@ -35,8 +35,8 @@
 			<div class="ui middle aligned stackable grid container">
 				<div class="row">
 					<div class="eight wide column">
-						<h3 class="ui header" th:text="#{app.name}">Application Name</h3>
-						<p th:text="#{app.description}">Application Description</p>
+						<h3 class="ui header" th:text="${@environment.getProperty('app.name')}">Application Name</h3>
+						<p th:text="${@environment.getProperty('app.description')}">Application Description</p>
 					</div>
 					<div class="six wide right floated column">
 						<img src="/images/Cacao-logo.png" class="ui medium rounded image">
