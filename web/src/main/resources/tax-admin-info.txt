@@ -1,0 +1,7 @@
+# Tax Administration identification
+ta.short.name=<Tax Admin>
+ta.full.name=<Tax Admin Full Name>
+ministry.short.name=<MF>
+ministry.full.name=<Ministry of Finance>
+ta.full.country=<Country Name>
+ta.full.address= <T.A. Full Address>

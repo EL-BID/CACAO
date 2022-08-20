@@ -467,15 +467,15 @@ svg .unselected {
 		<div class="ui container">
 			<div class="ui stackable inverted divided equal height stackable grid">
 				<div class="four wide column">
-					<h4 class="ui inverted header" th:text="#{ta.short.name}">Tax Administration</h4>
-					<p th:text="#{ta.full.name}">Tax Administration Full Name</p>
-					<h4 class="ui inverted header" th:text="#{ministry.short.name}">MF</h4>
-					<p th:text="#{ministry.full.name}">Ministry of Finance</p>
+					<h4 class="ui inverted header" th:text="${@environment.getProperty('ta.short.name')}">Tax Administration</h4>					
+					<p th:text="${@environment.getProperty('ta.full.name')}">Tax Administration Full Name</p>					
+					<h4 class="ui inverted header" th:text="${@environment.getProperty('ministry.short.name')}">MF</h4>					
+					<p th:text="${@environment.getProperty('ministry.full.name')}">Ministry of Finance</p>					
 				</div>
 				<div class="three wide column">
 					<h4 class="ui inverted header" th:text="#{menu.address}">Address</h4>
-					<p th:text="#{ta.full.address}">Full Address</p>
-					<p th:text="#{ta.full.country}">Country Name</p>
+					<p th:text="${@environment.getProperty('ta.full.address')}">Full Address</p>					
+					<p th:text="${@environment.getProperty('ta.full.country')}">Country Name</p>					
 				</div>
 				<div class="three wide column">
 					<a class="ui inverted header tiny" th:href="@{/terms}">

@@ -1,0 +1,7 @@
+# Identificación de la Administración Tributaria
+ta.short.name=<Administración Tributaria>
+ta.full.name=<Nombre completo del administrador tributario>
+ministry.short.name=<MF>
+ministry.full.name=<Ministerio de Hacienda>
+ta.full.country=<Nombre del país>
+ta.full.address=<Dirección completa de Hacienda>
