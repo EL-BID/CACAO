@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.springframework.context.MessageSource;
@@ -55,6 +56,11 @@ public class ValidationContext {
 	 * The document template related to this incoming file
 	 */
 	private DocumentTemplate documentTemplate;
+	
+	/**
+	 * The document input used for this validation
+	 */
+	private DocumentInput documentInput;
 	
 	/**
 	 * Object used to resolve errors according to a specific language
@@ -144,6 +150,20 @@ public class ValidationContext {
 	 */
 	public void setDocumentTemplate(DocumentTemplate documentTemplate) {
 		this.documentTemplate = documentTemplate;
+	}
+
+	/**
+	 * The document input used for this validation
+	 */
+	public DocumentInput getDocumentInput() {
+		return documentInput;
+	}
+
+	/**
+	 * The document input used for this validation
+	 */
+	public void setDocumentInput(DocumentInput documentInput) {
+		this.documentInput = documentInput;
 	}
 
 	/**

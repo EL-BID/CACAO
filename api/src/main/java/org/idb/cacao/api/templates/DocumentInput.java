@@ -180,6 +180,24 @@ public class DocumentInput implements Serializable, Cloneable, Comparable<Docume
 		fields.remove(field);
 		field.setFieldId(0);
 	}
+	
+	/**
+	 * Check if this DocumentInput contains an DocumentInputFieldMapping related to the DocumentField
+	 * with enough information necessary for retrieving this information
+	 */
+	public boolean hasEnoughForFetchingData(DocumentField field) {
+		if (field==null)
+			return false;
+		if (this.fields==null || this.fields.isEmpty())
+			return false;
+		for (DocumentInputFieldMapping fieldMap: this.fields) {
+			if (fieldMap.getFieldName()==null)
+				continue;
+			if (fieldMap.getFieldName().equalsIgnoreCase(field.getFieldName()))
+				return fieldMap.isEnoughForFetchingData();
+		}
+		return false;
+	}
 
 	@Override
 	public boolean equals(Object o) {

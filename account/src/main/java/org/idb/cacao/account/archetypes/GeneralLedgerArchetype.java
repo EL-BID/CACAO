@@ -65,6 +65,10 @@ public class GeneralLedgerArchetype extends AccountingGroupArchetype {
 		
 		Amount,
 		
+		AmountDebitOnly,
+		
+		AmountCreditOnly,
+		
 		DebitCredit,
 		
 		CustomerSupplierId,
@@ -102,7 +106,7 @@ public class GeneralLedgerArchetype extends AccountingGroupArchetype {
 				.withFieldName(Date.name())
 				.withFieldType(FieldType.DATE)
 				.withDescription("Date of the bookentry")
-				.withRequired(true),
+				.withRequired(false),
 			new DocumentField()
 				.withFieldName(AccountCode.name())
 				.withFieldType(FieldType.CHARACTER)
@@ -114,7 +118,7 @@ public class GeneralLedgerArchetype extends AccountingGroupArchetype {
 				.withFieldType(FieldType.CHARACTER)
 				.withDescription("Unique identification of bookeeping entry (shared among counterparts of the same double-entry bookeeping)")
 				.withMaxLength(256)
-				.withRequired(true),
+				.withRequired(false),
 			new DocumentField()
 				.withFieldName(Description.name())
 				.withFieldType(FieldType.CHARACTER)
@@ -124,16 +128,26 @@ public class GeneralLedgerArchetype extends AccountingGroupArchetype {
 			new DocumentField()
 				.withFieldName(Amount.name())
 				.withFieldType(FieldType.DECIMAL)
-				.withDescription("The monetary amount of this bookeeping entry")
-				.withRequired(true),
+				.withDescription("The monetary amount of this bookeeping entry if the journal has one singular column for both debits and credits")
+				.withRequired(false),
+			new DocumentField()
+				.withFieldName(AmountDebitOnly.name())
+				.withFieldType(FieldType.DECIMAL)
+				.withDescription("The monetary amount of this bookeeping entry if the journal has a separate column for debits only")
+				.withRequired(false),
+			new DocumentField()
+				.withFieldName(AmountCreditOnly.name())
+				.withFieldType(FieldType.DECIMAL)
+				.withDescription("The monetary amount of this bookeeping entry if the journal has a separate column for credits only")
+				.withRequired(false),
 			new DocumentField()
 				.withFieldName(DebitCredit.name())
 				.withFieldType(FieldType.DOMAIN)
 				.withDomainTableName(AccountBuiltInDomainTables.DEBIT_CREDIT.getName())
 				.withDomainTableVersion(AccountBuiltInDomainTables.DEBIT_CREDIT.getVersion())
-				.withDescription("This is an indication of whether this entry is a debit or a credit to the account")
+				.withDescription("This is an indication of whether this entry is a debit or a credit to the account, only necessary if the journal has one singular column for both debits and credits")
 				.withMaxLength(32)
-				.withRequired(true),
+				.withRequired(false),
 			new DocumentField()
 				.withFieldName(CustomerSupplierId.name())
 				.withFieldType(FieldType.CHARACTER)

@@ -262,6 +262,7 @@ public class FileUploadedConsumerService {
 						+ doc.getTemplateVersion() + " was not configured with proper input format!");
 			}
 			
+			validationContext.setDocumentInput(docInputExpected);
 			validationContext.setParsedContentsListFactory(LinkedList::new);
 			
 			FileFormat fileFormat = FileFormatFactory.getFileFormat(format);

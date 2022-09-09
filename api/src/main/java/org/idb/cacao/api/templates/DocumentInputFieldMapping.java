@@ -143,6 +143,25 @@ public class DocumentInputFieldMapping implements Serializable, Cloneable, Compa
 	@NotNull
 	@NotEmpty
 	private String fieldName;
+	
+	/**
+	 * Returns TRUE if this field mapping contains enough information for retrieving data
+	 */
+	public boolean isEnoughForFetchingData() {
+		if (fileNameExpression!=null && fileNameExpression.trim().length()>0)
+			return true;
+		if (columnIndex!=null)
+			return true;
+		if (columnNameExpression!=null && columnNameExpression.trim().length()>0)
+			return true;
+		if (rowIndex!=null)
+			return true;
+		if (cellName!=null && cellName.trim().length()>0)
+			return true;
+		if (pathExpression!=null && pathExpression.trim().length()>0)
+			return true;
+		return false;
+	}
 
 	/**
 	 * The ID of the DocumentField this mapping refers to.

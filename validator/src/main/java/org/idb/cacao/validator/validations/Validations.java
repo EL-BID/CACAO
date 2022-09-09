@@ -34,6 +34,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -120,6 +123,8 @@ public class Validations {
 
 		if (parsedContents == null || parsedContents.isEmpty())
 			return;
+		
+		final Map<String,AtomicLong> countNonCriticalErrorsLoggedPerField = new ConcurrentHashMap<>(); 
 
 		List<Map<String, Object>> toRemove = (acceptIncompleteFiles) ? new LinkedList<>() : null;
 		parsedContents.parallelStream().iterator().forEachRemaining(values -> {
@@ -128,7 +133,15 @@ public class Validations {
 
 			for (String fieldName : requiredFields) {
 				if (values.get(fieldName) == null) {
-					addLogError("{field.value.not.found(" + fieldName+ ")}", /*criticalError*/!acceptIncompleteFiles);
+					if (acceptIncompleteFiles) {
+						AtomicLong countErrorsLogged = countNonCriticalErrorsLoggedPerField.computeIfAbsent(fieldName, k->new AtomicLong());
+						if (countErrorsLogged.getAndIncrement()<10) {
+							addLogError("{field.value.not.found(" + fieldName+ ")}", /*criticalError*/false);
+						}
+					}
+					else {
+						addLogError("{field.value.not.found(" + fieldName+ ")}", /*criticalError*/true);
+					}
 					if (acceptIncompleteFiles && !markedRecordToRemove) {
 						markedRecordToRemove = true;
 						toRemove.add(values);
