@@ -507,7 +507,7 @@ svg .unselected {
 	</div>
 	<!--/* Logged Footer */-->
 	<div class="ui vertical segment" style="background: linear-gradient(-45deg, #7b3f00, #fcd22f, #964b00);" th:fragment="loggedFooter">
-		<h5 style="text-align: center;" th:text="#{ta.full.name}">Tax Administration</h5>
+		<h5 style="text-align: center;" th:text="${@environment.getProperty('ta.full.name')}">Tax Administration</h5>
 	</div>
 	<!--/* Language Javascript */-->
 	<script th:nonce="${cspNonce}" th:inline="javascript" th:with="lang=${#locale.language}" th:fragment="languageJavascript">
