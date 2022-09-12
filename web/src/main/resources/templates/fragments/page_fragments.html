@@ -474,7 +474,7 @@ svg .unselected {
 				</div>
 				<div class="three wide column">
 					<h4 class="ui inverted header" th:text="#{menu.address}">Address</h4>
-					<p th:text="${@environment.getProperty('ta.full.address')}">Full Address</p>					
+					<p th:utext="${@environment.getProperty('ta.full.address')}">Full Address</p>					
 					<p th:text="${@environment.getProperty('ta.full.country')}">Country Name</p>					
 				</div>
 				<div class="three wide column">
