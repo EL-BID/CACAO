@@ -42,6 +42,11 @@ public class CSVParser extends FileParserAdapter {
 	 * Scanner to iterate over file lines
 	 */
 	private Scanner scanner;
+	
+	/**
+	 * File input stream (must be close at the end)
+	 */
+	private FileInputStream fis;
 		
 	/**
 	 * A parser to handle CSV lines
@@ -62,10 +67,27 @@ public class CSVParser extends FileParserAdapter {
 			} catch (Exception e) {
 				log.log(Level.INFO,"Scanner close error", e);
 			}
+			scanner = null;
 		}
 		
-		try (FileInputStream fis = new FileInputStream(path.toFile())) {
-			
+		if ( fis != null ) {
+			try {
+				fis.close();
+			} catch (Exception e) {
+				log.log(Level.INFO,"File input stream close error", e);
+			}			
+			fis = null;
+		}
+		
+		try {
+			fis = new FileInputStream(path.toFile());
+		} catch (IOException e) {
+			log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
+			close();
+			return;
+		}
+
+		try {
 			BOMInputStream bis = new BOMInputStream(fis);
 			String charset = bis.getBOMCharsetName();
 
@@ -151,6 +173,15 @@ public class CSVParser extends FileParserAdapter {
 			} catch (Exception e) {
 				log.log(Level.INFO,"Scanner close error", e);
 			}
+			scanner = null;
+		}
+		if ( fis != null ) {
+			try {
+				fis.close();
+			} catch (Exception e) {
+				log.log(Level.INFO,"File input stream close error", e);
+			}			
+			fis = null;
 		}
 	}
 	
