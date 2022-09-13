@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.IterableUtils;
@@ -21,6 +22,7 @@ import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
+import org.idb.cacao.api.templates.GenericTemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
 import org.idb.cacao.web.dto.NameId;
@@ -77,6 +79,7 @@ public class DocumentTemplateUIController {
 		model.addAttribute("archetypes", 
 				TemplateArchetypes.getNames()
 					.stream()
+					.filter( name -> !GenericTemplateArchetype.NAME.equals(name))
 					.map( name -> new NameId(messages.getMessage(name, null, LocaleContextHolder.getLocale()), name))
 					.collect(Collectors.toList())
 		);
@@ -101,7 +104,10 @@ public class DocumentTemplateUIController {
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
         model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
-        model.addAttribute(ATTRIBUTE_ARCHETYPES, TemplateArchetypes.getNames());
+        model.addAttribute(ATTRIBUTE_ARCHETYPES, TemplateArchetypes.getNames()
+        		.stream()
+        		.filter(n->!GenericTemplateArchetype.NAME.equals(n))
+        		.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER))));
         return "templates/edit_template";
     }
 
@@ -160,7 +166,10 @@ public class DocumentTemplateUIController {
         model.addAttribute(ATTRIBUTE_TEMPLATE, template);
         model.addAttribute(ATTRIBUTE_FIELD_TYPES, FieldType.values());
         model.addAttribute(ATTRIBUTE_FIELD_MAPPINGS, FieldMapping.values());
-        model.addAttribute(ATTRIBUTE_ARCHETYPES, TemplateArchetypes.getNames());
+        model.addAttribute(ATTRIBUTE_ARCHETYPES, TemplateArchetypes.getNames()        		
+        		.stream()
+        		.filter(n->!GenericTemplateArchetype.NAME.equals(n))
+        		.collect(Collectors.toCollection(()->new TreeSet<>(String.CASE_INSENSITIVE_ORDER))));
         return "templates/edit_template";
     
     }
