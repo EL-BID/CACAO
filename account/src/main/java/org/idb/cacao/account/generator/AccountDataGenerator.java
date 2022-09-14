@@ -711,7 +711,9 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			PartialEntry entry = nextCredits.remove(0);
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.AccountCode.name(), entry.getAccount());						
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Description.name(), "Credit - "+accountDescriptions.get(entry.getAccount()));			
-			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name(), entry.getAmount());			
+			record.put(GeneralLedgerArchetype.FIELDS_NAMES.Amount.name(), entry.getAmount());	
+			record.put(GeneralLedgerArchetype.FIELDS_NAMES.AmountDebitOnly.name(), null);
+			record.put(GeneralLedgerArchetype.FIELDS_NAMES.AmountCreditOnly.name(), null);
 			record.put(GeneralLedgerArchetype.FIELDS_NAMES.DebitCredit.name(), "C");			
 
 			if (customerId!=null && customerRelatedAccounts.contains(entry.getAccount())) {
