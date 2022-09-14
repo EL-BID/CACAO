@@ -5,8 +5,9 @@
 	for all static content before the Thymeleaf processing. -->
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
-<script src="/js/tabulator.min.js"></script>
-<script src="/js/luxon.min.js"><</script>
+<script th:nonce="${cspNonce}" type="text/javascript" src="/js/tabulator.min.js"></script>
+<script th:nonce="${cspNonce}" type="text/javascript" src="/js/luxon.min.js"><</script>
+<script th:nonce="${cspNonce}" type="text/javascript" src="/js/xlsx.full.min.js"></script>
 </head>
 <body>
 	<!--/* Fix to avoid overlap from the Menu */-->
@@ -54,6 +55,10 @@
 		</div>
         <h4 class="ui centered dividing header" th:text="#{domain.entries.title}">Domain Entries</h4>
         <div id="table" class="ui table"></div>
+    	<div id="tableButtons">
+			<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>
+			<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>
+		</div>
 	<div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
 	<div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
 	<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
@@ -122,6 +127,16 @@
 		    data: domain_table.entries
 		})
 		
+		table.on("tableBuilt", function(){
+			document.getElementById('exportXLS').addEventListener("click", function(){
+				table.download("xlsx", domain_table.name + ".xlsx", {sheetName:domain_table.name});				    
+			});
+			document.getElementById('exportCSV').addEventListener("click", function(){
+				exportType = "CSV";
+				table.download("csv", domain_table.name + ".csv");									    
+			});	
+		})
+		
 		let showHeaderFilter = true
 		let toggleFilter = function() {
 		    showHeaderFilter = ! showHeaderFilter
@@ -136,6 +151,7 @@
 		    $('#filter').click( toggleFilter )
 		    toggleFilter()
 		})
+		
 	</script>
 </body>
 </html>
