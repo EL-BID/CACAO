@@ -27,6 +27,8 @@ import static org.idb.cacao.account.elements.AccountCategory.*;
  *
  */
 public class ChartOfAccountsValidations {
+	
+	private static String OTHER_INCOME_EXPENSES = "6";
 
 	/**
 	 * Performs domain-specific validations over the uploaded file contents.
@@ -112,7 +114,8 @@ public class ChartOfAccountsValidations {
 			if (accountSubcategory==null)
 				return false;
 			
-			if (!accountSubcategory.startsWith(accountCategory)) {
+			if (!accountSubcategory.startsWith(accountCategory) && 
+					!accountSubcategory.startsWith(OTHER_INCOME_EXPENSES)) {
 				context.addAlert("{account.error.account.subcategory.misplaced("
 					+accountCode.replaceAll("[^\\d\\.\\-]","")
 					+","

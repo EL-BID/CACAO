@@ -172,7 +172,7 @@
 		  [# th:each="i :  ${T(org.idb.cacao.api.DocumentSituation).values()}"] 
 		  [# th:text="${i.name()}"/]: [# th:text="#{${i}}"/], 
 		  [/]
-				}
+		}
 		
 		let readPersistence = function(id, type){
 		    var data = sessionStorage.getItem(id + "-" + type);
@@ -220,7 +220,7 @@
 		    initialSort: readPersistence("tabulator-docs_search", "sort"),
 			columns:[ //Define Table Columns
 				{title: /*[[#{doc.user}]]*/ "User", field:"user", minWidth: 120, headerFilter: true},
-				{title: /*[[#{taxpayer.id}]]*/ "Tax Payer Id", field:"taxPayerId", minWidth: 120, headerFilter: true},
+				{title: /*[[#{taxpayer.id}]]*/ "TaxPayer Id", field:"taxPayerId", minWidth: 120, headerFilter: true},
 				{title: /*[[#{doc.taxperiod}]]*/ "Tax Period", field:"taxPeriodNumber", minWidth: 120, headerFilter: true},
 				{title: /*[[#{doc.template}]]*/ "Template", field:"templateName", minWidth: 120, headerFilter: true},
 				{title: /*[[#{doc.timestamp}]]*/ "Date/time uploaded", field:"timestamp", formatter: dateFormatter, minWidth: 200,
