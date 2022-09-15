@@ -243,8 +243,12 @@ public class MonthlyBalanceSheetProcessor {
 		this.declarantInformation = Optional.empty();
 		this.loader = context.getLoadDataStrategy();
 		this.collectWarnings = alert->{
-			context.addAlert(ob, alert);
-			context.setOutcomeSituation(ob, DocumentSituation.PENDING);
+			context.addAlert(context.getDocumentUploaded(), alert);
+			context.setOutcomeSituation(context.getDocumentUploaded(), DocumentSituation.INVALID);
+			if ( !ob.equals(context.getDocumentUploaded()) ) {
+				context.addAlert(ob, alert);
+				context.setOutcomeSituation(ob, DocumentSituation.INVALID);
+			}
 		};
 		this.categoriesWithDebitNature = 
 		Arrays.stream(AccountCategory.values())

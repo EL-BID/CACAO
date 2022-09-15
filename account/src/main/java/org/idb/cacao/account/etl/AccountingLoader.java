@@ -694,8 +694,8 @@ public class AccountingLoader {
 							+entryId.replaceAll("[\\{\\}\\,\\(\\)]\r\n\t","")
 							+")}");
 						// Either CoA or GL should be replaced
-						context.setOutcomeSituation(coa, DocumentSituation.PENDING);
-						context.setOutcomeSituation(gl, DocumentSituation.PENDING);
+						context.setOutcomeSituation(coa, DocumentSituation.INVALID);
+						context.setOutcomeSituation(gl, DocumentSituation.INVALID);
 					}
 					
 					Number amount = ValidationContext.toNumber(record.get(ledgerAmount));
@@ -894,11 +894,13 @@ public class AccountingLoader {
 	 * Removes from the map any 'control fields' (e.g: 'timestamp', 'FILE_ID', etc.)
 	 */
 	public static Map<String, Object> removeControlFields(Map<String, Object> map) {
-		return map.entrySet().stream().filter(e->!TRACKING_FIELDS.contains(e.getKey()))
+		Map<String, Object> toRet = map.entrySet().stream().filter(e->!TRACKING_FIELDS.contains(e.getKey()))
+			.filter(e->e.getKey()!=null).filter(e->e.getValue()!=null)
 			.collect(Collectors.toMap(
 				/*keyMapper*/Map.Entry::getKey, 
 				/*valueMapper*/Map.Entry::getValue, 
 				/*mergeFunction*/(a,b)->a));
+		return toRet;
 	}
 	
 	/**
