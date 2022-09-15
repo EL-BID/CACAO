@@ -680,6 +680,8 @@ public class AccountingLoader {
 					final OffsetDateTime date = ValidationContext.toOffsetDateTime(record.get(ledgerDate));
 					
 					String entryId = ValidationContext.toString(record.get(ledgerId));
+					if (entryId==null)
+						entryId = "";
 
 					String accountCode = ValidationContext.toString(record.get(ledgerAccountCode));
 					if (accountCode==null)
