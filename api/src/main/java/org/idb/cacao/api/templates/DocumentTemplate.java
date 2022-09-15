@@ -385,18 +385,25 @@ public class DocumentTemplate implements Serializable, Cloneable, Comparable<Doc
 
 	public void setFields(List<DocumentField> fields) {
 		this.fields = fields;
-		nextUnassignedFieldId = null; // will have too figure out the available id when needed
 		if (fields!=null && !fields.isEmpty()) {
 			for (DocumentField field: fields) {
-				if (field.getId()==0)
+				if (field.getId()==0) {
+					nextUnassignedFieldId = null; // will have too figure out the available id when needed, repeatedly, for every field
 					field.setId(getNextUnassignedFieldId());
+				}
 			}
 		}
 	}
 	
 	public void clearFields() {
-		if (fields!=null)
-			fields.clear();
+		if (fields!=null) {
+			try {
+				fields.clear();
+			}
+			catch (UnsupportedOperationException ex) {
+				fields = null;
+			}
+		}
 		nextUnassignedFieldId = null; // will have too figure out the available id when needed
 	}
 	

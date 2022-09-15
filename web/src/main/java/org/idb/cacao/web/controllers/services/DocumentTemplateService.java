@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -432,5 +433,33 @@ public class DocumentTemplateService {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Check if there are two or more fields with the same id
+	 */
+	public static boolean hasConflictingFieldsId(DocumentTemplate template) {
+		if (template==null || template.getFields()==null || template.getFields().isEmpty())
+			return false;
+		Set<Integer> ids = new HashSet<>();
+		for (DocumentField field: template.getFields()) {
+			int id = field.getId();
+			if (ids.contains(id))
+				return true;
+			ids.add(id);
+		}
+		return false;
+	}
+	
+	/**
+	 * Reassigns new ids to every field in the DocumentTemplate
+	 */
+	public static void reassignFieldId(DocumentTemplate template) {
+		if (template==null || template.getFields()==null || template.getFields().isEmpty())
+			return;
+		List<DocumentField> templateFields = new ArrayList<>(template.getFields());
+		templateFields.stream().forEach(field->field.setId(0)); // will assign a new id
+		template.clearFields();	// clears out all the fields
+		template.setFields(templateFields);	// reinserts all the fields again, this time reassigning new ids
 	}
 }
