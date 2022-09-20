@@ -19,6 +19,8 @@ import org.idb.cacao.api.templates.DocumentInput;
  *
  */
 public abstract class FileParserAdapter implements FileParser {
+	
+	protected String CURRENT_LINE = "line";
 
 	protected Path path;
 

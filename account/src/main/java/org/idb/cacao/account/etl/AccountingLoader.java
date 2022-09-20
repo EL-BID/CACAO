@@ -73,6 +73,8 @@ import com.google.common.cache.LoadingCache;
 public class AccountingLoader {
 	
 	private static final Logger log = Logger.getLogger(AccountingLoader.class.getName());
+	
+	private static String CURRENT_LINE = "line";
 
 	/**
 	 * Index name for published (denormalized) data regarding General Ledger.<BR>
@@ -690,10 +692,13 @@ public class AccountingLoader {
 					final Optional<Map<String,Object>> accountInformation = lookupChartOfAccounts.getUnchecked(accountCode);
 					if (!accountInformation.isPresent() && accountCode.length()>0) {
 						DocumentUploaded reporting_doc = (coa.equals(context.getDocumentUploaded())) ? coa : gl;
+						String lineNo = ValidationContext.toString(record.getOrDefault(CURRENT_LINE, "0"));
 						context.addAlert(reporting_doc, "{account.error.ledger.invalid.account("
 							+accountCode.replaceAll("[\\{\\}\\,\\(\\)\r\n\t]","")
 							+","
 							+entryId.replaceAll("[\\{\\}\\,\\(\\)]\r\n\t","")
+							+","
+							+lineNo
 							+")}");
 						// Either CoA or GL should be replaced
 						context.setOutcomeSituation(coa, DocumentSituation.INVALID);

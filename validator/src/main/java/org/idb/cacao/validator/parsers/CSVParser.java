@@ -38,6 +38,8 @@ public class CSVParser extends FileParserAdapter {
 	
 	private static final Logger log = Logger.getLogger(CSVParser.class.getName());
 	
+	private int currentLine = 1;
+	
 	/**
 	 * Scanner to iterate over file lines
 	 */
@@ -104,6 +106,7 @@ public class CSVParser extends FileParserAdapter {
 			
 				tab.parseColumnNames(parts);
 			}
+			currentLine = 1;
 			
 		} catch (IOException e) {
 			log.log(Level.SEVERE, String.format("Error trying to read file %s", path.getFileName()), e);
@@ -142,7 +145,9 @@ public class CSVParser extends FileParserAdapter {
 						
 						String[] parts = readLine(line);
 						
-						return tab.parseLine(parts);
+						Map<String,Object> toRet = tab.parseLine(parts);
+						toRet.put(CURRENT_LINE, currentLine++);
+						return toRet;
 					}
 					return Collections.emptyMap();
 				}
