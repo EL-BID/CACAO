@@ -1,0 +1,5 @@
+taxpayer.qualifier.1=Sector económico
+taxpayer.qualifier.2=Calificador 2
+taxpayer.qualifier.3=Calificador 3
+taxpayer.qualifier.4=Cualificador 4
+taxpayer.qualifier.5=Cualificador 5

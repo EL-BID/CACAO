@@ -1,0 +1,5 @@
+taxpayer.qualifier.1=Economic Sector
+taxpayer.qualifier.2=Legal Entity
+taxpayer.qualifier.3=County
+taxpayer.qualifier.4=Size of Company
+taxpayer.qualifier.5=Tax Regime

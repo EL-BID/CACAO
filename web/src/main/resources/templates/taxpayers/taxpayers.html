@@ -7,7 +7,9 @@
 	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
 	<script src="/js/tabulator.min.js"></script>
 	<script src="/js/luxon.min.js"><</script>
-	
+	<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+	<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
+	<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>
 </head>
 <body>
 	<!--/* Fix to avoid overlap from the Menu */-->
@@ -25,7 +27,7 @@
 			<i class="users icon"></i>
 			<span class="content" th:text="#{taxpayers.title}">Taxpayers</span>
 		</h2>
-    		<div id="table" class="ui orange table"></div>
+    	<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')">
 			<div class="ui right floated primary labeled icon">
 				<a th:href="@{/taxpayers/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{taxpayer.new}">New Taxpayer</span></a>
@@ -45,6 +47,8 @@
             row.getElement().style.backgroundColor = "#F0F0F0";
         }
     }
+    
+    let documentName = /*[[#{taxpayers.title}]]*/ 'taxpayers';
 
 	let table = new Tabulator('#table', {
 		index: 'id',
@@ -71,12 +75,16 @@
 	        }
 	        return url + '?' + p.toString()
 	    },	
-		footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>" +
+						"<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
+		   				"<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>" + 
+		   				"<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",
 	    locale:'xx',
 		columns:[ //Define Table Columns
 			{title: /*[[#{taxpayer.id}]]*/ "Taxpayer ID", field:"taxPayerId", minWidth: 100, headerFilter: true},
 			{title: /*[[#{taxpayer.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
-            {title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active", field:"active",   headerFilter: "tickCross", headerFilterParams:{"tristate":true},
+            {title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active",
+				titleDownload: /*[[#{field.active}]]*/ "Active", field:"active", headerFilter: "tickCross", headerFilterParams:{"tristate":true},
                 formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"}
 
 		]
@@ -99,6 +107,58 @@
 	}
 	
 	table.on("tableBuilt", function(){
+		document.getElementById('exportXLS').addEventListener("click", function(){
+			exportType = "XLSX";
+			table.download("xlsx", documentName + ".xlsx", {sheetName:documentName});				    
+		});
+		document.getElementById('exportCSV').addEventListener("click", function(){
+			exportType = "CSV";
+			table.download("csv", documentName);									    
+		});
+		document.getElementById('exportPDF').addEventListener("click", function(){
+			exportType = "PDF";
+			let author = /*[[${#authentication.name}]]*/'';				
+			let title = documentName;					
+			table.download("pdf", documentName, {
+					orientation:"portrait", //set page orientation to portrait							
+			    	autoTable:function(doc) { 
+			            doc.setFontSize(8); //Want the tables font to be this size
+			         	// Optional - set properties on the document
+			            doc.setProperties({
+			            	title: title,
+			            	author: author,
+			            	subject: documentName,					            	
+			            	keywords: 'generated, javascript, web 2.0, ajax',
+			            	creator: 'CACAO'
+			            });					            
+			            return {
+			                styles: {cellPadding: 2, fontSize: 8},
+			                headStyles: { valign: 'middle', lineWidth: 1 },
+			                //columnStyles: pdfColumnStyles,
+			                margin: { left: 15, right: 5, top: 45, botton: 15 },
+			                willDrawCell: function(data) {					                	
+								if (data.row.section === 'head' && ( data.column.dataKey === 0 || data.column.dataKey > 4 ) ) {
+									data.cell.styles.halign = 'center';
+				                }
+							},
+							didDrawPage: function (data) {
+								//Add header
+								doc.setFont(undefined, 'bold');
+								doc.text(title, 15, 20);
+					            //doc.text(taxpayer[0], 15, 30);
+					            //doc.text(taxpayer[1], 15, 40).setFont(undefined, 'normal');
+					            
+					            //Add page number
+					            let str = /*[[#{page}]]*/'';
+					            str = str + " " + doc.internal.getNumberOfPages();
+					            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+					            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+					            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+							}
+			            };
+			        },					        
+				});
+		});		
 	    $('#filter').click( toggleFilter )
 	    toggleFilter()
 	})

@@ -47,28 +47,28 @@
                         <input type="text" th:field="*{zipCode}" class="form-control" id="zipCode" th:placeholder="#{taxpayer.zip.code}" readonly>
                       </div>
                       <div class="eight wide field">
-                        <label th:text="#{taxpayer.qualifier.1}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 1</label> 
-                        <input type="text" th:field="*{qualifier1}" class="form-control" id="qualifier1" th:placeholder="#{taxpayer.qualifier.1}" readonly>
+                        <label th:text="${@environment.getProperty('taxpayer.qualifier.1')}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 1</label> 
+                        <input type="text" th:field="*{qualifier1}" class="form-control" id="qualifier1" th:placeholder="${@environment.getProperty('taxpayer.qualifier.1')}" readonly>
                       </div>
                     </div>
                     <div class="fields">
                       <div class="eight wide field">
-                        <label th:text="#{taxpayer.qualifier.2}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 2</label> 
-                        <input type="text" th:field="*{qualifier2}" class="form-control" id="qualifier2" th:placeholder="#{taxpayer.qualifier.2}" readonly>
+                        <label th:text="${@environment.getProperty('taxpayer.qualifier.2')}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 2</label> 
+                        <input type="text" th:field="*{qualifier2}" class="form-control" id="qualifier2" th:placeholder="${@environment.getProperty('taxpayer.qualifier.2')}" readonly>
                       </div>
                       <div class="eight wide field">
-                        <label th:text="#{taxpayer.qualifier.3}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 3</label> 
-                        <input type="text" th:field="*{qualifier3}" class="form-control" id="qualifier3" th:placeholder="#{taxpayer.qualifier.3}" readonly>
+                        <label th:text="${@environment.getProperty('taxpayer.qualifier.3')}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 3</label> 
+                        <input type="text" th:field="*{qualifier3}" class="form-control" id="qualifier3" th:placeholder="${@environment.getProperty('taxpayer.qualifier.3')}" readonly>
                       </div>
                     </div>
                     <div class="fields">
                       <div class="eight wide field">
-                          <label th:text="#{taxpayer.qualifier.4}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 4</label> 
-                          <input type="text" th:field="*{qualifier4}" class="form-control" id="qualifier4" th:placeholder="#{taxpayer.qualifier.4}" readonly>
+                          <label th:text="${@environment.getProperty('taxpayer.qualifier.4')}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 4</label> 
+                          <input type="text" th:field="*{qualifier4}" class="form-control" id="qualifier4" th:placeholder="${@environment.getProperty('taxpayer.qualifier.4')}" readonly>
                       </div>
                       <div class="eight wide field">
-                          <label th:text="#{taxpayer.qualifier.5}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 5</label> 
-                          <input type="text" th:field="*{qualifier5}" class="form-control" id="qualifier5" th:placeholder="#{taxpayer.qualifier.5}" readonly>
+                          <label th:text="${@environment.getProperty('taxpayer.qualifier.5')}" style="margin-bottom: 0px; text-transform: uppercase;">Qualifier 5</label> 
+                          <input type="text" th:field="*{qualifier5}" class="form-control" id="qualifier5" th:placeholder="${@environment.getProperty('taxpayer.qualifier.5')}" readonly>
                       </div>
                     </div>
                     <div class="row">

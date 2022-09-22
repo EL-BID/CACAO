@@ -23,13 +23,16 @@
 		<h2 class="ui header">
 			<i class="archive icon"></i>
 			<span class="content" th:text="#{docs.history}">All Uploads</span>
-		</h2>
-		<div id="table" class="ui orange compact table"></div>
-		<div class="ui column right floated" th:unless="${@DocumentStoreService.isPresentationMode()}">
-			<div class="ui right floated primary labeled icon">
+		</h2>		
+		<div class="ui grid right floated" th:unless="${@DocumentStoreService.isPresentationMode()}">
+			<div class="right primary labeled icon">
 				<a th:href="@{/docs}" class="ui primary button"><i class="plus icon"></i><span th:text="#{docs.main.upload}">Upload Documents</span></a>
 			</div>
-		</div>
+			<div class="right primary labeled icon">
+				<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+			</div>
+		</div>		
+		<div id="table" class="ui orange compact table"></div>
         <div class="ui top aligned tiny modal" id="chooseRangeModal">
           <div class="header">Choose a date range</div>
           <div class="content">
@@ -192,7 +195,7 @@
 			filterMode:"remote",
 			sortMode: "remote",
 			headerFilterLiveFilterDelay:700,
-			footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+			//footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 			ajaxURL: /*[[@{/api/docs-search}]]*/ "/api/docs-seach", //set url for ajax request
 		    ajaxURLGenerator: function(url, config, params ){
 				p= new URLSearchParams()

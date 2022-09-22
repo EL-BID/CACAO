@@ -7,6 +7,9 @@
 	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
 	<script src="/js/tabulator.min.js"></script>
 	<script src="/js/luxon.min.js"><</script>
+	<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
+	<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
+	<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>	
 </head>
 <body>
 	<!--/* Fix to avoid overlap from the Menu */-->
@@ -42,6 +45,8 @@
 			
 		let documentId = /*[[${documentId}]]*/ null;
 		
+		let documentName = /*[[#{doc.situation.history}]]*/ 'situation history';
+		
 		let table = new Tabulator('#table', {
 			layout:"fitDataFill",		
 		    pagination: false,
@@ -63,6 +68,9 @@
 			},
 		    persistenceID:"doc_situation_history_persistence",
 		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
+			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
+			   				"<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>" + 
+	 		   				"<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",		    
 			columns:[ //Define Table Columns
 				{title: /*[[#{taxpayer.id}]]*/ "Taxpayer Id", field:"taxPayerId", minWidth: 120, headerFilter:this.headerFilter},
 				{title: /*[[#{doc.timestamp}]]*/ "Upload date/time", field:"timestamp", formatter: dateFormatter, headerFilter:this.headerFilter},
@@ -72,6 +80,61 @@
 				{title: /*[[#{doc.situation.history.documentFilename}]]*/ "Document Filename", field:"documentFilename", headerFilter:this.headerFilter},				
 			]
 		})
+		
+		table.on("tableBuilt", function(){		    
+			document.getElementById('exportXLS').addEventListener("click", function(){
+				exportType = "XLSX";
+				table.download("xlsx", documentName + ".xlsx", {sheetName:documentName});				    
+			});
+			document.getElementById('exportCSV').addEventListener("click", function(){
+				exportType = "CSV";
+				table.download("csv", documentName);									    
+			});
+			document.getElementById('exportPDF').addEventListener("click", function(){
+				exportType = "PDF";
+				let author = /*[[${#authentication.name}]]*/'';				
+				let title = documentName;					
+				table.download("pdf", documentName, {
+						orientation:"landscape", //set page orientation to landscape							
+				    	autoTable:function(doc) { 
+				            doc.setFontSize(8); //Want the tables font to be this size
+				         	// Optional - set properties on the document
+				            doc.setProperties({
+				            	title: title,
+				            	author: author,
+				            	subject: documentName,					            	
+				            	keywords: 'generated, javascript, web 2.0, ajax',
+				            	creator: 'CACAO'
+				            });					            
+				            return {
+				                styles: {cellPadding: 2, fontSize: 8},
+				                headStyles: { valign: 'middle', lineWidth: 1 },
+				                //columnStyles: pdfColumnStyles,
+				                margin: { left: 15, right: 5, top: 45, botton: 15 },
+				                willDrawCell: function(data) {					                	
+									if (data.row.section === 'head' && ( data.column.dataKey === 0 || data.column.dataKey > 4 ) ) {
+										data.cell.styles.halign = 'center';
+					                }
+								},
+								didDrawPage: function (data) {
+									//Add header
+									doc.setFont(undefined, 'bold');
+									doc.text(title, 15, 20);
+						            //doc.text(taxpayer[0], 15, 30);
+						            //doc.text(taxpayer[1], 15, 40).setFont(undefined, 'normal');
+						            
+						            //Add page number
+						            let str = /*[[#{page}]]*/'';
+						            str = str + " " + doc.internal.getNumberOfPages();
+						            let textWidth = doc.getStringUnitWidth(str) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+						            let textOffset = (doc.internal.pageSize.width - textWidth) / 2;							            
+						            doc.text(str, textOffset, doc.internal.pageSize.height - 10);							            
+								}
+				            };
+				        },					        
+					});
+			});
+		})			
 	
 	</script>
 </body>

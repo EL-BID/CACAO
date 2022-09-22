@@ -40,15 +40,15 @@
 					<div class="ui field" id="qualifiersView">
 						<label th:text="#{taxpayers.analysis.general.qualifiers}">Qualifiers</label>
 						<select class="ui dropdown" id="qualifiers">
-							<option value="qualifier1" th:text="#{taxpayer.qualifier.1}">Qualifier
+							<option value="qualifier1" th:text="${@environment.getProperty('taxpayer.qualifier.1')}">Qualifier
 								1</option>
-							<option value="qualifier2" th:text="#{taxpayer.qualifier.2}">Qualifier
+							<option value="qualifier2" th:text="${@environment.getProperty('taxpayer.qualifier.2')}">Qualifier
 								2</option>
-							<option value="qualifier3" th:text="#{taxpayer.qualifier.3}">Qualifier
+							<option value="qualifier3" th:text="${@environment.getProperty('taxpayer.qualifier.3')}">Qualifier
 								3</option>
-							<option value="qualifier4" th:text="#{taxpayer.qualifier.4}">Qualifier
+							<option value="qualifier4" th:text="${@environment.getProperty('taxpayer.qualifier.4')}">Qualifier
 								4</option>
-							<option value="qualifier5" th:text="#{taxpayer.qualifier.5}">Qualifier
+							<option value="qualifier5" th:text="${@environment.getProperty('taxpayer.qualifier.5')}">Qualifier
 								5</option>
 						</select>
 					</div>
