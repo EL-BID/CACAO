@@ -406,7 +406,10 @@ public class FileUploadedConsumerService {
 						doc.setTaxPayerId(userTaxpayerId.get());
 						// Inform the user about the violation
 						setSituation(doc, DocumentSituation.INVALID);
-						validations.addLogError("{doc.error.user.not.representative("+doc.getUser().replaceAll("[\\,\\(\\)\\{\\}]", "")+","+taxpayerId.replaceAll("[\\,\\(\\)\\{\\}]", "")+")}");
+						if (doc.getUser()==null)
+							validations.addLogError("{doc.error.user.not.representative(undefined,"+taxpayerId.replaceAll("[\\,\\(\\)\\{\\}]", "")+")}");
+						else
+							validations.addLogError("{doc.error.user.not.representative("+doc.getUser().replaceAll("[\\,\\(\\)\\{\\}]", "")+","+taxpayerId.replaceAll("[\\,\\(\\)\\{\\}]", "")+")}");
 						saveValidationMessages(validationContext);
 						String message = String.format("Exception while parsing record for file %s: the user %s does not represent the taxpayer %s", documentId, doc.getUser(), taxpayerId);
 						log.log(Level.SEVERE, message);				
