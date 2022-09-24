@@ -6,6 +6,7 @@
  *******************************************************************************/
 package org.idb.cacao.mock_es;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.mockserver.configuration.ConfigurationProperties;
@@ -27,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -110,6 +112,8 @@ public class ElasticsearchMockClient {
 		this.mockServer.when(HttpRequest.request().withPath(".*/_refresh")).respond(
 				toHttpResponse(new JSONObject(map("_shards", map("total", 100, "successful", 100, "failed", 0)))));
 
+		this.mockServer.when(HttpRequest.request().withPath(".*/_bulk").withMethod("POST")).respond(bulkOperation());
+
 		this.mockServer.when(HttpRequest.request().withPath(".*/_bulk"))
 				.respond(toHttpResponse(new JSONObject(map("took", 10, "errors", false, "items", new JSONArray()))));
 		
@@ -174,6 +178,77 @@ public class ElasticsearchMockClient {
 			}
 		};
 	}
+	
+	/**
+	 * Mocked response related to the API call for 'bulk' inserts/updates/deletes
+	 */
+	private ExpectationResponseCallback bulkOperation() {
+		return new ExpectationResponseCallback() {
+			@Override
+			public HttpResponse handle(HttpRequest request) throws Exception {
+				
+				String[] bulkRequestLines = request.getBodyAsString().split("\r?\n");
+
+				ObjectMapper mapper = new ObjectMapper();
+
+				List<Map<String,Object>> responseBody = new LinkedList<>();
+				
+				Consumer<Map<String, Object>> nextOperation = null;
+
+				for (String bulkRequestLine: bulkRequestLines) {
+					@SuppressWarnings("unchecked")
+					Map<String, Object> requestBody = (Map<String, Object>) mapper.readValue(bulkRequestLine,
+							Map.class);
+					
+					if (nextOperation==null) {						
+						@SuppressWarnings("unchecked")
+						Map<String,Object> indexRequest = (Map<String, Object>) requestBody.get("index");
+						if (indexRequest!=null) {
+							String indexName = (String)indexRequest.get("_index");
+							nextOperation = (record)->{
+								JSONObject response = newDocument(indexName, record);	
+								responseBody.add(map("index",response));
+							};
+						}
+						@SuppressWarnings("unchecked")
+						Map<String,Object> createRequest = (Map<String, Object>) requestBody.get("create");
+						if (createRequest!=null) {
+							String indexName = (String)createRequest.get("_index");
+							nextOperation = (record)->{
+								JSONObject response = newDocument(indexName, record);	
+								responseBody.add(map("create",response));
+							};
+						}
+						@SuppressWarnings("unchecked")
+						Map<String,Object> updateRequest = (Map<String, Object>) requestBody.get("update");
+						if (updateRequest!=null) {
+							String indexName = (String)updateRequest.get("_index");
+							String id = (String)updateRequest.get("_id");
+							nextOperation = (record)->{
+								JSONObject response = updateDocument(indexName, id, record);
+								responseBody.add(map("update",response));
+							};
+						}
+						@SuppressWarnings("unchecked")
+						Map<String,Object> deleteRequest = (Map<String, Object>) requestBody.get("delete");
+						if (deleteRequest!=null) {
+							String indexName = (String)deleteRequest.get("_index");
+							String id = (String)deleteRequest.get("_id");
+							JSONObject response = deleteDocument(indexName, id);
+							responseBody.add(map("delete",response));
+						}						
+					}
+					else {
+						nextOperation.accept(requestBody);
+						nextOperation = null;
+					}
+				}
+				
+				JSONObject response = new JSONObject(map("took", 10, "errors", false, "items", new JSONArray(responseBody)));
+				return toHttpResponse(response);
+			}
+		};
+	}
 
 	/**
 	 * Mocked response related to the API call for 'put into the index a new
@@ -184,28 +259,32 @@ public class ElasticsearchMockClient {
 			@Override
 			public HttpResponse handle(HttpRequest request) throws Exception {
 				String index_name = request.getPath().toString().split("/")[1];
-				String id = UUID.randomUUID().toString();
-				MockedIndex mocked_index = map_indices.get(index_name);
-				if (mocked_index == null) {
-					mocked_index = new MockedIndex();
-					mocked_index.setName(index_name);
-					map_indices.put(index_name, mocked_index);
-				}
 				ObjectMapper mapper = new ObjectMapper();
 				@SuppressWarnings("unchecked")
 				Map<String, Object> fields = (Map<String, Object>) mapper.readValue(request.getBodyAsJsonOrXmlString(),
 						Map.class);
-				// fields.put("id", id);
-				fields.put("_id", id);
-				fields.put("_index", index_name);
-				fields.put("_version", 1);
-				mocked_index.getMapDocuments().put(id, fields);
-				JSONObject response = new JSONObject(map("_shards",
-						map("total", 1, "successful", 1, "skipped", 0, "failed", 0), "_index", index_name, "_type",
-						"_doc", "_id", id, "_version", 1, "_seq_no", 0, "_primary_term", 1, "result", "created"));
+				JSONObject response = newDocument(index_name, fields);				
 				return toHttpResponse(response);
 			}
 		};
+	}
+	
+	public JSONObject newDocument(String index_name, Map<String, Object> fields) {
+		MockedIndex mocked_index = map_indices.get(index_name);
+		if (mocked_index == null) {
+			mocked_index = new MockedIndex();
+			mocked_index.setName(index_name);
+			map_indices.put(index_name, mocked_index);
+		}
+		String id = UUID.randomUUID().toString();
+		fields.put("_id", id);
+		fields.put("_index", index_name);
+		fields.put("_version", 1);
+		mocked_index.getMapDocuments().put(id, fields);
+		JSONObject response = new JSONObject(map("_shards",
+				map("total", 1, "successful", 1, "skipped", 0, "failed", 0), "_index", index_name, "_type",
+				"_doc", "_id", id, "_version", 1, "_seq_no", 0, "_primary_term", 1, "result", "created"));
+		return response;
 	}
 	
 	/**
@@ -222,32 +301,36 @@ public class ElasticsearchMockClient {
 				String[] uri_parts = uri.split("/");
 				String index_name = uri_parts[0];
 				String id = uri_parts[2];
-				MockedIndex mocked_index = map_indices.get(index_name);
-				if (mocked_index == null) {
-					mocked_index = new MockedIndex();
-					mocked_index.setName(index_name);
-					map_indices.put(index_name, mocked_index);
-				}
 				ObjectMapper mapper = new ObjectMapper();
 				@SuppressWarnings("unchecked")
 				Map<String, Object> fields = (Map<String, Object>) mapper.readValue(request.getBodyAsJsonOrXmlString(),
 						Map.class);
-				
-				if ( id == null )
-					id = (String) fields.get("id");
-				
-				fields.put("_id", id);
-				fields.put("_index", index_name);
-				fields.put("_version", 1);
-				mocked_index.getMapDocuments().put(id, fields);
-				JSONObject response = new JSONObject(map("_shards",
-						map("total", 1, "successful", 1, "skipped", 0, "failed", 0), "_index", index_name, "_type",
-						"_doc", "_id", id, "_version", 1, "_seq_no", 0, "_primary_term", 1, "result", "created"));
+				JSONObject response = updateDocument(index_name, id, fields);
 				return toHttpResponse(response);
 			}
 		};
 	}	
 
+	public JSONObject updateDocument(String index_name, String id, Map<String, Object> fields) {
+		MockedIndex mocked_index = map_indices.get(index_name);
+		if (mocked_index == null) {
+			mocked_index = new MockedIndex();
+			mocked_index.setName(index_name);
+			map_indices.put(index_name, mocked_index);
+		}
+		if ( id == null )
+			id = (String) fields.get("id");
+		
+		fields.put("_id", id);
+		fields.put("_index", index_name);
+		fields.put("_version", 1);
+		mocked_index.getMapDocuments().put(id, fields);
+		JSONObject response = new JSONObject(map("_shards",
+				map("total", 1, "successful", 1, "skipped", 0, "failed", 0), "_index", index_name, "_type",
+				"_doc", "_id", id, "_version", 1, "_seq_no", 0, "_primary_term", 1, "result", "created"));
+		return response;
+	}
+	
 	/**
 	 * Mocked response related to the API call for 'get from the index an existent
 	 * document given its ID'
@@ -290,18 +373,26 @@ public class ElasticsearchMockClient {
 				String[] uri_parts = uri.split("/");
 				String index_name = uri_parts[0];
 				String id = uri_parts[2];
-				MockedIndex mocked_index = map_indices.get(index_name);
-				if (mocked_index != null) {
-					Map<?, ?> doc = mocked_index.getMapDocuments().remove(id);
-					if (doc != null) {
-						return toHttpResponse(new JSONObject(map("_index", index_name, "_type", "_doc", "_id", id,
-								"_version", 1, "_seq_no", 0, "result", "deleted", "_shards",
-								map("total", 1, "successful", 1, "failed", 0))));
-					}
+				JSONObject response = deleteDocument(index_name, id);
+				if (response!=null) {
+					return toHttpResponse(response);
 				}
 				return HttpResponse.notFoundResponse();
 			}
 		};
+	}
+	
+	public JSONObject deleteDocument(String index_name, String id) {
+		MockedIndex mocked_index = map_indices.get(index_name);
+		if (mocked_index != null) {
+			Map<?, ?> doc = mocked_index.getMapDocuments().remove(id);
+			if (doc != null) {
+				return new JSONObject(map("_index", index_name, "_type", "_doc", "_id", id,
+						"_version", 1, "_seq_no", 0, "result", "deleted", "_shards",
+						map("total", 1, "successful", 1, "failed", 0)));
+			}
+		}		
+		return null;
 	}
 
 	/**
@@ -340,7 +431,13 @@ public class ElasticsearchMockClient {
 				List<Map<?, ?>> hits = new LinkedList<>();
 				for (Map.Entry<String, Map<?, ?>> doc : index.getMapDocuments().entrySet()) {
 					if (compiledQuery.test(doc.getValue())) {
-						hits.add(doc.getValue());
+						Map<String,Object> hit = map(
+								"_index", index_name,
+								"_type", "_doc",
+								"_id", doc.getKey(),
+								"_score", 1.0,
+								"_source", doc.getValue());
+						hits.add(hit);
 					}
 				}
 
@@ -372,7 +469,7 @@ public class ElasticsearchMockClient {
 	 * pairs)
 	 */
 	@SuppressWarnings("unchecked")
-	private <K, V> Map<K, V> map(Object... args) {
+	public static <K, V> Map<K, V> map(Object... args) {
 		Map<K, V> res = new HashMap<>();
 		K key = null;
 		for (Object arg : args) {
@@ -511,7 +608,7 @@ public class ElasticsearchMockClient {
 		Object query_string = query_properties.get("query_string");
 		if (query_string instanceof Map) {
 			Map<?, ?> query_string_as_map = (Map<?, ?>) query_string;
-			final String query = (String) query_string_as_map.get("query");
+			final String query = unescape( query_string_as_map.get("query") );
 			if (query == null) {
 				ObjectMapper mapper = new ObjectMapper();
 				String json = mapper.writeValueAsString(query_properties);
@@ -538,7 +635,8 @@ public class ElasticsearchMockClient {
 					return false;
 				}
 			};
-		} else {
+		} 
+		else {
 			
 			Object match_query = query_properties.get("match");
 			if (match_query != null) {
@@ -548,11 +646,32 @@ public class ElasticsearchMockClient {
 									+ match_query.getClass().getName());
 				Map.Entry<?,?> match_query_entry = ((Map<?,?>)match_query).entrySet().iterator().next();
 				final String field_name_to_match = (String)match_query_entry.getKey();
-				final String value_to_match = (String)((Map<?,?>)match_query_entry.getValue()).get("query");
+				final String value_to_match = toStringValue(((Map<?,?>)match_query_entry.getValue()).get("query"));
 				return new Predicate<Map<?, ?>>() {
 					@Override
 					public boolean test(Map<?, ?> doc) {
-						String value = (String) doc.get(treatFieldName(field_name_to_match));
+						String value = toStringValue( doc.get(treatFieldName(field_name_to_match)) );
+						if (value != null && value.equalsIgnoreCase(value_to_match)) {
+							return true;
+						}
+						return false;
+					}
+				};
+			}
+
+			Object term_query = query_properties.get("term");
+			if (term_query != null) {
+				if (!(term_query instanceof Map))
+					throw new UnsupportedOperationException(
+						"Unexpected value type for 'term' query: "
+									+ term_query.getClass().getName());
+				Map.Entry<?,?> term_query_entry = ((Map<?,?>)term_query).entrySet().iterator().next();
+				String field_name_to_match = (String)term_query_entry.getKey();
+				final String value_to_match = toStringValue(((Map<?,?>)term_query_entry.getValue()).get("value"));
+				return new Predicate<Map<?, ?>>() {
+					@Override
+					public boolean test(Map<?, ?> doc) {
+						String value = toStringValue( doc.get(treatFieldName(field_name_to_match)) );
 						if (value != null && value.equalsIgnoreCase(value_to_match)) {
 							return true;
 						}
@@ -577,4 +696,18 @@ public class ElasticsearchMockClient {
 				.replaceAll("\\^[\\d\\.]+$", ""); // something like "fieldname^1.0" becomes "fieldname"
 	}
 
+	public static String toStringValue(Object o) {
+		if (o==null)
+			return null;
+		if (o instanceof String)
+			return (String)o;
+		return String.valueOf(o);
+	}
+	
+	public static String unescape(Object o) {
+		String s = toStringValue(o);
+		if (s==null)
+			return null;
+		return StringEscapeUtils.unescapeJava(s);
+	}
 }
