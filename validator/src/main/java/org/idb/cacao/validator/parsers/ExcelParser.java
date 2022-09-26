@@ -601,6 +601,7 @@ public class ExcelParser extends FileParserAdapter {
 				
 				// If we got here, we have data to return
 				moved = true;
+				toRet.put(CURRENT_LINE, countRecords);
 				countRecords++;
 				return;
 			}
@@ -678,7 +679,7 @@ public class ExcelParser extends FileParserAdapter {
 				return false;
 			
 			toRet = new HashMap<>(); 
-
+			
 			int countVariableFieldsLocal = 0;
 			AtomicBoolean localIndication = new AtomicBoolean();
 			IdentityHashMap<DocumentInputFieldMapping, ExcelDataSerie> usedFields = new IdentityHashMap<>();
@@ -686,6 +687,8 @@ public class ExcelParser extends FileParserAdapter {
 			while (cellIterator.hasNext()) {
 				
 				Cell currentCell = cellIterator.next();
+				
+				toRet.put(CURRENT_LINE, currentCell.getRowIndex());
 								
 				for (DocumentInputFieldMapping fieldMapping : documentInputSpec.getFields()) {
 					

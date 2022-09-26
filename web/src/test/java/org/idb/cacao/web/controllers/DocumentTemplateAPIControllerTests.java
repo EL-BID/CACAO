@@ -208,7 +208,7 @@ class DocumentTemplateAPIControllerTests {
             .andReturn()
             .getResponse();
 		
-		assertEquals(response.getStatus(), HttpStatus.BAD_REQUEST.value());
+		assertEquals(HttpStatus.OK.value(), response.getStatus());
 	}
 	
 	@WithUserDetails(value="admin@admin",userDetailsServiceBeanName="CustomUserDetailsService")
