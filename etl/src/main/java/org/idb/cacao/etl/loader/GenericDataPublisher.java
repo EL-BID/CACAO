@@ -9,12 +9,15 @@ package org.idb.cacao.etl.loader;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.elasticsearch.action.index.IndexRequest;
@@ -25,8 +28,10 @@ import org.idb.cacao.api.ETLContext.LoadDataStrategy;
 import org.idb.cacao.api.ETLContext.TaxpayerRepository;
 import org.idb.cacao.api.PublishedDataFieldNames;
 import org.idb.cacao.api.ValidatedDataFieldNames;
+import org.idb.cacao.api.templates.DocumentField;
 import org.idb.cacao.api.templates.DocumentTemplate;
 import org.idb.cacao.api.templates.DomainTable;
+import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 
@@ -85,6 +90,11 @@ public class GenericDataPublisher {
 	 * The field name for template version in published data
 	 */
 	private static final String publishedTemplateVersion = IndexNamesUtils.formatFieldName(PublishedDataFieldNames.TEMPLATE_VERSION.name());
+	
+	/**
+	 * The partial field name for taxpayer
+	 */
+	private static final String TAXPAYER = "taxpayer";
 
 	/**
 	 * Performs the Extract/Transform/Load operations with available data
@@ -137,6 +147,10 @@ public class GenericDataPublisher {
 			boolean success = true;
 			try {
 				
+				//Lookup for taxpayers inside data
+				final Set<String> taxPayerFields = getTaxPayersFields(template); 
+				final Map<String, Optional<Map<String,Object>>> taxPayerData = new HashMap<>();
+				
 				data.forEach(record->{
 					
 					String rowId = String.format("%s.%d.%014d", taxPayerId, taxPeriodNumber, countRecordsOverall.incrementAndGet());
@@ -162,6 +176,32 @@ public class GenericDataPublisher {
 					// Includes data about declarant
 					if (declarantInformation.isPresent())
 						normalizedRecord.putAll(declarantInformation.get());
+					
+					//Include data about any taxpayer except declarant
+					for ( String taxpayerField : taxPayerFields ) {
+						Object oId = normalizedRecord.get(taxpayerField);
+						if ( oId != null ) {
+							String id = oId.toString();
+							if ( !id.equals(taxPayerId) ) { //Skips declarant
+								if ( taxPayerData.containsKey(id) ) { //Use cached data if present
+									normalizedRecord.putAll(taxPayerData.get(id).get());	
+								}
+								else {
+									//Lookup for taxpayer information
+									Optional<Map<String,Object>> taxPayerInformation = lookupTaxpayers.getUnchecked(id);
+									if ( taxPayerInformation.isPresent() ) {
+										Map<String,Object> additionalTaxPayerData = new HashMap<>();
+										String fieldName = taxpayerField.replace("_id", "");
+										for ( Map.Entry<String, Object> value : taxPayerInformation.get().entrySet() ) {
+											additionalTaxPayerData.put(value.getKey().replace(TAXPAYER, fieldName), value.getValue());										
+										}
+										taxPayerData.put(id, Optional.of(additionalTaxPayerData));
+									}									
+								}
+								
+							}
+						}
+					}
 					
 					// Includes data about domain tables (possibly in multiple languages)
 					ETLContext.denormalizeDomainTables(record, normalizedRecord, domainTables);
@@ -201,6 +241,26 @@ public class GenericDataPublisher {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param template	A template with field definitions
+	 * @return A Collection of field names of taxpayer id type
+	 */
+	private static Set<String> getTaxPayersFields(DocumentTemplate template) {
+		
+		if ( template == null || template.getFields() == null || template.getFields().isEmpty() )
+			return Collections.emptySet();
+		
+		List<DocumentField> fields = template.getFieldsOfType(FieldMapping.TAXPAYER_ID);
+		
+		if ( fields == null || fields.isEmpty() )
+			return Collections.emptySet(); 
+		
+		return fields.stream().map(DocumentField::getFieldName).map(IndexNamesUtils::formatFieldName).collect(Collectors.toSet());
+		
+		
+	}
+
 	/**
 	 * Returns object used for retrieving information from Taxpayers Registry, keeping a temporary cache in memory.
 	 */

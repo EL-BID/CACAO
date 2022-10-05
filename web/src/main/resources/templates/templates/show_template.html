@@ -204,7 +204,7 @@
 		
 		$('#newInput').dropdown({
 		    onChange(value, text) {
-		        window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+value)
+		        window.location.replace([[@{/templates/{id}/addinput(id=${template.id})}]] + "?format="+encodeURIComponent(value))
 		    }
 		})
 		
@@ -221,7 +221,7 @@
 		})
 		
 	    table_inputs.on('rowClick', function(e, row) {
-            window.location.replace([[@{/templates/{id}/editinput/(id=${template.id})}]] + "?inputName=" + row.getData().inputName)
+            window.location.replace([[@{/templates/{id}/editinput/(id=${template.id})}]] + "?inputName=" + encodeURIComponent(row.getData().inputName))
         })
 		
 		$('#tab .item').tab()

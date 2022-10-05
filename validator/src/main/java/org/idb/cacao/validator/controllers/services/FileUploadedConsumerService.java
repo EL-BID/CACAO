@@ -612,7 +612,7 @@ public class FileUploadedConsumerService {
 				.limit(maxValidationErrorsPerUpload<=0?Integer.MAX_VALUE:maxValidationErrorsPerUpload)
 				.map(alert -> {
 				DocumentValidationErrorMessage newMessage = message.clone();
-				newMessage.setErrorMessage(alert);
+				newMessage.setErrorMessage(alert);				
 				return newMessage;
 			}).collect(Collectors.toList());
 			if (!messages.isEmpty())

@@ -814,25 +814,42 @@ public class Validations {
 		Object taxMonth = (fieldForTaxMonth==null) ? null : 
 			dataItem.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(fieldForTaxMonth.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
 		if (taxMonth!=null) {
-			String taxMonthAsText = ValidationContext.toString(taxMonth);
-			if (ParserUtils.isOnlyNumbers(taxMonthAsText)) {
-				Integer value = ParserUtils.parseIntegerNE(taxMonthAsText);
-				if ( value != null ) {
-					doc.setTaxMonthNumber(value);
-					if (doc.getTaxYear()!=null) {
-						doc.setTaxPeriodNumber(doc.getTaxYear()*100+value); // YYYYMM
-					}
-				}
+			
+			Object oValue = checkMonthValue(fieldForTaxMonth.getFieldName(), taxMonth, false);
+			
+			if ( oValue != null && oValue instanceof OffsetDateTime ) {
+				
+				OffsetDateTime time = (OffsetDateTime)oValue;
+				
+				doc.setTaxYear(time.getYear());
+				doc.setTaxPeriodNumber((time.getYear() * 100) + time.getMonthValue());
+				
 			}
+			
 			else {
-				doc.setTaxMonth(taxMonthAsText);
-				Integer value = ParserUtils.parseMonth(taxMonthAsText);
-				if ( value != null ) {
-					doc.setTaxMonthNumber(value);
-					if (doc.getTaxYear()!=null) {
-						doc.setTaxPeriodNumber(doc.getTaxYear()*100+value); // YYYYMM
+			
+				String taxMonthAsText = ValidationContext.toString(taxMonth);
+				taxMonthAsText = taxMonthAsText.replace("-", "").replace("/", "").replace("\\", "");
+				if (ParserUtils.isOnlyNumbers(taxMonthAsText)) {
+					Integer value = ParserUtils.parseIntegerNE(taxMonthAsText);
+					if ( value != null ) {
+						doc.setTaxMonthNumber(value);
+						if (doc.getTaxYear()!=null) {
+							doc.setTaxPeriodNumber(doc.getTaxYear()*100+value); // YYYYMM
+						}
 					}
 				}
+				else {
+					doc.setTaxMonth(taxMonthAsText);
+					Integer value = ParserUtils.parseMonth(taxMonthAsText);
+					if ( value != null ) {
+						doc.setTaxMonthNumber(value);
+						if (doc.getTaxYear()!=null) {
+							doc.setTaxPeriodNumber(doc.getTaxYear()*100+value); // YYYYMM
+						}
+					}
+				}
+				
 			}
 		}
 

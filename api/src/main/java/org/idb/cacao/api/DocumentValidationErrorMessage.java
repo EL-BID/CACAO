@@ -62,6 +62,7 @@ public class DocumentValidationErrorMessage implements Serializable, Cloneable {
 	@AFieldDescriptor(externalName = "taxpayer.id")
 	private String taxPayerId;
 	
+	@JsonView(Views.Declarant.class)
 	@Field(type=Integer)
 	@AFieldDescriptor(externalName = "tax.period.number")
 	private Integer taxPeriodNumber;	
