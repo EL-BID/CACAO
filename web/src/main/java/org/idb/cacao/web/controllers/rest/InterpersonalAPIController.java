@@ -92,6 +92,8 @@ public class InterpersonalAPIController {
 	@GetMapping(value="/interpersonals", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing interpersonal relationships using pagination")
 	public PaginationData<InterpersonalDto> getRelationshipsWithPagination(Model model, 
+			@ApiParam(name = "Inactive documents", allowEmptyValue = true, allowMultiple = false, required = false, type = "String")
+			@RequestParam("inactive") Optional<String> inactive,
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -110,7 +112,10 @@ public class InterpersonalAPIController {
     		throw new UserNotFoundException();
 
 		AdvancedSearch filters = SearchUtils.fromTabulatorJSON(filter).orElse(new AdvancedSearch());
-		filters.addFilter(new AdvancedSearch.QueryFilterBoolean("active", "true"));
+		if ( inactive.isPresent() )
+			filters.addFilter(new AdvancedSearch.QueryFilterBoolean("active", "false"));
+		else
+			filters.addFilter(new AdvancedSearch.QueryFilterBoolean("active", "true"));
 		Page<InterpersonalDto> docs;
 		Optional<String> sortField = Optional.of(sortBy.orElse("personId1"));
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
@@ -125,7 +130,7 @@ public class InterpersonalAPIController {
 			docs = Page.empty();
 		}		
 		return new PaginationData<>(docs.getTotalPages(), docs.getContent());
-	}
+	}	
 	
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
     @PostMapping(value="/interpersonal", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)

@@ -54,6 +54,9 @@
 			</div>
 		</div>
         <h4 class="ui centered dividing header" th:text="#{domain.entries.title}">Domain Entries</h4>
+		<div class="right primary labeled icon">
+			<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+		</div>        
         <div id="table" class="ui table"></div>
     	<div id="tableButtons">
 			<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>
@@ -116,7 +119,7 @@
 		    paginationSize: tabulatorPaginationSize,
 			paginationSizeSelector: tabulatorPaginationSizeSelector,				
 			langs: tabulatorLanguageSpecs,
-			footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+			//footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 		    locale:'xx',
 		    columns:[ //Define Table Columns
 		        {title: /*[[#{domain.entry.key}]]*/ "Key", field:"key", width: "200", headerFilter: true},

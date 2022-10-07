@@ -55,6 +55,9 @@
     			<input type="text" name="filter" id="filter" placeholder="Search...">
     			<i class="circular search link icon" id="search"></i>
     		</div>
+			<div class="right primary labeled icon">
+				<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+			</div>    		
     		<div id="table" class="ui table"></div>
     	</div>
     	<div id="chooseArchetype" class="ui center aligned segment" style="display:none">
@@ -124,7 +127,7 @@
 				
 				return url + '?' + p.toString()
 			},
-			footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+			//footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 		    locale:'xx',
 			columns:[ //Define Table Columns
 				{title: /*[[#{template.name}]]*/ "Name", field:"name"},

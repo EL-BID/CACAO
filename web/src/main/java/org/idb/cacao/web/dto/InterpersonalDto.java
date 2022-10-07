@@ -7,6 +7,7 @@
 package org.idb.cacao.web.dto;
 
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -41,6 +42,9 @@ public class InterpersonalDto implements Serializable {
 	@JsonView(Views.Authority.class)
 	private boolean active=true;
 	
+	@JsonView(Views.Authority.class)
+	private OffsetDateTime removedTimestamp;
+	
 	@NotBlank
 	@Size(min=6, max=20)
 	@JsonView(Views.Authority.class)
@@ -66,6 +70,7 @@ public class InterpersonalDto implements Serializable {
 		this.personId2 = interpersonal.getPersonId2();
 		this.relationshipType = interpersonal.getRelationshipType();
 		this.active = interpersonal.isActive();
+		this.removedTimestamp = interpersonal.getRemovedTimestamp();
 	}
 	
 	/**
@@ -118,4 +123,13 @@ public class InterpersonalDto implements Serializable {
 	public void setRelationshipType(RelationshipType relationshipType) {
 		this.relationshipType = relationshipType;
 	}
+
+	public OffsetDateTime getRemovedTimestamp() {
+		return removedTimestamp;
+	}
+
+	public void setRemovedTimestamp(OffsetDateTime removedTimestamp) {
+		this.removedTimestamp = removedTimestamp;
+	}	
+	
 }

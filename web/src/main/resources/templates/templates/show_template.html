@@ -98,7 +98,9 @@
 					Inputs</div>
 			</div>
 			<div class="ui tab" data-tab="tab-fields">
-
+				<div class="right primary labeled icon">
+					<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+				</div>
 				<div id="table" class="ui compact table"></div>
 
 			</div>
@@ -183,7 +185,7 @@
 		        paginationSize: tabulatorPaginationSize,
 				paginationSizeSelector: tabulatorPaginationSizeSelector,				
 				langs: tabulatorLanguageSpecs,
-		    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		    //footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 		    locale:'xx',
 		    columns:[ //Define Table Columns
 		        {title: /*[[#{field.name}]]*/ "Name", field:"fieldName", minWidth: 100, responsive: 0, headerFilter: true},

@@ -24,13 +24,20 @@
 		<h2 class="ui header">
 			<i class="table icon"></i>
 			<span class="content" th:text="#{domain.tables.title}">Domain Tables</span>
-		</h2>
-		<div id="table" class="ui orange table"></div>
-		<div class="ui column right floated" sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')">
-			<div class="ui right floated primary labeled icon">
-				<a th:href="@{/adddomaintable}" class="ui blue button"><i class="plus icon"></i><span th:text="#{domain.table.new}">New Domain Table</span></a>
+		</h2>				
+		<div class="ui grid right floated">
+			<div class="right floated" sec:authorize="hasRole('ROLE_TAX_DOMAIN_TABLE_WRITE')">
+				<div class="primary labeled icon">
+					<a th:href="@{/adddomaintable}" class="ui blue button"><i class="plus icon"></i><span th:text="#{domain.table.new}">New Domain Table</span></a>
+				</div>
+			</div>
+			<div class="primary labeled icon">		
+				<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
 			</div>
 		</div>
+		<div class="ui hidden divider"></div>
+		<div id="table" class="ui orange table"></div>
+		
 	</div>
  
 <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
@@ -59,7 +66,7 @@
 	    filterMode:"remote",
 	    sortMode: "remote",
 	    headerFilterLiveFilterDelay:700,
-	    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+	    //footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",	    
 	    ajaxURLGenerator: function(url, config, params ){
 	        console.log(config)
 	        console.log(params)
@@ -73,8 +80,7 @@
 	        }
 	        return url + '?' + p.toString()
 	    },
-	    rowFormatter: rowFormatter,
-	    footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+	    rowFormatter: rowFormatter,	    
 	    locale:'xx',
 	    columns:[ //Define Table Columns
 	        {title: /*{{#domain.table.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},

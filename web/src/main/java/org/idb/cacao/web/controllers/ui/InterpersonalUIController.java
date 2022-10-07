@@ -64,6 +64,20 @@ public class InterpersonalUIController {
 		model.addAttribute("types", RelationshipType.values());
         return "interpersonal/interpersonals";
 	}
+	
+	@Secured({"ROLE_INTERPERSONAL_READ_ALL"})
+	@GetMapping(value= {"/interpersonals/inactive"})
+	public String getInactiveInterpersonalRelationships(Model model) {
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if (auth==null)
+    		throw new UserNotFoundException();
+    	User user = UserUtils.getUser(auth);
+    	if (user==null)
+    		throw new UserNotFoundException();
+		model.addAttribute("types", RelationshipType.values());
+        return "interpersonal/interpersonals_inactive";
+	}	
 
 	@Secured({"ROLE_INTERPERSONAL_WRITE"})
 	@GetMapping(value= {"/interpersonals/add"})

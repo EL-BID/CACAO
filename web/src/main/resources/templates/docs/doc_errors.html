@@ -28,6 +28,9 @@
 			<i class="warning sign icon"></i>
 			<span class="content" th:text="#{doc.error.messages}">Doc Errors</span>
 		</h2>
+		<div class="right primary labeled icon">
+			<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+		</div>
 		<div id="table" class="ui orange table"></div>
 		<div class="ui column right floated">
 			<div class="ui right floated primary labeled icon">
@@ -82,8 +85,8 @@
 			persistentLayout:true,
 		    persistenceID:"doc_error_messages_persistence",
 		    placeholder: /*[[#{no.data.available}]]*/ "No data available", //display message to user on empty table
-			footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>" +
-							"<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
+		    //"<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>" +
+			footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
 			   			   	"<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>" + 
 			   	 		   	"<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",		    
 		    locale:'xx',

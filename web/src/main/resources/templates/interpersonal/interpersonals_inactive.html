@@ -1,15 +1,22 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
-<head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
+<head th:replace="fragments/page_fragments :: header(more_links=~{this::.style}, more_scripts=~{this::script[src]})">
 	<!-- Although the entire head will be replaced, its necessary to establish the charset
 	for all static content before the Thymeleaf processing. -->
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<link rel="stylesheet" type="text/css" class="ui" href="/css/tabulator_semantic-ui.min.css">
+	<link rel="stylesheet" type="text/css" class="style" href="/css/tabulator_semantic-ui.min.css">
 	<script src="/js/tabulator.min.js"></script>
 	<script src="/js/luxon.min.js"><</script>
 	<script type="text/javascript" src="/js/xlsx.full.min.js"></script>
 	<script type="text/javascript" src="/js/jspdf.umd.min.js"></script>
-	<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>
+	<script type="text/javascript" src="/js/jspdf.plugin.autotable.js"></script>	
+<style class="style">
+.ui.selection.dropdown .menu>.item.item {
+    white-space: nowrap;
+    min-height: 1rem;
+    padding: 0.35em 0.8em !important;
+}
+</style>	
 </head>
 <body>
 	<!--/* Fix to avoid overlap from the Menu */-->
@@ -20,56 +27,71 @@
       <div class="ui breadcrumb">
         <a class="section" th:text="#{menu.homepage}" th:href="@{/cards}">Home</a>
         <div class="divider"> / </div>
-        <div class="active section" th:text="#{taxpayers.title}">Taxpayers</div>
+        <div class="active section" th:text="#{interpersonals.title}">Interpersonal Relationships</div>
       </div>
   
 		<h2 class="ui header">
-			<i class="users icon"></i>
-			<span class="content" th:text="#{taxpayers.title}">Taxpayers</span>
+			<i class="people arrows icon"></i>
+			<span class="content" th:text="#{interpersonals.title}">Interpersonal Relationships</span>
 		</h2>
-		<div class="ui grid right floated">
-			<div class="right floated" sec:authorize="hasRole('ROLE_TAXPAYER_WRITE')">
-				<div class="ui right floated primary labeled icon">
-					<a th:href="@{/taxpayers/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{taxpayer.new}">New Taxpayer</span></a>
+		
+		<div class="ui right floated">		
+			<div class="ui grid right floated" th:unless="${@DocumentStoreService.isPresentationMode()}">
+				<div class="right primary labeled icon">
+					<a th:href="@{/interpersonals}" class="ui primary button"><i class="icon"></i><span th:text="#{interpersonals.title}">Interpersonal Relationships</span></a>					
 				</div>
+				<div class="right primary labeled icon">
+					<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+				</div>				
 			</div>
-			<div class="right primary labeled icon">
-				<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
-			</div>		
-		</div>
+		</div>				
 		<div class="ui hidden divider"></div>
-    	<div id="table" class="ui orange table"></div>		
+    	<div id="table" class="ui orange table"></div>
+		
 	</div>
  
 <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
 <div th:replace="fragments/modals :: successful">MODAL DIALOG FOR SUCCESSFUL ALERT</div>
-<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>
-
-<div th:replace="fragments/tabulator_commons"></div>     
+<div th:replace="fragments/modals :: failed">MODAL DIALOG FOR FAILURE ALERT</div>     
+<div th:replace="fragments/tabulator_commons"></div>   
    
 <script th:nonce="${cspNonce}" th:inline="javascript">
-    let rowFormatter = function(row){
-        if(!row.getData().active){
-            row.getElement().style.backgroundColor = "#F0F0F0";
-        }
-    }
-    
-    let documentName = /*[[#{taxpayers.title}]]*/ 'taxpayers';
+	[# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
+	
+	dateFormatter = function(cell, formatterParams, onRendered) {
+		var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
+		if(newDate.isValid) {
+			return newDate.toFormat('yyyy-MM-dd HH:mm:ss')
+		}
+		return cell.getValue()
+	}	
+	
+	let typeLookup = { 
+	  [# th:each="i : ${types}"] 
+	  [# th:text="${i}"/]: [# th:text="#{${i.toString()}}"/], 
+	  [/]
+	}
+	[/]
 
+	let documentName = /*[[#{interpersonal.inactive}]]*/ 'Inactive Interpersonal Relationship';
+	
 	let table = new Tabulator('#table', {
 		index: 'id',
 		layout: "fitData", //fit columns to width of table (optional)
 	    pagination: true,
 		paginationMode: "remote", //enable remote pagination
-		ajaxURL: /*[[@{/api/taxpayers}]]*/ "/api/taxpayers", //set url for ajax request
 		paginationSize: tabulatorPaginationSize,
 		paginationSizeSelector: tabulatorPaginationSizeSelector,				
 		langs: tabulatorLanguageSpecs,
-		rowFormatter: rowFormatter,
-		ajaxContentType: "json",
 	    filterMode:"remote",
 	    sortMode: "remote",
 	    headerFilterLiveFilterDelay:700,
+	    //footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
+						"<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>" + 
+						"<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",	    
+	    ajaxContentType: "json",
+	    ajaxURL: /*[[@{/api/interpersonals?inactive=true}]]*/ "/api/interpersonals?inactive=true", //set url for ajax request
 	    ajaxURLGenerator: function(url, config, params ){
 	        p= new URLSearchParams()
 	        p.set('page', params.page)
@@ -80,27 +102,17 @@
 	            p.set('sortorder', params.sort[0].dir)
 	        }
 	        return url + '?' + p.toString()
-	    },	
-	    //"<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>" +		
-		footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
-		   				"<button id='exportCSV' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.csv})]</button>" + 
-		   				"<button id='exportPDF' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.pdf})]</button>",
-	    locale:'xx',
+	    },
+		locale:'xx',
 		columns:[ //Define Table Columns
-			{title: /*[[#{taxpayer.id}]]*/ "Taxpayer ID", field:"taxPayerId", minWidth: 100, headerFilter: true},
-			{title: /*[[#{taxpayer.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
-            {title: '<i class="clipboard check icon"></i>', titleFormatter:'html', tooltip:/*[[#{field.active}]]*/ "Active",
-				titleDownload: /*[[#{field.active}]]*/ "Active", field:"active", headerFilter: "tickCross", headerFilterParams:{"tristate":true},
-                formatter:"tickCross", formatterParams: { crossElement:false}, width:40, headerTooltip:/*[[#{field.active}]]*/ "Active"}
-
+			{title: /*[[#{interpersonal.person1}]]*/ "Referring Person", field:"personId1", headerFilter: true},
+			{title: /*[[#{interpersonal.person2}]]*/ "Referred Person", field:"personId2" , headerFilter: true},
+			{title: /*[[#{interpersonal.relationship.type}]]*/ "Relationship Type", field:"relationshipType",
+				formatter:"lookup", formatterParams: typeLookup, headerFilter: 'select', headerFilterParams: { values: typeLookup }},
+			{title: /*[[#{interpersonal.relationship.inactive.since}]]*/ "Inactive Since", field:"removedTimestamp" , headerFilter: true, 
+					formatter: dateFormatter, minWidth: 200, headerFilter : true},	
 		]
 	})
-	
-	[# sec:authorize="hasRole('ROLE_TAXPAYER_READ_ALL')"]
-	table.on('rowClick', function(e, row) {
-	    window.location.replace([[@{/taxpayers/}]] + row.getIndex());
-	})
-	[/]
 	
 	let showHeaderFilter = true
 	let toggleFilter = function() {
@@ -113,6 +125,8 @@
 	}
 	
 	table.on("tableBuilt", function(){
+	    $('#filter').click( toggleFilter )
+	    toggleFilter()
 		document.getElementById('exportXLS').addEventListener("click", function(){
 			exportType = "XLSX";
 			table.download("xlsx", documentName + ".xlsx", {sheetName:documentName});				    
@@ -126,7 +140,7 @@
 			let author = /*[[${#authentication.name}]]*/'';				
 			let title = documentName;					
 			table.download("pdf", documentName, {
-					orientation:"portrait", //set page orientation to portrait							
+					orientation:"landscape", //set page orientation to landscape							
 			    	autoTable:function(doc) { 
 			            doc.setFontSize(8); //Want the tables font to be this size
 			         	// Optional - set properties on the document
@@ -164,9 +178,7 @@
 			            };
 			        },					        
 				});
-		});		
-	    $('#filter').click( toggleFilter )
-	    toggleFilter()
+		});	    
 	})
 </script>
 </body>

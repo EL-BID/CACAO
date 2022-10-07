@@ -24,12 +24,16 @@
 			<i class="users icon"></i>
 			<span class="content" th:text="#{users.title}">Users</span>
 		</h2>
-       <div id="table" class="ui orange table"></div>
-		<div class="ui column right floated" sec:authorize="hasRole('ROLE_USER_WRITE')">
-			<div class="ui right floated primary labeled icon">
+		<div class="ui grid right floated">
+			<div class="right floated primary labeled icon" sec:authorize="hasRole('ROLE_USER_WRITE')">
 				<a th:href="@{/users/add}" class="ui blue button"><i class="plus icon"></i><span th:text="#{user.new}">New User</span></a>
 			</div>
-		</div>
+			<div class="right primary labeled icon">
+				<button id='filter' class='ui primary button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>
+			</div>
+		</div>				
+		<div class="ui hidden divider"></div>
+       <div id="table" class="ui orange table"></div>		
 	</div>
  
 <div th:replace="fragments/modals :: question">MODAL DIALOG FOR QUESTION</div>
@@ -78,7 +82,7 @@
 	        }
 	        return url + '?' + p.toString()
 	    },
-		footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
+		//footerElement: "<button id='filter' class='ui left floated compact button' href='javascript: filter();'><i class='icon filter'></i>[(#{filters})]</button>",
 		locale:'xx',
 		columns:[ //Define Table Columns
 			{title: /*[[#{user.name}]]*/ "Name", field:"name", minWidth: 140, headerFilter: true},
