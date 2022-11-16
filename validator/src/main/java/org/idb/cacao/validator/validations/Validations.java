@@ -50,6 +50,7 @@ import org.idb.cacao.api.templates.DomainEntry;
 import org.idb.cacao.api.templates.DomainTable;
 import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.FieldType;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.validator.repositories.DomainTableRepository;
 
@@ -233,8 +234,13 @@ public class Validations {
 					if (FieldType.BOOLEAN.equals(field.getFieldType()))
 						fieldValue = checkBooleanValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
 
-					else if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) )
+					else if (FieldType.CHARACTER.equals(field.getFieldType()) || FieldType.DOMAIN.equals(field.getFieldType()) ) {
+						if (fieldValue instanceof Double)
+							fieldValue = ((Double)fieldValue).longValue();
+						if (fieldValue instanceof Float)
+							fieldValue = ((Float)fieldValue).longValue();
 						fieldValue = checkCharacterValue(field, fieldValue);
+					}
 
 					else if (FieldType.DATE.equals(field.getFieldType())) {
 						fieldValue = checkDateValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
@@ -262,8 +268,12 @@ public class Validations {
 					else if (FieldType.GENERIC.equals(field.getFieldType()))
 						fieldValue = checkGenericValue(field, fieldValue);
 
-					else if (FieldType.INTEGER.equals(field.getFieldType()))
+					else if (FieldType.INTEGER.equals(field.getFieldType())) {
+						if ((fieldValue instanceof Date) && FieldMapping.TAX_YEAR.equals(field.getFieldMapping())) {
+							fieldValue = DateTimeUtils.getYear((Date)fieldValue);
+						}
 						fieldValue = checkIntegerValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
+					}
 
 					else if (FieldType.MONTH.equals(field.getFieldType())) {
 						fieldValue = checkMonthValue(field.getFieldName(), fieldValue, !acceptIncompleteFiles && Boolean.TRUE.equals(field.getRequired()));
@@ -794,6 +804,10 @@ public class Validations {
 		Object taxpayerId = (fieldForTaxpayerId==null) ? null : 
 			dataItem.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(fieldForTaxpayerId.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
 		if (taxpayerId!=null) {
+			if (taxpayerId instanceof Double)
+				taxpayerId = ((Double)taxpayerId).longValue();
+			if (taxpayerId instanceof Float)
+				taxpayerId = ((Float)taxpayerId).longValue();
 			doc.setTaxPayerId(ValidationContext.toString(taxpayerId));
 		}
 		
@@ -802,6 +816,9 @@ public class Validations {
 		Object taxYear = (fieldForTaxYear==null) ? null : 
 			dataItem.entrySet().stream().filter(entry->entry.getKey().equalsIgnoreCase(fieldForTaxYear.getFieldName())).findFirst().map(Map.Entry::getValue).orElse(null);
 		if (taxYear!=null) {
+			if (taxYear instanceof Date) {
+				taxYear = DateTimeUtils.getYear((Date)taxYear);
+			}
 			Integer value = ParserUtils.parseIntegerNE(ValidationContext.toString(taxYear));
 			if ( value != null ) {
 				doc.setTaxYear(value);

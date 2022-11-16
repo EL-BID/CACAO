@@ -11,7 +11,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,8 +49,10 @@ import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
 import org.idb.cacao.api.templates.DocumentInputFieldMapping;
 import org.idb.cacao.api.templates.DocumentTemplate;
+import org.idb.cacao.api.templates.FieldMapping;
 import org.idb.cacao.api.templates.TemplateArchetype;
 import org.idb.cacao.api.templates.TemplateArchetypes;
+import org.idb.cacao.api.utils.DateTimeUtils;
 import org.idb.cacao.validator.fileformats.FileFormat;
 import org.idb.cacao.validator.fileformats.FileFormatFactory;
 import org.idb.cacao.validator.parsers.DataIterator;
@@ -328,6 +333,27 @@ public class FileUploadedConsumerService {
 							Object value = dataItem.get(fUniqueField.getFieldName());
 							if (value==null)
 								continue;
+							if (FieldMapping.TAXPAYER_ID.equals(fUniqueField.getFieldMapping())) {
+								if (value instanceof Double) {
+									if (value instanceof Double)
+										value = ((Double)value).longValue();
+									if (value instanceof Float)
+										value = ((Float)value).longValue();
+									if (value instanceof Number)
+										value = ValidationContext.toString(value);
+								}
+							}
+							if (FieldMapping.TAX_YEAR.equals(fUniqueField.getFieldMapping())) {
+								if (value instanceof Date) {
+									value = DateTimeUtils.getYear((Date)value);
+								}
+							}
+							if (FieldMapping.TAX_MONTH.equals(fUniqueField.getFieldMapping())) {
+								if (value instanceof Date) {
+									OffsetDateTime odt = OffsetDateTime.from(((Date)value).toInstant().atZone(ZoneOffset.systemDefault()));
+									value = odt.getMonthValue();
+								}
+							}
 							Object previousValue = fileUniquenessValues.get(fUniqueField.getFieldName());
 							if (previousValue==null) {
 								fileUniquenessValues.put(fUniqueField.getFieldName(), value);
