@@ -146,6 +146,17 @@ public class SpringMvcConfig implements WebMvcConfigurer {
                 .resourceChain(true)
                 .addResolver(new EncodedResourceResolver())
                 .addResolver(new PathResourceResolver());
+        
+        String images2Location = env.getProperty("images2.location", "");
+        if (images2Location!=null && images2Location.trim().length()>0) {
+            registry.addResourceHandler("/images2/**") 
+	        .addResourceLocations(images2Location) 
+	        .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS))
+            .resourceChain(true)
+            .addResolver(new EncodedResourceResolver())
+            .addResolver(new PathResourceResolver());        	
+        }
+        
     }
 
     /**

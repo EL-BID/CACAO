@@ -24,7 +24,7 @@
 				<br>
 				<br> 
 
-				<img src="/images/Cacao-logo.png" class="ui large middle aligned image">
+				<img th:src="${@environment.getProperty('logo.cacao')}" src="/images/Cacao-logo.png" class="ui large middle aligned image">
 				<h2 th:text="${@environment.getProperty('app.full.name')}">Application Full Name</h2>
 				<div class="ui huge primary button startbtn" th:text="${@environment.getProperty('app.start')}" id="startbtn">Start</div>
 			</div>
@@ -39,7 +39,7 @@
 						<p th:text="${@environment.getProperty('app.description')}">Application Description</p>
 					</div>
 					<div class="six wide right floated column">
-						<img src="/images/Cacao-logo.png" class="ui medium rounded image">
+						<img th:src="${@environment.getProperty('logo.cacao')}" src="/images/Cacao-logo.png" class="ui medium rounded image">
 					</div>
 				</div>
 			</div>
