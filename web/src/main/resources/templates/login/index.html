@@ -14,10 +14,14 @@
 
 	<div class="pusher">
 
-		<div class="ui vertical masthead center aligned segment">
+		<div class="ui vertical masthead center aligned segment curve">
 
 			<!--/* Public Menu */-->
 			<div th:replace="fragments/page_fragments :: publicMenu"></div>
+
+			<div style="position:absolute; left:10px; top:70px; z-index: 99;">
+				<img th:src="${@environment.getProperty('logo.ta')}" src="/images/IDB White.4df387c76316.svg">
+			</div>
 
 			<div class="ui text white center container">
 				<br> <!--/* To avoid overlap from the menu. */-->
@@ -25,7 +29,7 @@
 				<br> 
 
 				<img th:src="${@environment.getProperty('logo.cacao')}" src="/images/Cacao-logo.png" class="ui large middle aligned image">
-				<h2 th:text="${@environment.getProperty('app.full.name')}">Application Full Name</h2>
+				<h2 class="firstpage_full_name" th:text="${@environment.getProperty('app.full.name')}">Application Full Name</h2>
 				<div class="ui huge primary button startbtn" th:text="${@environment.getProperty('app.start')}" id="startbtn">Start</div>
 			</div>
 

@@ -108,6 +108,14 @@
 	background-size: 100% 100%;
 }
 
+* {
+ font-family: Open Sans;
+}
+
+.firstpage_full_name {
+	color: [(${@environment.getProperty('initial.screen.foreground.color')})];
+}
+
 .masthead .logo.item img {
 	margin-right: 1em;
 }
@@ -155,6 +163,12 @@
 
 .quote.stripe.segment {
 	padding: 0em;
+}
+
+.curve {
+  border: solid 1px #000;
+  border-color: transparent transparent transparent transparent;
+  border-radius: 50%/50px 0 50px 50px !important;
 }
 
 .quote.stripe.segment .grid .column {
@@ -498,7 +512,7 @@ svg .unselected {
 		</div>
 	</div>
 	<!--/* Logged Footer */-->
-	<div class="ui vertical segment" style="background: linear-gradient(-45deg, #7b3f00, #fcd22f, #964b00);" th:fragment="loggedFooter">
+	<div class="ui vertical segment" th:style="'background: '+${@environment.getProperty('initial.screen.background.color')}" style="background: linear-gradient(-45deg, #459cc9, #03398f, #004a6a);" th:fragment="loggedFooter">
 		<h5 style="text-align: center;" th:text="${@environment.getProperty('ta.full.name')}">Tax Administration</h5>
 	</div>
 	<!--/* Language Javascript */-->
