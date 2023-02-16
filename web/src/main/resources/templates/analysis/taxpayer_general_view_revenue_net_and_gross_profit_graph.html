@@ -24,14 +24,14 @@
 			let revenueData = [];
 			let grossProfitData = [];
 			
-			for ( i = 0; i < declaredData.length; i++ ) {
+			for ( let i = 0; i < declaredData.length; i++ ) {
 				if ( declaredData[i].statementOrder=='01')
 					revenueData.push(declaredData[i]);
 				else
 					grossProfitData.push(declaredData[i]);
 			}
 			
-			for ( i = 0; i < calculatedData.length; i++ ) {
+			for ( let i = 0; i < calculatedData.length; i++ ) {
 				if ( calculatedData[i].statementOrder=='01')
 					revenueData.push(calculatedData[i]);
 				else

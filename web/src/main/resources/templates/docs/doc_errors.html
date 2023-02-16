@@ -42,7 +42,7 @@
 	<div th:replace="fragments/tabulator_commons"></div>
  
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-		dateFormatter = function(cell, formatterParams, onRendered) {
+		var dateFormatter = function(cell, formatterParams, onRendered) {
 			var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
 			if(newDate.isValid) {
 				return newDate.toFormat(/*[[${dateTimeFormat}]]*/)
@@ -66,7 +66,7 @@
 			ajaxURLGenerator: function(url, config, params ){
 				console.log(config)
 				console.log(params)
-				p = new URLSearchParams()
+				var p = new URLSearchParams()
 				p.set('page', params.page)
 				p.set('size', params.size)
 				p.set('filter', JSON.stringify(params.filter))
@@ -75,7 +75,6 @@
 					p.set('sortorder', params.sort[0].dir)
 				}				
 				p.set('documentId', documentId)
-				//console.log(url + '?' + p.toString())
 				return url + '?' + p.toString()
 			},
 			ajaxContentType: "json",			

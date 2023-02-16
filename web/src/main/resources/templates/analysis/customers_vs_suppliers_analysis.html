@@ -101,7 +101,7 @@
 	        	//dataType: 'text',
 	        	cache: false,
 	        	onResponse: function(result) {
-					results = []
+					var results = []
 	            	$.each(result.results, function(index, item) {
 	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
 					})
@@ -185,12 +185,9 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/customers-vs-suppliers-analysis}]]*/ "/api/analysis/customers-vs-suppliers-analysis", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					//console.log(config)
-					//console.log(params)
-					p = new URLSearchParams()
+					var p = new URLSearchParams()
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -199,7 +196,6 @@
 			        //params - the parameters passed with the request
 			        //response - the JSON object returned in the body of the response.		
 			        
-			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLS' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>" +
@@ -226,8 +222,8 @@
 				},
 			    columnDefaults:{
 					tooltip:function(cell) {
-						row = cell.getRow();
-						id = row.getCell("customerId");
+						var row = cell.getRow();
+						var id = row.getCell("customerId");
 			            return customerId + ": " + id.getValue();
 			        },
 					headerTooltip:false					

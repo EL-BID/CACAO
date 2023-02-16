@@ -219,7 +219,7 @@
 	        	//dataType: 'text',
 	        	cache: false,
 	        	onResponse: function(result) {
-					results = []
+					var results = []
 	            	$.each(result.results, function(index, item) {
 	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
 					})
@@ -312,17 +312,16 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/vertical-horizontal-analysis}]]*/ "/api/analysis/vertical-horizontal-analysis", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){				
-					p = new URLSearchParams()
+					var p = new URLSearchParams()
 					p.set('taxpayerId', $('#taxpayer').val())
 					p.set('finalDate', luxon.DateTime.fromJSDate($('#finalDate').calendar('get date')).toISODate()) 
 					p.set('zeroBalance', $('#zeroBalance').is(":checked"))
 					p.set('comparisonPeriods', $('#period').val())
 					p.set('analysisType', $('#analysisType').val())
-					//console.log(url + '?' + p.toString())
 					return url + '?' + p.toString()
 				},
 				ajaxRequesting:function(url, params){
-					taxpayer = $('#taxpayer').val();
+					var taxpayer = $('#taxpayer').val();
 					if ( !taxpayer || taxpayer.length == 0 )
 						return false;
 					return true;

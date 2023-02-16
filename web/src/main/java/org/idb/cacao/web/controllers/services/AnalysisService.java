@@ -902,11 +902,11 @@ public class AnalysisService {
 			}
 		}
 
-		String[] groupBy = { "credited_account_category.keyword", "credited_account_category_name"+suffix+".keyword",
-				"credited_account_subcategory.keyword", "credited_account_subcategory_name"+suffix+".keyword",
+		String[] groupBy = { "credited_account_category.keyword", "credited_account_category_name"+suffix+KEYWORD,
+				"credited_account_subcategory.keyword", "credited_account_subcategory_name"+suffix+KEYWORD,
 				"credited_account_code.keyword", "credited_account_name.keyword", "debited_account_category.keyword",
-				"debited_account_category_name"+suffix+".keyword", "debited_account_subcategory.keyword",
-				"debited_account_subcategory_name"+suffix+".keyword", "debited_account_code.keyword",
+				"debited_account_category_name"+suffix+KEYWORD, "debited_account_subcategory.keyword",
+				"debited_account_subcategory_name"+suffix+KEYWORD, "debited_account_code.keyword",
 				"debited_account_name.keyword" };
 
 		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field(AMOUNT);

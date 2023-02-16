@@ -82,8 +82,8 @@
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
 		//Define error message var
-		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
-		errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
+		var errorYearsNotFound = /*[[#{years.missing}]]*/ '';
+		var errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
 	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
@@ -96,7 +96,7 @@
 	        	//dataType: 'text',
 	        	cache: false,
 	        	onResponse: function(result) {
-					results = []
+					var results = []
 	            	$.each(result.results, function(index, item) {
 	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
 					})
@@ -181,12 +181,9 @@
 			langs: tabulatorLanguageSpecs,
 			ajaxURL: /*[[@{/api/analysis/statement-income-analysis}]]*/ "/api/analysis/statement-income-analysis", //set url for ajax request
 			ajaxURLGenerator: function(url, config, params ){
-				//console.log(config)
-				//console.log(params)
-				p = new URLSearchParams()
+				var p = new URLSearchParams()
 				p.set('taxpayerId', document.getElementById("taxpayer").value)
 				p.set('year', $('#year').val())
-				//console.log(url + '?' + p.toString())		
 				return url + '?' + p.toString()
 			},
 			ajaxContentType: "json",

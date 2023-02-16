@@ -128,9 +128,9 @@
 		});
 		
 		//Define error message var
-		errorQualifierValuesNotFound = /*[[#{qualifier.values.missing}]]*/ '';
-		errorYearsNotFound = /*[[#{years.missing}]]*/ '';
-		errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
+		var errorQualifierValuesNotFound = /*[[#{qualifier.values.missing}]]*/ '';
+		var errorYearsNotFound = /*[[#{years.missing}]]*/ '';
+		var errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
 	
 		$('#qualifiers').on('change', function() {
 			$("#dataView").hide();
@@ -243,7 +243,6 @@
 						year: $('#year').val(),				
 					} ,  //data to submit
 			    function (data, status, xhr) {						
-					//console.log(data);
 					if ( data.length == 0 ) {						
 						$('#modal_failed').find('.description').html(errorNoDataAvailable);
 						$('#modal_failed').modal('show');
@@ -355,13 +354,13 @@
 		
 		let tooltip = function(e, cell) {
 			alert(cell);			
-			row = cell.getRow();
-            id = row.getCell("taxpayerId");
+			var row = cell.getRow();
+            var id = row.getCell("taxpayerId");
             return id.getValue(); //return cells "field - value";						
 		}
 		
 		function showTable(values) {			
-			table = new Tabulator('#table', {
+			var table = new Tabulator('#table', {
 				index: 'id',
 				columnDefaults:{
 					tooltip:function(cell) {
