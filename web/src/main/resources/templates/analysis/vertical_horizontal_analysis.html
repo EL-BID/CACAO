@@ -268,14 +268,16 @@
 			totalColumns = 5;
 			pdfColumnStyles[0] = { halign: 'center' };
 			columnDefinitions.forEach(addColumn);
-			for ( i = 5; i <= totalColumns; i++ ) {
+			let i = 5;
+			while (totalColumns > i) {
 				pdfColumnStyles[i] = { halign: 'right' };
+				i++;
 			}
 		}
 		
 		//Add value columns according with selected parameters
 		function addColumn(column) {
-			for ( i = 0; i < column.columns.length; i++ ) {
+			for ( let i = 0; i < column.columns.length; i++ ) {
 				if ( column.columns[i].field.substring(0,1) == "B" )
 					column.columns[i].accessorDownload = valueConvert;
 				else
