@@ -238,10 +238,10 @@
 					{title: /*[[#{customer.name}]]*/ "Customer Name", field:"customerName", hozAlign:"left", headerSort:false},
 					{title: /*[[#{customer.value}]]*/ "Declared Value", field:"customerValue", headerSort:false, formatter: "money", 
 						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
-						accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+						accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerHozAlign:"right"},
 					{title: /*[[#{supplier.value}]]*/ "Calculated Value", field:"supplierValue", headerSort:false, formatter: "money", 
 							formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
-							accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:false, headerHozAlign:"right"},
+							accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerHozAlign:"right"},
 					{title: /*[[#{customer.supplier.difference}]]*/ "Difference", field:"difference", formatter: "money", 
 						formatterParams: {decimal:decimalChar, thousand:decimalGroupSeparator, symbol:currencySymbol, symbolAfter:symbolAfter, precision:"2"}, 
 						accessorDownload: valueConvertWithFractionDigits, hozAlign:"right", headerSort:false, headerHozAlign:"right"}
