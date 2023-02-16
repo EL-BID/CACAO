@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -47,6 +48,7 @@ import org.elasticsearch.search.aggregations.pipeline.BucketSortPipelineAggregat
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.idb.cacao.api.DomainLanguage;
 import org.idb.cacao.api.utils.IndexNamesUtils;
 import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.api.utils.Utils;
@@ -115,6 +117,8 @@ public class AnalysisService {
 	private static final int SOURCE_BOOTH_INCOME_STATEMENT = 3;
 	private static final int SOURCE_SHAREHOLDERS = 4;
 	private static final int SOURCE_BOOTH_INCOME_STATEMENT_AND_SHAREHOLDERS = 5;
+	
+	private static final String DEFAULT_LANGUAGE_FOR_BUILT_IN_DOMAIN_TABLES = "en";
 
 	private final String INDEX_PUBLISHED_ACCOUNTING_FLOW = IndexNamesUtils
 			.formatIndexNameForPublishedData("Accounting Flow Daily");
@@ -885,12 +889,24 @@ public class AnalysisService {
 		String to = ParserUtils.formatTimestampES(finalDate);
 		RangeQueryBuilder dateRange = new RangeQueryBuilder("date").from(from).to(to);
 		query = query.must(dateRange);
+		
+		// Locale selected by the requester. If different than the internal default, will use it as a suffix for retrieving
+		// the translated name for categories and subcategories.
+		String suffix = "";
+		Locale locale = LocaleContextHolder.getLocale();
+		if (locale!=null && !DEFAULT_LANGUAGE_FOR_BUILT_IN_DOMAIN_TABLES.equalsIgnoreCase(locale.getLanguage())) {
+			DomainLanguage langForDomainTables = Arrays.stream(DomainLanguage.values())
+				.filter(dl->dl.getDefaultLocale().getLanguage().equalsIgnoreCase(locale.getLanguage()) || dl.getAbbreviations().contains(locale.getLanguage())).findAny().orElse(null);
+			if (langForDomainTables!=null) {
+				suffix = "_"+locale.getLanguage().toLowerCase();
+			}
+		}
 
-		String[] groupBy = { "credited_account_category.keyword", "credited_account_category_name.keyword",
-				"credited_account_subcategory.keyword", "credited_account_subcategory_name.keyword",
+		String[] groupBy = { "credited_account_category.keyword", "credited_account_category_name"+suffix+".keyword",
+				"credited_account_subcategory.keyword", "credited_account_subcategory_name"+suffix+".keyword",
 				"credited_account_code.keyword", "credited_account_name.keyword", "debited_account_category.keyword",
-				"debited_account_category_name.keyword", "debited_account_subcategory.keyword",
-				"debited_account_subcategory_name.keyword", "debited_account_code.keyword",
+				"debited_account_category_name"+suffix+".keyword", "debited_account_subcategory.keyword",
+				"debited_account_subcategory_name"+suffix+".keyword", "debited_account_code.keyword",
 				"debited_account_name.keyword" };
 
 		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field(AMOUNT);
