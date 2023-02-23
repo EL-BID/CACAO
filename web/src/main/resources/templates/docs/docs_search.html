@@ -60,7 +60,7 @@
 	<div th:replace="fragments/tabulator_commons"></div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
-		dateFormatter = function(cell, formatterParams, onRendered) {
+		var dateFormatter = function(cell, formatterParams, onRendered) {
 			var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
 			if(newDate.isValid) {
 				return newDate.toFormat('yyyy-MM-dd HH:mm:ss')
@@ -214,7 +214,6 @@
 		    persistence:{ sort: true, filter: true, page: true }, 
 		    persistenceID:"docs_search",
 		    persistenceWriterFunc:function(id, type, data){
-		        //console.log(type, data)
 		        if(type=='filter') {
 		        	console.log(type)
 		        }

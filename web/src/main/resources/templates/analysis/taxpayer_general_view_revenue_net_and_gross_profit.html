@@ -30,6 +30,8 @@
 		// Keeps data for graph use
 		var declaredData = [];
 		var calculatedData = [];
+		
+		var exportType = '';
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
@@ -127,7 +129,6 @@
 					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 					let title = /*[[#{taxpayers.analysis.general.view.revenue}]]*/'';
 					title = title + " " + /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/'';
-					let first = true;
 					tableRevenueNetGrossProfitDeclared.download("pdf", getFileName(3,"pdf"), {
 						orientation:"portrait", //set page orientation to portrait
 				    	autoTable:function(doc) { 
@@ -189,13 +190,10 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					//console.log(config)
-					//console.log(params)
-					p = new URLSearchParams()
+					var p = new URLSearchParams()
 					p.set('searchType', '4')
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -205,7 +203,6 @@
 			        //response - the JSON object returned in the body of the response.
 		
 			        calculatedData = response;
-			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSRevenueNetGrossProfitCalculated' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
@@ -266,7 +263,6 @@
 					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 					let title = /*[[#{taxpayers.analysis.general.view.revenue}]]*/'';
 					title = title + " " + /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/'';
-					let first = true;
 					tableRevenueNetGrossProfitCalculated.download("pdf", getFileName(4,"pdf"), {
 						orientation:"portrait", //set page orientation to portrait
 				    	autoTable:function(doc) { 

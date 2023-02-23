@@ -5,11 +5,11 @@
 	
 		var exportType = "";
 	
-		tabulatorPaginationSize = /*[[${@environment.getProperty('default.page.size')}]]*/ 15;
+		var tabulatorPaginationSize = /*[[${@environment.getProperty('default.page.size')}]]*/ 15;
 	
-		tabulatorPaginationSizeSelector = [5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000];
+		var tabulatorPaginationSizeSelector = [5, 10, /*[[${@environment.getProperty('default.page.size')}]]*/ 15, 25, 50, 1000];
 	
-		tabulatorLanguageSpecs = {
+		var tabulatorLanguageSpecs = {
     	    "xx":{
             	"pagination":{
 	                "first":/*[[#{pagination.first.button}]]*/ "First",

@@ -243,7 +243,6 @@
 		  });
 		  template = form_obj.reduce((o,kv) => ({...o, [kv.name]: kv.value}), template)
 		  template.fields = table.getData()
-		  //console.log(template)
 		  [# th:if="${template.id==null}"]
 		  let url = [[@{/api/template}]]
 		  let req_type = 'POST'

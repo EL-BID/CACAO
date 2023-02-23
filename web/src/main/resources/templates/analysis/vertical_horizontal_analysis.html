@@ -157,6 +157,8 @@
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 	
+		var exportType = '';
+	
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})

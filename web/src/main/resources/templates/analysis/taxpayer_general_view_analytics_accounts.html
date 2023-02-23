@@ -17,6 +17,8 @@
 	
 		// Keeps data for graph use
 		var analyticsAccountsData = [];
+		
+		var exportType = '';
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
@@ -103,7 +105,6 @@
 					let year = $('#year').val();
 					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 					let title = /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/'';
-					let first = true;
 					tableAnalyticsAccounts.download("pdf", getFileName(6,"pdf"), {
 						orientation:"portrait", //set page orientation to portrait
 				    	autoTable:function(doc) { 

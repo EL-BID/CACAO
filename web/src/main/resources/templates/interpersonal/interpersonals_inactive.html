@@ -58,7 +58,7 @@
 <script th:nonce="${cspNonce}" th:inline="javascript">
 	[# sec:authorize="hasRole('ROLE_INTERPERSONAL_WRITE')"]
 	
-	dateFormatter = function(cell, formatterParams, onRendered) {
+	var dateFormatter = function(cell, formatterParams, onRendered) {
 		var newDate= (window.DateTime || luxon.DateTime).fromISO(cell.getValue())
 		if(newDate.isValid) {
 			return newDate.toFormat('yyyy-MM-dd HH:mm:ss')
@@ -74,6 +74,8 @@
 	[/]
 
 	let documentName = /*[[#{interpersonal.inactive}]]*/ 'Inactive Interpersonal Relationship';
+	
+	var exportType = '';
 	
 	let table = new Tabulator('#table', {
 		index: 'id',

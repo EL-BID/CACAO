@@ -17,7 +17,7 @@
 		</h2>
 		<div class="ui middle aligned center aligned grid container">
 			<div class="ui orange fluid segment">
-				<form action="#" th:action="@{/config_sync}" th:object="${config}" method="post">
+				<form action="#" th:action="@{/config-sync}" th:object="${config}" method="post">
 					<div class="row">
 						<div class="ui form">
 							<h4 class="ui header" style="margin-bottom: 0px;">
@@ -137,7 +137,7 @@
 						if ("OK"==msg) {
 							$('#modal_successful').modal('show')
 							setTimeout(function(){
-								window.location.replace([[@{/config_sync}]])
+								window.location.replace([[@{/config-sync}]])
 							}, 2000);
 						}
 						else {

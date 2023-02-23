@@ -17,6 +17,8 @@
 	
 		// Keeps data for graph use
 		var shareholdersData = [];	
+		
+		var exportType = '';
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
@@ -37,13 +39,10 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					//console.log(config)
-					//console.log(params)
-					p = new URLSearchParams()
+					var p = new URLSearchParams()
 					p.set('searchType', '2') //Shareholders
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},	
 				ajaxContentType: "json",
@@ -53,7 +52,6 @@
 			        //response - the JSON object returned in the body of the response.
 	
 			        shareholdersData = response;
-			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSShareholders' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
@@ -104,7 +102,6 @@
 					let year = $('#year').val();
 					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 					let title = /*[[#{taxpayers.analysis.general.view.shareholders}]]*/'';
-					let first = true;
 					tableShareholders.download("pdf", getFileName(2,"pdf"), {
 						orientation:"portrait", //set page orientation to portrait
 				    	autoTable:function(doc) { 
@@ -125,10 +122,7 @@
 				                margin: { left: 15, right: 10, top: 45, botton: 15 },
 				                willDrawCell: function(data) {					                	
 									if (data.row.section === 'head' ) {
-										if ( data.column.dataKey == 1)  {
-											data.cell.styles.halign = 'center';
-										}
-										else if ( data.column.dataKey >= 3 )  {
+										if ( data.column.dataKey == 1 || data.column.dataKey >= 3)  {
 											data.cell.styles.halign = 'center';
 										}
 					                }

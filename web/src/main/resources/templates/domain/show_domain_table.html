@@ -68,6 +68,9 @@
 	<div th:replace="fragments/tabulator_commons"></div>
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		var domain_table = [[${table}]]
+		
+		var exportType = '';
+		
 		domain_table.entries = domain_table.entries.map( (entry, i) => {
 		    entry.id = i
 		    return entry

@@ -87,7 +87,6 @@ let processForm = function(event, fields) {
   docInput.format = [[${docInput.format}]]
   docInput.fields = table.getData()
   docInput.acceptIncompleteFiles = fields.acceptIncompleteFiles
-  //console.log(template)
   let url = [[@{/api/template/{id}/input(id=${template.id})}]] 
   [# th:if="${docInput.inputName==null}"]
   let req_type = 'POST'

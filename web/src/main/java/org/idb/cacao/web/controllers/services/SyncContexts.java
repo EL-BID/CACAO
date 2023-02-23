@@ -16,7 +16,7 @@ import java.util.Collection;
  */
 public enum SyncContexts {
 	
-	ORIGINAL_FILES("/api/sync/original_files", false),
+	ORIGINAL_FILES("/api/sync/original-files", false),
 	
 	REPOSITORY_ENTITIES("/api/sync/base/", true),
 	

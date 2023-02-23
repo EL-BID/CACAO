@@ -131,6 +131,8 @@
 		var errorQualifierValuesNotFound = /*[[#{qualifier.values.missing}]]*/ '';
 		var errorYearsNotFound = /*[[#{years.missing}]]*/ '';
 		var errorNoDataAvailable = /*[[#{no.data.available}]]*/ '';
+		
+		var exportType = '';
 	
 		$('#qualifiers').on('change', function() {
 			$("#dataView").hide();
@@ -229,7 +231,6 @@
 				onSuccess: (function(event,fields){
 					event.preventDefault();				
 					updateData();
-					//showGraphics();
 	          	})
 	        });
 		}
@@ -364,8 +365,8 @@
 				index: 'id',
 				columnDefaults:{
 					tooltip:function(cell) {
-						row = cell.getRow();
-						id = row.getCell("taxpayerId");
+						var row = cell.getRow();
+						var id = row.getCell("taxpayerId");
 			            return "Id: " + id.getValue();
 			        },
 					headerTooltip:false,					

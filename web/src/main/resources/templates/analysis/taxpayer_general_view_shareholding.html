@@ -17,6 +17,8 @@
 	
 		// Keeps data for graph use
 		var shareholdingData = [];
+		
+		var exportType = '';
 	
 		//Custom accessor
 		function nullConvert(value, data, type, component){
@@ -102,7 +104,6 @@
 					let year = $('#year').val();
 					let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 					let title = /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/'';
-					let first = true;
 					tableShareholding.download("pdf", getFileName(1,"pdf"), {
 						orientation:"portrait", //set page orientation to portrait
 				    	autoTable:function(doc) { 
@@ -123,10 +124,7 @@
 				                margin: { left: 15, right: 10, top: 45, botton: 15 },
 				                willDrawCell: function(data) {					                	
 									if (data.row.section === 'head' ) {
-										if ( data.column.dataKey == 1)  {
-											data.cell.styles.halign = 'center';
-										}
-										else if ( data.column.dataKey >= 3 )  {
+										if ( data.column.dataKey == 1 || data.column.dataKey >= 3)  {
 											data.cell.styles.halign = 'center';
 										}
 					                }

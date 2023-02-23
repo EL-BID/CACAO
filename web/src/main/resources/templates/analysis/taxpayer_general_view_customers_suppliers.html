@@ -31,6 +31,8 @@
 		var majorCustomersData = [];		
 		var majorSuppliersData = [];
 		
+		var exportType = '';
+		
 		function updateCustomersAndSuppliers() {
 			upadateCustomers();
 			updateSuppliers();
@@ -120,7 +122,6 @@
 						let year = $('#year').val();
 						let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 						let title = /*[[#{taxpayers.analysis.general.view.major.customers}]]*/'';
-						let first = true;
 						tableCustomers.download("pdf", getFileName(7,"pdf"), {
 							orientation:"portrait", //set page orientation to portrait
 					    	autoTable:function(doc) { 
@@ -184,13 +185,10 @@
 				langs: tabulatorLanguageSpecs,
 				ajaxURL: /*[[@{/api/analysis/taxpayer-general-view}]]*/ "/api/analysis/taxpayer-general-view", //set url for ajax request
 				ajaxURLGenerator: function(url, config, params ){
-					//console.log(config)
-					//console.log(params)
-					p = new URLSearchParams()
+					var p = new URLSearchParams()
 					p.set('searchType', '8')
 					p.set('taxpayerId', document.getElementById("taxpayer").value)
 					p.set('year', $('#year').val())
-					//console.log(url + '?' + p.toString())		
 					return url + '?' + p.toString()
 				},
 				ajaxContentType: "json",
@@ -200,7 +198,6 @@
 			        //response - the JSON object returned in the body of the response.
 		
 			        majorSuppliersData = response;
-			        //console.log(response);
 			        return response; //return the tableData property of a response json object
 			    },
 				footerElement: "<button id='exportXLSSuppliers' class='ui left floated compact button tabulator-footer'><i class='icon download'></i>[(#{export.xls})]</button>"+
@@ -259,7 +256,6 @@
 						let year = $('#year').val();
 						let taxpayer = getTaxpayer($('#select').dropdown("get text"));
 						let title = /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/'';
-						let first = true;
 						tableSuppliers.download("pdf", getFileName(8,"pdf"), {
 							orientation:"portrait", //set page orientation to portrait
 					    	autoTable:function(doc) { 
