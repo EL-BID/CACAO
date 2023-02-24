@@ -180,7 +180,7 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("month_number", period.getMonthValue()));
 		
 		// Configure the aggregations		
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, metric);
 		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
 	}
@@ -429,7 +429,7 @@ public class AnalysisService {
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
 		
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metrics);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, metrics);
 		
 		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
@@ -723,7 +723,7 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AggregationBuilder metric = AggregationBuilders.sum(AMOUNT).field("amount_relative");
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, metric);
 		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
 	}
@@ -747,7 +747,7 @@ public class AnalysisService {
 		String[] groupBy = {"taxPayerId.keyword"};
 		
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy);
 
 		// Execute a search
 		SearchResponse sresp = doSearch(query, aggregationBuilder, searchRequest);
@@ -778,7 +778,7 @@ public class AnalysisService {
 		String[] groupBy = {qualifier + KEYWORD};
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy);
 
 		// Execute a search
 		SearchResponse sresp = doSearch(null, aggregationBuilder, searchRequest);
@@ -855,7 +855,7 @@ public class AnalysisService {
 		String[] groupBy = {"year"};
 
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy);
 		// Execute a search
 		SearchResponse sresp = doSearch(null,aggregationBuilder,searchRequest);
 		if (sresp == null) {
@@ -911,7 +911,7 @@ public class AnalysisService {
 
 		AggregationBuilder metric = AggregationBuilders.sum("totalFlow").field(AMOUNT);
 
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, metric);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -961,7 +961,7 @@ public class AnalysisService {
 		query = query.must(new TermQueryBuilder("year", year));
 		
 		// Configure the aggregations
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metric); 
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, metric); 
 		buildSearchSourceBuilder(query, aggregationBuilder, searchRequest);
 		return searchRequest;
 
@@ -1230,7 +1230,7 @@ public class AnalysisService {
 		// Filter for year
 		query = query.must(new TermQueryBuilder("year", year));
 
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, metrics);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, metrics);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -1278,7 +1278,7 @@ public class AnalysisService {
 		// Define aggregations
 		AggregationBuilder shareAmount = AggregationBuilders.sum(AMOUNT).field(AMOUNT);
 
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, shareAmount);
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, shareAmount);
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);
@@ -1762,7 +1762,7 @@ public class AnalysisService {
 
 		// Configure the aggregations
 		AggregationBuilder sum = AggregationBuilders.sum(AMOUNT).field(AMOUNT);
-		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(null, groupBy, sum);		
+		AbstractAggregationBuilder<?> aggregationBuilder = SearchUtils.aggregationBuilder(groupBy, sum);		
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
 				.aggregation(aggregationBuilder);

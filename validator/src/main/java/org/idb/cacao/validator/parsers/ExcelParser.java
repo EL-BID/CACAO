@@ -175,11 +175,11 @@ public class ExcelParser extends FileParserAdapter {
 						&& (fieldMapping.getSheetNameExpression()==null || fieldMapping.getSheetNameExpression().trim().length()==0)) {
 					// If we don't have a specific sheet for this field, let's use all the available sheets
 					for (Sheet s: sheetsByNumber.values()) {
-						addDataSerie(fieldMapping, s, sheetsByName, firstRowPerSheet);
+						addDataSerie(fieldMapping, s, firstRowPerSheet);
 					}
 				}
 				else {
-					addDataSerie(fieldMapping, sheet, sheetsByName, firstRowPerSheet);
+					addDataSerie(fieldMapping, sheet, firstRowPerSheet);
 				}
 			}
 			
@@ -358,7 +358,6 @@ public class ExcelParser extends FileParserAdapter {
 	 * Add a new 'data serie' regarding one field mapping and one worksheet
 	 */
 	private void addDataSerie(DocumentInputFieldMapping fieldMapping, Sheet sheet,
-			Map<String, Sheet> sheetsByName,
 			Map<Sheet, Integer> firstRowPerSheet) {
 		
 		if ( sheet == null) {

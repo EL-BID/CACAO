@@ -905,7 +905,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 		// Choose DEBIT entries
 		for (int i=0; i<transactionDebits; i++) {
 			double amount = roundDecimals(randomDataGenerator.nextRandomDecimal().doubleValue());
-			String account = chooseDebitedAccount(amount, choosableAccountsForDebit);
+			String account = chooseDebitedAccount(choosableAccountsForDebit);
 			if (account!=null) {
 				// Avoid leaving LIABILITY or EQUITY accounts with negative (debit) balance
 				if (liabilityAccounts.contains(account)
@@ -925,7 +925,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 						}
 						else {
 							choosableAccountsForDebit.removeAll(expenseAccounts);
-							account = chooseDebitedAccount(amount, choosableAccountsForDebit);
+							account = chooseDebitedAccount(choosableAccountsForDebit);
 						}
 					}
 					else {
@@ -956,7 +956,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 			if (assets_total_balance<=liabilities_total_balance+amount) {
 				choosableAccountsForCredit.removeAll(liabilityAccounts);
 			}
-			String account = chooseCreditedAccount(amount, choosableAccountsForCredit);
+			String account = chooseCreditedAccount(choosableAccountsForCredit);
 			if (account==null)
 				account = revenueAccounts.get(randomDataGenerator.getRandomGenerator().nextInt(revenueAccounts.size()));
 			PartialEntry entry = new PartialEntry(account, amount);
@@ -994,7 +994,7 @@ public class AccountDataGenerator implements CustomDataGenerator {
 					choosableAccountsForCreditThisEntry.removeAll(liabilityAccounts);
 				}
 
-				String account = chooseCreditedAccount(value, choosableAccountsForCreditThisEntry);
+				String account = chooseCreditedAccount(choosableAccountsForCreditThisEntry);
 				// Avoid leaving ASSET accounts with negative (credit) balance (unless it's the last entry for this transaction)
 				if (account!=null && !last_entry 
 						&& assetAccounts.contains(account)) {
@@ -1033,10 +1033,9 @@ public class AccountDataGenerator implements CustomDataGenerator {
 	
 	/**
 	 * Choose some account for debit
-	 * @param amount Amount to be debited
 	 * @param choosableAccounts Accounts that may be chosen
 	 */
-	private String chooseDebitedAccount(double amount, List<String> choosableAccounts) {
+	private String chooseDebitedAccount(List<String> choosableAccounts) {
 		if (choosableAccounts.isEmpty())
 			return null;
 		if (choosableAccounts.size()==1)
@@ -1046,10 +1045,9 @@ public class AccountDataGenerator implements CustomDataGenerator {
 
 	/**
 	 * Choose some account for credit
-	 * @param amount Amount to be credited
 	 * @param choosableAccounts Accounts that may be chosen
 	 */
-	private String chooseCreditedAccount(double amount, List<String> choosableAccounts) {
+	private String chooseCreditedAccount(List<String> choosableAccounts) {
 		if (choosableAccounts.isEmpty())
 			return null;
 		if (choosableAccounts.size()==1)

@@ -642,18 +642,17 @@ public class SearchUtils {
 	/**
 	 * Create an {@link TermsAggregationBuilder} for ES search based on fields and scripts received as parameters. 
 	 * 
-	 * @param parentAggregation	Parent aggregation
 	 * @param fields			An array with field names or {@link Script} objects for aggregation
 	 * @param metrics			Metrics to aggregate for each field combination
 	 * @return					{@link TermsAggregationBuilder} with all field and script aggregations
 	 */
-	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, Object[] fields, 
+	public static TermsAggregationBuilder aggregationBuilder(Object[] fields, 
 			AggregationBuilder... metrics) {
 		TermsAggregationBuilder agg = fields[0] instanceof Script ? AggregationBuilders.terms(((Script)fields[0]).getId()).size(10_000).script(((Script)fields[0]).getScript()) :
 			AggregationBuilders.terms((String)fields[0]).size(10_000).field((String)fields[0]);
 		
 		if (fields.length>1) {
-			agg = agg.subAggregation(aggregationBuilder(agg, Arrays.copyOfRange(fields, 1, fields.length), metrics));
+			agg = agg.subAggregation(aggregationBuilder(Arrays.copyOfRange(fields, 1, fields.length), metrics));
 		} else {
 			final TermsAggregationBuilder groupAgg = agg;
 			Arrays.stream(metrics)
@@ -662,10 +661,10 @@ public class SearchUtils {
 		return agg;
 	}
 	
-	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, String[] fields, AggregationBuilder... metrics) {
+	public static TermsAggregationBuilder aggregationBuilder(String[] fields, AggregationBuilder... metrics) {
 		TermsAggregationBuilder agg = AggregationBuilders.terms(fields[0]).size(10_000).field(fields[0]);
 		if (fields.length>1) {
-			agg = agg.subAggregation(aggregationBuilder(agg, Arrays.copyOfRange(fields, 1, fields.length), metrics));
+			agg = agg.subAggregation(aggregationBuilder(Arrays.copyOfRange(fields, 1, fields.length), metrics));
 		} else {
 			final TermsAggregationBuilder groupAgg = agg;
 			Arrays.stream(metrics)
@@ -674,10 +673,10 @@ public class SearchUtils {
 		return agg;
 	}
 	
-	public static TermsAggregationBuilder aggregationBuilder(TermsAggregationBuilder parentAggregation, String[] fields) {
+	public static TermsAggregationBuilder aggregationBuilder(String[] fields) {
 		TermsAggregationBuilder agg = AggregationBuilders.terms(fields[0]).size(10_000).field(fields[0]);
 		if (fields.length>1) {
-			agg = agg.subAggregation(aggregationBuilder(agg, Arrays.copyOfRange(fields, 1, fields.length)));
+			agg = agg.subAggregation(aggregationBuilder(Arrays.copyOfRange(fields, 1, fields.length)));
 		} 
 		return agg;
 	}	

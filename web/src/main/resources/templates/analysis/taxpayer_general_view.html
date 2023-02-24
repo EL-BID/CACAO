@@ -210,33 +210,33 @@
 			let fileName = $('#taxpayer').val() + "_" + $('#year').val() + "_";
 
 			if ( searchType == 1 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholdings}]]*/ 'shareholdings';
 			else if ( searchType == 2 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholders}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.shareholders}]]*/ 'shareholders';
 			else if ( searchType == 3 ) {
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.revenue}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.revenue}]]*/ 'revenue';
 				fileName += "_";
-				fileName += /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ '';
+				fileName += /*[[#{taxpayers.analysis.statement.income.declared.values}]]*/ 'declared.values';
 			}
 			else if ( searchType == 4 ) {
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.revenue}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.revenue}]]*/ 'revenue';
 				fileName += "_";
-				fileName += /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ '';
+				fileName += /*[[#{taxpayers.analysis.statement.income.calculated.values}]]*/ 'calculated.values';
 			}
 			else if ( searchType == 5 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.provision}]]*/ 'tax.provision';
 			else if ( searchType == 6 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.analytics.accounts}]]*/ 'analytics.accounts';
 			else if ( searchType == 7 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.customers}]]*/ 'customers';
 			else if ( searchType == 8 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.major.suppliers}]]*/ 'suppliers';
 			else if ( searchType == 9 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.equity.interests.results}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.equity.interests.results}]]*/ 'equity.interests';
 			else if ( searchType == 10 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.goodwill.incorporation.companies}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.goodwill.incorporation.companies}]]*/ 'goodwill';
 			else if ( searchType == 11 ) 
-				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ '';
+				fileName = fileName + /*[[#{taxpayers.analysis.general.view.tax.exclusions}]]*/ 'tax.exclusions';
 			
 			return fileName + "." + ext;
 			

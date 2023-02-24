@@ -174,9 +174,8 @@ public class InterpersonalAPIController {
         return ResponseEntity.ok().body(new InterpersonalDto(entity));
     }
 
-	private Interpersonal addOrUpdateInterpersonal(Interpersonal entity, InterpersonalDto interpersonal, String user) {
+	private Interpersonal addOrUpdateInterpersonal(Interpersonal entity, InterpersonalDto interpersonal) {
 		interpersonal.updateEntity(entity);
-//		entity.setUser(user);
 		return entity;
 	}
 	
@@ -200,7 +199,7 @@ public class InterpersonalAPIController {
         Map<String, Interpersonal> existentsMap = existents.stream()
         	.collect(Collectors.toMap(t -> t.getPersonId1()+t.getRelationshipType().name()+t.getPersonId2(), Function.identity()));
         List<Interpersonal> updated = Arrays.stream(interpersonalRelationships)
-        	.map(t -> addOrUpdateInterpersonal( existentsMap.getOrDefault(t.getPersonId1()+t.getRelationshipType().name()+t.getPersonId2(),new Interpersonal()), t, null))
+        	.map(t -> addOrUpdateInterpersonal( existentsMap.getOrDefault(t.getPersonId1()+t.getRelationshipType().name()+t.getPersonId2(),new Interpersonal()), t))
         	.collect(Collectors.toList());
         
         try {

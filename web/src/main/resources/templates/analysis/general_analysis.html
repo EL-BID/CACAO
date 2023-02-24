@@ -434,21 +434,18 @@
 				                headStyles: { valign: 'middle', lineWidth: 1 },
 				                columnStyles: { 1: {halign: 'right'} },
 				                margin: { left: 15, right: 250, top: 45, botton: 15 },
-				                willDrawCell: function(data) {					                	
-									if (data.row.section === 'head' ) {
-										if ( data.column.dataKey == 0)  {
-											if ( first ) {
-												first = false;
-												data.cell.styles.halign = 'center';
-											}
-											else {
-												data.cell.styles.halign = 'left';
-											}
-										}
-										else if ( data.column.dataKey == 1 )  {
-											data.cell.styles.halign = 'right';
-										}
-					                }
+				                willDrawCell: function(data) {
+				                	let is_head = (data.row.section === 'head');
+									if (is_head && data.column.dataKey == 0 && first) {
+										first = false;
+										data.cell.styles.halign = 'center';										
+									}
+									else if (is_head && data.column.dataKey == 0) {
+										data.cell.styles.halign = 'left';
+									}
+									else if (is_head && data.column.dataKey == 1) {
+										data.cell.styles.halign = 'right';
+									}
 								},
 								didDrawPage: function (data) {
 									//Add header

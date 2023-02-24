@@ -194,11 +194,11 @@ public class KeyStoreService {
 	public String encrypt(String prefix,String token) {
 		if (token==null || token.length()==0)
 			return token;
-		PrivateKey key = getPrivateKey(prefix);
-		if (key==null)
+		X509Certificate cert = getCertificate(prefix);
+		if (cert==null)
 			return token;
 		try {
-			return CryptoUtils.encrypt(token, key, getCertificate(prefix));
+			return CryptoUtils.encrypt(token, cert);
 		} catch (Exception e) {
 			return token;
 		}

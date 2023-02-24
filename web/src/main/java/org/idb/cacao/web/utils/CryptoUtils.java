@@ -51,7 +51,7 @@ public class CryptoUtils {
 	 * Encrypts some text with the provided public key. Use the Cryptographic Message Syntax. Return the
 	 * contents in Base64 format.
 	 */
-	public static String encrypt(String content, Key pubKey, X509Certificate  cert) throws Exception {
+	public static String encrypt(String content, X509Certificate  cert) throws Exception {
 		byte[] contentBytes = content.getBytes();
 		CMSProcessableByteArray cms = new CMSProcessableByteArray(contentBytes);
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
