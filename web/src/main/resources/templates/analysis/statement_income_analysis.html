@@ -78,6 +78,7 @@
 		ALERT</div>
 
 	<div th:replace="fragments/tabulator_commons"></div>
+	<div th:replace="fragments/dropdown :: update_years(sourceData='3')"></div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
@@ -116,27 +117,6 @@
 			$("#showtable").hide();
 			$('#form').submit();
 	    });
-		
-		function updateYears() {		
-			$('#year').find('option').remove();
-			$.get('/api/analysis/years', {sourceData: '3'}, //data to submit
-			    function (data, status, xhr) {
-					if ( data.length == 0 ) {						
-						$('#modal_failed').find('.description').html(errorYearsNotFound);
-						$('#modal_failed').modal('show');
-						console.log("ERROR : "+errorYearsNotFound);	
-					}
-					else {
-						$.each(data, function (i, item) {						
-						    $('#year').append($('<option>', { 
-					        	value: item,
-					        	text : item
-					    	}));
-						});
-					}
-			    }
-			);			
-		}
 		
 		$(document).ready(function() {
 			updateYears();

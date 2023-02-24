@@ -80,6 +80,8 @@
 		ALERT</div>
 
 	<div th:replace="fragments/tabulator_commons"></div>
+	<div th:replace="fragments/dropdown :: taxpayer"></div>
+	<div th:replace="fragments/dropdown :: update_years(sourceData='3')"></div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
 		
@@ -96,54 +98,10 @@
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})
     	
-		$('#select').dropdown({
-			apiSettings: {
-	        	url: '/api/taxpayers/autocomplete?term={query}',
-	        	method: 'POST',
-	        	//dataType: 'text',
-	        	cache: false,
-	        	onResponse: function(result) {
-					var results = []
-	            	$.each(result.results, function(index, item) {
-	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
-					})
-					result.results = results
-					return result
-	        	},
-	     	},
-	     	onChange: function(value) {
-				$("#showtable").hide() 
-				$('#form').submit();
-	     	},
-	    	action: 'activate',
-	    	clearable: true
-		})    	
-		
 		$('#year').on('change', function() {
 			$("#showtable").hide();
 			$('#form').submit();
 	    });
-		
-		function updateYears() {		
-			$('#year').find('option').remove();
-			$.get('/api/analysis/years', {sourceData: '3'}, //data to submit
-			    function (data, status, xhr) {
-					if ( data.length == 0 ) {						
-						$('#modal_failed').find('.description').html(errorYearsNotFound);
-						$('#modal_failed').modal('show');
-						console.log("ERROR : "+errorYearsNotFound);	
-					}
-					else {
-						$.each(data, function (i, item) {						
-						    $('#year').append($('<option>', { 
-					        	value: item,
-					        	text : item
-					    	}));
-						});
-					}
-			    }
-			);			
-		}
 		
 		$(document).ready(function() {
 			updateYears();

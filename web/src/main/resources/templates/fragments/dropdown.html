@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<!--/*
+   Fragment 'taxpayer' ------------------------
+   The fragment 'taxpayer' includes javascript code for implementing dropdown for choosing taxpayers.
+   
+   Fragment 'update_years' -------------------   
+   The fragment 'update_years' includes javascript code for filling a dropdown with possible choices of years
+   
+*/-->
+<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<body>
+<!--/* Language Javascript */-->
+<script th:nonce="${cspNonce}" th:inline="javascript" th:fragment="taxpayer">
+$('#select').dropdown({
+	apiSettings: {
+    	url: '/api/taxpayers/autocomplete?term={query}',
+    	method: 'POST',
+    	//dataType: 'text',
+    	cache: false,
+    	onResponse: function(result) {
+			var results = []
+        	$.each(result.results, function(index, item) {
+        		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+			})
+			result.results = results
+			return result
+    	},
+ 	},
+ 	onChange: function(value) {
+		$("#showtable").hide() 
+		$('#form').submit();
+ 	},
+	action: 'activate',
+	clearable: true
+}) 
+</script>
+<!--/* Language Javascript */-->
+<script th:nonce="${cspNonce}" th:inline="javascript" th:fragment="update_years">
+function updateYears() {		
+	$('#year').find('option').remove();
+	$.get('/api/analysis/years', {sourceData: /*[[${sourceData}]]*/'-1'}, //data to submit
+	    function (data, status, xhr) {
+			if ( data.length == 0 ) {						
+				$('#modal_failed').find('.description').html(errorYearsNotFound);
+				$('#modal_failed').modal('show');
+				console.log("ERROR : "+errorYearsNotFound);	
+			}
+			else {
+				$.each(data, function (i, item) {						
+				    $('#year').append($('<option>', { 
+			        	value: item,
+			        	text : item
+			    	}));
+				});
+			}
+	    }
+	);			
+}
+</script>
+</body>
+</html>
