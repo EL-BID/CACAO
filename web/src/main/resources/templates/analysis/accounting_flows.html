@@ -1,4 +1,10 @@
 <!DOCTYPE HTML>
+<!--/*
+ Copyright © [2021]. Banco Interamericano de Desarrollo ("BID"). Uso autorizado.
+ Los procedimientos y resultados obtenidos en base a la ejecución de este software son los programados por los desarrolladores y no necesariamente reflejan el punto de vista del BID, de su Directorio Ejecutivo ni de los países que representa.
+ 
+ This software uses third-party components, distributed accordingly to their own licenses.
+*/-->
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}"
 	th:lang="${lang}">
 <head
@@ -113,6 +119,26 @@ function onFormChange() {
         }
     );
 }
+
+$('#select').dropdown({
+    apiSettings: {
+        url: '/api/taxpayers/autocomplete?term={query}',
+        method: 'POST',
+        //dataType: 'text',
+        cache: false,
+        onResponse: function(result) {
+            var results = []
+            $.each(result.results, function(index, item) {
+                results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
+            })
+            result.results = results
+            return result
+        },
+    },
+    onChange: onFormChange,
+    action: 'activate',
+    clearable: true
+})
 
 $('#rangestart').calendar({
     type: 'month', 
@@ -507,6 +533,5 @@ function processFlows(data) {
   }
 }
 </script>
-<div th:replace="fragments/dropdown :: taxpayer(onFormChange=true)"></div>
 </body>
 </html>

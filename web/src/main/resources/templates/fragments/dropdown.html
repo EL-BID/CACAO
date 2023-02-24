@@ -22,7 +22,7 @@
 </head>
 <body>
 <!--/* Language Javascript */-->
-<script th:nonce="${cspNonce}" th:inline="javascript" th:fragment="taxpayer" th:with="onFormChange=${onFormChange} ?: false">
+<script th:nonce="${cspNonce}" th:inline="javascript" th:fragment="taxpayer">
 $('#select').dropdown({
 	apiSettings: {
     	url: '/api/taxpayers/autocomplete?term={query}',
@@ -38,11 +38,10 @@ $('#select').dropdown({
 			return result
     	},
  	},
- 	/*[# th:if="${!onFormChange}"]*/onChange: function(value) {
+ 	onChange: function(value) {
 		$("#showtable").hide() 
 		$('#form').submit();
- 	},/*[/]*/
- 	/*[# th:if="${onFormChange}"]*/onChange: onFormChange,/*[/]*/
+ 	},
 	action: 'activate',
 	clearable: true
 }) 
