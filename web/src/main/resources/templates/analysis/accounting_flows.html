@@ -121,7 +121,7 @@ $('#select').dropdown({
         //dataType: 'text',
         cache: false,
         onResponse: function(result) {
-            results = []
+            var results = []
             $.each(result.results, function(index, item) {
                 results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
             })

@@ -78,6 +78,7 @@
 		ALERT</div>
 
 	<div th:replace="fragments/tabulator_commons"></div>
+	<div th:replace="fragments/dropdown :: taxpayer"></div>
 	<div th:replace="fragments/dropdown :: update_years(sourceData='3')"></div>
 
 	<script th:nonce="${cspNonce}" th:inline="javascript">
@@ -89,29 +90,6 @@
     	$('#copyTaxpayer').click( function() {
     	    navigator.clipboard.writeText($('#taxpayer').val())
     	})
-    	
-		$('#select').dropdown({
-			apiSettings: {
-	        	url: '/api/taxpayers/autocomplete?term={query}',
-	        	method: 'POST',
-	        	//dataType: 'text',
-	        	cache: false,
-	        	onResponse: function(result) {
-					var results = []
-	            	$.each(result.results, function(index, item) {
-	            		results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
-					})
-					result.results = results
-					return result
-	        	},
-	     	},
-	     	onChange: function(value) {
-				$("#showtable").hide() 
-				$('#form').submit();
-	     	},
-	    	action: 'activate',
-	    	clearable: true
-		})    	
 		
 		$('#year').on('change', function() {
 			$("#showtable").hide();
