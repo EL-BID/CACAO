@@ -114,26 +114,6 @@ function onFormChange() {
     );
 }
 
-$('#select').dropdown({
-    apiSettings: {
-        url: '/api/taxpayers/autocomplete?term={query}',
-        method: 'POST',
-        //dataType: 'text',
-        cache: false,
-        onResponse: function(result) {
-            var results = []
-            $.each(result.results, function(index, item) {
-                results.push({ name: '<b>' + item.id + "</b> : " + item.name, value:item.id })
-            })
-            result.results = results
-            return result
-        },
-    },
-    onChange: onFormChange,
-    action: 'activate',
-    clearable: true
-})
-
 $('#rangestart').calendar({
     type: 'month', 
     endCalendar: $('#rangeend'),
@@ -527,5 +507,6 @@ function processFlows(data) {
   }
 }
 </script>
+<div th:replace="fragments/dropdown :: taxpayer(onFormChange=true)"></div>
 </body>
 </html>
