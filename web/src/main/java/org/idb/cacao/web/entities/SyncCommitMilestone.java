@@ -11,6 +11,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Keywo
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
@@ -124,13 +125,7 @@ public class SyncCommitMilestone implements Serializable, Cloneable {
 		if (!(o instanceof SyncCommitMilestone))
 			return false;
 		SyncCommitMilestone ref = (SyncCommitMilestone)o;
-		if (endPoint!=ref.endPoint) {
-			if (endPoint==null || ref.endPoint==null)
-				return false;
-			if (!endPoint.equals(ref.endPoint))
-				return false;
-		}
-		return true;
+		return Objects.equals(endPoint, ref.endPoint);
 	}
 	
     @Override

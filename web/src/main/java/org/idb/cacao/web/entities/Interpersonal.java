@@ -13,6 +13,7 @@ import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -191,13 +192,7 @@ public class Interpersonal implements Serializable, Cloneable {
 		if (!(o instanceof Interpersonal))
 			return false;
 		Interpersonal ref = (Interpersonal)o;
-		if (id!=ref.id) {
-			if (id==null || ref.id==null)
-				return false;
-			if (!id.equals(ref.id))
-				return false;
-		}
-		return true;
+		return Objects.equals(id, ref.id);
 	}
 
 	@Override

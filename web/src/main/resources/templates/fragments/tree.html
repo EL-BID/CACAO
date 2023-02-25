@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
+<head><title>Fragment for displaying tree view</title></head>
     <section th:fragment="menu">
 		<section th:each="menuItem : ${menuItemsList}">
 		<div th:class="${menuItem.active} ? 'active title' : 'title'" class="title" th:if="${menuItem.children!=null and !menuItem.children.empty}">

@@ -12,6 +12,7 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -261,13 +262,7 @@ public class AuditTrail implements Serializable, Cloneable {
 		if (!(o instanceof AuditTrail))
 			return false;
 		AuditTrail ref = (AuditTrail)o;
-		if (id!=ref.id) {
-			if (id==null || ref.id==null)
-				return false;
-			if (!id.equals(ref.id))
-				return false;
-		}
-		return true;
+		return Objects.equals(id, ref.id);
 	}
 
 }
