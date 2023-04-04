@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -95,6 +96,11 @@ public class GenericDataPublisher {
 	 * The partial field name for taxpayer
 	 */
 	private static final String TAXPAYER = "taxpayer";
+	
+	/**
+	 * Default 'batch size' for performing partial commits over large files
+	 */
+	private static final int DEFAULT_BATCH_SIZE = 10_000;
 
 	/**
 	 * Performs the Extract/Transform/Load operations with available data
@@ -141,6 +147,9 @@ public class GenericDataPublisher {
 					log.log(Level.SEVERE, "Error while deleting previous published data at "+published_data_index+" regarding "+taxPayerId+" and period "+taxPeriodNumber, ex);
 				}
 			}
+			
+			final int batchSize = DEFAULT_BATCH_SIZE;
+			final LongAdder countInBatch = new LongAdder();
 
 			// Start the denormalization process
 			
@@ -209,6 +218,18 @@ public class GenericDataPublisher {
 					loader.add(new IndexRequest(published_data_index)
 						.id(rowId)
 						.source(normalizedRecord));
+					
+					countInBatch.increment();
+					if (countInBatch.intValue()>=batchSize) {
+						try {
+							loader.commit();
+						}
+						catch (Exception ex) {
+							log.log(Level.SEVERE, "Error while storing "+countInBatch.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
+							throw new RuntimeException(ex);
+						}
+						countInBatch.reset();
+					}
 
 
 				}); // LOOP over all entries in validated data

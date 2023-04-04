@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +49,11 @@ public class ValidatedDataStorageService {
 	private String elasticSearchConnectionTimeout;
 
 	/**
+	 * Default 'batch size' for performing partial commits over large files
+	 */
+	private static final int DEFAULT_BATCH_SIZE = 10_000;
+
+	/**
 	 * Bulk loads validated data into ElasticSearch index
 	 */
 	public void storeValidatedData(ValidationContext context) {
@@ -70,6 +76,9 @@ public class ValidatedDataStorageService {
         
         OffsetDateTime timestamp = context.getDocumentUploaded().getTimestamp();
 
+		final int batchSize = DEFAULT_BATCH_SIZE;
+		final LongAdder countInBatch = new LongAdder();
+
 		for (Map<String,Object> dataRecord: parsedContents) {	
 			
 			String rowId = String.format("%s.%014d", fileId, ++count);
@@ -86,6 +95,22 @@ public class ValidatedDataStorageService {
 			request.add(new IndexRequest(index_name)
 				.id(rowId)
 				.source(normalizedRecord));
+
+			countInBatch.increment();
+			if (countInBatch.intValue()>=batchSize) {
+				try {
+					request.setRefreshPolicy(RefreshPolicy.NONE);
+					CommonErrors.doESWriteOpWithRetries(
+							()->elasticsearchClient.bulk(request,
+							RequestOptions.DEFAULT));
+					request.requests().clear();
+				}
+				catch (Exception ex) {
+					log.log(Level.SEVERE, String.format("Error while storing %d rows for file %s for index '%s' for template '%s %s' ", countInBatch.intValue(), fileId, index_name, template.getName(), template.getVersion()), ex);
+					throw new RuntimeException(ex);
+				}
+				countInBatch.reset();
+			}
 
 		} // LOOP over parsed data records
 		

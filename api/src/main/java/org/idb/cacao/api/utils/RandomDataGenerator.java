@@ -266,7 +266,7 @@ public class RandomDataGenerator {
 	public OffsetDateTime nextRandomTimestamp() {
 		int year = nextRandomYear();
 		int month = random.nextInt(12) + 1;
-		int dayOfMonth = random.nextInt(new GregorianCalendar(year, month-Calendar.JANUARY, 1).getActualMaximum(Calendar.DAY_OF_MONTH))+1;
+		int dayOfMonth = random.nextInt(new GregorianCalendar(year, month-1, 1).getActualMaximum(Calendar.DAY_OF_MONTH))+1;
 		int hour = random.nextInt(24);
 		int minute = random.nextInt(60);
 		int second = random.nextInt(60);
@@ -277,7 +277,7 @@ public class RandomDataGenerator {
 	public LocalDate nextRandomDate() {
 		int year = nextRandomYear();
 		int month = random.nextInt(12) + 1;
-		int dayOfMonth = random.nextInt(new GregorianCalendar(year, month-Calendar.JANUARY, 1).getActualMaximum(Calendar.DAY_OF_MONTH))+1;
+		int dayOfMonth = random.nextInt(new GregorianCalendar(year, month-1, 1).getActualMaximum(Calendar.DAY_OF_MONTH))+1;
 		return LocalDate.of(year, month, dayOfMonth);
 	}
 	

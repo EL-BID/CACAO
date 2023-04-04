@@ -282,6 +282,10 @@ public class ParserUtils {
     	return value!=null && pInteger.matcher(value).find();
     }
     
+    public static boolean isExpFormat(String value) {
+    	return value!=null && pCientificNotation.matcher(value).find();
+    }
+    
     public static boolean isDecimal(String value) {
     	return value!=null && pDecimal.matcher(value).find();
     }

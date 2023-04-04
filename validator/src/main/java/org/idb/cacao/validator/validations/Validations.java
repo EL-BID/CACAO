@@ -9,6 +9,7 @@ import static org.idb.cacao.api.utils.ParserUtils.isDMY;
 import static org.idb.cacao.api.utils.ParserUtils.isDecimal;
 import static org.idb.cacao.api.utils.ParserUtils.isDecimalWithComma;
 import static org.idb.cacao.api.utils.ParserUtils.isInteger;
+import static org.idb.cacao.api.utils.ParserUtils.isExpFormat;
 import static org.idb.cacao.api.utils.ParserUtils.isMDY;
 import static org.idb.cacao.api.utils.ParserUtils.isMY;
 import static org.idb.cacao.api.utils.ParserUtils.isMonthYear;
@@ -560,6 +561,9 @@ public class Validations {
 				return Double.parseDouble(value.replace(".", "").replace(",", "."));
 			
 			if (isInteger(value))
+				return Double.parseDouble(value);
+			
+			if (isExpFormat(value))
 				return Double.parseDouble(value);
 		}
 		catch (NumberFormatException ex) {
