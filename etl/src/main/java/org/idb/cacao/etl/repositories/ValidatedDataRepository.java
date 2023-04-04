@@ -57,6 +57,11 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 	@Autowired
 	private DocumentTemplateRepository documentTemplateRepository;
 
+	/**
+	 * Default 'batch size' for reading data from index (scroll read)
+	 */
+	private static final int DEFAULT_BATCH_SIZE = 10_000;
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.idb.cacao.api.ETLContext.ValidatedDataRepository#getTemplates(java.lang.String)
@@ -127,6 +132,7 @@ public class ValidatedDataRepository implements ETLContext.ValidatedDataReposito
 				else {
 					searchSourceBuilder.sort(ValidatedDataFieldNames.TIMESTAMP.name(), SortOrder.DESC);
 				}
+				searchSourceBuilder.size(DEFAULT_BATCH_SIZE); // batch size
 			});
 	}
 
