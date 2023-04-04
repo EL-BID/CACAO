@@ -8,10 +8,14 @@ package org.idb.cacao.etl.controllers.services;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -94,6 +98,8 @@ public class FileValidatedConsumerService {
 
 	@Autowired
 	private final StreamBridge streamBridge;
+	
+	private static final ConcurrentHashMap<String, Long> processingDocument = new ConcurrentHashMap<>();
 
 	public FileValidatedConsumerService(StreamBridge streamBridge) {
 		this.streamBridge = streamBridge;
@@ -122,7 +128,7 @@ public class FileValidatedConsumerService {
 	private Boolean processDocument(String documentId) throws GeneralException, DocumentNotFoundException {
 		
 		log.log(Level.INFO, "Received a message with documentId " + documentId);
-		
+				
 		List<Runnable> rollbackProcedures = new LinkedList<>(); // hold rollback procedures only to be used in case of error
 		
 		ETLContext etlContext = new ETLContext();
@@ -131,6 +137,12 @@ public class FileValidatedConsumerService {
 		etlContext.setDomainTableRepository(domainTableRepository);
 		etlContext.setTaxpayerRepository(taxpayerRepository);
 		
+		// Avoid redundant process by replay
+		Long mark = processingDocument.compute(documentId, (id,prev)->(prev==null)?System.currentTimeMillis() : -1);
+		if (mark<0) {
+			log.log(Level.INFO, "Ignoring this message because there is a concurrent process of the same document id");
+			return false;
+		}
 		try {
 		
 			DocumentUploaded doc = documentValidatedRepository.findById(documentId).orElse(null);
@@ -240,7 +252,7 @@ public class FileValidatedConsumerService {
 			throw ex;
 		}
 		finally {
-			//TODO Add logging
+			processingDocument.remove(documentId);
 		}
 		
 	}

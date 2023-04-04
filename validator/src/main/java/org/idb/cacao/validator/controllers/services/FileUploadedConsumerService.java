@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -114,6 +115,8 @@ public class FileUploadedConsumerService {
 	@Value("${validation.max.errors.per.upload}")
 	private long maxValidationErrorsPerUpload;
 
+	private static final ConcurrentHashMap<String, Long> processingDocument = new ConcurrentHashMap<>();
+
 	public FileUploadedConsumerService(StreamBridge streamBridge) {
 		this.streamBridge = streamBridge;
 	}
@@ -156,6 +159,12 @@ public class FileUploadedConsumerService {
 
 		ValidationContext validationContext = new ValidationContext();
 
+		// Avoid redundant process by replay
+		Long mark = processingDocument.compute(documentId, (id,prev)->(prev==null)?System.currentTimeMillis() : -1);
+		if (mark<0) {
+			log.log(Level.INFO, "Ignoring this message because there is a concurrent process of the same document id");
+			return false;
+		}
 		try {
 			// Recovering the document from the database
 			DocumentUploaded doc = documentsUploadedRepository.findById(documentId).orElse(null);
@@ -571,6 +580,8 @@ public class FileUploadedConsumerService {
 			throw ex;
 		} finally {
 			
+			processingDocument.remove(documentId);
+
 			//After save document, check if threre is a situation with no Taxpayer Id information and, if found, update
 			
 			List<DocumentSituationHistory> situations = 

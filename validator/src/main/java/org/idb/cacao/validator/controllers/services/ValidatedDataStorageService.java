@@ -99,6 +99,7 @@ public class ValidatedDataStorageService {
 			countInBatch.increment();
 			if (countInBatch.intValue()>=batchSize) {
 				try {
+					request.timeout(elasticSearchConnectionTimeout);
 					request.setRefreshPolicy(RefreshPolicy.NONE);
 					CommonErrors.doESWriteOpWithRetries(
 							()->elasticsearchClient.bulk(request,
@@ -114,18 +115,20 @@ public class ValidatedDataStorageService {
 
 		} // LOOP over parsed data records
 		
-		request.timeout(elasticSearchConnectionTimeout);
-		request.setRefreshPolicy(RefreshPolicy.NONE);
-		try {
-			CommonErrors.doESWriteOpWithRetries(
-				()->elasticsearchClient.bulk(request,
-				RequestOptions.DEFAULT));
+		if (countInBatch.intValue()>0) {
+			request.timeout(elasticSearchConnectionTimeout);
+			request.setRefreshPolicy(RefreshPolicy.NONE);
+			try {
+				CommonErrors.doESWriteOpWithRetries(
+					()->elasticsearchClient.bulk(request,
+					RequestOptions.DEFAULT));
+			}
+			catch (Exception ex) {
+				String message = String.format("Error while storing %d rows for file %s for index '%s' for template '%s %s' ", count, fileId, index_name, template.getName(), template.getVersion());
+				log.log(Level.SEVERE, message, ex);
+			}
+			request.requests().clear();
 		}
-		catch (Exception ex) {
-			String message = String.format("Error while storing %d rows for file %s for index '%s' for template '%s %s' ", count, fileId, index_name, template.getName(), template.getVersion());
-			log.log(Level.SEVERE, message, ex);
-		}
-		request.requests().clear();
 
 		try {
 			elasticsearchClient.indices().refresh(new RefreshRequest(index_name), RequestOptions.DEFAULT);

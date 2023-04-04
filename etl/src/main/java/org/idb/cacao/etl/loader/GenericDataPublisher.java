@@ -237,12 +237,14 @@ public class GenericDataPublisher {
 			}
 			finally {
 				data.close();
-				try {
-					loader.commit();
-				}
-				catch (Exception ex) {
-					log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
-					success = false;
+				if (countInBatch.intValue()>0) {
+					try {
+						loader.commit();
+					}
+					catch (Exception ex) {
+						log.log(Level.SEVERE, "Error while storing "+countRecordsOverall.longValue()+" rows of denormalized data for taxpayer id "+taxPayerId+" period "+taxPeriodNumber, ex);
+						success = false;
+					}
 				}
 				loader.close();
 			}
