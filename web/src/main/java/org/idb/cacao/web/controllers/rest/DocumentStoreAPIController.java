@@ -106,6 +106,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 
@@ -595,6 +596,7 @@ public class DocumentStoreAPIController {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		mapper.setSerializationInclusion(Include.NON_NULL);
+		mapper.registerModule(new JavaTimeModule());
 
 		List<DocumentUploaded> docs = new ArrayList<>(sresp.getHits().getHits().length);
 		for (SearchHit hit : sresp.getHits()) {
