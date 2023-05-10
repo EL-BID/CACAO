@@ -49,6 +49,12 @@ On the other hand, if the application has already been deployed before, use this
 
     docker-compose up --build -d
     
+The commands above will deploy the full stack of CACAO, which requires a minimum of 32 GB and some extra configurations. If you intend to run a quick deployment just for trying CACAO in a local environment (i.e. not to be exposed to the Internet), you may try the following command instead:
+
+    docker-compose -f demo.yml up --build -d  
+    
+The previous command line will deploy only one instance of ElasticSearch (in spite of the default 3 instances), will not start the 'proxy' component (which means it will be less secure, with a self-signed invalid SSL certificate) and the exposed HTTPS port will be 8888.
+    
 It's also possible to build specific modules using MAVEN under development environment, running the following command inside the corresponding module.
 
     mvn install

@@ -561,7 +561,7 @@ public class DocumentStoreAPIController {
 			@ApiParam(value = "Number of past days (overrides 'from' and 'to' parameters)", required = false) 
 			@RequestParam("days") Optional<String> days) {
 
-		SearchRequest searchRequest = new SearchRequest("docs_uploaded");
+		SearchRequest searchRequest = new SearchRequest("cacao_docs_uploaded");
 		BoolQueryBuilder query = QueryBuilders.boolQuery();
 		if (days.isPresent() && days.get().trim().length() > 0) {
 			RangeQueryBuilder timestampQuery = new RangeQueryBuilder("timestamp");

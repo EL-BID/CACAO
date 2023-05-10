@@ -121,7 +121,7 @@ public class DocumentStoreService {
 			final boolean includeLower) {
 		
     	// Index over 'DocumentUploaded' objects
-    	SearchRequest searchRequest = new SearchRequest("docs_uploaded");
+    	SearchRequest searchRequest = new SearchRequest("cacao_docs_uploaded");
     	
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
     	
@@ -169,7 +169,7 @@ public class DocumentStoreService {
 			final Integer filter_period) {
 		
     	// Index over 'DocumentUploaded' objects
-    	SearchRequest searchRequest = new SearchRequest("docs_uploaded");
+    	SearchRequest searchRequest = new SearchRequest("cacao_docs_uploaded");
     	
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
     	
@@ -218,7 +218,7 @@ public class DocumentStoreService {
 			final boolean includeUpper) {
 		
     	// Index over 'DocumentUploaded' objects
-    	SearchRequest searchRequest = new SearchRequest("docs_uploaded");
+    	SearchRequest searchRequest = new SearchRequest("cacao_docs_uploaded");
     	
     	BoolQueryBuilder query = QueryBuilders.boolQuery();
     	
@@ -367,7 +367,7 @@ public class DocumentStoreService {
 			final Optional<String> filterTemplate,
 			final String templateFieldName) {
     	// Index over 'DocumentUploaded' objects
-    	SearchRequest searchRequest = new SearchRequest("docs_uploaded");
+    	SearchRequest searchRequest = new SearchRequest("cacao_docs_uploaded");
     	
     	// Filter by timestamp (only consider recent months for uploads)
     	BoolQueryBuilder query = QueryBuilders.boolQuery();

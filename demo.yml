@@ -1,0 +1,201 @@
+# This is a compose file only for demonstration purpose with a small and quick setup and minimum requirements
+# The host should not be exposed publicly to the Internet due to the lack of security configurations
+
+version: "3.8"
+services:
+  api:
+    image: cacao_api
+    build:
+      args:
+        - DONT_USE_PROXY
+      context: ./
+      dockerfile: ./api/Dockerfile
+      network: host      
+  plugin_account:
+    image: cacao_plugin_account
+    build:
+      args:
+        - DONT_USE_PROXY
+      context: ./
+      dockerfile: ./account/Dockerfile
+      network: host      
+    depends_on:
+      - api
+  web:
+    container_name: web
+    hostname: 'web'
+    build:
+      args:
+        - DONT_USE_PROXY
+      context: ./
+      dockerfile: ./web/Dockerfile
+      network: host      
+    environment:
+      - PORT=8888
+      - "WEB_JVM_OPTS=-Xms200m -Xmx1g"
+      - SERVER_SSL_KEYSTORETYPE=PKCS12 # server.ssl.key-store-type
+      - "SERVER_SSL_KEYSTORE=file:/home/usr/cert.p12" # server.ssl.key-store=file
+      - SERVER_SSL_KEYSTOREPASSWORD=123456 # server.ssl.key-store-password
+      - SERVER_SSL_KEYALIAS=cacao # server.ssl.key-alias
+      - SERVER_SSL_ENABLED=true # server.ssl.enabled 
+      - "MAIL_SSL_KEYSTORE=file:/home/usr/cert.p12" # mail.ssl.key-store
+      - MAIL_SSL_KEYSTOREPASSWORD=123456 # mail.ssl.key-store-password
+      - MAIL_SSL_ENABLED=true # mail.ssl.enabled
+      - SYNC_PUBLISHER_ENABLED=true # sync.publisher.enabled
+           
+    ports:
+      - "8888:8888"
+    depends_on:
+      - api
+      - plugin_account
+      - es01
+      - kibana
+      - kafka
+    volumes:
+      - logdir_web:/var/log
+      - web_settings:/home/usr/app/.cacao
+      - ./app_config_web:/app_config.properties:ro
+      - file-storage:/var/cacao
+    configs:
+      - app_config_web
+    restart: always
+  validator:
+    container_name: validator
+    hostname: 'validator'
+    build:
+      args:
+        - DONT_USE_PROXY
+      context: ./
+      dockerfile: ./validator/Dockerfile
+      network: host      
+    environment:
+      - PORT=8081
+      - "WEB_JVM_OPTS=-Xms200m -Xmx1g"
+#    ports:
+#      - "8081:8081"
+    depends_on:
+      - api
+      - plugin_account
+      - es01
+      - kafka
+    volumes:
+      - logdir_validator:/var/log
+      - ./app_config_validator:/app_config.properties:ro
+      - file-storage:/var/cacao:ro
+    configs:
+      - app_config_validator
+    restart: always
+  etl:
+    container_name: etl
+    hostname: 'etl'
+    build:
+      args:
+        - DONT_USE_PROXY
+      context: ./
+      dockerfile: ./etl/Dockerfile
+      network: host      
+    environment:
+      - PORT=8082
+      - "WEB_JVM_OPTS=-Xms200m -Xmx1g"
+#    ports:
+#      - "8082:8082"
+    depends_on:
+      - api
+      - plugin_account
+      - es01
+      - kafka
+    volumes:
+      - logdir_etl:/var/log
+      - ./app_config_etl:/app_config.properties:ro
+      - file-storage:/var/cacao:ro
+    configs:
+      - app_config_etl
+    restart: always
+  es01:
+    container_name: es01
+    hostname: 'es01'
+    build:
+      context: ./es
+    environment:
+      - PORT=9200
+      - NODE_NAME=es01
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    ports:
+#      - "9200:9200"
+#      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data-sn
+      - ./conf/es-dev.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./conf/es.mem.options:/usr/share/elasticsearch/config/jvm.options.d/es.mem.options
+    restart: always
+  kibana:
+    image: kibana:7.14.1
+    container_name: kibana
+    environment:
+      - PORT=5601
+      - ESPORT=9200
+      - "NODE_OPTIONS=--max-old-space-size=4096"
+      - SERVER_NAME=kibana
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+      - ES_HOSTS=["http://es01:9200"]
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true
+      - SSL_ENABLED=false
+      - URL=localhost
+      - KIBANA_USERNAME=
+      - KIBANA_PASSWORD=
+#    ports:
+#      - "5601:5601"
+    depends_on:
+      - es01
+    restart: always
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+#    ports:
+#      - 22181:2181
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc -w 2 zookeeper 4444"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka01
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: always
+volumes:
+  es-data:
+    driver: local
+  es-conf:
+    driver: local
+  kibana-conf:
+    driver: local
+  logdir_web:
+    driver: local
+  logdir_validator:
+    driver: local
+  logdir_etl:
+    driver: local
+  file-storage:
+    driver: local
+  web_settings:
+    driver: local
+    
