@@ -892,6 +892,8 @@ public class DocumentStoreAPIController {
 
 		try {
 			Path path = storageService.find(doc.getFileIdWithPath());
+			if (path==null)
+				throw new DocumentNotFoundException();
 			ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
 			HttpHeaders headers = new HttpHeaders();

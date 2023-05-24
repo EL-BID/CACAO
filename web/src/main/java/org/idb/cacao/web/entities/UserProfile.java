@@ -18,7 +18,8 @@ public enum UserProfile {
 	MASTER("user.profile.master"),
 	SUPPORT("user.profile.support"),
 	AUTHORITY("user.profile.authority"),
-	DECLARANT("user.profile.declarant");
+	DECLARANT("user.profile.declarant"),
+	READONLY("user.profile.readonly");
 
 	private final String display;
 	

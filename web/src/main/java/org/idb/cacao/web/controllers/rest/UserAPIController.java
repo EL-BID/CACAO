@@ -195,10 +195,7 @@ public class UserAPIController {
         User entity = new User();
         try {
         	user.updateEntity(entity);
-        	if (user.getPassword()!=null && user.getPassword().trim().length()>0
-        			&& user.getConfirmPassword()!=null && user.getConfirmPassword().trim().length()>0
-        			&& user.getPassword().equalsIgnoreCase(user.getConfirmPassword()))
-        		entity.setPassword(userService.encodePassword(user.getPassword()));
+        	entity.setPassword(user.getPassword()); // already encrypted
         	userRepository.saveWithTimestamp(entity);
         }
         catch (Exception ex) {
