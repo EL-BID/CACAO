@@ -18,7 +18,7 @@ RUN cp $HOME/src/main/resources/messages.properties $HOME/src/main/resources/mes
 # compile and package web application
 RUN mvn --no-transfer-progress -B -f $HOME/pom.xml ${MVN_ARGS} package -DskipTests
 
-FROM openjdk:11
+FROM eclipse-temurin:11
 
 # container creator
 LABEL maintainer=gustavohbf@gmail.com
