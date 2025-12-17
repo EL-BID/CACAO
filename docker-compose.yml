@@ -71,7 +71,9 @@ services:
       - ./app_config_web:/app_config.properties:ro
       - file-storage:/var/cacao
     configs:
-      - app_config_web
+	  - source: app_config_web
+		target: /app_config.properties  # Where the file will appear INSIDE the container.
+		mode: 0440
     restart: always
   validator:
     container_name: validator
@@ -102,7 +104,9 @@ services:
       - ./app_config_validator:/app_config.properties:ro
       - file-storage:/var/cacao:ro
     configs:
-      - app_config_validator
+		- source: app_config_validator
+		  target: /app_config.properties  # Where the file will appear INSIDE the container.
+		  mode: 0440
     restart: always
   etl:
     container_name: etl
@@ -133,7 +137,9 @@ services:
       - ./app_config_etl:/app_config.properties:ro
       - file-storage:/var/cacao:ro
     configs:
-      - app_config_etl
+	  - source: app_config_etl
+		target: /app_config.properties  # Where the file will appear INSIDE the container.
+		mode: 0440
     restart: always
   es01:
     container_name: es01
@@ -314,4 +320,11 @@ volumes:
     driver: local
   web_settings:
     driver: local
-    
+configs:
+  app_config_validator:
+    file: ./app_config_validator    
+  app_config_web:
+	file: ./app_config_web
+  app_config_etl:
+	file: ./app_config_etl
+		
