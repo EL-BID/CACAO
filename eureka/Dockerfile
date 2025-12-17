@@ -15,7 +15,7 @@ COPY eureka/src $HOME_EUREKA/src
 # compile, package and install EUREKA SERVER
 RUN mvn --no-transfer-progress -B -f $HOME_EUREKA/pom.xml ${MVN_ARGS} install -DskipTests
 
-FROM openjdk:11
+FROM eclipse-temurin:11
 
 # container creator
 LABEL maintainer=gustavohbf@gmail.com
