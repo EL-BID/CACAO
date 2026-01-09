@@ -311,7 +311,7 @@ services:
         - NET_ADMIN
     ports:
       - "80:80"
-      - "543:543"
+      - "443:443"
     depends_on:
       - web
     volumes:
