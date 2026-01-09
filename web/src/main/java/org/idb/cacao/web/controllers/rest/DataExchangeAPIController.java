@@ -61,7 +61,7 @@ public class DataExchangeAPIController {
 
 	public static final int MAX_RESULTS_PER_REQUEST = 10_000;
 	
-	@Value("${data.exchange.filter.indices.start}")
+	@Value("${data.exchange.filter.indices.starts}")
 	private Set<String> filterIndicesStartsWith;
 
 	@Value("${data.exchange.filter.indices.contains}")
