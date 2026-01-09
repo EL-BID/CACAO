@@ -346,7 +346,6 @@ public class AdminService {
 		}
 	}
 	
-	@Autowired
 	public AdminService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))

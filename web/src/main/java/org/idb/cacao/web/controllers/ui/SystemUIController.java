@@ -78,7 +78,6 @@ public class SystemUIController {
     @Autowired
     private DiscoveryClient discoveryClient;
 
-	@Autowired
 	public SystemUIController(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))

@@ -10,7 +10,6 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.Key;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.X509Certificate;

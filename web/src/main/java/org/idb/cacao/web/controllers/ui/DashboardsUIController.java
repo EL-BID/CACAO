@@ -57,7 +57,6 @@ public class DashboardsUIController {
 
     private RestTemplate restTemplate;
 
-	@Autowired
 	public DashboardsUIController(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))

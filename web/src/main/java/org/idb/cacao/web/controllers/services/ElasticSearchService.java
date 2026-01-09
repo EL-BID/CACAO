@@ -67,7 +67,6 @@ public class ElasticSearchService {
    		"savedObjectsTagging","fleet","actions","stackAlerts"
     };
 
-	@Autowired
 	public ElasticSearchService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))

@@ -46,6 +46,11 @@ public enum SystemPrivilege {
 	 * Privilege for running SYNC (synchronization of databases) operations
 	 */
 	SYNC_OPS,
+	
+	/**
+	 * Privilege for exchange data from CACAO to external system
+	 */	
+	DATA_EXCHANGE,
 
 	/**
 	 * Privilege for reading or listing tax declarations

@@ -32,7 +32,6 @@ public class ResourceMonitorService extends ResourceMonitor<WebSystemMetrics> {
 	@Autowired
 	private Environment env;
 
-	@Autowired
 	public ResourceMonitorService(SystemMetricsRepository systemMetricsRepository) {
 		super(systemMetricsRepository, WebSystemMetrics::new);
 	}

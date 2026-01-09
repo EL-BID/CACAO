@@ -92,8 +92,7 @@ public class WebApplication extends CommonApplication {
 
 		SpringApplication.run(WebApplication.class, args);
 	}
-	
-	@Autowired
+
 	public WebApplication(Environment env, ResourceMonitorService webMonitorService) {
 		super(env, webMonitorService);		
 	}

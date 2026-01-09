@@ -257,7 +257,6 @@ public class SyncAPIService {
 	 */
 	private static final AtomicReference<WeakReference<SyncThread>> runningSyncThread = new AtomicReference<>();
 	
-	@Autowired
 	public SyncAPIService(RestTemplateBuilder builder) {
 		// For improved workload in concurrent HTTP requests we will configure a pooling collection manager
 		// for dealing with our high concurrent environment

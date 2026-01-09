@@ -52,7 +52,6 @@ public class SwaggerRolesBindingConfig implements OperationBuilderPlugin {
     
     private Set<String> declarantPrivileges;
 
-    @Autowired
     public SwaggerRolesBindingConfig(DescriptionResolver descriptions) {
         this.descriptions = descriptions;
     }

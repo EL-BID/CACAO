@@ -91,7 +91,6 @@ public class KibanaSpacesService {
 	 */
 	private static final ConcurrentHashMap<String, Object> SYNC_OBJECT_PER_INDEX_PATTERN = new ConcurrentHashMap<>();
 
-	@Autowired
 	public KibanaSpacesService(RestTemplateBuilder builder, InternalHttpRequestsService requestFactory) {
 		this.restTemplate = builder
 				.setConnectTimeout(Duration.ofMinutes(5))
