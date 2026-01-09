@@ -863,7 +863,7 @@ public class AnalysisService {
 			return new LinkedList<>(); // No data found
 		}
 			
-		BiFunction<Aggregations, String[], Integer> function = (agg, values) -> new Integer(values[0]);
+		BiFunction<Aggregations, String[], Integer> function = (agg, values) -> Integer.valueOf(values[0]);
 
 		// Update outlier information for this taxpayer
 		List<Integer> years = SearchUtils.collectAggregations(sresp.getAggregations(), groupBy, function);

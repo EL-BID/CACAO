@@ -79,6 +79,10 @@ public class TaxpayerAPIController {
 	private static final String ERROR_OP_FAILED = "op.failed";
 
 	private static final String FIELD_TAX_PAYER_ID = "taxPayerId";
+	
+	private static final String FIELD_TAX_PAYER_NAME = "name";
+	
+	private static final String FIELD_TAX_PAYER_NAME_KEYWORD = "name.keyword";
 
 	private static final Logger log = Logger.getLogger(TaxpayerAPIController.class.getName());
 	
@@ -95,7 +99,7 @@ public class TaxpayerAPIController {
 	@JsonView(Views.Declarant.class)
 	@GetMapping(value="/taxpayers", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value="Method used for listing taxpayers using pagination")
-	public PaginationData<TaxpayerDto> getUsersWithPagination(Model model, 
+	public PaginationData<TaxpayerDto> getTaxpayersWithPagination(Model model, 
 			@ApiParam(name = "Number of page to retrieve", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
 			@RequestParam("page") Optional<Integer> page, 
 			@ApiParam(name = "Page size", allowEmptyValue = true, allowMultiple = false, required = false, type = "Integer")
@@ -114,8 +118,12 @@ public class TaxpayerAPIController {
     		throw new UserNotFoundException();
 
 		Optional<AdvancedSearch> filters = SearchUtils.fromTabulatorJSON(filter);
-		Page<TaxpayerDto> docs;
+		Page<TaxpayerDto> docs;		
 		Optional<String> sortField = Optional.of(sortBy.orElse(FIELD_TAX_PAYER_ID));
+		
+		if ( FIELD_TAX_PAYER_NAME.equalsIgnoreCase(sortField.get()) )
+			sortField = Optional.of(FIELD_TAX_PAYER_NAME_KEYWORD);
+		
 		Optional<SortOrder> direction = Optional.of(sortOrder.orElse("asc").equals("asc") ? SortOrder.ASC : SortOrder.DESC);
 		try {
 			docs = SearchUtils.doSearch(filters.orElse(new AdvancedSearch()), Taxpayer.class, elasticsearchClient, page, size, 

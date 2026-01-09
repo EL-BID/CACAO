@@ -19,7 +19,7 @@ import org.springframework.stereotype.Repository;
  *
  */
 @Repository
-public interface SyncCommitMilestoneRepository extends ElasticsearchRepository<SyncCommitMilestone, Long> {
+public interface SyncCommitMilestoneRepository extends ElasticsearchRepository<SyncCommitMilestone, String> {
 
 	public Optional<SyncCommitMilestone> findByEndPoint(String endPoint);
 

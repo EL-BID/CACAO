@@ -180,7 +180,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .antMatchers(
             		
         		// ALLOW ANY STATIC RESOURCES
-        		"/resources/**", "/components/**", "/images/**", "/themes/**", 
+        		"/resources/**", "/components/**", "/images/**", "/images2/**", "/themes/**", 
         		"/js/**", 
         		"/css/**",
         		"/.well-known/**",

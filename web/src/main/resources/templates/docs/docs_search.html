@@ -1,4 +1,3 @@
-<!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">
 <head th:replace="fragments/page_fragments :: header(more_links=~{this::link}, more_scripts=~{this::script[src]})">
 	<!-- Although the entire head will be replaced, its necessary to establish the charset
@@ -224,8 +223,8 @@
 		    initialSort: readPersistence("tabulator-docs_search", "sort"),
 			columns:[ //Define Table Columns
 				{title: /*[[#{doc.user}]]*/ "User", field:"user", minWidth: 120, headerFilter: true},
-				{title: /*[[#{taxpayer.id}]]*/ "TaxPayer Id", field:"taxPayerId", minWidth: 120, headerFilter: true},
-				{title: /*[[#{doc.taxperiod}]]*/ "Tax Period", field:"taxPeriodNumber", minWidth: 120, headerFilter: true},
+				{title: /*[[#{taxpayer.id}]]*/ "TaxPayer Id", field:"taxPayerId", minWidth: 120, headerFilter: true },
+				{title: /*[[#{doc.taxperiod}]]*/ "Tax Period", field:"taxPeriodNumber", minWidth: 120, headerFilter: true, headerFilterFunc: "=", headerFilterParams:{type:"number"}},
 				{title: /*[[#{doc.template}]]*/ "Template", field:"templateName", minWidth: 120, headerFilter: true},
 				{title: /*[[#{doc.timestamp}]]*/ "Date/time uploaded", field:"timestamp", formatter: dateFormatter, minWidth: 200,
 					headerFilter:minMaxFilterEditor},

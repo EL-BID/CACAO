@@ -8,6 +8,7 @@ package org.idb.cacao.web.dto;
 
 import java.util.Map;
 
+import org.idb.cacao.api.utils.ParserUtils;
 import org.idb.cacao.web.controllers.AdvancedSearch;
 import org.idb.cacao.web.controllers.AdvancedSearch.QueryFilter;
 
@@ -34,6 +35,13 @@ public class TabulatorFilter {
 	public String getStringValue() {
 		return value.toString();
 	}
+	public Double getDoubleValue() {
+		if ( value == null )
+			return Double.NaN;
+		if ( !ParserUtils.isOnlyNumbers(value.toString()))
+			return Double.NaN;
+		return Double.parseDouble(value.toString());
+	}
 	public boolean isString() {
 		return value instanceof String;
 	}
@@ -52,6 +60,8 @@ public class TabulatorFilter {
 			return new AdvancedSearch.QueryFilterBoolean(field, getStringValue());
 		if (value instanceof Map)
 		    return new AdvancedSearch.QueryFilterDate(field, getProperty("start"), getProperty("end"));
+		if ( "=".equals(type) )
+			return new AdvancedSearch.QueryFilterValue(field, getDoubleValue(), getDoubleValue());
 		return new AdvancedSearch.QueryFilterTerm(field, getStringValue() + "*");
 	}
 	

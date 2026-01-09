@@ -476,6 +476,61 @@ public class SearchUtils {
 	}
 	
 	/**
+	 * Performs advanced search at ElasticSearch over some entity of any type
+	 * with query parameters informed as 'queryArguments' pairs of names and values (wildcards are supported)
+	 * and with optional pagination control.
+	 * @param page Optional page number to start with (1-based)
+	 */
+	public static Page<Map<String,Object>> doSearch(
+			final String indexName,
+			final RestHighLevelClient elasticsearchClient,
+			final Optional<Integer> page,
+			final Optional<Integer> size,
+			final Optional<String> sortBy,
+			final Optional<SortOrder> sortOrder,
+			final String... includeFields) throws IOException {
+		
+		if (indexName==null || indexName.trim().length()==0)
+			return Page.empty();
+		
+    	SearchRequest searchRequest = new SearchRequest(indexName);
+    	
+    	BoolQueryBuilder query = QueryBuilders.boolQuery();
+    	
+    	SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+    			.query(query); 
+    	if(includeFields!=null && includeFields.length>0) {
+    		searchSourceBuilder.fetchSource(includeFields, null);
+    	}
+    	if (page.isPresent() && size.isPresent()) {
+	        int  offset = (page.get()-1) * size.get();
+	        searchSourceBuilder.from(offset);
+	        searchSourceBuilder.size(size.get());
+    	}
+    	
+    	if (sortBy.isPresent()) {
+    		searchSourceBuilder.sort(sortBy.get(), sortOrder.orElse(SortOrder.ASC));
+    	}
+    	searchRequest.source(searchSourceBuilder);
+    	SearchResponse sresp = null;    	
+		sresp = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+		long totalCount = Utils.getTotalHits(sresp);
+		int pageHits = sresp.getHits().getHits().length;
+		int pageNumber = (page.isPresent()) ? page.get() : 1;
+		int pageSize = Math.max(SearchUtils.DEFAULT_PAGE_SIZE, (size.isPresent()) ? size.get() : pageHits);
+		
+		List<Map<String,Object>> results = new ArrayList<>(sresp.getHits().getHits().length);
+		for (SearchHit hit : sresp.getHits()) {
+			Map<String, Object> map = hit.getSourceAsMap();
+			map.put("id", hit.getId());
+			map.remove("_class");
+			results.add(map);
+		}
+		
+		return new PageImpl<>(results, PageRequest.of(pageNumber-1, pageSize), totalCount);
+	}		
+	
+	/**
 	 * Given 'advanced search filters', populates 'consumer' with the corresponding JPA boolean expressions.
 	 */
 	public static <T> void addCriteriaQueries(final AdvancedSearch queryArguments,

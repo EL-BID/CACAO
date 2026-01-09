@@ -10,8 +10,9 @@ server {
 
 # main server block
 server {
-        listen 443 ssl http2 default_server;
-        listen [::]:443 ssl http2 default_server;
+        listen 443 ssl default_server;
+        listen [::]:443 ssl default_server;
+        http2 on;
 
         root /config/www;
         index index.html index.htm index.php;
@@ -32,6 +33,7 @@ server {
                  proxy_set_header X-Real-IP $remote_addr;
                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                  proxy_set_header X-Forwarded-Proto $scheme;
+                 proxy_set_header X-Forwarded-Port $server_port;
                  proxy_pass http://web:8080;
         }
  

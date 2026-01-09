@@ -65,7 +65,12 @@ public class Taxpayer implements Serializable, Cloneable {
 	@AFieldDescriptor(externalName = "taxpayer.id", audit=true)
 	private String taxPayerId;
 
-	@Field(type=Text)
+	@MultiField(
+		mainField = @Field(type=Text, fielddata=true),
+		otherFields = {
+			@InnerField(suffix = "keyword", type=Keyword)
+		}
+	)
 	@NotBlank
 	@NotNull
 	@NotEmpty
