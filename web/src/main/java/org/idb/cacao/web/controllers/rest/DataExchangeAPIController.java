@@ -212,7 +212,7 @@ public class DataExchangeAPIController {
 
         // 4. Setup Sorting Defaults:
         // Use "changedTime" if 'sortBy' is not provided
-        Optional<String> sortField = Optional.of(sortBy.orElse("changedTime")); 
+        Optional<String> sortField = sortBy.isPresent() ? Optional.of(sortBy.get()) : Optional.empty(); 
         
         // Use ASC order if 'sortOrder' is not provided or explicitly "asc", otherwise DESC
         Optional<SortOrder> direction = Optional

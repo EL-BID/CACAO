@@ -59,9 +59,18 @@ public class TabulatedData {
 			String expression = fieldMapping.getColumnNameExpression();
 			if ( expression != null && !expression.isEmpty() ) {							
 				Integer position = ValidationContext.matchExpression(columnPositions.entrySet(), Map.Entry::getKey, expression).map(Map.Entry::getValue).orElse(null);
+				if ( position != null ) {
+					fieldPositions.put(fieldMapping.getFieldName(), position);
+					continue;
+				}
+			}		
+			
+			String pathExpression = fieldMapping.getPathExpression();
+			if ( pathExpression != null && !pathExpression.isEmpty() ) {							
+				Integer position = ValidationContext.matchExpression(columnPositions.entrySet(), Map.Entry::getKey, pathExpression).map(Map.Entry::getValue).orElse(null);
 				if ( position != null )
 					fieldPositions.put(fieldMapping.getFieldName(), position);
-			}					
+			}	
 			
 		}
 

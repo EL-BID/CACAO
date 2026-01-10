@@ -1,5 +1,6 @@
 package org.idb.cacao.validator.parsers;
 
+import org.apache.commons.lang.SerializationUtils;
 import org.idb.cacao.account.archetypes.ChartOfAccountsArchetype;
 import org.idb.cacao.api.templates.DocumentFormat;
 import org.idb.cacao.api.templates.DocumentInput;
@@ -50,15 +51,15 @@ public class XMLParserTests {
 		
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(TaxPayerId.name())
-				.withColumnNameExpression("TaxPayerId"));
+				.withPathExpression("ChartOfAccounts.TaxPayerId"));
 
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(TaxYear.name())
-				.withColumnNameExpression("TaxYear"));
+				.withPathExpression("ChartOfAccounts.TaxYear"));
 		
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(AccountCode.name())
-				.withColumnNameExpression("AccountCode"));
+				.withPathExpression("ChartOfAccounts.AccountCode"));
 
 		inputSpec.addField(new DocumentInputFieldMapping()
 				.withFieldName(AccountCategory.name())
@@ -76,6 +77,14 @@ public class XMLParserTests {
 				.withFieldName(AccountDescription.name())
 				.withColumnNameExpression("Description"));
 		
+		byte[] clone = SerializationUtils.serialize(inputSpec);
+		
+		DocumentInput inputSpecHierarquical = (DocumentInput)SerializationUtils.deserialize(clone);
+		
+		inputSpecHierarquical.getFields().get(2).withPathExpression("ChartOfAccounts.Account.AccountCode");
+		inputSpecHierarquical.getFields().get(3).withPathExpression("ChartOfAccounts.Account.AccountCategory");
+		
+		
 		for ( String resource : new String[] {
 				"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts - IFRS.xml",
 				"/samples/20211411 - Pauls Guitar Shop - Chart of Accounts - IFRS - hierarquical.xml"
@@ -89,7 +98,7 @@ public class XMLParserTests {
 			try (XMLParser parser = new XMLParser();) {
 				
 				parser.setPath(sampleFile.getFile().toPath());
-				parser.setDocumentInputSpec(inputSpec);
+				parser.setDocumentInputSpec(resource.equals("/samples/20211411 - Pauls Guitar Shop - Chart of Accounts - IFRS.xml") ? inputSpec : inputSpecHierarquical);
 				parser.start();
 				
 				try (DataIterator iterator = parser.iterator();) {
