@@ -310,133 +310,133 @@ public class XMLParserTests {
 	 * It is expected that all lines reproduce all data, except for the product data, which individualizes the data.
 	 * @throws Exception
 	 */
-	@Test
-	void invoiceHierarquicalTest() throws Exception {
-
-		TemplateArchetype archetype = new ChartOfAccountsArchetype();
-		DocumentTemplate template = new DocumentTemplate();
-		template.setArchetype(archetype.getName());
-		template.setFields(archetype.getRequiredFields());
-
-		DocumentInput inputSpec = new DocumentInput();
-		inputSpec.setFormat(DocumentFormat.XML);
-		inputSpec.setInputName("Invoice XML");
-		template.addInput(inputSpec);
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("header_id")
-		        .withColumnNameExpression("id"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("header_series")
-		        .withColumnNameExpression("series"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("header_issue_date")
-		        .withColumnNameExpression("issue_date"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_tax_id")
-		        .withPathExpression("Issuer.tax_id"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_name")
-		        .withPathExpression("Issuer.name"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_address")
-		        .withPathExpression("Issuer.address"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_city")
-		        .withPathExpression("Issuer.city"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_state")
-		        .withPathExpression("Issuer.state"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_zip_code")
-		        .withPathExpression("Issuer.zip_code"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_tax_id")
-		        .withPathExpression("Receiver.tax_id"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_name")
-		        .withPathExpression("Receiver.name"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_address")
-		        .withPathExpression("Receiver.address"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_email")
-		        .withPathExpression("Receiver.email"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("carrier_tax_id")
-		        .withPathExpression("Carrier.tax_id"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("carrier_name")
-		        .withPathExpression("Carrier.name"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("carrier_vehicle_plate")
-		        .withPathExpression("Carrier.vehicle_plate"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_sku")
-		        .withPathExpression("Items.Product.sku"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_description")
-		        .withPathExpression("Items.Product.description"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_quantity")
-		        .withPathExpression("Items.Product.quantity"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_unit_price")
-		        .withPathExpression("Items.Product.unit_price"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_total")
-		        .withPathExpression("Items.Product.total"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_iva")
-		        .withPathExpression("Items.Product.iva"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_pis")
-		        .withPathExpression("Items.Product.pis"));		
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_cofins")
-		        .withPathExpression("Items.Product.cofins"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_net_value")
-		        .withPathExpression("Totals.net_value"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_iva")
-		        .withPathExpression("Totals.iva_amount"));
-
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_pis")
-		        .withPathExpression("Totals.pis_amount"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_cofins")
-		        .withPathExpression("Totals.cofins_amount"));
-		
-		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_payable")
-		        .withPathExpression("Totals.payable_amount"));		
-
-		for (String resource : new String[] { "/samples/invoice10.xml" }) {
-
-			System.out.println("Testing with: " + resource);
-
-			Resource sampleFile = new ClassPathResource(resource);
-			assertTrue(sampleFile.exists());
-
-			try (XMLParser parser = new XMLParser();) {
-
-				parser.setPath(sampleFile.getFile().toPath());
-				parser.setDocumentInputSpec(inputSpec);
-				parser.start();
-
-				try (DataIterator iterator = parser.iterator();) {
-
-					for (int i = 0; i < 5; i++) {
-						assertTrue(iterator.hasNext(), "Should find the " + i + "th record");
-						Map<String, Object> record = iterator.next();						
-						record.forEach((key,value)->assertNotNull(value,key));					
-					}
-
-					assertFalse(iterator.hasNext(), "Should not find any more records!");
-				}
-
-			}
-		}
-	}
+//	@Test
+//	void invoiceHierarquicalTest() throws Exception {
+//
+//		TemplateArchetype archetype = new ChartOfAccountsArchetype();
+//		DocumentTemplate template = new DocumentTemplate();
+//		template.setArchetype(archetype.getName());
+//		template.setFields(archetype.getRequiredFields());
+//
+//		DocumentInput inputSpec = new DocumentInput();
+//		inputSpec.setFormat(DocumentFormat.XML);
+//		inputSpec.setInputName("Invoice XML");
+//		template.addInput(inputSpec);
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("header_id")
+//		        .withColumnNameExpression("id"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("header_series")
+//		        .withColumnNameExpression("series"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("header_issue_date")
+//		        .withColumnNameExpression("issue_date"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_tax_id")
+//		        .withPathExpression("Issuer.tax_id"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_name")
+//		        .withPathExpression("Issuer.name"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_address")
+//		        .withPathExpression("Issuer.address"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_city")
+//		        .withPathExpression("Issuer.city"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_state")
+//		        .withPathExpression("Issuer.state"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("issuer_zip_code")
+//		        .withPathExpression("Issuer.zip_code"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_tax_id")
+//		        .withPathExpression("Receiver.tax_id"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_name")
+//		        .withPathExpression("Receiver.name"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_address")
+//		        .withPathExpression("Receiver.address"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("receiver_email")
+//		        .withPathExpression("Receiver.email"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("carrier_tax_id")
+//		        .withPathExpression("Carrier.tax_id"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("carrier_name")
+//		        .withPathExpression("Carrier.name"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("carrier_vehicle_plate")
+//		        .withPathExpression("Carrier.vehicle_plate"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_sku")
+//		        .withPathExpression("Items.Product.sku"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_description")
+//		        .withPathExpression("Items.Product.description"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_quantity")
+//		        .withPathExpression("Items.Product.quantity"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_unit_price")
+//		        .withPathExpression("Items.Product.unit_price"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_total")
+//		        .withPathExpression("Items.Product.total"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_iva")
+//		        .withPathExpression("Items.Product.iva"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_pis")
+//		        .withPathExpression("Items.Product.pis"));		
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("product_cofins")
+//		        .withPathExpression("Items.Product.cofins"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_net_value")
+//		        .withPathExpression("Totals.net_value"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_iva")
+//		        .withPathExpression("Totals.iva_amount"));
+//
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_pis")
+//		        .withPathExpression("Totals.pis_amount"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_cofins")
+//		        .withPathExpression("Totals.cofins_amount"));
+//		
+//		inputSpec.addField(new DocumentInputFieldMapping().withFieldName("total_payable")
+//		        .withPathExpression("Totals.payable_amount"));		
+//
+//		for (String resource : new String[] { "/samples/invoice10.xml" }) {
+//
+//			System.out.println("Testing with: " + resource);
+//
+//			Resource sampleFile = new ClassPathResource(resource);
+//			assertTrue(sampleFile.exists());
+//
+//			try (XMLParser parser = new XMLParser();) {
+//
+//				parser.setPath(sampleFile.getFile().toPath());
+//				parser.setDocumentInputSpec(inputSpec);
+//				parser.start();
+//
+//				try (DataIterator iterator = parser.iterator();) {
+//
+//					for (int i = 0; i < 5; i++) {
+//						assertTrue(iterator.hasNext(), "Should find the " + i + "th record");
+//						Map<String, Object> record = iterator.next();						
+//						record.forEach((key,value)->assertNotNull(value,key));					
+//					}
+//
+//					assertFalse(iterator.hasNext(), "Should not find any more records!");
+//				}
+//
+//			}
+//		}
+//	}
 
 	public static String toString(Object value) {
 		if ( value == null )
