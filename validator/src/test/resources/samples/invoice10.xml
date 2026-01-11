@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ElectronicInvoice>
+    <id>000444555</id>
+    <series>015</series>
+    <issue_date>2026-01-10T22:55:00-03:00</issue_date>
+
+    <Issuer>
+        <tax_id>12345678000199</tax_id>
+        <name>Central de Distribuição Fortaleza LTDA</name>
+        <address>Avenida Washington Soares, 4000</address>
+        <city>Fortaleza</city>
+        <state>CE</state>
+        <zip_code>60811341</zip_code>
+        <phone>8534005000</phone>
+        <email>faturamento@centraldist.com.br</email>
+    </Issuer>
+
+    <Receiver>
+        <tax_id>99988877766</tax_id>
+        <name>Sérgio Murilo Peixoto</name>
+        <address>Rua República do Líbano, 1200</address>
+        <city>Fortaleza</city>
+        <state>CE</state>
+        <zip_code>60160140</zip_code>
+        <phone>85981556677</phone>
+        <email>sergio.murilo@email.com</email>
+    </Receiver>
+
+    <Carrier>
+        <tax_id>33444222000155</tax_id>
+        <name>Logística Expressa Nordeste</name>
+        <address>Rodovia BR-116, KM 10</address>
+        <vehicle_plate>BRA3P26</vehicle_plate>
+        <state>CE</state>
+    </Carrier>
+
+    <Items>
+        <Product>
+            <sku>HW-102</sku>
+            <description>Headset Noise Cancelling Wireless</description>
+            <unit_price>1200.00</unit_price>
+            <quantity>1</quantity>
+            <discount>200.00</discount>
+            <total>1000.00</total>
+            <iva>230.00</iva>
+            <pis>16.50</pis>
+            <cofins>76.00</cofins>
+        </Product>
+        <Product>
+            <sku>HW-105</sku>
+            <description>Suporte Ergonômico para Laptop</description>
+            <unit_price>150.00</unit_price>
+            <quantity>2</quantity>
+            <discount>0.00</discount>
+            <total>300.00</total>
+            <iva>69.00</iva>
+            <pis>4.95</pis>
+            <cofins>22.80</cofins>
+        </Product>
+    </Items>
+
+    <Totals>
+        <net_value>1300.00</net_value>
+        <iva_amount>299.00</iva_amount> 
+        <pis_amount>21.45</pis_amount>
+        <cofins_amount>98.80</cofins_amount>
+        <payable_amount>1300.00</payable_amount>
+    </Totals>
+</ElectronicInvoice>

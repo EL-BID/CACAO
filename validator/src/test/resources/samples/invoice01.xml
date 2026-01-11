@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ElectronicInvoice>
+    <header_id>000111222</header_id>
+    <header_series>006</header_series>
+    <header_issue_date>2026-01-10T23:30:00-03:00</header_issue_date>
+
+    <issuer_tax_id>12345678000199</issuer_tax_id>
+    <issuer_name>Tecnologia Avançada Ceará LTDA</issuer_name>
+    <issuer_address>Rua Dragão do Mar, 100</issuer_address>
+    <issuer_city>Fortaleza</issuer_city>
+    <issuer_state>CE</issuer_state>
+    <issuer_zip_code>60060390</issuer_zip_code>
+    <issuer_phone>8532009000</issuer_phone>
+    <issuer_email>financeiro@tecavancada.com.br</issuer_email>
+
+    <receiver_tax_id>55566677700</receiver_tax_id>
+    <receiver_name>Fernanda Souza Lima</receiver_name>
+    <receiver_address>Rua República do Líbano, 500</receiver_address>
+    <receiver_city>Fortaleza</receiver_city>
+    <receiver_state>CE</receiver_state>
+    <receiver_zip_code>60160140</receiver_zip_code>
+    <receiver_phone>85991234567</receiver_phone>
+    <receiver_email>fernanda.sl@email.com</receiver_email>
+
+    <carrier_tax_id>88999000000133</carrier_tax_id>
+    <carrier_name>Nordeste Log Express</carrier_name>
+    <carrier_address>Avenida Perimetral, 2000</carrier_address>
+    <carrier_vehicle_plate>BRA4G26</carrier_vehicle_plate>
+    <carrier_state>CE</carrier_state>
+
+    <total_net_value>4550.00</total_net_value>
+    <total_iva_amount>819.00</total_iva_amount>
+    <total_pis_amount>75.08</total_pis_amount>
+    <total_cofins_amount>345.80</total_cofins_amount>
+    <total_payable_amount>4550.00</total_payable_amount>
+
+    <Product>
+        <product_sku>CPU-999</product_sku>
+        <product_description>Processador i9 13th Gen</product_description>
+        <product_unit_price>3200.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>200.00</product_discount>
+        <product_total>3000.00</product_total>
+        <product_iva>540.00</product_iva>
+        <product_pis>49.50</product_pis>
+        <product_cofins>228.00</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>MEM-032</product_sku>
+        <product_description>DDR5 RAM 32GB 5200MHz</product_description>
+        <product_unit_price>800.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>50.00</product_discount>
+        <product_total>750.00</product_total>
+        <product_iva>135.00</product_iva>
+        <product_pis>12.38</product_pis>
+        <product_cofins>57.00</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>CL-001</product_sku>
+        <product_description>Liquid Cooler 360mm</product_description>
+        <product_unit_price>650.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>0.00</product_discount>
+        <product_total>650.00</product_total>
+        <product_iva>117.00</product_iva>
+        <product_pis>10.73</product_pis>
+        <product_cofins>49.40</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>ST-500</product_sku>
+        <product_description>M.2 NVMe SSD 500GB</product_description>
+        <product_unit_price>120.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>20.00</product_discount>
+        <product_total>100.00</product_total>
+        <product_iva>18.00</product_iva>
+        <product_pis>1.65</product_pis>
+        <product_cofins>7.60</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>CAB-005</product_sku>
+        <product_description>DisplayPort Cable 1.4</product_description>
+        <product_unit_price>50.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>0.00</product_discount>
+        <product_total>50.00</product_total>
+        <product_iva>9.00</product_iva>
+        <product_pis>0.82</product_pis>
+        <product_cofins>3.80</product_cofins>
+    </Product>
+</ElectronicInvoice>

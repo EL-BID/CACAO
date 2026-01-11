@@ -3,6 +3,8 @@
   <ChartOfAccounts>
     <TaxPayerId>123456</TaxPayerId>
     <TaxYear>2021</TaxYear>
+    <Accounts>
+    
     <Account>
 	    <AccountCode>1.1.1</AccountCode>
 	    <AccountCategory>1</AccountCategory>
@@ -58,8 +60,7 @@
 	    <AccountName>Revenue Goods</AccountName>
 	    <AccountDescription>Revenue from selling Goods</AccountDescription>
 	</Account>
-
-
+	
     <Account>
 	    <AccountCode>4.1.2</AccountCode>
 	    <AccountCategory>4</AccountCategory>
@@ -115,6 +116,6 @@
 	    <AccountName>Other Expenses</AccountName>
 	    <AccountDescription>Other non-operating expenses</AccountDescription>
 	</Account>
-    
+    </Accounts>
   </ChartOfAccounts>
 </root>

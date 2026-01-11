@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ElectronicInvoice>
+    <header_id>000777555</header_id>
+    <header_series>011</header_series>
+    <header_issue_date>2026-01-10T22:30:00-03:00</header_issue_date>
+
+    <issuer_tax_id>12345678000199</issuer_tax_id>
+    <issuer_name>Central de Distribuição Fortaleza LTDA</issuer_name>
+    <issuer_address>Avenida Washington Soares, 4000</issuer_address>
+    <issuer_city>Fortaleza</issuer_city>
+    <issuer_state>CE</issuer_state>
+    <issuer_zip_code>60811341</issuer_zip_code>
+    <issuer_phone>8534005000</issuer_phone>
+    <issuer_email>faturamento@centraldist.com.br</issuer_email>
+
+    <receiver_tax_id>44466688811</receiver_tax_id>
+    <receiver_name>Marcelo Vieira Cavalcante</receiver_name>
+    <receiver_address>Avenida Beira Mar, 1200</receiver_address>
+    <receiver_city>Fortaleza</receiver_city>
+    <receiver_state>CE</receiver_state>
+    <receiver_zip_code>60165121</receiver_zip_code>
+    <receiver_phone>85994445555</receiver_phone>
+    <receiver_email>marcelo.v@email.com</receiver_email>
+
+    <carrier_tax_id>22333111000155</carrier_tax_id>
+    <carrier_name>Nordeste Logística de Precisão</carrier_name>
+    <carrier_address>Rua Governador Artur Ramos, 50</carrier_address>
+    <carrier_vehicle_plate>BRA9L26</carrier_vehicle_plate>
+    <carrier_state>CE</carrier_state>
+
+    <total_net_value>3680.00</total_net_value>
+    <total_iva_amount>846.40</total_iva_amount> <total_pis_amount>60.72</total_pis_amount>
+    <total_cofins_amount>279.68</total_cofins_amount>
+    <total_payable_amount>3680.00</total_payable_amount>
+
+    <Product>
+        <product_sku>CAM-4K-01</product_sku>
+        <product_description>Mirrorless Camera 4K Pro</product_description>
+        <product_unit_price>2800.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>100.00</product_discount>
+        <product_total>2700.00</product_total>
+        <product_iva>621.00</product_iva>
+        <product_pis>44.55</product_pis>
+        <product_cofins>205.20</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>LEN-50M</product_sku>
+        <product_description>Lens 50mm f/1.8</product_description>
+        <product_unit_price>600.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>50.00</product_discount>
+        <product_total>550.00</product_total>
+        <product_iva>126.50</product_iva>
+        <product_pis>9.07</product_pis>
+        <product_cofins>41.80</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>BAT-LP6</product_sku>
+        <product_description>Rechargeable Battery Pack</product_description>
+        <product_unit_price>150.00</product_unit_price>
+        <product_quantity>2</product_quantity>
+        <product_discount>0.00</product_discount>
+        <product_total>300.00</product_total>
+        <product_iva>69.00</product_iva>
+        <product_pis>4.95</product_pis>
+        <product_cofins>22.80</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>MEM-128-SD</product_sku>
+        <product_description>SD Card 128GB High Speed</product_description>
+        <product_unit_price>80.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>0.00</product_discount>
+        <product_total>80.00</product_total>
+        <product_iva>18.40</product_iva>
+        <product_pis>1.32</product_pis>
+        <product_cofins>6.08</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>BAG-PRO-01</product_sku>
+        <product_description>Camera Backpack Waterproof</product_description>
+        <product_unit_price>70.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>20.00</product_discount>
+        <product_total>50.00</product_total>
+        <product_iva>11.50</product_iva>
+        <product_pis>0.83</product_pis>
+        <product_cofins>3.80</product_cofins>
+    </Product>
+</ElectronicInvoice>

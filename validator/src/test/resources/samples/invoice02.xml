@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ElectronicInvoice>
+    <header_id>000555888</header_id>
+    <header_series>008</header_series>
+    <header_issue_date>2026-01-10T22:15:00-03:00</header_issue_date>
+
+    <issuer_tax_id>12345678000199</issuer_tax_id>
+    <issuer_name>Central de Distribuição Fortaleza LTDA</issuer_name>
+    <issuer_address>Avenida Washington Soares, 4000</issuer_address>
+    <issuer_city>Fortaleza</issuer_city>
+    <issuer_state>CE</issuer_state>
+    <issuer_zip_code>60811341</issuer_zip_code>
+    <issuer_phone>8534005000</issuer_phone>
+    <issuer_email>faturamento@centraldist.com.br</issuer_email>
+
+    <receiver_tax_id>11122233344</receiver_tax_id>
+    <receiver_name>Beatriz Cavalcante Rocha</receiver_name>
+    <receiver_address>Rua Maria Tomásia, 200</receiver_address>
+    <receiver_city>Fortaleza</receiver_city>
+    <receiver_state>CE</receiver_state>
+    <receiver_zip_code>60150160</receiver_zip_code>
+    <receiver_phone>85992223333</receiver_phone>
+    <receiver_email>beatriz.rocha@email.com</receiver_email>
+
+    <carrier_tax_id>44555666000177</carrier_tax_id>
+    <carrier_name>Expresso Ceará Log</carrier_name>
+    <carrier_address>Rodovia Quarto Anel Viário, s/n</carrier_address>
+    <carrier_vehicle_plate>BRA6I26</carrier_vehicle_plate>
+    <carrier_state>CE</carrier_state>
+
+    <total_net_value>4000.00</total_net_value>
+    <total_iva_amount>920.00</total_iva_amount> <total_pis_amount>66.00</total_pis_amount>
+    <total_cofins_amount>304.00</total_cofins_amount>
+    <total_payable_amount>4000.00</total_payable_amount>
+
+    <Product>
+        <product_sku>ENT-001</product_sku>
+        <product_description>Smart TV 55 pol 4K LED</product_description>
+        <product_unit_price>3000.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>0.00</product_discount>
+        <product_total>3000.00</product_total>
+        <product_iva>690.00</product_iva>
+        <product_pis>49.50</product_pis>
+        <product_cofins>228.00</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>ENT-015</product_sku>
+        <product_description>Soundbar 2.1 Bluetooth</product_description>
+        <product_unit_price>800.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>0.00</product_discount>
+        <product_total>800.00</product_total>
+        <product_iva>184.00</product_iva>
+        <product_pis>13.20</product_pis>
+        <product_cofins>60.80</product_cofins>
+    </Product>
+    <Product>
+        <product_sku>ENT-099</product_sku>
+        <product_description>Wall Mount Tiltable</product_description>
+        <product_unit_price>250.00</product_unit_price>
+        <product_quantity>1</product_quantity>
+        <product_discount>50.00</product_discount>
+        <product_total>200.00</product_total>
+        <product_iva>46.00</product_iva>
+        <product_pis>3.30</product_pis>
+        <product_cofins>15.20</product_cofins>
+    </Product>
+</ElectronicInvoice>
