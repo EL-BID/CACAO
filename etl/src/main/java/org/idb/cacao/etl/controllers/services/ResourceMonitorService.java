@@ -9,7 +9,6 @@ package org.idb.cacao.etl.controllers.services;
 import org.idb.cacao.api.utils.ResourceMonitor;
 import org.idb.cacao.etl.entities.ETLSystemMetrics;
 import org.idb.cacao.etl.repositories.SystemMetricsRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ResourceMonitorService extends ResourceMonitor<ETLSystemMetrics> {
 	
-	@Autowired
 	public ResourceMonitorService(SystemMetricsRepository systemMetricsRepository) {
 		super(systemMetricsRepository, ETLSystemMetrics::new);
 	}

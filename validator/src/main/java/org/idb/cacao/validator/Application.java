@@ -8,7 +8,6 @@ package org.idb.cacao.validator;
 
 import org.idb.cacao.api.CommonApplication;
 import org.idb.cacao.validator.controllers.services.ResourceMonitorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -35,7 +34,6 @@ public class Application extends CommonApplication {
 		SpringApplication.run(Application.class, args);
 	}
 	
-	@Autowired
 	public Application(Environment env, ResourceMonitorService validatorMonitorService) {
 		super(env, validatorMonitorService);
 	}

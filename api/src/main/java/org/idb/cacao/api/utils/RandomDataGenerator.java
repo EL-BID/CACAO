@@ -221,11 +221,11 @@ public class RandomDataGenerator {
 			}
 		}
 		if (length<5)
-			return new Short(new String(digits));
+			return Short.parseShort(new String(digits));
 		if (length<10)
-			return new Integer(new String(digits));
+			return Integer.parseInt(new String(digits));
 		if (length<19)
-			return new Long(new String(digits));
+			return Long.parseLong(new String(digits));
 		return new BigInteger(new String(digits));
 	}
 
